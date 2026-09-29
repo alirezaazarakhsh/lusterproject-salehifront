@@ -1,0 +1,6 @@
+{
+  "name": "گالری لوستر اکبر صالحی | Chandelier Akbar Salehi",
+  "description": "مجموعه‌ای برگزیده از لوسترهای لوکس کلاسیک، کریستالی، آباژور و آینه و کنسول به همراه مدل‌سازی سه‌بعدی تعاملی",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

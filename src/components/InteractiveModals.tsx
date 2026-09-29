@@ -1,0 +1,2886 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  X,
+  ShoppingBag,
+  Sparkles,
+  Image as ImageIcon,
+  CheckCircle2,
+  Plus,
+  Minus,
+  Trash2,
+  PhoneCall,
+  ShieldCheck,
+  Ruler,
+  Layers,
+  Palette,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Video,
+  Loader2,
+  Eye,
+} from 'lucide-react';
+import {
+  ChandelierProduct,
+  StoryItem,
+  STORY_ITEMS,
+  STORY_CATEGORIES,
+  StoryCategoryType,
+  StorySlideType,
+  StoryProductAttachment,
+  SALEHI_COLLECTION_PRODUCTS,
+  MagazineArticle,
+  GENERATED_IMAGES,
+} from '../data/chandelierData';
+import { ExactPalmetteVector } from './Ornaments';
+import {
+  Chandelier3DViewer,
+  FinishType,
+  FINISH_PRESETS,
+} from './Chandelier3DViewer';
+import { TransparentProductImage } from './TransparentProductImage';
+
+export interface CartItem {
+  product: ChandelierProduct;
+  quantity: number;
+}
+
+interface ProductStudioModalProps {
+  product: ChandelierProduct | null;
+  initialFinish?: FinishType;
+  onClose: () => void;
+  onAddToCart: (product: ChandelierProduct, qty: number) => void;
+  initialTab?: '3d' | 'photo';
+}
+
+export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
+  product,
+  initialFinish = 'original',
+  onClose,
+  onAddToCart,
+  initialTab = '3d',
+}) => {
+  const [viewMode, setViewMode] = useState<'3d' | 'photo'>(initialTab);
+  const [selectedFinish, setSelectedFinish] =
+    useState<FinishType>(initialFinish);
+  const [selectedBranches, setSelectedBranches] = useState<string>('۱۲ شاخه');
+  const [qty, setQty] = useState<number>(1);
+  const [addedToast, setAddedToast] = useState<boolean>(false);
+
+  useEffect(() => {
+    setSelectedFinish(initialFinish);
+  }, [product, initialFinish]);
+
+  if (!product) return null;
+
+  const handleAdd = () => {
+    onAddToCart(product, qty);
+    setAddedToast(true);
+    setTimeout(() => setAddedToast(false), 2200);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/65 backdrop-blur-xs"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-6xl bg-[#fcfbf9] rounded-3xl border border-[#e5dec9] shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 max-h-[92vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* دکمه بستن */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full bg-white/90 hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white border border-[#e5dec9] flex items-center justify-center transition-colors cursor-pointer"
+          aria-label="بستن"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* ستون راست: استودیو سه‌بعدی خودکار محصول و تغییر رنگ زنده */}
+        <div className="lg:col-span-7 relative bg-[#f6f4ee] min-h-[380px] lg:min-h-[580px] flex flex-col">
+          {/* تب تغییر حالت بین مدل سه‌بعدی و تصویر آتلیه‌ای */}
+          <div className="absolute top-3 left-15 z-20 flex items-center gap-1 p-1 rounded-xl bg-white/90 backdrop-blur-xs border border-[#e5dec9] shadow-xs">
+            <button
+              type="button"
+              onClick={() => setViewMode('3d')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                viewMode === '3d'
+                  ? 'bg-[#2b2b2b] text-white'
+                  : 'text-[#5c564d] hover:text-[#2b2b2b]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#c5a875]" />
+              <span>مدل سه‌بعدی خودکار (3D)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('photo')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                viewMode === 'photo'
+                  ? 'bg-[#2b2b2b] text-white'
+                  : 'text-[#5c564d] hover:text-[#2b2b2b]'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>تصویر آتلیه‌ای</span>
+            </button>
+          </div>
+
+          <div className="flex-1 w-full h-full">
+            {viewMode === '3d' ? (
+              <Chandelier3DViewer
+                modelType={product.modelType}
+                imageUrl={product.image}
+                initialFinish={selectedFinish}
+                onFinishChange={(fin) => setSelectedFinish(fin)}
+                initialTheme="light"
+                className="w-full h-[400px] lg:h-full"
+              />
+            ) : (
+              <div className="relative w-full h-[400px] lg:h-full flex items-center justify-center p-8 bg-[#f9f9f9]">
+                <TransparentProductImage
+                  src={product.image}
+                  alt={product.name}
+                  filterCss={FINISH_PRESETS[selectedFinish]?.filterCss || 'none'}
+                  className="max-h-[430px] w-auto object-contain"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ستون چپ: مشخصات، انتخاب رنگ سفارشی و خرید */}
+        <div className="lg:col-span-5 p-6 md:p-8 flex flex-col justify-between overflow-y-auto">
+          <div>
+            <div className="flex items-center justify-between text-xs text-[#8c8273] mb-2">
+              <span>کلکسیون اختصاصی اکبر صالحی</span>
+              <span className="tabular-nums">
+                کد محصول: {product.productCode}
+              </span>
+            </div>
+
+            <h3 className="text-2xl font-bold text-[#2b2b2b] mb-1">
+              {product.name}
+            </h3>
+            <p className="text-xs text-[#7a7367] mb-4">{product.subtitle}</p>
+
+            <div className="py-3 px-4 rounded-2xl bg-[#f6f5f0] border border-[#ebe6da] flex items-center justify-between mb-4">
+              <span className="text-xs text-[#6e675c]">قیمت مصرف‌کننده:</span>
+              <span className="text-lg font-bold text-[#2b2b2b] tabular-nums">
+                {product.priceFormatted}
+              </span>
+            </div>
+
+            {/* بخش انتخاب رنگ و آبکاری استاندارد لوستر */}
+            <div className="mb-5 p-3.5 rounded-2xl bg-white border border-[#ece7dc]">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-xs font-bold text-[#222222] flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-[#b59766]" />
+                  <span>انتخاب رنگ و آبکاری لوستر:</span>
+                </span>
+                <span className="text-[11px] font-medium text-[#b59766]">
+                  {FINISH_PRESETS[selectedFinish].label}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {(Object.keys(FINISH_PRESETS) as FinishType[]).map((fKey) => {
+                  const cfg = FINISH_PRESETS[fKey];
+                  const isActive = selectedFinish === fKey;
+                  return (
+                    <button
+                      key={fKey}
+                      type="button"
+                      onClick={() => setSelectedFinish(fKey)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] border transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#222222] text-white border-[#222222] font-semibold'
+                          : 'bg-[#f8f7f4] text-[#444] border-[#e5e0d5] hover:border-[#b59766]'
+                      }`}
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full border border-black/20 shrink-0"
+                        style={{ background: cfg.swatch }}
+                      />
+                      <span>{cfg.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* انتخاب تعداد شاخه */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-[#2b2b2b] mb-2">
+                انتخاب تعداد شاخه و ابعاد:
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {['۸ شاخه', '۱۲ شاخه', '۱۶ شاخه', '۲۴ شاخه'].map((branch) => (
+                  <button
+                    key={branch}
+                    type="button"
+                    onClick={() => setSelectedBranches(branch)}
+                    className={`py-2 px-2 rounded-xl text-xs font-medium border transition-all cursor-pointer whitespace-nowrap ${
+                      selectedBranches === branch
+                        ? 'bg-[#2b2b2b] text-white border-[#2b2b2b]'
+                        : 'bg-white text-[#575249] border-[#e5dec9] hover:border-[#b59866]'
+                    }`}
+                  >
+                    {branch}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* مشخصات فنی */}
+            <div className="space-y-2 text-xs border-t border-[#ece7dc] pt-3.5 mb-5">
+              <div className="flex items-center gap-2 text-[#4f4a42]">
+                <Ruler className="w-4 h-4 text-[#b59866] shrink-0" />
+                <span className="font-semibold">ابعاد:</span>
+                <span>{product.dimensions}</span>
+              </div>
+              <div className="flex items-center gap-2 text-[#4f4a42]">
+                <Layers className="w-4 h-4 text-[#b59866] shrink-0" />
+                <span className="font-semibold">جنس بدنه:</span>
+                <span>{product.bodyMaterial}</span>
+              </div>
+              <div className="flex items-center gap-2 text-[#4f4a42]">
+                <ShieldCheck className="w-4 h-4 text-[#b59866] shrink-0" />
+                <span className="font-semibold">ضمانت:</span>
+                <span>{product.warranty}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* دکمه افزودن به سبد خرید */}
+          <div className="pt-4 border-t border-[#ece7dc]">
+            {addedToast && (
+              <div className="mb-3 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>این لوستر با رنگ انتخابی به سبد سفارش اضافه شد.</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between bg-[#f4f3ef] border border-[#e2ddd2] rounded-xl px-3 py-2.5 w-28">
+                <button
+                  type="button"
+                  onClick={() => setQty((q) => q + 1)}
+                  className="text-[#2b2b2b] hover:text-[#b59866] cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-bold tabular-nums">{qty}</span>
+                <button
+                  type="button"
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  className="text-[#2b2b2b] hover:text-[#b59866] cursor-pointer"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="flex-1 py-3 px-5 rounded-xl bg-[#2b2b2b] hover:bg-[#b59866] text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>افزودن به سبد خرید و ثبت سفارش</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * مودال تبدیل خودکار هر عکس محصول جدید به مدل سه‌بعدی (Auto Photo-to-3D Studio)
+ */
+interface CustomProduct3DModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAddNewProduct: (newProduct: ChandelierProduct) => void;
+}
+
+export const CustomProduct3DModal: React.FC<CustomProduct3DModalProps> = ({
+  isOpen,
+  onClose,
+  onAddNewProduct,
+}) => {
+  const [name, setName] = useState('لوستر سفارشی کلکسیون صالحی');
+  const [price, setPrice] = useState('۱۴,۸۰۰,۰۰۰ تومان');
+  const [previewUrl, setPreviewUrl] = useState<string>(
+    GENERATED_IMAGES.resansRoses
+  );
+  const [finish, setFinish] = useState<FinishType>('original');
+
+  if (!isOpen) return null;
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setPreviewUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveToCatalog = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newProd: ChandelierProduct = {
+      id: `custom-${Date.now()}`,
+      name: name.trim() || 'لوستر سفارشی جدید',
+      subtitle: 'مناسب کلاسیک پذیرایی | کلاسیک خواب',
+      priceFormatted: price,
+      priceNumeric: 14800000,
+      productCode: '۱۲۸۹۸۲',
+      image: previewUrl,
+      modelType: 'ristani',
+      defaultFinish: finish,
+      categoryKey: 'all',
+      dimensions: 'قطر ۸۵ سانتی‌متر × ارتفاع ۹۵ سانتی‌متر',
+      branchesCount: '۱۲ شاخه سفارشی',
+      bodyMaterial: 'برنز خالص ریخته‌گری با آبکاری سفارشی',
+      warranty: '۱۰ سال ضمانت کتبی گالری لوستر اکبر صالحی',
+      description:
+        'این محصول به صورت خودکار توسط موتور سه‌بعدی‌ساز گالری اکبر صالحی به مدل سه‌بعدی تعاملی تبدیل شده و قابلیت تغییر رنگ دلخواه دارد.',
+    };
+    onAddNewProduct(newProd);
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-5xl bg-[#fcfbf9] rounded-3xl border border-[#e5dec9] overflow-hidden shadow-2xl grid grid-cols-1 lg:grid-cols-12 max-h-[92vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full bg-white hover:bg-[#222] text-[#222] hover:text-white border border-[#e5dec9] flex items-center justify-center cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* پیش‌نمایش سه‌بعدی زنده از عکس آپلود شده */}
+        <div className="lg:col-span-7 bg-[#f6f4ee] min-h-[380px] lg:min-h-[520px]">
+          <Chandelier3DViewer
+            imageUrl={previewUrl}
+            modelType="ristani"
+            initialFinish={finish}
+            onFinishChange={(fin) => setFinish(fin)}
+            initialTheme="light"
+            className="w-full h-full min-h-[380px] lg:min-h-[520px]"
+          />
+        </div>
+
+        {/* فرم آپلود عکس محصول و افزودن به صفحه */}
+        <form
+          onSubmit={handleSaveToCatalog}
+          className="lg:col-span-5 p-6 md:p-8 flex flex-col justify-between overflow-y-auto space-y-4"
+        >
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fcf8f0] border border-[#e3d2b4] text-[#8c6d3b] text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>تبدیل خودکار هر عکس محصول به مدل سه‌بعدی (Auto 3D)</span>
+            </div>
+
+            <h3 className="text-lg font-bold text-[#222222]">
+              افزودن محصول جدید و ساخت خودکار 3D
+            </h3>
+            <p className="text-xs text-[#666666] leading-6">
+              کافیست تصویر هر لوستر یا آباژور را انتخاب کنید؛ سیستم به صورت خودکار
+              پس‌زمینه را حذف کرده، مدل سه‌بعدی برجسته دقیق همان محصول را می‌سازد و
+              امکان تغییر رنگ را فعال می‌کند.
+            </p>
+
+            {/* دکمه آپلود تصویر */}
+            <label className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-[#cbb692] rounded-2xl bg-[#faf8f3] hover:bg-[#f4efe4] transition-colors cursor-pointer text-center">
+              <Upload className="w-6 h-6 text-[#b59766] mb-2" />
+              <span className="text-xs font-bold text-[#222222]">
+                انتخاب تصویر محصول (JPG / PNG)
+              </span>
+              <span className="text-[11px] text-[#888888] mt-1">
+                بلافاصله در کادر روبرو به مدل سه‌بعدی تبدیل می‌شود
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="sr-only"
+              />
+            </label>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#222222] mb-1">
+                نام محصول:
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#e2ddd2] text-xs focus:outline-none focus:border-[#b59766]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#222222] mb-1">
+                قیمت محصول:
+              </label>
+              <input
+                type="text"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#e2ddd2] text-xs focus:outline-none focus:border-[#b59766]"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3 rounded-xl bg-[#222222] hover:bg-[#b59766] text-white text-xs font-bold transition-colors cursor-pointer"
+          >
+            افزودن این محصول سه‌بعدی به لیست محصولات سایت
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+interface StoryModalProps {
+  story: StoryItem | null;
+  stories?: StoryItem[];
+  onClose: () => void;
+  onSelectStory?: (story: StoryItem) => void;
+  onOpenProduct?: (product: ChandelierProduct) => void;
+}
+
+/**
+ * تبدیل ثانیه به فرمت تایمر فارسی (مثلاً ۰۰:۴۵ یا ۰۱:۰۵)
+ */
+const formatPersianTimer = (totalSeconds: number): string => {
+  const safeSec = Math.max(0, totalSeconds);
+  const mins = Math.floor(safeSec / 60);
+  const secs = safeSec % 60;
+  const padPersian = (n: number) =>
+    n
+      .toString()
+      .padStart(2, '0')
+      .replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+  return `${padPersian(mins)}:${padPersian(secs)}`;
+};
+
+/**
+ * تشخیص اینکه آیا تصویر مربوط به عکس استودیویی محصول است یا خیر
+ */
+const isStudioProductImage = (url: string): boolean => {
+  return (
+    url === GENERATED_IMAGES.shahMalakeh ||
+    url === GENERATED_IMAGES.crystaliCherub ||
+    url === GENERATED_IMAGES.resansRoses ||
+    url === GENERATED_IMAGES.shakheh12 ||
+    url === GENERATED_IMAGES.ristani ||
+    url === GENERATED_IMAGES.crystaliGold
+  );
+};
+
+/**
+ * آیکون خاکستری کوه و خورشید در کارت‌های کناری هنگام لود شدن استوری (دقیقاً مطابق image.png و تصویر اول)
+ */
+const SideCardPlaceholderIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 64 56"
+    fill="none"
+    className="w-14 h-14 text-[#616161]"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* خورشید دایره‌ای در بالا-چپ */}
+    <circle cx="19.5" cy="14.5" r="5.8" stroke="currentColor" strokeWidth="3.8" />
+    {/* کانتور بسته کوه دو قله‌ای با گوشه‌های گرد بدون کادر مربعی دور آن */}
+    <path
+      d="M14 47 H50 C56.5 47 58.5 38.5 54.5 33.5 L45 20.5 C42.5 17.5 39 17.5 36.5 20.5 L28.8 30.5 C27.5 32 25.8 32 24.5 30.8 L22.8 29 C20.5 26.7 17.8 26.7 15.5 29 L9.5 35.5 C5.5 40 7.5 47 14 47 Z"
+      stroke="currentColor"
+      strokeWidth="3.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * پاپ‌آپ استوری دقیقاً مطابق طرح‌های ارسالی:
+ * - حالت لود شدن استوری (دقیقاً مطابق عکس اول: کارت سفید وسط با لوگوی Chandelier AKBAR SALEHI و وکتورهای Vector2ltr و Vector2rtl + ۴ کارت خاکستری در طرفین با آیکون کوه و خورشید image.png)
+ * - تایمر اختصاصی مجزا برای هر استوری و هر اسلاید
+ * - استوری تک عکسی تمام‌صفحه با عکس‌های زیبا بدون نوار مشکی پایین
+ * - استوری تک محصولی و چند محصولی با نمایش کامل تصویر محصول
+ */
+export const StorySpotlightModal: React.FC<StoryModalProps> = ({
+  story,
+  stories = STORY_ITEMS,
+  onClose,
+  onSelectStory,
+  onOpenProduct,
+}) => {
+  const [progress, setProgress] = useState<number>(0);
+  const [activeSegment, setActiveSegment] = useState<number>(0);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(45);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+
+  // مدیریت لود شدن استوری (نمایش کارت سفید لودینگ مطابق عکس اول)
+  const [isMediaLoading, setIsMediaLoading] = useState<boolean>(true);
+  const [selectedProductIdx, setSelectedProductIdx] = useState<number>(0);
+  const [showAllMultiProducts, setShowAllMultiProducts] =
+    useState<boolean>(false);
+
+  // کنترل‌های ویدیو
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
+  const [isVideoMuted, setIsVideoMuted] = useState<boolean>(true);
+
+  const activeList = stories.length > 0 ? stories : STORY_ITEMS;
+
+  const currentIndex = story
+    ? activeList.findIndex((item) => item.id === story.id)
+    : -1;
+
+  const getStoryAtOffset = (offset: number): StoryItem => {
+    const total = activeList.length;
+    const baseIdx = currentIndex >= 0 ? currentIndex : 0;
+    const targetIdx = (((baseIdx + offset) % total) + total) % total;
+    return activeList[targetIdx];
+  };
+
+  const handlePrevStory = () => {
+    if (!onSelectStory || currentIndex < 0) return;
+    onSelectStory(getStoryAtOffset(-1));
+  };
+
+  const handleNextStory = () => {
+    if (!onSelectStory || currentIndex < 0) {
+      onClose();
+      return;
+    }
+    onSelectStory(getStoryAtOffset(1));
+  };
+
+  // تعیین اسلاید فعال
+  const currentSlide =
+    story?.slides && story.slides[activeSegment]
+      ? story.slides[activeSegment]
+      : null;
+
+  // زمان اختصاصی هر استوری / اسلاید
+  const slideDurationSeconds =
+    currentSlide?.durationSeconds || story?.durationSeconds || 45;
+
+  // ریست وضعیت و نمایش حالت لودینگ هنگام باز شدن یا عوض شدن استوری
+  useEffect(() => {
+    if (!story) return;
+    setActiveSegment(0);
+    setProgress(0);
+    const initialDur =
+      story.slides?.[0]?.durationSeconds || story.durationSeconds || 45;
+    setRemainingSeconds(initialDur);
+    setSelectedProductIdx(0);
+    setShowAllMultiProducts(false);
+    setIsVideoPlaying(true);
+
+    // نمایش استوری لودینگ مطابق عکس اول با زمان بیشتر هنگام باز شدن یا تعویض استوری
+    setIsMediaLoading(true);
+    const loadDelay = story.simulateLoading ? 3800 : 2500;
+    const t = window.setTimeout(() => {
+      setIsMediaLoading(false);
+    }, loadDelay);
+    return () => window.clearTimeout(t);
+  }, [story?.id]);
+
+  // به‌روزرسانی تایمر اختصاصی هنگام تغییر اسلاید در یک استوری
+  useEffect(() => {
+    if (!story) return;
+    setProgress(0);
+    setRemainingSeconds(slideDurationSeconds);
+    setSelectedProductIdx(0);
+    setShowAllMultiProducts(false);
+  }, [activeSegment, slideDurationSeconds]);
+
+  const effectiveType: StorySlideType =
+    currentSlide?.type || story?.storyType || 'single-product';
+
+  // لیست محصولات مربوط به این استوری / اسلاید
+  const effectiveProducts: StoryProductAttachment[] =
+    effectiveType === 'image-only'
+      ? []
+      : currentSlide?.products && currentSlide.products.length > 0
+      ? currentSlide.products
+      : story?.products && story.products.length > 0
+      ? story.products
+      : story
+      ? [
+          {
+            id: story.id,
+            name: story.fullTitle,
+            price: story.price || '۱۲,۵۰۰,۰۰۰ تومان',
+            image: story.productImage || story.image,
+          },
+        ]
+      : [];
+
+  const safeProductIdx =
+    effectiveProducts.length > 0
+      ? Math.min(selectedProductIdx, effectiveProducts.length - 1)
+      : 0;
+  const activeProductAttachment = effectiveProducts[safeProductIdx] || null;
+
+  // تصویر اصلی که در مرکز استوری نمایش داده می‌شود
+  const activeMediaUrl =
+    currentSlide?.mediaUrl || story?.image || GENERATED_IMAGES.storyPortraitRustic;
+
+  const activeVideoUrl = currentSlide?.videoUrl || story?.videoUrl;
+
+  // پشتیبانی از درگ افقی ردیف محصولات در استوری چندمحصولی
+  const multiProdScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const isDraggingMultiRef = React.useRef(false);
+  const hasDraggedMultiRef = React.useRef(false);
+  const dragStartXMultiRef = React.useRef(0);
+  const dragStartScrollLeftMultiRef = React.useRef(0);
+
+  const handleMultiMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!multiProdScrollRef.current) return;
+    isDraggingMultiRef.current = true;
+    hasDraggedMultiRef.current = false;
+    dragStartXMultiRef.current = e.pageX - multiProdScrollRef.current.offsetLeft;
+    dragStartScrollLeftMultiRef.current = multiProdScrollRef.current.scrollLeft;
+  };
+
+  const handleMultiMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDraggingMultiRef.current || !multiProdScrollRef.current) return;
+    const x = e.pageX - multiProdScrollRef.current.offsetLeft;
+    const walk = x - dragStartXMultiRef.current;
+    if (Math.abs(walk) > 5) {
+      hasDraggedMultiRef.current = true;
+    }
+    multiProdScrollRef.current.scrollLeft =
+      dragStartScrollLeftMultiRef.current - walk;
+  };
+
+  const handleMultiMouseUpOrLeave = () => {
+    isDraggingMultiRef.current = false;
+  };
+
+  // تایمر اختصاصی هر استوری (هر استوری بر اساس durationSeconds خودش شمارش معکوس دارد)
+  useEffect(() => {
+    if (!story || isPaused || isMediaLoading) return;
+    if (effectiveType === 'video' && !isVideoPlaying) return;
+
+    const stepPer100Ms = 100 / (slideDurationSeconds * 10);
+
+    const progressTimer = window.setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          return 100;
+        }
+        return Math.min(100, prev + stepPer100Ms);
+      });
+    }, 100);
+
+    const secTimer = window.setInterval(() => {
+      setRemainingSeconds((s) => (s > 1 ? s - 1 : 0));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(progressTimer);
+      window.clearInterval(secTimer);
+    };
+  }, [
+    story,
+    isPaused,
+    isMediaLoading,
+    effectiveType,
+    isVideoPlaying,
+    slideDurationSeconds,
+  ]);
+
+  useEffect(() => {
+    if (progress >= 100 && story && !isMediaLoading) {
+      const maxSegments = story.slides ? story.slides.length - 1 : 4;
+      if (activeSegment < maxSegments) {
+        setActiveSegment((seg) => seg + 1);
+      } else {
+        handleNextStory();
+      }
+    }
+  }, [progress, activeSegment, isMediaLoading]);
+
+  if (!story) return null;
+
+  // ۲ استوری سمت راست و ۲ استوری سمت چپ کارت مرکزی
+  const rightOuterStory = getStoryAtOffset(-2);
+  const rightInnerStory = getStoryAtOffset(-1);
+  const leftInnerStory = getStoryAtOffset(1);
+  const leftOuterStory = getStoryAtOffset(2);
+
+  const handleProductCardClick = (prodItem: StoryProductAttachment) => {
+    if (hasDraggedMultiRef.current) {
+      hasDraggedMultiRef.current = false;
+      return;
+    }
+    if (!onOpenProduct) return;
+    const found =
+      SALEHI_COLLECTION_PRODUCTS.find((p) => p.id === prodItem.id) ||
+      SALEHI_COLLECTION_PRODUCTS[0];
+    onClose();
+    onOpenProduct({
+      ...found,
+      name: prodItem.name,
+      priceFormatted: prodItem.price,
+      image: prodItem.image,
+    });
+  };
+
+  /**
+   * رندر کارت‌های کناری (در حالت لودینگ: کارت خاکستری با آیکون دقیقاً در وسط مطابق عکس ۳؛ در حالت لود شده: کارت تیره استوری)
+   */
+  const renderSideStoryCard = (
+    sideStory: StoryItem,
+    visibilityClass: string
+  ) => {
+    if (isMediaLoading) {
+      return (
+        <div
+          onClick={() => onSelectStory && onSelectStory(sideStory)}
+          className={`${visibilityClass} relative h-[430px] rounded-[18px] overflow-hidden bg-[#828282]/90 backdrop-blur-xs cursor-pointer shrink-0 shadow-xl`}
+        >
+          <div className="w-full h-full flex items-center justify-center">
+            <SideCardPlaceholderIcon />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        onClick={() => onSelectStory && onSelectStory(sideStory)}
+        className={`${visibilityClass} relative h-[430px] rounded-[18px] overflow-hidden bg-[#181614] cursor-pointer group shrink-0 shadow-xl`}
+      >
+        <img
+          src={sideStory.image}
+          alt={sideStory.fullTitle}
+          referrerPolicy="no-referrer"
+          className="w-full h-full object-cover brightness-[0.48] group-hover:brightness-[0.65] group-hover:scale-105 transition-all duration-300"
+        />
+
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/75 to-transparent pointer-events-none" />
+        {/* هدر بالا-راست کارت کناری: آواتار دایره‌ای تمام‌پر + عنوان */}
+        <div className="absolute top-3.5 right-3.5 left-3.5 flex items-center justify-start gap-2.5">
+          <div className="w-9 h-9 rounded-full p-[1.5px] border border-[#b59766] bg-white shrink-0 overflow-hidden">
+            <img
+              src={sideStory.image}
+              alt={sideStory.title}
+              referrerPolicy="no-referrer"
+              className="w-full h-full rounded-full object-cover object-center"
+            />
+          </div>
+          <span className="text-xs font-medium text-white/90 truncate">
+            {sideStory.title.replace('...', '')}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  const mainIsStudio = isStudioProductImage(activeMediaUrl);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 overflow-hidden px-2 sm:px-6"
+      onClick={onClose}
+    >
+      {/* دکمه «بستن صفحه» در گوشه بالا-چپ دقیقاً مطابق عکس */}
+      <button
+        type="button"
+        onClick={onClose}
+        className="fixed top-5 left-5 sm:top-6 sm:left-8 z-50 h-10 px-5 rounded-[10px] bg-[#232323] hover:bg-[#141414] text-white text-xs font-bold flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+      >
+        بستن صفحه
+      </button>
+
+      {/* ردیف ۵ کارتی استوری (۲ کارت راست + کارت بزرگ وسط + ۲ کارت چپ) */}
+      <div
+        className="relative w-full max-w-[1440px] flex items-center justify-center gap-3 sm:gap-4 lg:gap-5 select-none"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* کارت ۱ سمت راست (بیرونی) */}
+        {renderSideStoryCard(rightOuterStory, 'hidden xl:block w-[235px]')}
+
+        {/* کارت ۲ سمت راست (کنار کارت اصلی) */}
+        {renderSideStoryCard(
+          rightInnerStory,
+          'hidden md:block w-[220px] lg:w-[245px]'
+        )}
+
+        {/* دکمه فلش راست (>) بین کارت وسط و کارت سمت راست */}
+        <button
+          type="button"
+          onClick={handlePrevStory}
+          aria-label="استوری قبلی"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] bg-white hover:bg-[#f5f5f5] text-[#222222] flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer shrink-0 z-20"
+        >
+          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
+        </button>
+
+        {/* کارت بزرگ استوری در مرکز */}
+        {isMediaLoading ? (
+          /* ==================== حالت لود شدن استوری (دقیقاً مطابق تصویر اول: کارت سفید با لوگوی AKBAR SALEHI و وکتورهای Vector2ltr و Vector2rtl) ==================== */
+          <div className="relative w-[320px] sm:w-[375px] lg:w-[405px] h-[560px] sm:h-[620px] rounded-[22px] bg-white shadow-[0_25px_70px_rgba(0,0,0,0.55)] shrink-0 flex flex-col items-center justify-center p-6 text-center">
+            <div className="flex flex-col items-center justify-center select-none" dir="ltr">
+              <span
+                className="text-[12px] sm:text-[13px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1"
+                style={{ fontFamily: "'Vazirmatn', sans-serif" }}
+              >
+                Chandelier
+              </span>
+
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                {/* وکتور سمت چپ لوگو: Vector2ltr.png */}
+                <ExactPalmetteVector
+                  className="w-11 h-10 sm:w-13 sm:h-12 -mr-1 shrink-0"
+                  strokeColor="#cbb592"
+                  strokeWidth={1.6}
+                />
+                <span className="font-brand-serif text-[21px] sm:text-[25px] tracking-[0.04em] text-[#2b2b2b] font-normal uppercase leading-none">
+                  AKBAR SALEHI
+                </span>
+                {/* وکتور سمت راست لوگو: Vector2rtl.png */}
+                <ExactPalmetteVector
+                  className="w-11 h-10 sm:w-13 sm:h-12 -ml-1 -scale-x-100 shrink-0"
+                  strokeColor="#cbb592"
+                  strokeWidth={1.6}
+                />
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs sm:text-[13px] font-medium text-[#4a4a4a]">
+              در حال بارگذاری استوری
+            </p>
+
+            {/* سه نقطه طلایی زیر متن در حال بارگذاری استوری */}
+            <div className="mt-2.5 flex items-center justify-center gap-1.5">
+              <span className="w-[5px] h-[5px] rounded-full bg-[#e2cda9] animate-pulse" />
+              <span
+                className="w-[5px] h-[5px] rounded-full bg-[#cba872] animate-pulse"
+                style={{ animationDelay: '200ms' }}
+              />
+              <span
+                className="w-[5px] h-[5px] rounded-full bg-[#b58c4e] animate-pulse"
+                style={{ animationDelay: '400ms' }}
+              />
+            </div>
+          </div>
+        ) : (
+          /* ==================== کارت استوری پس از بارگذاری ==================== */
+          <div
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            className="relative w-[320px] sm:w-[375px] lg:w-[405px] h-[560px] sm:h-[620px] rounded-[22px] overflow-hidden bg-[#181614] shadow-[0_25px_70px_rgba(0,0,0,0.75)] shrink-0 flex flex-col justify-between"
+          >
+            {/* ۱. محتوای بصری استوری: ویدیو، عکس تک‌صفحه زیبا، یا تصویر کامل محصول */}
+            {effectiveType === 'video' ? (
+              <div className="absolute inset-0 w-full h-full bg-[#12100e] flex items-center justify-center overflow-hidden">
+                <img
+                  src={activeMediaUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125 brightness-[0.35]"
+                />
+
+                {activeVideoUrl ? (
+                  <video
+                    src={activeVideoUrl}
+                    autoPlay
+                    loop
+                    muted={isVideoMuted}
+                    playsInline
+                    onLoadStart={() => setIsMediaLoading(true)}
+                    onLoadedData={() => setIsMediaLoading(false)}
+                    className="relative z-10 w-full h-full object-contain pt-16 pb-28 px-3"
+                  />
+                ) : (
+                  <div
+                    className={`relative z-10 w-full h-full flex items-center justify-center px-4 ${
+                      effectiveProducts.length > 0
+                        ? 'pt-18 pb-32'
+                        : 'pt-18 pb-8'
+                    }`}
+                  >
+                    <div
+                      className={`relative w-full h-full rounded-[18px] overflow-hidden flex items-center justify-center ${
+                        mainIsStudio
+                          ? 'bg-[#f8f6f1] shadow-inner p-4'
+                          : 'bg-black/20'
+                      }`}
+                    >
+                      <img
+                        src={activeMediaUrl}
+                        alt={story.fullTitle}
+                        referrerPolicy="no-referrer"
+                        className={`w-full h-full ${
+                          mainIsStudio
+                            ? 'object-contain'
+                            : 'object-cover rounded-[18px]'
+                        } transition-transform duration-700 ${
+                          isVideoPlaying ? 'scale-[1.03]' : 'scale-100'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* دکمه‌های کنترل ویدیو (پخش/توقف و قطع/وصل صدا) */}
+                <div className="absolute top-20 right-4 z-30 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsVideoPlaying((p) => !p)}
+                    className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition-colors cursor-pointer"
+                    title={isVideoPlaying ? 'توقف ویدیو' : 'پخش ویدیو'}
+                  >
+                    {isVideoPlaying ? (
+                      <Pause className="w-3.5 h-3.5" />
+                    ) : (
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsVideoMuted((m) => !m)}
+                    className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition-colors cursor-pointer"
+                    title={isVideoMuted ? 'وصل صدا' : 'قطع صدا'}
+                  >
+                    {isVideoMuted ? (
+                      <VolumeX className="w-3.5 h-3.5" />
+                    ) : (
+                      <Volume2 className="w-3.5 h-3.5 text-[#d3b27c]" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : effectiveType === 'image-only' ? (
+              /* ==================== استوری تک عکسی (تمام‌صفحه بدون نوار مشکی پایین) ==================== */
+              <img
+                src={activeMediaUrl}
+                alt={story.fullTitle}
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : mainIsStudio ? (
+              /* ==================== در صورت استفاده از عکس استودیویی به عنوان پس‌زمینه ==================== */
+              <div className="absolute inset-0 w-full h-full bg-[#181614] overflow-hidden">
+                <img
+                  src={activeMediaUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125 brightness-[0.38] pointer-events-none"
+                />
+                <div className="relative z-10 w-full h-full flex items-center justify-center px-3.5 pt-18 pb-32">
+                  <div className="w-full h-full rounded-[18px] overflow-hidden flex items-center justify-center shadow-lg bg-[#f8f6f1] p-3 sm:p-4">
+                    <img
+                      src={activeMediaUrl}
+                      alt={story.fullTitle}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-contain rounded-[12px] transition-all duration-300"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* ==================== استوری محصول با تصویر تمام‌صفحه دقیقاً مطابق تصویر ۲ ==================== */
+              <img
+                src={activeMediaUrl}
+                alt={story.fullTitle}
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
+
+            {/* سایه ملایم بالا برای خوانایی خطوط پیشرفت و تایمر */}
+            <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/65 via-black/25 to-transparent pointer-events-none z-10" />
+            {effectiveType !== 'image-only' && (
+              <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/65 via-black/20 to-transparent pointer-events-none z-10" />
+            )}
+
+            {/* بخش بالای کارت مرکز: ۵ خط پیشرفت استوری + تایمر اختصاصی هر استوری در سمت چپ */}
+            <div className="relative z-20 px-4 pt-3.5">
+              <div className="grid grid-cols-5 gap-2" dir="ltr">
+                {[0, 1, 2, 3, 4].map((segIdx) => {
+                  let fillWidth = '0%';
+                  if (segIdx === activeSegment) {
+                    fillWidth = `${progress}%`;
+                  } else if (segIdx < activeSegment) {
+                    fillWidth = '100%';
+                  }
+                  return (
+                    <div
+                      key={segIdx}
+                      onClick={() => {
+                        setActiveSegment(segIdx);
+                        setProgress(0);
+                      }}
+                      className="h-[3.5px] rounded-full bg-white/30 overflow-hidden cursor-pointer"
+                    >
+                      <div
+                        className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
+                        style={{ width: fillWidth }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* تایمر اختصاصی هر استوری در سمت چپ بالا */}
+              <div className="mt-3 flex justify-end" dir="rtl">
+                <span className="text-xs sm:text-[13px] font-bold text-white tracking-wider tabular-nums drop-shadow-xs">
+                  {formatPersianTimer(remainingSeconds)}
+                </span>
+              </div>
+            </div>
+
+            {/* نواحی کلیک چپ و راست روی عکس برای ورق زدن سریع */}
+            <div className="relative z-10 flex-1 grid grid-cols-2">
+              <div
+                onClick={handlePrevStory}
+                className="h-full cursor-pointer"
+                title="استوری قبلی"
+              />
+              <div
+                onClick={handleNextStory}
+                className="h-full cursor-pointer"
+                title="استوری بعدی"
+              />
+            </div>
+
+            {/* بخش پایین کارت وسط: نمایش کارت‌های سفید محصول (تک‌محصول یا چندمحصولی افقی دقیقاً مطابق تصویر ۲) */}
+            {effectiveType !== 'image-only' &&
+              effectiveProducts.length > 0 && (
+                <div
+                  className="relative z-20 pb-3.5 pt-2"
+                  dir="rtl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {effectiveProducts.length > 1 ? (
+                    /* ==================== حالت استوری چند محصوله دقیقاً مطابق تصویر ۲ (کارت‌های سفید کنار هم با قابلیت اسکرول افقی) ==================== */
+                    <div
+                      ref={multiProdScrollRef}
+                      onMouseDown={handleMultiMouseDown}
+                      onMouseMove={handleMultiMouseMove}
+                      onMouseUp={handleMultiMouseUpOrLeave}
+                      onMouseLeave={handleMultiMouseUpOrLeave}
+                      className="flex items-center gap-2.5 overflow-x-auto pr-3.5 pl-3.5 select-none cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                      {effectiveProducts.map((prod, idx) => (
+                        <div
+                          key={prod.id + idx}
+                          onClick={() => handleProductCardClick(prod)}
+                          className="w-[235px] sm:w-[258px] shrink-0 bg-white rounded-[14px] p-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.35)] flex items-center justify-start gap-3 cursor-pointer hover:scale-[1.01] transition-transform"
+                        >
+                          <div className="w-[52px] h-[52px] sm:w-[56px] sm:h-[56px] rounded-[10px] bg-[#f4f4f4] p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+                            <img
+                              src={prod.image}
+                              alt={prod.name}
+                              referrerPolicy="no-referrer"
+                              draggable={false}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+
+                          <div className="flex-1 min-w-0 text-right">
+                            <h5 className="text-[13px] sm:text-[13.5px] font-bold text-[#141414] truncate">
+                              {prod.name}
+                            </h5>
+                            <p className="text-[11px] sm:text-[11.5px] font-medium text-[#2b2b2b] mt-1.5 tabular-nums truncate">
+                              قیمت : {prod.price}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    /* ==================== حالت استوری تک محصول ==================== */
+                    activeProductAttachment && (
+                      <div className="px-3.5">
+                        <div
+                          onClick={() =>
+                            handleProductCardClick(activeProductAttachment)
+                          }
+                          className="w-full bg-white rounded-[14px] p-2.5 sm:p-3 shadow-[0_10px_28px_rgba(0,0,0,0.35)] flex items-center justify-start gap-3.5 cursor-pointer hover:scale-[1.01] transition-transform"
+                        >
+                          <div className="w-[52px] h-[52px] sm:w-[56px] sm:h-[56px] rounded-[10px] bg-[#f4f4f4] p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+                            <img
+                              src={activeProductAttachment.image}
+                              alt={activeProductAttachment.name}
+                              referrerPolicy="no-referrer"
+                              draggable={false}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+
+                          <div className="flex-1 min-w-0 text-right">
+                            <h5 className="text-[13px] sm:text-[14px] font-bold text-[#141414] truncate">
+                              {activeProductAttachment.name}
+                            </h5>
+                            <p className="text-[11.5px] sm:text-[12px] font-medium text-[#2b2b2b] mt-1.5 tabular-nums">
+                              قیمت : {activeProductAttachment.price}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+          </div>
+        )}
+
+        {/* دکمه فلش چپ (<) بین کارت وسط و کارت سمت چپ */}
+        <button
+          type="button"
+          onClick={handleNextStory}
+          aria-label="استوری بعدی"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] bg-white/75 hover:bg-white text-[#222222] flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer shrink-0 z-20"
+        >
+          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
+        </button>
+
+        {/* کارت ۱ سمت چپ (کنار کارت اصلی) */}
+        {renderSideStoryCard(
+          leftInnerStory,
+          'hidden md:block w-[220px] lg:w-[245px]'
+        )}
+
+        {/* کارت ۲ سمت چپ (بیرونی) */}
+        {renderSideStoryCard(leftOuterStory, 'hidden xl:block w-[235px]')}
+      </div>
+    </div>
+  );
+};
+
+interface ArticleModalProps {
+  article: MagazineArticle | null;
+  onClose: () => void;
+}
+
+export const ArticleReaderModal: React.FC<ArticleModalProps> = ({
+  article,
+  onClose,
+}) => {
+  if (!article) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-2xl bg-[#fcfbf9] rounded-3xl border border-[#e5dec9] overflow-hidden shadow-2xl p-6 md:p-8 max-h-[88vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs text-[#9c8253] font-medium">
+            مجله تخصصی لوستر اکبر صالحی · {article.date}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-[#f4f3ef] hover:bg-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <img
+          src={article.image}
+          alt={article.title}
+          referrerPolicy="no-referrer"
+          className="w-full h-60 object-cover rounded-2xl mb-5"
+        />
+
+        <h3 className="text-xl font-bold text-[#2b2b2b] mb-4">
+          {article.title}
+        </h3>
+        <div className="space-y-3 text-xs md:text-sm leading-7 text-[#4f4a42] text-justify">
+          <p>{article.excerpt}</p>
+          {article.fullContent.map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface CartDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  items: CartItem[];
+  onUpdateQty: (productId: string, delta: number) => void;
+  onClearCart: () => void;
+}
+
+export const CartDrawer: React.FC<CartDrawerProps> = ({
+  isOpen,
+  onClose,
+  items,
+  onUpdateQty,
+  onClearCart,
+}) => {
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [orderSubmitted, setOrderSubmitted] = useState(false);
+
+  if (!isOpen) return null;
+
+  const totalAmount = items.reduce(
+    (sum, item) => sum + item.product.priceNumeric * item.quantity,
+    0
+  );
+
+  const handleCheckout = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerName.trim() || !customerPhone.trim()) return;
+    setOrderSubmitted(true);
+    setTimeout(() => {
+      onClearCart();
+    }, 400);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex justify-end bg-black/55 backdrop-blur-xs"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-[#fcfbf9] h-full shadow-2xl border-r border-[#e5dec9] p-6 flex flex-col justify-between overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div>
+          <div className="flex items-center justify-between pb-4 border-b border-[#ece7dc]">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-[#b59866]" />
+              <h3 className="text-base font-bold text-[#2b2b2b]">
+                سبد خرید و سفارش نصب
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-[#f4f3ef] hover:bg-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {orderSubmitted ? (
+            <div className="my-8 p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+              <h4 className="text-base font-bold text-emerald-950">
+                سفارش شما با موفقیت ثبت شد
+              </h4>
+              <p className="text-xs text-emerald-800 leading-6">
+                کارشناسان فروش و نصب گالری لوستر اکبر صالحی ظرف کمتر از ۳۰ دقیقه با
+                شماره{' '}
+                <span className="font-bold tabular-nums">{customerPhone}</span> جهت
+                هماهنگی ارسال و نصب تماس خواهند گرفت.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setOrderSubmitted(false);
+                  onClose();
+                }}
+                className="mt-2 px-5 py-2.5 rounded-xl bg-[#2b2b2b] text-white text-xs font-semibold cursor-pointer"
+              >
+                بازگشت به فروشگاه
+              </button>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="py-16 text-center space-y-3">
+              <ShoppingBag className="w-10 h-10 text-[#cbb692] mx-auto opacity-60" />
+              <p className="text-sm font-medium text-[#6e675c]">
+                سبد خرید شما در حال حاضر خالی است.
+              </p>
+              <p className="text-xs text-[#968e82]">
+                از کلکسیون لوسترهای صالحی محصول مورد نظر خود را انتخاب نمایید.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {items.map(({ product, quantity }) => (
+                <div
+                  key={product.id}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-[#ece7dc]"
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    referrerPolicy="no-referrer"
+                    className="w-16 h-16 rounded-xl object-contain bg-[#faf8f5] p-1 border border-[#f0ece1]"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs font-bold text-[#2b2b2b] truncate">
+                      {product.name}
+                    </h4>
+                    <p className="text-[11px] text-[#8c8273] mt-0.5 tabular-nums">
+                      {product.priceFormatted}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => onUpdateQty(product.id, 1)}
+                        className="w-6 h-6 rounded-md bg-[#f4f3ef] hover:bg-[#b59866] hover:text-white flex items-center justify-center text-xs cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                      <span className="text-xs font-bold tabular-nums">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onUpdateQty(product.id, -1)}
+                        className="w-6 h-6 rounded-md bg-[#f4f3ef] hover:bg-red-500 hover:text-white flex items-center justify-center text-xs cursor-pointer"
+                      >
+                        {quantity === 1 ? (
+                          <Trash2 className="w-3 h-3" />
+                        ) : (
+                          <Minus className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <form
+                onSubmit={handleCheckout}
+                className="pt-4 mt-4 border-t border-[#ece7dc] space-y-3"
+              >
+                <div className="flex items-center justify-between text-sm font-bold text-[#2b2b2b] pb-2">
+                  <span>جمع کل سفارش:</span>
+                  <span className="tabular-nums text-[#b59866]">
+                    {totalAmount.toLocaleString('fa-IR')} تومان
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-[#5c564d] mb-1">
+                    نام و نام خانوادگی تحویل‌گیرنده
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="مثلاً: علیرضا آذرخش"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#e2ddd2] text-xs focus:outline-none focus:border-[#b59866]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-[#5c564d] mb-1">
+                    شماره تلفن همراه جهت هماهنگی نصب
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="۰۹۱۲XXXXXXX"
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#e2ddd2] text-xs focus:outline-none focus:border-[#b59866] tabular-nums"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-[#5c564d] mb-1">
+                    محدوده نصب (تهران، کرج، لواسانات یا شهرستان)
+                  </label>
+                  <input
+                    type="text"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    placeholder="مثلاً: تهران، فرمانیه..."
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-[#e2ddd2] text-xs focus:outline-none focus:border-[#b59866]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-[#2b2b2b] hover:bg-[#b59866] text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  ثبت نهایی سفارش و هماهنگی نصب
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+
+        <div className="pt-4 border-t border-[#ece7dc] flex items-center justify-between text-[11px] text-[#7a7367]">
+          <span className="flex items-center gap-1">
+            <PhoneCall className="w-3.5 h-3.5 text-[#b59866]" />
+            پشتیبانی ۲۴ ساعته:
+          </span>
+          <span className="font-bold tabular-nums">۰۹۹۱۲۳۴۸۹۷۵</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * آیکون اسکن اثر انگشت مرحله اول (دقیقاً مطابق فایل finger-scan.png)
+ */
+const FingerScanIcon: React.FC<{ className?: string }> = ({
+  className = 'w-6 h-6',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M12 14.88C11.09 14.88 10.35 14.14 10.35 13.23V10.76C10.35 9.85 11.09 9.11 12 9.11C12.91 9.11 13.65 9.85 13.65 10.76V13.23C13.65 14.14 12.91 14.88 12 14.88Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+    />
+    <path
+      d="M16.98 13.47C16.78 16.05 14.62 18.07 12 18.07C9.24 18.07 7 15.83 7 13.07V10.93C7 8.17 9.24 5.93 12 5.93C14.59 5.93 16.72 7.9 16.97 10.42"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+    />
+    <path
+      d="M15 2H17C20 2 22 4 22 7V9"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M2 9V7C2 4 4 2 7 2H9"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M15 22H17C20 22 22 20 22 17V15"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M2 15V17C2 20 4 22 7 22H9"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * آیکون سپر تایید مرحله دوم (دقیقاً مطابق فایل shield-tick.png ارسالی در تصویر چهارم)
+ */
+const ShieldTickIcon: React.FC<{ className?: string }> = ({
+  className = 'w-6 h-6',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M10.49 2.23L5.5 4.11C4.35 4.54 3.41 5.9 3.41 7.12V14.55C3.41 15.73 4.19 17.28 5.14 17.99L9.44 21.2C10.85 22.26 13.17 22.26 14.58 21.2L18.88 17.99C19.83 17.28 20.61 15.73 20.61 14.55V7.12C20.61 5.89 19.67 4.53 18.52 4.1L13.53 2.23C12.68 1.92 11.32 1.92 10.49 2.23Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M9.05 11.87L10.66 13.48L14.96 9.18"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * آیکون سپر خطا (برای خطای کد OTP در نوتیفیکیشن پایین-چپ)
+ */
+const ShieldCrossIcon: React.FC<{ className?: string }> = ({
+  className = 'w-5 h-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M10.49 2.23L5.5 4.11C4.35 4.54 3.41 5.9 3.41 7.12V14.55C3.41 15.73 4.19 17.28 5.14 17.99L9.44 21.2C10.85 22.26 13.17 22.26 14.58 21.2L18.88 17.99C19.83 17.28 20.61 15.73 20.61 14.55V7.12C20.61 5.89 19.67 4.53 18.52 4.1L13.53 2.23C12.68 1.92 11.32 1.92 10.49 2.23Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M10.15 13.85L13.85 10.15"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M13.85 13.85L10.15 10.15"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * آیکون هشت‌ضلعی ضربدر (برای خطای فرمت شماره و فیلد ناقص در نوتیفیکیشن پایین-چپ دقیقاً مطابق تصویر دوم و پنجم)
+ */
+const OctagonCrossIcon: React.FC<{ className?: string }> = ({
+  className = 'w-5 h-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M9.1 2H14.9C15.6 2 16.5 2.4 17 2.9L21.1 7C21.6 7.5 22 8.4 22 9.1V14.9C22 15.6 21.6 16.5 21.1 17L17 21.1C16.5 21.6 15.6 22 14.9 22H9.1C8.4 22 7.5 21.6 7 21.1L2.9 17C2.4 16.5 2 15.6 2 14.9V9.1C2 8.4 2.4 7.5 2.9 7L7 2.9C7.5 2.4 8.4 2 9.1 2Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M9.6 14.4L14.4 9.6"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M14.4 14.4L9.6 9.6"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * آیکون ساعت (برای خطای انتظار ۱ دقیقه در نوتیفیکیشن پایین-چپ)
+ */
+const ClockAlertIcon: React.FC<{ className?: string }> = ({
+  className = 'w-5 h-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2C17.52 2 22 6.48 22 12Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M15.71 15.18L12.61 13.33C12.07 13.01 11.63 12.24 11.63 11.61V7.51"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * آیکون ارسال مجدد کد پس از اتمام تایمر ۱ دقیقه (مطابق تصویر ششم و Mobile 14/16)
+ */
+const RefreshCodeIcon: React.FC<{ className?: string }> = ({
+  className = 'w-5 h-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M14.89 5.08C14.02 4.82 13.06 4.65 12 4.65C7.21 4.65 3.33 8.53 3.33 13.32C3.33 18.12 7.21 22 12 22C16.79 22 20.67 18.12 20.67 13.33C20.67 11.55 20.13 9.89 19.21 8.51"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16.13 5.32L13.24 2"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16.13 5.32L12.76 7.78"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+/**
+ * آیکون سپر امنیت با قفل مرکزی (مطابق نوتیفیکیشن سبز Mobile 07: کد یکبار مصرف ارسال شد)
+ */
+const ShieldSecurityIcon: React.FC<{ className?: string }> = ({
+  className = 'w-5 h-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M10.49 2.23L5.5 4.11C4.35 4.54 3.41 5.9 3.41 7.12V14.55C3.41 15.73 4.19 17.28 5.14 17.99L9.44 21.2C10.85 22.26 13.17 22.26 14.58 21.2L18.88 17.99C19.83 17.28 20.61 15.73 20.61 14.55V7.12C20.61 5.89 19.67 4.53 18.52 4.1L13.53 2.23C12.68 1.92 11.32 1.92 10.49 2.23Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="10.8" r="1.8" stroke="currentColor" strokeWidth="1.65" />
+    <path
+      d="M12 12.6V15.2"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+/**
+ * آیکون هشت‌ضلعی چرخ‌دنده (مطابق نوتیفیکیشن قرمز Mobile 08: خطایی در بخش سیستم فنی!)
+ */
+const OctagonGearIcon: React.FC<{ className?: string }> = ({
+  className = 'w-5 h-5',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M9.1 2H14.9C15.6 2 16.5 2.4 17 2.9L21.1 7C21.6 7.5 22 8.4 22 9.1V14.9C22 15.6 21.6 16.5 21.1 17L17 21.1C16.5 21.6 15.6 22 14.9 22H9.1C8.4 22 7.5 21.6 7 21.1L2.9 17C2.4 16.5 2 15.6 2 14.9V9.1C2 8.4 2.4 7.5 2.9 7L7 2.9C7.5 2.4 8.4 2 9.1 2Z"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="12" r="2.3" stroke="currentColor" strokeWidth="1.65" />
+    <path
+      d="M12 8.2V9.2M12 14.8V15.8M8.2 12H9.2M14.8 12H15.8M9.3 9.3L10 10M14 14L14.7 14.7M14.7 9.3L14 10M10 14L9.3 14.7"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+/**
+ * آیکون فلش بازگشت به چپ در هدر موبایل (مطابق Mobile 01 تا Mobile 16)
+ */
+const MobileBackArrowIcon: React.FC<{ className?: string }> = ({
+  className = 'w-4 h-4',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <path
+      d="M9.57 5.93L3.5 12L9.57 18.07"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M20.5 12H3.67"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const toPersianDigits = (str: string | number): string =>
+  String(str).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+
+const toEnglishDigits = (str: string): string =>
+  str
+    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+
+/**
+ * اعتبارسنجی شماره تلفن همراه ایران:
+ * ۱. خالی نباشد
+ * ۲. حداقل ۱۰ و حداکثر ۱۱ رقم باشد
+ * ۳. ارقام تکراری یکسان مانند 00000 یا 00000000000 یا 11111111111 رد شوند
+ * ۴. با 09 شروع شود (یا 9xx استاندارد شود به 09xx)
+ * ۵. ۹ رقم بعد از 09 تکراری نباشد (مانند 09000000000 یا 09111111111)
+ */
+export const validateIranianPhoneNumber = (
+  rawPhone: string
+): { isValid: boolean; message: string; standardizedPhone: string } => {
+  const clean = toEnglishDigits(rawPhone).replace(/[^\d]/g, '');
+
+  if (!clean || clean.length === 0) {
+    return {
+      isValid: false,
+      message: 'لطفاً شماره همراه خود را وارد کنید.',
+      standardizedPhone: '',
+    };
+  }
+
+  // رد کردن شماره‌های کوتاه یا اعداد ساختگی تکراری (مثل 00000, 11111, 00000000000)
+  if (clean.length < 10 || /^(\d)\1+$/.test(clean)) {
+    return {
+      isValid: false,
+      message: 'فرمت شماره صحیح نیست، لطفاً فرمت درست وارد کنید.',
+      standardizedPhone: clean,
+    };
+  }
+
+  let standardized = clean;
+  if (clean.startsWith('9') && clean.length === 10) {
+    standardized = `0${clean}`;
+  } else if (clean.startsWith('989') && clean.length === 12) {
+    standardized = `0${clean.slice(2)}`;
+  }
+
+  // باید دقیقا ۱۱ رقم باشد و با 09 شروع شود
+  if (standardized.length !== 11 || !standardized.startsWith('09')) {
+    return {
+      isValid: false,
+      message: 'فرمت شماره صحیح نیست، لطفاً فرمت درست وارد کنید.',
+      standardizedPhone: standardized,
+    };
+  }
+
+  // بررسی تکراری نبودن ۹ رقم بعدی (مانند 09000000000 یا 09111111111)
+  const rest = standardized.slice(2);
+  if (/^(\d)\1+$/.test(rest)) {
+    return {
+      isValid: false,
+      message: 'شماره همراه وارد شده نامعتبر است.',
+      standardizedPhone: standardized,
+    };
+  }
+
+  // بررسی پیش‌شماره‌های معتبر همراه ایران (090, 091, 092, 093, 099, ...)
+  const prefix3 = standardized.slice(0, 3);
+  const validPrefixes = [
+    '090',
+    '091',
+    '092',
+    '093',
+    '094',
+    '095',
+    '096',
+    '097',
+    '098',
+    '099',
+  ];
+  if (!validPrefixes.includes(prefix3)) {
+    return {
+      isValid: false,
+      message: 'فرمت شماره صحیح نیست، پیش‌شماره همراه نامعتبر است.',
+      standardizedPhone: standardized,
+    };
+  }
+
+  return {
+    isValid: true,
+    message: '',
+    standardizedPhone: standardized,
+  };
+};
+
+interface AuthToastItem {
+  id: string;
+  type:
+    | 'error-octagon'
+    | 'error-shield'
+    | 'error-clock'
+    | 'error-system'
+    | 'otp-resent'
+    | 'success';
+  title: string;
+  message: string;
+}
+
+interface LoginModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onLoginSuccess?: (phoneNumber: string) => void;
+}
+
+/**
+ * پاپ‌آپ دو مرحله‌ای ورود به حساب کاربری و تایید کد OTP
+ * رسپانسیو کامل:
+ * - در دسکتاپ (sm و بالاتر): مودال وسط صفحه دقیقاً مطابق طرح دسکتاپ
+ * - در موبایل (زیر sm): صفحه تمام‌صفحه با هدر لوگو AKBAR SALEHI، دکمه بازگشت و باتم‌شیت نوتیفیکیشن دقیقاً مطابق Mobile 01 تا Mobile 16
+ */
+export const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  onLoginSuccess,
+}) => {
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneError, setPhoneError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+
+  const [otpDigits, setOtpDigits] = useState<[string, string, string, string]>([
+    '',
+    '',
+    '',
+    '',
+  ]);
+  const [focusedOtpIdx, setFocusedOtpIdx] = useState<number | null>(null);
+  const [otpIncompleteError, setOtpIncompleteError] = useState(false);
+  const [otpWrongError, setOtpWrongError] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  const [resendClickCount, setResendClickCount] = useState(0);
+  const [toasts, setToasts] = useState<AuthToastItem[]>([]);
+
+  const desktopOtpRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
+
+  const mobileOtpRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
+
+  const focusOtpBox = (idx: number) => {
+    if (window.innerWidth < 640) {
+      mobileOtpRefs[idx].current?.focus();
+    } else {
+      desktopOtpRefs[idx].current?.focus();
+    }
+  };
+
+  const pushToast = (
+    type: AuthToastItem['type'],
+    title: string,
+    message: string
+  ) => {
+    const id = `${Date.now()}-${Math.random()}`;
+    setToasts((prev) => [...prev.slice(-3), { id, type, title, message }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4200);
+  };
+
+  // ریست کامل فرم‌ها و شماره همراه هنگام باز یا بسته شدن مودال
+  useEffect(() => {
+    if (!isOpen) {
+      setStep('phone');
+      setPhoneNumber('');
+      setPhoneError(false);
+      setIsLoading(false);
+      setIsResendingOtp(false);
+      setOtpDigits(['', '', '', '']);
+      setFocusedOtpIdx(null);
+      setOtpIncompleteError(false);
+      setOtpWrongError(false);
+      setSecondsLeft(60);
+      setResendClickCount(0);
+      setToasts([]);
+    } else {
+      // هنگام باز شدن مجدد پاپ‌آپ، شماره و خطاها کاملاً پاک و ریست شوند
+      setStep('phone');
+      setPhoneNumber('');
+      setPhoneError(false);
+      setIsLoading(false);
+      setIsResendingOtp(false);
+      setOtpDigits(['', '', '', '']);
+      setFocusedOtpIdx(null);
+      setOtpIncompleteError(false);
+      setOtpWrongError(false);
+      setSecondsLeft(60);
+      setResendClickCount(0);
+      setToasts([]);
+    }
+  }, [isOpen]);
+
+  // تایمر شمارش معکوس ۱ دقیقه (۶۰ ثانیه) در مرحله دوم
+  useEffect(() => {
+    if (!isOpen || step !== 'otp' || secondsLeft <= 0) return;
+    const interval = window.setInterval(() => {
+      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [isOpen, step, secondsLeft]);
+
+  if (!isOpen) return null;
+
+  const validationResult = validateIranianPhoneNumber(phoneNumber);
+
+  const formattedDisplayPhone = (() => {
+    const raw = toEnglishDigits(phoneNumber).replace(/[^\d]/g, '');
+    if (!raw) return '۰۹۹۱۲۳۴۵۵۲';
+    if (validationResult.standardizedPhone) {
+      return toPersianDigits(validationResult.standardizedPhone);
+    }
+    return toPersianDigits(raw);
+  })();
+
+  const formatTimer = (sec: number) => {
+    const mins = Math.floor(sec / 60);
+    const rem = sec % 60;
+    const remStr = rem < 10 ? `0${rem}` : `${rem}`;
+    return toPersianDigits(`${mins}:${remStr}`);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = toEnglishDigits(e.target.value).replace(/[^\d]/g, '');
+    setPhoneNumber(toPersianDigits(raw.slice(0, 11)));
+    if (phoneError) setPhoneError(false);
+  };
+
+  const handlePhoneSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    const check = validateIranianPhoneNumber(phoneNumber);
+
+    if (!check.isValid) {
+      setPhoneError(true);
+      pushToast(
+        'error-octagon',
+        'خطایی رخ داد!',
+        check.message || 'فرمت شماره صحیح نیست، لطفاً فرمت درست وارد کنید.'
+      );
+      return;
+    }
+
+    setIsLoading(true);
+
+    window.setTimeout(() => {
+      setPhoneError(false);
+      setIsLoading(false);
+      setStep('otp');
+      setOtpDigits(['', '', '', '']);
+      setOtpIncompleteError(false);
+      setOtpWrongError(false);
+      setSecondsLeft(56);
+      setResendClickCount(0);
+      window.setTimeout(() => {
+        focusOtpBox(0);
+      }, 60);
+    }, 800);
+  };
+
+  const handleOtpDigitChange = (index: number, value: string) => {
+    const cleanDigit = toEnglishDigits(value).replace(/[^\d]/g, '').slice(-1);
+    const persianDigit = cleanDigit ? toPersianDigits(cleanDigit) : '';
+
+    const nextDigits = [...otpDigits] as [string, string, string, string];
+    nextDigits[index] = persianDigit;
+    setOtpDigits(nextDigits);
+    setOtpIncompleteError(false);
+    setOtpWrongError(false);
+
+    if (persianDigit && index < 3) {
+      focusOtpBox(index + 1);
+    }
+  };
+
+  const handleOtpKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      focusOtpBox(index - 1);
+    }
+  };
+
+  const handleTimerOrResendClick = () => {
+    if (isResendingOtp) return;
+
+    if (secondsLeft > 0) {
+      if (resendClickCount % 2 === 0) {
+        pushToast(
+          'error-clock',
+          'خطایی رخ داد!',
+          'پس از ۱ دقیقه مجدد برای دریافت کد جدید تلاش کنید.'
+        );
+      } else {
+        pushToast(
+          'error-shield',
+          'خطایی رخ داد!',
+          'کد OTP یکبار برایتان ارسال شده است.'
+        );
+      }
+      setResendClickCount((c) => c + 1);
+      return;
+    }
+
+    // وقتی تایمر به ۰ رسیده و کاربر روی آیکون رفرش کلیک می‌کند (مطابق Mobile 15 -> Mobile 07)
+    setIsResendingOtp(true);
+    window.setTimeout(() => {
+      setIsResendingOtp(false);
+      setSecondsLeft(56);
+      setOtpDigits(['', '', '', '']);
+      setOtpIncompleteError(false);
+      setOtpWrongError(false);
+      pushToast(
+        'otp-resent',
+        'کد یکبار مصرف ارسال شد',
+        'کد OTP جدید به شماره همراهتان ارسال شد.'
+      );
+      focusOtpBox(0);
+    }, 800);
+  };
+
+  const handleOtpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    const englishCode = otpDigits.map((d) => toEnglishDigits(d)).join('');
+
+    // اگر هر ۴ رقم کامل نشده باشد (مطابق تصویر پنجم و Mobile 09/11)
+    if (englishCode.length < 4) {
+      setOtpIncompleteError(true);
+      setOtpWrongError(false);
+      pushToast(
+        'error-octagon',
+        'خطایی رخ داد!',
+        'فیلد کد OTP شماره همراه تکمیل نشده است.'
+      );
+      return;
+    }
+
+    setIsLoading(true);
+
+    window.setTimeout(() => {
+      // با هر کد ۴ رقمی که کاربر وارد کند عملیات ورود با موفقیت انجام می‌شود
+      setIsLoading(false);
+      setOtpWrongError(false);
+      setOtpIncompleteError(false);
+      pushToast(
+        'success',
+        'ورود موفقیت آمیز',
+        'مشتری گرامی به پنل خود خوش آمدید!'
+      );
+      window.setTimeout(() => {
+        onLoginSuccess?.(formattedDisplayPhone);
+        onClose();
+      }, 900);
+    }, 650);
+  };
+
+  const hasAnyOtpDigit = otpDigits.some((d) => d !== '');
+  const isPhoneBtnDark =
+    isLoading || phoneError || phoneNumber.trim().length > 0;
+  const isOtpBtnDark = isLoading || otpWrongError || hasAnyOtpDigit;
+
+  const activeMobileToast = toasts[toasts.length - 1] || null;
+
+  const renderToastIcon = (type: AuthToastItem['type']) => {
+    switch (type) {
+      case 'success':
+        return <ShieldTickIcon className="w-5 h-5" />;
+      case 'otp-resent':
+        return <ShieldSecurityIcon className="w-5 h-5" />;
+      case 'error-octagon':
+        return <OctagonCrossIcon className="w-5 h-5" />;
+      case 'error-clock':
+        return <ClockAlertIcon className="w-5 h-5" />;
+      case 'error-system':
+        return <OctagonGearIcon className="w-5 h-5" />;
+      case 'error-shield':
+      default:
+        return <ShieldCrossIcon className="w-5 h-5" />;
+    }
+  };
+
+  return (
+    <>
+      {/* ==================== نمای موبایل (زیر 640px) دقیقاً مطابق Mobile 01 تا Mobile 16 ==================== */}
+      <div
+        dir="rtl"
+        className="fixed inset-0 z-50 bg-white flex flex-col justify-between px-5 pt-6 pb-6 overflow-y-auto sm:hidden"
+      >
+        {/* بخش بالایی صفحه موبایل */}
+        <div>
+          {/* هدر موبایل: سمت راست لوگوی Chandelier AKBAR SALEHI و سمت چپ دکمه بازگشت (←) */}
+          <div className="flex items-center justify-between">
+            <div className="text-right select-none" dir="ltr">
+              <span className="block text-right font-serif text-[12px] text-[#b59766] leading-tight">
+                Chandelier
+              </span>
+              <span className="block text-right font-serif text-[22px] tracking-[0.03em] font-medium text-[#1e1e1e] leading-none mt-0.5">
+                AKBAR SALEHI
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (step === 'otp') {
+                  setStep('phone');
+                  setOtpIncompleteError(false);
+                  setOtpWrongError(false);
+                } else {
+                  onClose();
+                }
+              }}
+              aria-label="بازگشت"
+              className="w-10 h-10 rounded-[12px] bg-[#f5f5f5] active:bg-[#eaeaea] flex items-center justify-center text-[#292d32] transition-colors cursor-pointer"
+            >
+              <MobileBackArrowIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* عنوان و زیرعنوان راست‌چین دقیقاً مطابق طرح موبایل */}
+          <h2 className="mt-9 text-right text-[16.5px] font-bold text-[#1e1e1e]">
+            {step === 'phone' ? 'ورود به حساب کاربری' : 'تایید شماره همراه'}
+          </h2>
+          <p className="mt-2 text-right text-[12.5px] text-[#666666] font-normal">
+            {step === 'phone'
+              ? 'برای ورود شماره همراه خود را وارد کنید.'
+              : `کد ۴ رقمی به شماره (${formattedDisplayPhone}) ارسال شد`}
+          </p>
+
+          {step === 'phone' ? (
+            /* مرحله اول موبایل (Mobile 01 - Mobile 04) */
+            <form
+              id="mobile-auth-phone-form"
+              onSubmit={handlePhoneSubmit}
+              className="mt-5"
+            >
+              <div
+                dir="ltr"
+                className={`w-full h-[50px] rounded-[12px] border bg-white px-4 flex items-center transition-colors ${
+                  phoneError
+                    ? 'border-[#ff1f3d]'
+                    : 'border-[#e2e2e2] focus-within:border-[#2b2b2b]'
+                }`}
+              >
+                <span className="text-[13.5px] font-medium text-[#444444] select-none shrink-0">
+                  +۹۸
+                </span>
+                <span className="w-[1px] h-4 bg-[#e2e2e2] mx-3 shrink-0" />
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={handlePhoneChange}
+                  className="w-full h-full bg-transparent text-[14.5px] font-medium text-[#222222] focus:outline-none tabular-nums text-left"
+                />
+              </div>
+
+              {/* در مرحله اول موبایل، متن قوانین و مقررات بلافاصله زیر کادر شماره قرار دارد (Mobile 01 تا 04) */}
+              <p className="mt-4 text-right text-[11.5px] text-[#555555]">
+                ورود شما به منزله موافقت با{' '}
+                <span className="text-[#b59766] font-medium">
+                  قوانین و مقررات
+                </span>{' '}
+                است.
+              </p>
+            </form>
+          ) : (
+            /* مرحله دوم موبایل (Mobile 05 - Mobile 16) */
+            <form
+              id="mobile-auth-otp-form"
+              onSubmit={handleOtpSubmit}
+              className="mt-5"
+            >
+              <div
+                dir="ltr"
+                className="flex items-center justify-between gap-2.5"
+              >
+                {[0, 1, 2, 3].map((idx) => {
+                  const digit = otpDigits[idx];
+                  const isRedBorder =
+                    otpWrongError || (otpIncompleteError && !digit);
+                  const isFocused = focusedOtpIdx === idx;
+
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => mobileOtpRefs[idx].current?.focus()}
+                      className={`relative w-[52px] h-[50px] rounded-[12px] border bg-white flex items-center justify-center transition-colors cursor-text shrink-0 ${
+                        isRedBorder
+                          ? 'border-[#ff1f3d]'
+                          : isFocused
+                            ? 'border-[#2b2b2b] border-[1.5px]'
+                            : 'border-[#e0e0e0]'
+                      }`}
+                    >
+                      <input
+                        ref={mobileOtpRefs[idx]}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onFocus={() => setFocusedOtpIdx(idx)}
+                        onBlur={() =>
+                          setFocusedOtpIdx((prev) =>
+                            prev === idx ? null : prev
+                          )
+                        }
+                        onChange={(e) =>
+                          handleOtpDigitChange(idx, e.target.value)
+                        }
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        className="w-full h-full bg-transparent text-center text-[15.5px] font-semibold text-[#222222] focus:outline-none tabular-nums"
+                      />
+                      {!digit && (
+                        <span className="pointer-events-none absolute bottom-3.5 left-1/2 -translate-x-1/2 w-4 h-[1.5px] bg-[#cccccc] rounded-full" />
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* باکس عریض تایمر / رفرش / لودینگ ۳ نقطه در سمت راست ردیف (Mobile 05 تا Mobile 16) */}
+                <button
+                  type="button"
+                  onClick={handleTimerOrResendClick}
+                  className="flex-1 h-[50px] min-w-[84px] rounded-[12px] bg-[#efefef] active:bg-[#e4e4e4] text-[#333333] flex items-center justify-center text-[14px] font-semibold tabular-nums transition-colors cursor-pointer"
+                >
+                  {isResendingOtp ? (
+                    /* سه نقطه تیره داخل باکس تایمر هنگام ارسال مجدد کد (Mobile 15) */
+                    <div
+                      className="flex items-center justify-center gap-1"
+                      dir="ltr"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#777777] animate-pulse" />
+                      <span className="w-2 h-2 rounded-full bg-[#222222] animate-pulse [animation-delay:150ms]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#777777] animate-pulse [animation-delay:300ms]" />
+                    </div>
+                  ) : secondsLeft > 0 ? (
+                    <span>{formatTimer(secondsLeft)}</span>
+                  ) : (
+                    <RefreshCodeIcon className="w-5 h-5 text-[#292d32]" />
+                  )}
+                </button>
+              </div>
+
+              {/* ردیف زیر باکس‌های کد در موبایل: سمت راست متن طلایی و سمت چپ ویرایش شماره همراه */}
+              <div className="mt-4 flex items-center justify-between text-[11.5px]">
+                <span className="text-[#b59766] font-medium">
+                  شماره همراه وارد شده اشتباه است ؟
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('phone');
+                    setOtpIncompleteError(false);
+                    setOtpWrongError(false);
+                  }}
+                  className="text-[#2b2b2b] font-semibold hover:text-[#b59766] transition-colors cursor-pointer"
+                >
+                  ویرایش شماره همراه
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* بخش پایین صفحه موبایل */}
+        <div className="pt-6">
+          {/* در مرحله دوم موبایل، متن قوانین و مقررات بالای دکمه پایین قرار دارد (Mobile 05 تا 16) */}
+          {step === 'otp' && (
+            <p className="mb-3.5 text-right text-[11.5px] text-[#555555]">
+              ورود شما به منزله موافقت با{' '}
+              <span className="text-[#b59766] font-medium">
+                قوانین و مقررات
+              </span>{' '}
+              است.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            form={
+              step === 'phone' ? 'mobile-auth-phone-form' : 'mobile-auth-otp-form'
+            }
+            className={`w-full h-[50px] rounded-[12px] text-[13.5px] font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+              (step === 'phone' ? isPhoneBtnDark : isOtpBtnDark)
+                ? 'bg-[#2b2b2b] active:bg-[#1f1f1f] text-white'
+                : 'bg-[#f3f3f3] text-[#757575]'
+            }`}
+          >
+            {isLoading ? (
+              <div
+                className="flex items-center justify-center gap-1.5"
+                dir="ltr"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-white/75 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-white/75 animate-pulse [animation-delay:300ms]" />
+              </div>
+            ) : step === 'phone' ? (
+              'تایید و دریافت کد'
+            ) : (
+              'تایید و ادامه فرآیند'
+            )}
+          </button>
+        </div>
+
+        {/* باتم‌شیت نوتیفیکیشن موبایل (Mobile 04, 07, 08, 10, 11, 12, 13, 16) */}
+        {activeMobileToast && (
+          <>
+            <div
+              onClick={() => setToasts([])}
+              className="fixed inset-0 z-[65] bg-black/45 sm:hidden"
+            />
+            <div
+              dir="rtl"
+              onClick={(e) => e.stopPropagation()}
+              className="fixed inset-x-0 bottom-0 z-[70] bg-white rounded-t-[26px] pt-3 pb-6 px-5 shadow-[0_-12px_40px_rgba(0,0,0,0.2)] sm:hidden"
+            >
+              {/* دستگیره کپسولی بالای باتم‌شیت */}
+              <div className="w-11 h-1 rounded-full bg-[#d8d8d8] mx-auto mb-5" />
+
+              {(() => {
+                const isGreen =
+                  activeMobileToast.type === 'success' ||
+                  activeMobileToast.type === 'otp-resent';
+                return (
+                  <>
+                    <div className="flex items-center justify-start gap-3.5">
+                      <div
+                        className={`w-12 h-12 rounded-[14px] border flex items-center justify-center shrink-0 ${
+                          isGreen
+                            ? 'bg-[#edfcf2] border-[#abefc6] text-[#17b26a]'
+                            : 'bg-[#fff0f2] border-[#ffccd3] text-[#ff1f3d]'
+                        }`}
+                      >
+                        {renderToastIcon(activeMobileToast.type)}
+                      </div>
+
+                      <div className="text-right">
+                        <h4 className="text-[14px] font-bold text-[#1e1e1e]">
+                          {activeMobileToast.title}
+                        </h4>
+                        <p className="text-[12px] text-[#555555] mt-1 leading-relaxed">
+                          {activeMobileToast.message}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* نوار پیشرفت افقی پایین باتم‌شیت موبایل */}
+                    <div
+                      className={`mt-5 w-full h-[3.5px] rounded-full overflow-hidden flex justify-end ${
+                        isGreen ? 'bg-[#dcfce7]' : 'bg-[#ffe4e8]'
+                      }`}
+                    >
+                      <span
+                        className={`w-[72%] h-full rounded-full ${
+                          isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
+                        }`}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ==================== نمای دسکتاپ (sm و بالاتر) ==================== */}
+      <div
+        className="hidden sm:flex fixed inset-0 z-50 items-center justify-center p-4 bg-black/50"
+        onClick={onClose}
+      >
+        {/* کارت اصلی پاپ‌آپ با عرض و ارتفاع بزرگ‌تر دقیقاً مطابق تصاویر فیگما */}
+        <div
+          dir="rtl"
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full max-w-[430px] min-h-[435px] bg-white rounded-[24px] px-8 sm:px-10 pt-7 pb-7 shadow-[0_24px_60px_rgba(0,0,0,0.25)] flex flex-col justify-between"
+        >
+          {/* دکمه بستن (×) در گوشه بالا-چپ */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="بستن"
+            className="absolute top-5 left-5 w-8 h-8 flex items-center justify-center text-[#292d32] hover:text-black transition-colors cursor-pointer"
+          >
+            <X className="w-[18px] h-[18px] stroke-[2]" />
+          </button>
+
+          {/* بخش بالایی و میانی مودال */}
+          <div className="mt-2">
+            {/* آیکون مرحله اول (finger-scan.png) یا مرحله دوم (shield-tick.png) در کادر مربعی وسط */}
+            <div className="w-[58px] h-[58px] rounded-[14px] bg-[#f5f5f5] border border-[#ebebeb] flex items-center justify-center mx-auto text-[#292d32]">
+              {step === 'phone' ? (
+                <FingerScanIcon className="w-7 h-7" />
+              ) : (
+                <ShieldTickIcon className="w-7 h-7" />
+              )}
+            </div>
+
+            {/* عنوان و زیرعنوان مرحله */}
+            <h2 className="mt-4 text-[17.5px] sm:text-[18.5px] font-bold text-[#1e1e1e] text-center">
+              {step === 'phone' ? 'ورود به حساب کاربری' : 'تایید شماره همراه'}
+            </h2>
+            <p className="mt-2.5 text-[13px] sm:text-[13.5px] text-[#555555] font-normal text-center">
+              {step === 'phone'
+                ? 'برای ورود شماره همراه خود را وارد کنید.'
+                : `کد ۴ رقمی به شماره (${formattedDisplayPhone}) ارسال شد`}
+            </p>
+
+            {/* فیلدهای ورودی بر اساس مرحله */}
+            {step === 'phone' ? (
+              <form
+                id="auth-phone-form"
+                onSubmit={handlePhoneSubmit}
+                className="mt-6"
+              >
+                <div
+                  dir="ltr"
+                  className={`w-full h-[48px] rounded-[12px] border bg-white px-4 flex items-center transition-colors ${
+                    phoneError
+                      ? 'border-[#ff1f3d]'
+                      : 'border-[#e2e2e2] focus-within:border-[#b59766]'
+                  }`}
+                >
+                  <span className="text-[13px] font-medium text-[#444444] select-none shrink-0">
+                    +۹۸
+                  </span>
+                  <span className="w-[1px] h-4 bg-[#e2e2e2] mx-3 shrink-0" />
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    className="w-full h-full bg-transparent text-[14px] font-medium text-[#222222] focus:outline-none tabular-nums text-left"
+                  />
+                </div>
+              </form>
+            ) : (
+              <form id="auth-otp-form" onSubmit={handleOtpSubmit} className="mt-6">
+                <div
+                  dir="ltr"
+                  className="flex items-center justify-center gap-2.5 sm:gap-3"
+                >
+                  {[0, 1, 2, 3].map((idx) => {
+                    const digit = otpDigits[idx];
+                    const isRedBorder =
+                      otpWrongError || (otpIncompleteError && !digit);
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => desktopOtpRefs[idx].current?.focus()}
+                        className={`relative w-[48px] h-[48px] rounded-[11px] border bg-white flex items-center justify-center transition-colors cursor-text ${
+                          isRedBorder
+                            ? 'border-[#ff1f3d]'
+                            : 'border-[#e0e0e0] focus-within:border-[#b59766]'
+                        }`}
+                      >
+                        <input
+                          ref={desktopOtpRefs[idx]}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) =>
+                            handleOtpDigitChange(idx, e.target.value)
+                          }
+                          onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                          className="w-full h-full bg-transparent text-center text-[15px] font-semibold text-[#222222] focus:outline-none tabular-nums"
+                        />
+                        {!digit && (
+                          <span className="pointer-events-none absolute bottom-3.5 left-1/2 -translate-x-1/2 w-4 h-[1.5px] bg-[#cccccc] rounded-full" />
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* باکس تایمر ۱ دقیقه / آیکون ارسال مجدد در سمت راست */}
+                  <button
+                    type="button"
+                    onClick={handleTimerOrResendClick}
+                    className="h-[48px] min-w-[64px] px-3.5 rounded-[11px] bg-[#f3f3f3] hover:bg-[#eaeaea] text-[#333333] flex items-center justify-center text-[13.5px] font-semibold tabular-nums transition-colors cursor-pointer shrink-0"
+                  >
+                    {isResendingOtp ? (
+                      <div
+                        className="flex items-center justify-center gap-1"
+                        dir="ltr"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#777777] animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-[#222222] animate-pulse [animation-delay:150ms]" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#777777] animate-pulse [animation-delay:300ms]" />
+                      </div>
+                    ) : secondsLeft > 0 ? (
+                      <span>{formatTimer(secondsLeft)}</span>
+                    ) : (
+                      <RefreshCodeIcon className="w-5 h-5 text-[#292d32]" />
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+
+          {/* بخش پایینی مودال دسکتاپ: ویرایش شماره همراه + قوانین و مقررات + دکمه اصلی با حالت لودینگ */}
+          <div className="mt-8">
+            {step === 'otp' && (
+              <div className="text-center mb-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('phone');
+                    setOtpIncompleteError(false);
+                    setOtpWrongError(false);
+                  }}
+                  className="text-[12px] font-semibold text-[#333333] hover:text-[#b59766] transition-colors cursor-pointer"
+                >
+                  ویرایش شماره همراه
+                </button>
+              </div>
+            )}
+
+            <p className="text-[11.5px] text-[#555555] text-center">
+              ورود شما به منزله موافقت با{' '}
+              <span className="text-[#b59766] font-medium cursor-pointer hover:underline">
+                قوانین و مقررات
+              </span>{' '}
+              است.
+            </p>
+
+            <button
+              type="submit"
+              form={step === 'phone' ? 'auth-phone-form' : 'auth-otp-form'}
+              className={`mt-3.5 w-full h-[46px] rounded-[12px] text-[13px] font-semibold flex items-center justify-center transition-colors cursor-pointer ${
+                (step === 'phone' ? isPhoneBtnDark : isOtpBtnDark)
+                  ? 'bg-[#2b2b2b] hover:bg-[#1f1f1f] text-white'
+                  : 'bg-[#f5f5f5] hover:bg-[#ececec] text-[#6e6e6e]'
+              }`}
+            >
+              {isLoading ? (
+                <div
+                  className="flex items-center justify-center gap-1.5"
+                  dir="ltr"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/75 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/75 animate-pulse [animation-delay:300ms]" />
+                </div>
+              ) : step === 'phone' ? (
+                'تایید و دریافت کد'
+              ) : (
+                'تایید و ادامه فرآیند'
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* نوتیفیکیشن‌های گوشه پایین-چپ صفحه دسکتاپ */}
+        {toasts.length > 0 && (
+          <div
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+            className="fixed bottom-6 left-6 z-[60] flex flex-col gap-3 pointer-events-auto"
+          >
+            {toasts.map((t) => {
+              const isGreen = t.type === 'success' || t.type === 'otp-resent';
+              return (
+                <div
+                  key={t.id}
+                  className="relative w-[340px] sm:w-[370px] bg-white rounded-[18px] shadow-[0_14px_40px_rgba(0,0,0,0.14)] px-4 py-3.5 flex items-center justify-between gap-3.5 overflow-hidden"
+                >
+                  <div className="flex items-center gap-3.5 pr-1">
+                    <div
+                      className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 ${
+                        isGreen
+                          ? 'bg-[#edfcf2] border-[#abefc6] text-[#17b26a]'
+                          : 'bg-[#fff0f2] border-[#ffccd3] text-[#ff1f3d]'
+                      }`}
+                    >
+                      {renderToastIcon(t.type)}
+                    </div>
+
+                    <div className="text-right">
+                      <h4 className="text-[13.5px] font-bold text-[#1e1e1e]">
+                        {t.title}
+                      </h4>
+                      <p className="text-[11.5px] text-[#555555] mt-1 leading-relaxed">
+                        {t.message}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`w-[3.5px] h-12 rounded-full overflow-hidden shrink-0 flex flex-col justify-start ${
+                      isGreen ? 'bg-[#dcfce7]' : 'bg-[#ffe4e8]'
+                    }`}
+                  >
+                    <span
+                      className={`w-full h-6 rounded-full ${
+                        isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
+                      }`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+export interface AppToast {
+  id: string;
+  type: 'logout-success' | 'logout-error' | 'success' | 'error';
+  title: string;
+  message: string;
+}
+
+interface LogoutConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirmLogout: () => void;
+}
+
+/**
+ * مودال تایید خروج از حساب کاربری دقیقاً مطابق با طراحی فیگما
+ * عریض با گوشه‌های گرد، متون و دکمه‌های کاملاً راست‌چین
+ */
+export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirmLogout,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-[2px] animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-[530px] sm:max-w-[560px] bg-white rounded-[22px] px-7 sm:px-9 pt-7 pb-7 shadow-[0_24px_60px_rgba(0,0,0,0.28)] border border-[#e8e8e8] flex flex-col items-start text-right select-none"
+      >
+        {/* دکمه ضربدر بستن در گوشه بالا-چپ */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="بستن"
+          className="absolute top-5 left-5 w-7 h-7 flex items-center justify-center text-[#555555] hover:text-black transition-colors cursor-pointer"
+        >
+          <X className="w-4 h-4 stroke-[2]" />
+        </button>
+
+        {/* عنوان مودال کاملاً راست‌چین */}
+        <h3 className="text-right w-full text-[16.5px] sm:text-[18px] font-bold text-[#1a1a1a] leading-snug mt-1">
+          آیا مطمئن هستید میخواهید از حساب خود خارج شوید؟
+        </h3>
+
+        {/* متن توضیحات مشتری عزیز با هایلایت قرمز کاملاً راست‌چین */}
+        <div className="text-right w-full text-[13px] sm:text-[13.5px] text-[#555555] leading-[1.85] mt-3.5 mb-7">
+          <p>مشتری گرامی عزیز</p>
+          <p>
+            در صورت تایید دکمه{' '}
+            <span className="text-[#ff1f3d] font-bold">“بله مطمئن هستم”</span>{' '}
+            از حساب کاربری خود اتوماسیون
+          </p>
+          <p>خارج میشوید، از همراهی شما سپاس گذاریم.</p>
+        </div>
+
+        {/* دکمه‌های عملیات کاملاً راست‌چین */}
+        <div className="flex items-center justify-start gap-3.5 w-full">
+          {/* دکمه بله مطمئن هستم (کادر سفید دور خاکستری در سمت راست) */}
+          <button
+            type="button"
+            onClick={onConfirmLogout}
+            className="min-w-[130px] sm:min-w-[145px] h-[44px] px-6 rounded-[12px] bg-white hover:bg-[#f7f7f7] active:bg-[#eeeeee] text-[#222222] border border-[#d6d6d6] text-[13.5px] font-bold transition-all cursor-pointer shadow-xs"
+          >
+            بله مطمئن هستم
+          </button>
+
+          {/* دکمه منصرف شدم (قرمز رنگ در سمت چپ دکمه تایید) */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-w-[120px] sm:min-w-[135px] h-[44px] px-6 rounded-[12px] bg-[#e52e40] hover:bg-[#cf2234] active:bg-[#b81d2e] text-white text-[13.5px] font-bold transition-all cursor-pointer shadow-sm"
+          >
+            منصرف شدم
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * پاپ‌آپ‌های نوتیفیکیشن پایین صفحه (شامل خروج موفقیت‌آمیز و خطای خروج) دقیقاً مطابق با تصویر ارسالی فیگما
+ */
+export const AppToastContainer: React.FC<{
+  toasts: AppToast[];
+  onDismiss: (id: string) => void;
+}> = ({ toasts, onDismiss }) => {
+  if (toasts.length === 0) return null;
+
+  return (
+    <div
+      dir="rtl"
+      className="fixed bottom-6 left-6 z-[90] flex flex-col gap-3 pointer-events-auto select-none"
+    >
+      {toasts.map((toast) => {
+        const isGreen =
+          toast.type === 'logout-success' || toast.type === 'success';
+
+        return (
+          <div
+            key={toast.id}
+            onClick={() => onDismiss(toast.id)}
+            className="relative w-[345px] sm:w-[380px] bg-white rounded-[18px] shadow-[0_14px_40px_rgba(0,0,0,0.14)] border border-[#eeeeee] px-4 py-3.5 flex items-center justify-between gap-3.5 overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-300 cursor-pointer"
+          >
+            {/* سمت راست: آیکون در کادر مربعی گوشه‌گرد و متن‌های عنوان و پیام */}
+            <div className="flex items-center gap-3.5 pr-0.5">
+              <div
+                className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 bg-white ${
+                  isGreen
+                    ? 'border-[#27ae60] text-[#27ae60]'
+                    : 'border-[#ff1f3d] text-[#ff1f3d]'
+                }`}
+              >
+                {isGreen ? (
+                  /* آیکون خروج موفقیت‌آمیز داخل کادر سبز */
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-[22px] h-[22px]"
+                  >
+                    <path
+                      d="M8.9 7.56C9.21 3.96 11.06 2.49 15.11 2.49H15.24C19.71 2.49 21.5 4.28 21.5 8.75V15.27C21.5 19.74 19.71 21.53 15.24 21.53H15.11C11.09 21.53 9.24 20.08 8.91 16.54"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M15 12H3.62"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M5.85 8.65L2.5 12L5.85 15.35"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  /* آیکون ضربدر دایره‌ای در خطایی رخ داد داخل کادر قرمز */
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-[22px] h-[22px]"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="8.5"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    />
+                    <path
+                      d="M9.5 14.5L14.5 9.5M14.5 14.5L9.5 9.5"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </div>
+
+              <div className="text-right">
+                <h4 className="text-[14px] font-bold text-[#1e1e1e]">
+                  {toast.title}
+                </h4>
+                <p className="text-[11.5px] text-[#555555] mt-0.5 leading-relaxed">
+                  {toast.message}
+                </p>
+              </div>
+            </div>
+
+            {/* خط باریک شاخص وضعیت در سمت چپ کادر */}
+            <div
+              className={`w-[4px] h-9 rounded-full shrink-0 ${
+                isGreen ? 'bg-[#27ae60]' : 'bg-[#ff1f3d]'
+              }`}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
