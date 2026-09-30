@@ -18,7 +18,12 @@ import { MagazineSection } from '../components/sections/MagazineSection';
 import { FooterSection } from '../components/sections/FooterSection';
 import { RuleContentSection } from '../rule';
 import { ContactUsContentSection } from '../contact-us';
-import { AppRoute, getCurrentRoute } from '../utils/navigation';
+import {
+  AppRoute,
+  getCurrentRoute,
+  navigateToRoute,
+  subscribeToRoute,
+} from '../utils/navigation';
 import {
   ProductStudioModal,
   CustomProduct3DModal,
@@ -42,13 +47,18 @@ export const HomePage: React.FC = () => {
   );
 
   useEffect(() => {
-    const syncRoute = () => {
-      setCurrentRoute(getCurrentRoute());
+    const unsubscribe = subscribeToRoute((nextRoute) => {
+      setCurrentRoute(nextRoute);
+    });
+    const syncRoute = (e?: Event) => {
+      const customRoute = (e as CustomEvent<AppRoute>)?.detail;
+      setCurrentRoute(customRoute ?? getCurrentRoute());
     };
     window.addEventListener('popstate', syncRoute);
     window.addEventListener('hashchange', syncRoute);
     window.addEventListener('app-route-change', syncRoute);
     return () => {
+      unsubscribe();
       window.removeEventListener('popstate', syncRoute);
       window.removeEventListener('hashchange', syncRoute);
       window.removeEventListener('app-route-change', syncRoute);
@@ -201,6 +211,11 @@ export const HomePage: React.FC = () => {
     >
       {/* ۱. هدر بالای صفحه با لوگو و پترن Vector.png دقیق */}
       <HeaderSection
+        currentRoute={currentRoute}
+        onNavigateRoute={(route, hashAnchor) => {
+          setCurrentRoute(route);
+          navigateToRoute(route, hashAnchor);
+        }}
         totalCartCount={totalCartCount}
         isCartOpen={isCartOpen}
         onOpenCart={() => setIsCartOpen(true)}

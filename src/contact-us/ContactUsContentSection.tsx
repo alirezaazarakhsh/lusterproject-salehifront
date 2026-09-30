@@ -654,7 +654,7 @@ export const ContactUsContentSection: React.FC<
                   </div>
                 </div>
 
-                {/* دکمه «لوکیشن با نشان» در سمت چپ کارت */}
+                {/* دکمه «لوکیشن با نشان» در موبایل سمت راست (self-start در RTL) و در دسکتاپ سمت چپ کارت */}
                 <button
                   type="button"
                   onClick={() =>
@@ -664,7 +664,7 @@ export const ContactUsContentSection: React.FC<
                       'به زودی تیم پاسخگویی با شما تماس خواهند گرفت.'
                     )
                   }
-                  className="self-end md:self-center h-[44px] px-4 rounded-[10px] bg-[#f5f5f5] hover:bg-[#ebebeb] transition-colors flex items-center gap-2.5 shrink-0 cursor-pointer"
+                  className="self-start md:self-center h-[44px] px-4 rounded-[10px] bg-[#f5f5f5] hover:bg-[#ebebeb] transition-colors flex items-center gap-2.5 shrink-0 cursor-pointer"
                 >
                   <NeshanMapLogo className="w-[22px] h-[22px]" />
                   <span className="text-[12.5px] font-bold text-[#1e1e1e] whitespace-nowrap">

@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/rule",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/rule/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contact-us",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contact-us/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

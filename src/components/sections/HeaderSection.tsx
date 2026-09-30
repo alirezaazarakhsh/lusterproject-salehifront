@@ -1,9 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp, X, Home, BookOpen, Phone, Info, FileText, Globe, MapPin } from 'lucide-react';
 import { HeaderBrandLogo, ExactPalmetteVector } from '../Ornaments';
-import { AppRoute, getCurrentRoute, navigateToRoute } from '../../utils/navigation';
+import {
+  AppRoute,
+  getCurrentRoute,
+  navigateToRoute,
+  subscribeToRoute,
+} from '../../utils/navigation';
 
 interface HeaderSectionProps {
+  currentRoute?: AppRoute;
+  onNavigateRoute?: (route: AppRoute, hashAnchor?: string) => void;
   totalCartCount: number;
   isCartOpen?: boolean;
   onOpenCart: () => void;
@@ -364,6 +371,8 @@ const ProfileLogoutIcon: React.FC<{ className?: string }> = ({
  * شامل لوگو و پترن Vector.png در لبه راست، منوی ناوبری در وسط و دکمه‌های زبان/سبد خرید/کاربر در چپ
  */
 export const HeaderSection: React.FC<HeaderSectionProps> = ({
+  currentRoute: propCurrentRoute,
+  onNavigateRoute,
   totalCartCount,
   isCartOpen = false,
   onOpenCart,
@@ -388,23 +397,32 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   const [isMobileProfileOpen, setIsMobileProfileOpen] = useState<boolean>(false);
   const [mobileAccordionOpen, setMobileAccordionOpen] = useState<string | null>(null);
   const [activeMobileTab, setActiveMobileTab] = useState<'home' | 'categories' | 'cart' | 'profile'>('home');
-  const [activeRoute, setActiveRoute] = useState<AppRoute>(() => getCurrentRoute());
+  const [activeRoute, setActiveRoute] = useState<AppRoute>(() =>
+    propCurrentRoute ?? getCurrentRoute()
+  );
   const closeTimeoutRef = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const syncHeaderRoute = () => {
-      setActiveRoute(getCurrentRoute());
-    };
-    window.addEventListener('popstate', syncHeaderRoute);
-    window.addEventListener('hashchange', syncHeaderRoute);
-    window.addEventListener('app-route-change', syncHeaderRoute);
-    return () => {
-      window.removeEventListener('popstate', syncHeaderRoute);
-      window.removeEventListener('hashchange', syncHeaderRoute);
-      window.removeEventListener('app-route-change', syncHeaderRoute);
-    };
+    if (propCurrentRoute) {
+      setActiveRoute(propCurrentRoute);
+    }
+  }, [propCurrentRoute]);
+
+  useEffect(() => {
+    return subscribeToRoute((nextRoute) => {
+      setActiveRoute(nextRoute);
+    });
   }, []);
+
+  const triggerRouteNavigation = (route: AppRoute, hashAnchor?: string) => {
+    setActiveRoute(route);
+    if (onNavigateRoute) {
+      onNavigateRoute(route, hashAnchor);
+    } else {
+      navigateToRoute(route, hashAnchor);
+    }
+  };
 
   useEffect(() => {
     if (forceOpenProfileMenu && isLoggedIn) {
@@ -467,9 +485,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         <a
           href="/"
           onClick={(e) => {
-            if (getCurrentRoute() !== 'home') {
+            if (activeRoute !== 'home') {
               e.preventDefault();
-              navigateToRoute('home');
+              triggerRouteNavigation('home');
             }
           }}
           className="flex flex-col items-center justify-center text-center select-none focus:outline-none py-2"
@@ -498,9 +516,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         <a
           href="/"
           onClick={(e) => {
-            if (getCurrentRoute() !== 'home') {
+            if (activeRoute !== 'home') {
               e.preventDefault();
-              navigateToRoute('home');
+              triggerRouteNavigation('home');
             }
           }}
           className="shrink-0 focus:outline-none flex items-center overflow-hidden"
@@ -549,7 +567,13 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     <a
                       key={item.id}
                       href={item.href}
-                      onClick={() => setOpenSubmenu(null)}
+                      onClick={(e) => {
+                        setOpenSubmenu(null);
+                        if (activeRoute !== 'home') {
+                          e.preventDefault();
+                          triggerRouteNavigation('home', item.href);
+                        }
+                      }}
                       className="group/item block w-full px-5 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] transition-colors"
                     >
                       <span
@@ -571,9 +595,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           <a
             href="#executed-projects"
             onClick={(e) => {
-              if (getCurrentRoute() !== 'home') {
+              if (activeRoute !== 'home') {
                 e.preventDefault();
-                navigateToRoute('home', '#executed-projects');
+                triggerRouteNavigation('home', '#executed-projects');
               }
             }}
             className="hover:text-[#b59766] transition-colors whitespace-nowrap py-3"
@@ -583,9 +607,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           <a
             href="#magazine-section"
             onClick={(e) => {
-              if (getCurrentRoute() !== 'home') {
+              if (activeRoute !== 'home') {
                 e.preventDefault();
-                navigateToRoute('home', '#magazine-section');
+                triggerRouteNavigation('home', '#magazine-section');
               }
             }}
             className="hover:text-[#b59766] transition-colors whitespace-nowrap py-3"
@@ -596,10 +620,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             href="/contact-us"
             onClick={(e) => {
               e.preventDefault();
-              setActiveRoute('contact-us');
-              navigateToRoute('contact-us');
+              triggerRouteNavigation('contact-us');
             }}
-            className={`transition-colors whitespace-nowrap py-3 ${
+            className={`transition-colors whitespace-nowrap py-3 cursor-pointer ${
               activeRoute === 'contact-us'
                 ? 'text-[#b59766]'
                 : 'hover:text-[#b59766]'
@@ -610,9 +633,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           <a
             href="#about-services"
             onClick={(e) => {
-              if (getCurrentRoute() !== 'home') {
+              if (activeRoute !== 'home') {
                 e.preventDefault();
-                navigateToRoute('home', '#about-services');
+                triggerRouteNavigation('home', '#about-services');
               }
             }}
             className="hover:text-[#b59766] transition-colors whitespace-nowrap py-3"
@@ -660,10 +683,10 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                         setOpenSubmenu(null);
                         if (item.href === '/rule') {
                           e.preventDefault();
-                          navigateToRoute('rule');
-                        } else if (getCurrentRoute() !== 'home') {
+                          triggerRouteNavigation('rule');
+                        } else if (activeRoute !== 'home') {
                           e.preventDefault();
-                          navigateToRoute('home', item.href);
+                          triggerRouteNavigation('home', item.href);
                         }
                       }}
                       className="group/item block w-full px-5 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] transition-colors"
@@ -1211,7 +1234,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 e.preventDefault();
                 setIsMobileCategoriesOpen(false);
                 setActiveMobileTab('home');
-                navigateToRoute('contact-us');
+                triggerRouteNavigation('contact-us');
               }}
               className="group block rounded-[18px] bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5] border border-[#e9e9e9] px-4 py-4 transition-colors"
             >
