@@ -12,7 +12,7 @@
   body {
     font-family: 'Yekan Bakh', 'YekanBakh', system-ui, -apple-system, sans-serif;
     background-color: #fcfbf9;
-    color: #2b2b2b;
+    color: #1a1a1a; /* تیره کردن رنگ متن بدنه برای افزایش کنتراست و پررنگ‌تر دیده شدن */
     overflow-x: hidden;
     direction: ltr !important;
   }
@@ -22,6 +22,28 @@
     text-align: right;
     width: 100%;
     min-height: 100vh;
+  }
+
+  /* افزایش وزن تمامی کلاس‌های ضخامت فونت جهت پررنگ، خوانا و ضخیم‌تر دیده شدن یکان بخ */
+  .font-normal {
+    font-weight: 500 !important; /* وزن نرمال را به ۵۰۰ (مدیوم) ارتقا می‌دهیم */
+  }
+  
+  .font-medium {
+    font-weight: 600 !important; /* وزن مدیوم را به ۶۰۰ (نیمه‌بولد) ارتقا می‌دهیم */
+  }
+  
+  .font-semibold {
+    font-weight: 700 !important; /* وزن نیمه‌بولد را به ۷۰۰ (بولد) ارتقا می‌دهیم */
+  }
+  
+  .font-bold {
+    font-weight: 800 !important; /* وزن بولد را به ۸۰۰ (فوق بولد) ارتقا می‌دهیم */
+  }
+  
+  .font-extrabold,
+  .font-black {
+    font-weight: 900 !important; /* ضخیم‌ترین حالت‌ها را روی ۹۰۰ (سیاه) قفل می‌کنیم */
   }
 }
 
