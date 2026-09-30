@@ -19,47 +19,79 @@ export const HeroSection: React.FC = () => {
     GENERATED_IMAGES.projectDuplexVilla,
   ];
 
-  // همگام‌سازی سوایپ و اسکرول با نقطه‌های ۵گانه پایین
+  // همگام‌سازی فوق‌العاده دقیق سوایپ و اسکرول لمسی موبایل با نقطه‌های ۵گانه با متد جئومتری مرکز
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const container = scrollRef.current;
-    const firstCard = container.firstElementChild as HTMLElement;
-    if (!firstCard) return;
+    const children = Array.from(container.children) as HTMLElement[];
+    if (children.length === 0) return;
 
-    const cardWidth = firstCard.offsetWidth + 14; // 14px gap
-    const index = Math.min(
-      heroImages.length - 1,
-      Math.max(0, Math.round(container.scrollLeft / cardWidth))
-    );
-    if (index !== activeDot) {
-      setActiveDot(index);
+    const containerCenter =
+      container.getBoundingClientRect().left + container.offsetWidth / 2;
+    let closestIdx = 0;
+    let minDiff = Infinity;
+
+    children.forEach((child, idx) => {
+      const rect = child.getBoundingClientRect();
+      const childCenter = rect.left + rect.width / 2;
+      const diff = Math.abs(containerCenter - childCenter);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    if (closestIdx !== activeDot) {
+      setActiveDot(closestIdx);
     }
   };
 
-  // اسکرول نرم به اسلاید انتخابی
+  // اسکرول نرم و مطمئن به اسلاید انتخابی به روش Cross-Browser
   const scrollToSlide = (index: number) => {
     setActiveDot(index);
     if (!scrollRef.current) return;
-    const container = scrollRef.current;
-    const card = container.children[index] as HTMLElement;
+    const card = scrollRef.current.children[index] as HTMLElement;
     if (card) {
-      const scrollLeft =
-        card.offsetLeft - (container.offsetWidth - card.offsetWidth) / 2;
-      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+      card.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
     }
   };
 
   useEffect(() => {
     // اسکرول اولیه به اسلاید مرکز (اسلاید شماره ۳)
-    const timer = setTimeout(() => {
+    const initialTimer = setTimeout(() => {
       scrollToSlide(2);
     }, 100);
-    return () => clearTimeout(timer);
-  }, []);
+
+    // اسلایدر اتوماتیک با زمان ۵.۵ ثانیه جهت تغییر نرم و بدون عجله
+    const interval = setInterval(() => {
+      setActiveDot((prev) => {
+        const nextIdx = (prev + 1) % heroImages.length;
+        if (scrollRef.current && window.innerWidth < 1024) {
+          const container = scrollRef.current;
+          const card = container.children[nextIdx] as HTMLElement;
+          if (card) {
+            const scrollLeft =
+              card.offsetLeft - (container.offsetWidth - card.offsetWidth) / 2;
+            container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+          }
+        }
+        return nextIdx;
+      });
+    }, 5500);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
+  }, [heroImages.length]);
 
   return (
     <section className="w-full max-w-[1800px] mx-auto px-0 sm:px-6 lg:px-14 xl:px-20 pb-6 sm:pb-12">
-      {/* ==================== حالت موبایل و تبلت (چه صاف / portrait چه لنداسکیپ / landscape) ==================== */}
+      {/* ==================== حالت موبایل و تبلت ==================== */}
       <div className="block lg:hidden relative w-full overflow-hidden py-2">
         <div
           ref={scrollRef}
@@ -90,9 +122,8 @@ export const HeroSection: React.FC = () => {
                 {/* گرادینت تیره روی تصویر برای خوانایی کامل متن */}
                 <div className="absolute inset-0 bg-gradient-to-l from-black/85 via-black/65 to-black/30" />
 
-                {/* محتوای متن و دکمه اسلاید (کاملاً کوچک، خلوت و راست‌چین مطابق Screenshot 2026-09-30 at 02.50.36.png) */}
+                {/* محتوای متن و دکمه اسلاید */}
                 <div className="relative z-10 p-4 xs:p-5 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-4 pb-10 pr-5 xs:pr-6 sm:pr-8 pl-3 max-w-[90%]">
-                  {/* تیتر دوخطی کوچیک و راست‌چین همراه با نقوش اسلیمی در طرفین */}
                   <div className="flex items-center justify-start gap-1.5 xs:gap-2 mb-2">
                     <HeroTitleOrnament flip className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
                     <h1 className="text-right">
@@ -106,12 +137,10 @@ export const HeroSection: React.FC = () => {
                     <HeroTitleOrnament className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
                   </div>
 
-                  {/* زیرتیتر توضیحات کوچیک و راست‌چین */}
                   <p className="text-[10px] xs:text-[11px] sm:text-[12.5px] text-[#e5e5e5] font-normal leading-relaxed mt-1 text-right max-w-[95%]">
                     مجموعه‌ای برگزیده از لوسترهای لوکس برای سبک زندگی مدرن را کشف کنید.
                   </p>
 
-                  {/* دکمه راست‌چین در سمت راست کارت */}
                   <div className="mt-3 sm:mt-4 text-right">
                     <a
                       href="#collection-salehi"
@@ -122,7 +151,7 @@ export const HeroSection: React.FC = () => {
                   </div>
                 </div>
 
-                {/* نقطه‌های افقی ۵گانه پایین اسلاید مرکز (مطابق Screenshot 2026-09-30 at 02.50.36.png) */}
+                {/* نقطه‌های افقی ۵گانه */}
                 <div className="absolute bottom-3 inset-x-0 z-20 flex items-center justify-center gap-2 pointer-events-auto">
                   {heroImages.map((_, dotIndex) => (
                     <button
@@ -148,7 +177,7 @@ export const HeroSection: React.FC = () => {
       </div>
 
       {/* ==================== حالت دسکتاپ بزرگ (lg به بالا) ==================== */}
-      <div className="hidden lg:flex relative w-full rounded-[28px] overflow-hidden min-h-[480px] lg:min-h-[540px] 2xl:min-h-[580px] bg-[#121110] shadow-[0_18px_50px_rgba(0,0,0,0.14)] items-center justify-start">
+      <div className="hidden lg:flex relative w-full rounded-[28px] overflow-hidden min-h-[480px] lg:min-h-[520px] 2xl:min-h-[550px] bg-[#121110] shadow-[0_18px_50px_rgba(0,0,0,0.14)] items-center justify-start">
         {/* تصویر پس‌زمینه اسلایدر */}
         <img
           src={heroImages[activeDot] || heroImages[0]}
@@ -160,17 +189,16 @@ export const HeroSection: React.FC = () => {
         {/* گرادینت تیره سمت راست برای کنتراست کامل متن سفید راست‌چین */}
         <div className="absolute inset-0 bg-gradient-to-l from-black via-black/80 to-transparent" />
 
-        {/* بلوک محتوای کاملاً راست‌چین در سمت راست بنر */}
+        {/* بلوک محتوای کاملاً راست‌چین با سایز فونت استاندارد و فوق‌العاده شکیل‌تر دسکتاپ */}
         <div className="relative z-10 w-full lg:w-[62%] pr-8 lg:pr-14 pl-6 py-12 flex flex-col items-start justify-center text-right">
-          {/* تیتر دوخطی درشت به همراه نقوش اسلیمی سفید در طرفین */}
-          <div className="flex items-center justify-start gap-3.5">
+          <div className="flex items-center justify-start gap-3">
             <HeroTitleOrnament flip className="hidden sm:block" />
 
             <h1 className="text-right">
-              <span className="block text-3xl sm:text-4xl lg:text-[42px] xl:text-[46px] font-black text-white leading-[1.28] tracking-tight whitespace-nowrap">
+              <span className="block text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-black text-white leading-[1.28] tracking-tight whitespace-nowrap">
                 با شکوهی ماندگار فضای
               </span>
-              <span className="block text-2xl lg:text-[30px] xl:text-[33px] font-extrabold text-white leading-[1.35] mt-2 text-right whitespace-nowrap">
+              <span className="block text-xl lg:text-[23px] xl:text-[26px] font-extrabold text-white leading-[1.35] mt-1.5 text-right whitespace-nowrap">
                 زندگی‌تان را ارتقا دهید...
               </span>
             </h1>
@@ -178,14 +206,14 @@ export const HeroSection: React.FC = () => {
             <HeroTitleOrnament className="hidden sm:block" />
           </div>
 
-          <p className="text-base lg:text-[17px] text-[#d4d4d4] font-normal leading-8 mt-6 text-right">
+          <p className="text-xs sm:text-sm lg:text-[14.5px] text-[#d4d4d4] font-normal leading-7 mt-5 text-right max-w-[85%]">
             مجموعه ای برگزیده از لوستر های لوکس برای سبک زندگی مدرن را کشف کنید.
           </p>
 
-          <div className="mt-8 self-start">
+          <div className="mt-6 self-start">
             <a
               href="#collection-salehi"
-              className="inline-flex items-center justify-center px-7 py-3.5 rounded-[12px] bg-white hover:bg-[#f2f2f2] text-[#222222] text-[15px] font-semibold shadow-md transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center px-6 py-2.5 rounded-[10px] bg-white hover:bg-[#f2f2f2] text-[#222222] text-xs sm:text-[13px] font-semibold shadow-md transition-colors whitespace-nowrap"
             >
               محصولات کلکسیون
             </a>
