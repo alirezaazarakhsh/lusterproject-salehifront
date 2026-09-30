@@ -184,98 +184,6 @@ export const CategoryStarSeal: React.FC<{
 );
 
 /**
- * ۵. آیکون لوگوی ۴ پروانه‌ای/چهارپَر لوستر صالحی (مطابق فایل‌های Group 33853.png و Group 33854.png)
- */
-export const FourPetalLogoSymbol: React.FC<{
-  className?: string;
-  color?: string;
-}> = ({ className = 'w-10 h-10', color = 'currentColor' }) => (
-  <svg
-    viewBox="0 0 100 100"
-    fill={color}
-    xmlns="http://www.w3.org/2000/svg"
-    className={`shrink-0 pointer-events-none select-none ${className}`}
-  >
-    {/* پروانه ۱ (بالا سمت چپ) */}
-    <path d="M 49 49 C 39 28, 20 18, 16 12 C 34 8, 49 22, 49 49 Z" />
-    {/* پروانه ۲ (بالا سمت راست) */}
-    <path d="M 51 49 C 72 39, 82 20, 88 16 C 92 34, 78 49, 51 49 Z" />
-    {/* پروانه ۳ (پایین سمت راست) */}
-    <path d="M 51 51 C 61 72, 80 82, 84 88 C 66 92, 51 78, 51 51 Z" />
-    {/* پروانه ۴ (پایین سمت چپ) */}
-    <path d="M 49 51 C 28 61, 18 80, 12 84 C 8 66, 22 51, 49 51 Z" />
-  </svg>
-);
-
-/**
- * ۶. لوگوی نماد اعتماد الکترونیکی (ای‌نماد) مطابق فایل Logo Enamad .png
- */
-export const EnamadLogoBadge: React.FC<{ className?: string }> = ({
-  className = 'w-12 h-12',
-}) => (
-  <svg
-    viewBox="0 0 80 80"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={`shrink-0 ${className}`}
-  >
-    {/* علامت حرف 'e' نستعلیق و خط شکسته ای‌نماد */}
-    <path
-      d="M 44 16 C 26 16, 18 28, 22 42 C 26 52, 36 55, 46 45 C 54 37, 58 24, 48 19 C 40 15, 30 20, 26 32 C 20 44, 22 54, 14 56 C 9 57.5, 5 54, 8 48"
-      stroke="#231f1c"
-      strokeWidth="4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    {/* نقطه لوزی فوقانی */}
-    <polygon points="56,22 60,26 56,30 52,26" fill="#777777" />
-    {/* متن خطی خوشنویسی زیرین «نماد اعتماد الکترونیکی» */}
-    <path
-      d="M 12 64 C 28 67, 52 67, 68 64"
-      stroke="#231f1c"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    />
-    <text
-      x="40"
-      y="74"
-      textAnchor="middle"
-      fontSize="6.5"
-      fontWeight="600"
-      fill="#444444"
-      style={{ fontFamily: "'Vazirmatn', sans-serif" }}
-    >
-      نماد اعتماد الکترونیکی
-    </text>
-  </svg>
-);
-
-/**
- * ۷. وکتور واترمارک برگ پس‌زمینه باکس VIP (مطابق فایل Vectorfoot.png)
- */
-export const LeafWatermarkVector: React.FC<{ className?: string }> = ({
-  className = '',
-}) => (
-  <svg
-    viewBox="0 0 200 200"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={`pointer-events-none select-none ${className}`}
-  >
-    <g stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M 20 180 C 60 140, 100 100, 180 20" />
-      <path d="M 20 180 C 35 150, 25 120, 55 100 C 70 90, 85 110, 90 90 C 95 70, 80 50, 105 40 C 125 30, 145 50, 180 20 C 150 60, 160 80, 140 100 C 120 120, 140 135, 110 145 C 90 155, 70 140, 50 160 C 30 180, 20 180, 20 180 Z" />
-      <path d="M 60 140 C 75 120, 90 125, 100 115" />
-      <path d="M 90 110 C 110 90, 125 95, 135 85" />
-      <path d="M 120 80 C 140 60, 150 65, 160 55" />
-      <path d="M 60 140 C 50 120, 40 110, 35 105" />
-      <path d="M 90 110 C 80 90, 70 80, 65 75" />
-      <path d="M 120 80 C 110 60, 100 50, 95 45" />
-    </g>
-  </svg>
-);
-
-/**
  * لوگوی اصلی هدر همراه با پترن دقیق Vector.png در سمت راست
  */
 export const HeaderBrandLogo: React.FC = () => {
@@ -300,17 +208,37 @@ export const HeaderBrandLogo: React.FC = () => {
 };
 
 /**
- * لوگوی فوتر در باکس طلایی همراه با آیکون ۴ پروانه‌ای تیره و خط عمودی
+ * لوگوی فوتر در باکس طلایی همراه با ۳ پروانه تیره و خط عمودی
  */
 export const FooterBrandLogo: React.FC = () => {
   return (
-    <div className="inline-flex items-center select-none gap-3.5" dir="ltr">
-      {/* آیکون ۴ پروانه‌ای مطابق Group 33853.png */}
-      <FourPetalLogoSymbol className="w-10 h-10 text-[#231f1c]" />
+    <div className="inline-flex items-center select-none" dir="ltr">
+      <div className="relative flex flex-col items-end pr-3 border-r border-[#2b2b2b]/60">
+        <svg
+          width="42"
+          height="28"
+          viewBox="0 0 48 32"
+          fill="none"
+          className="absolute -top-4 -left-7 text-[#231f1c]"
+        >
+          <path
+            d="M12 10C8 3 2 2 1 6C0 10 6 12 12 10ZM12 10C16 3 22 2 23 6C24 10 18 12 12 10ZM12 10C9 14 4 17 3 14C2 11 7 10 12 10ZM12 10C15 14 20 17 21 14C22 11 17 10 12 10Z"
+            fill="currentColor"
+          />
+          <path
+            d="M28 18C25 13 21 12 20 15C19 18 24 19 28 18ZM28 18C31 13 35 12 36 15C37 18 32 19 28 18Z"
+            fill="currentColor"
+            opacity="0.85"
+          />
+          <path
+            d="M19 24C17 21 14 20 13 22C12 24 16 25 19 24ZM19 24C21 21 24 20 25 22C26 24 22 25 19 24Z"
+            fill="currentColor"
+            opacity="0.7"
+          />
+        </svg>
 
-      <div className="relative flex flex-col items-end pl-3 border-l border-[#2b2b2b]/40">
         <span
-          className="text-xs tracking-[0.03em] text-[#231f1c] font-bold mb-1"
+          className="text-xs tracking-[0.03em] text-[#231f1c] font-semibold mb-1"
           style={{ fontFamily: "'Vazirmatn', sans-serif" }}
         >
           Chandelier
@@ -326,24 +254,32 @@ export const FooterBrandLogo: React.FC = () => {
 /**
  * تیتر بخش‌های صفحه همراه با وکتور دقیق Vectorrtl.png در راست، Vectorltr.png در چپ و خط طلایی زیر تیتر
  */
-export const SectionHeading: React.FC<{ title: string; className?: string }> = ({
-  title,
-  className = '',
-}) => {
+export const SectionHeading: React.FC<{
+  title: string;
+  mobileTitle?: string;
+  className?: string;
+}> = ({ title, mobileTitle, className = '' }) => {
   return (
     <div
       className={`flex flex-col items-center justify-center my-2 ${className}`}
     >
-      <div className="flex items-center justify-center gap-3 sm:gap-4">
+      <div className="flex items-center justify-center gap-2 sm:gap-4">
         {/* سمت راست متن (در چیدمان RTL): Vectorrtl.png (نوک گل به سمت راست) */}
-        <SectionHeadingFloralOrnament direction="rtl" />
-        <h2 className="text-xl sm:text-[23px] font-extrabold text-[#141414] tracking-tight whitespace-nowrap">
-          {title}
+        <SectionHeadingFloralOrnament
+          direction="rtl"
+          className="w-5 h-5 xs:w-6 xs:h-6 sm:w-9 sm:h-9"
+        />
+        <h2 className="text-[15.5px] xs:text-[16.5px] sm:text-[23px] font-extrabold text-[#141414] tracking-tight whitespace-nowrap">
+          <span className="sm:hidden">{mobileTitle || title}</span>
+          <span className="hidden sm:inline">{title}</span>
         </h2>
         {/* سمت چپ متن (در چیدمان RTL): Vectorltr.png (نوک گل به سمت چپ) */}
-        <SectionHeadingFloralOrnament direction="ltr" />
+        <SectionHeadingFloralOrnament
+          direction="ltr"
+          className="w-5 h-5 xs:w-6 xs:h-6 sm:w-9 sm:h-9"
+        />
       </div>
-      <div className="w-12 h-[2.5px] bg-[#b08c57] rounded-full mt-3" />
+      <div className="w-10 sm:w-12 h-[2px] sm:h-[2.5px] bg-[#b08c57] rounded-full mt-2 sm:mt-3" />
     </div>
   );
 };
@@ -393,15 +329,44 @@ export const ArabesqueCornerPattern: React.FC<{
 );
 
 /**
- * نشان خوشنویسی/ای‌نماد لوستر صالحی در شبکه ۲×۲ فوتر
+ * نشان خوشنویسی «لوستر صالحی» در شبکه ۲×۲ فوتر
  */
 export const CalligraphyTrustBadge: React.FC<{ index: number }> = ({
   index,
 }) => (
   <div
-    className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#eae9e4] hover:bg-[#dfddd6] transition-all flex flex-col items-center justify-center border border-[#e2e0d8] cursor-pointer group shadow-xs hover:shadow-md"
-    title={`گواهی و نشان نماد اعتماد الکترونیکی شماره ${index + 1}`}
+    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#eeede9] hover:bg-[#e4e2dc] transition-colors flex flex-col items-center justify-center border border-[#e5e3dd] cursor-pointer group"
+    title={`گواهینامه و نشان اصالت شماره ${index + 1}`}
   >
-    <EnamadLogoBadge className="w-11 h-11 group-hover:scale-105 transition-transform" />
+    <svg
+      viewBox="0 0 48 44"
+      fill="none"
+      className="w-9 h-9 text-[#222222] group-hover:scale-105 transition-transform"
+    >
+      <path
+        d="M12 28C18 26 28 16 35 10C32 17 26 24 30 28C33 30 37 26 38 22"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M14 20C18 18 23 14 26 10"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="19" cy="11" r="1.6" fill="currentColor" />
+      <circle cx="29" cy="31" r="1.5" fill="currentColor" />
+      <text
+        x="24"
+        y="39"
+        textAnchor="middle"
+        fontSize="5"
+        fill="#555"
+        className="font-sans"
+      >
+        لوستر صالحی
+      </text>
+    </svg>
   </div>
 );

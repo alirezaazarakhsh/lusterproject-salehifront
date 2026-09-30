@@ -22,7 +22,7 @@ export const FooterSection: React.FC = () => {
   };
 
   return (
-    <footer id="footer-contact" className="w-full mt-12 bg-[#f7f6f2]">
+    <footer id="footer-contact" className="w-full mt-12 bg-[#f7f6f2] pb-20 lg:pb-0">
       <div className="w-full max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12">
         {/* باکس طلایی سمت راست (شعبه VIP لوستر اکبر صالحی) */}
         <div className="lg:col-span-5 bg-[#b39561] text-white p-8 sm:p-12 lg:p-14 relative overflow-hidden flex flex-col justify-between min-h-[380px]">

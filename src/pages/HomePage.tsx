@@ -201,6 +201,7 @@ export const HomePage: React.FC = () => {
       <ProductsCarouselSection
         sectionId="collection-salehi"
         title="محصولات کلکسیون صالحی"
+        mobileTitle="کلکسیون صالحی"
         products={productsList}
         variant="salehi-collection"
         cartProductIds={cartProductIds}
@@ -218,6 +219,7 @@ export const HomePage: React.FC = () => {
       <ProductsCarouselSection
         sectionId="best-sellers"
         title="محصولات کلکسیون پرفروش ترین ها"
+        mobileTitle="پرفروش‌ترین‌ها"
         products={productsList}
         variant="best-sellers"
         cartProductIds={cartProductIds}

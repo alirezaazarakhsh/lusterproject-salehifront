@@ -243,6 +243,7 @@ export const STORY_ITEMS: StoryItem[] = [
     storyType: 'single-product',
     durationSeconds: 38,
     price: '۱۲,۵۰۰,۰۰۰ تومان',
+    hasDashedRing: false,
     image: GENERATED_IMAGES.storyPortraitPalace,
     productImage: GENERATED_IMAGES.crystaliCherub,
     modelType: 'crystali',

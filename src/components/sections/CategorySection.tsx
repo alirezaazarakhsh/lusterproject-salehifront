@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
   SectionHeading,
   CategoryStarSeal,
@@ -12,40 +12,171 @@ interface CategorySectionProps {
 }
 
 /**
- * بخش «دسته بندی محصولات» دقیقاً مطابق طرح فیگما (Screenshot 2026-09-29 at 06.11.01.png):
- * - پترن‌های سمت راست و چپ کاملاً چسبیده به لبه‌های صفحه (right-0 و left-0 بدون فاصله از بغل‌ها)
- * - نمایش ۱۰۰٪ کامل پترن از بالا تا پایین بدون بریده شدن و با ابعاد دقیق طرح فیگما
+ * بخش «دسته بندی محصولات»
+ * - در موبایل: اسلایدر/کاروسل افقی لایه‌ای (Peek Carousel) با آیکون وریفای سمت راست و متن سمت چپ + ۵ نقطه پیجینیشن + پترن‌های ظریف و کوچک‌تر اسلیمی در طرفین (دقیقاً مطابق طرح فیگما در Screenshot 2026-09-30 at 03.04.59.png)
+ * - در دسکتاپ: شبکه ۴ ستونه لوکس به همراه پترن‌های لبه صفحه
  */
 export const CategorySection: React.FC<CategorySectionProps> = ({
   selectedCategory,
   onSelectCategory,
 }) => {
+  const [activeCategoryDot, setActiveCategoryDot] = useState(0);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // همگام‌سازی دقیق سوایپ کاروسل دسته‌بندی با نقطه‌های ۵گانه با متد getBoundingClientRect
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const children = Array.from(container.children) as HTMLElement[];
+    if (children.length === 0) return;
+
+    const containerCenter =
+      container.getBoundingClientRect().left + container.offsetWidth / 2;
+    let closestIdx = 0;
+    let minDiff = Infinity;
+
+    children.forEach((child, idx) => {
+      const rect = child.getBoundingClientRect();
+      const childCenter = rect.left + rect.width / 2;
+      const diff = Math.abs(containerCenter - childCenter);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    if (closestIdx !== activeCategoryDot) {
+      setActiveCategoryDot(closestIdx);
+    }
+  };
+
+  const scrollToCategory = (index: number) => {
+    setActiveCategoryDot(index);
+    if (!scrollRef.current) return;
+    const card = scrollRef.current.children[index] as HTMLElement;
+    if (card) {
+      card.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  };
+
   return (
-    <section className="relative w-full pt-10 pb-24">
+    <section className="relative w-full pt-8 sm:pt-10 pb-12 sm:pb-24 overflow-hidden md:overflow-visible">
       {/* تیتر بخش دسته بندی محصولات */}
       <SectionHeading
         title="دسته بندی محصولات"
-        className="mb-12 relative z-10 px-4"
+        className="mb-6 sm:mb-12 relative z-10 px-4"
       />
 
-      {/* ردیف کارت‌ها به همراه پترن‌های اسلیمی چسبیده به لبه راست و چپ صفحه */}
-      <div className="relative w-full py-10">
-        {/* پترن سمت راست: کاملاً چسبیده به لبه راست صفحه (right-0) و بدون بریدگی */}
+      {/* ==================== حالت موبایل (کاروسل افقی Peek Slider مطابق طرح فیگما) ==================== */}
+      <div className="block md:hidden relative w-full py-2">
+        {/* پترن اسلیمی سمت راست (کوچک‌تر، ظریف‌تر و چسبیده به لبه راست right-0) */}
+        <CenteredVintageOrnament29
+          direction="rtl"
+          color="#ebdcc7"
+          className="block absolute right-0 top-1/2 -translate-y-1/2 w-[110px] sm:w-[130px] h-[130px] sm:h-[150px] z-0 pointer-events-none opacity-65"
+        />
+
+        {/* پترن اسلیمی سمت چپ (کوچک‌تر، ظریف‌تر و چسبیده به لبه چپ left-0) */}
+        <CenteredVintageOrnament29
+          direction="ltr"
+          color="#ebdcc7"
+          className="block absolute left-0 top-1/2 -translate-y-1/2 w-[110px] sm:w-[130px] h-[130px] sm:h-[150px] z-0 pointer-events-none opacity-65"
+        />
+
+        {/* کاروسل کارت‌های دسته‌بندی با قابلیت سوایپ */}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="relative z-10 flex gap-3 overflow-x-auto snap-x snap-mandatory px-[8vw] py-2.5 touch-pan-x [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {PRODUCT_CATEGORIES.map((category, idx) => {
+            const isActive = selectedCategory === category.filterKey;
+            const isDotActive = activeCategoryDot === idx;
+
+            return (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => {
+                  onSelectCategory(category.filterKey);
+                  scrollToCategory(idx);
+                  const el = document.getElementById('collection-salehi');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`group shrink-0 snap-center w-[78vw] max-w-[340px] flex items-center justify-between gap-4 px-5 py-5 rounded-[22px] bg-white border transition-all duration-300 cursor-pointer text-right shadow-[0_6px_25px_rgba(0,0,0,0.03)] ${
+                  isActive || isDotActive
+                    ? 'border-[#b08c57] ring-1 ring-[#b08c57]/20 shadow-[0_8px_30px_rgba(176,140,87,0.1)]'
+                    : 'border-[#e8e8e8] hover:border-[#d5c5a8]'
+                }`}
+              >
+                {/* ۱. آیکون تیک وریفای طلایی (CategoryStarSeal) در سمت راست کارت در چیدمان RTL */}
+                <CategoryStarSeal
+                  size={44}
+                  className="shrink-0 group-hover:scale-105 transition-transform duration-300"
+                />
+
+                {/* ۲. عنوان دسته‌بندی و تعداد محصول در سمت چپ آیکون وریفای */}
+                <div className="text-right flex-1 min-w-0">
+                  <h3 className="text-[16px] xs:text-[17px] font-black text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-snug">
+                    {category.title}
+                  </h3>
+                  <p className="text-[13px] text-[#777777] font-medium mt-1">
+                    {category.countText}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* نقطه‌های پیجینیشن ۵گانه مدرن پایین کاروسل دسته‌بندی (دقیقاً مطابق Screenshot 2026-09-30 at 03.12.16.png) */}
+        <div className="relative z-10 flex items-center justify-center gap-2 mt-5">
+          {[0, 1, 2, 3, 4].map((dotIdx) => {
+            const activeIndex = activeCategoryDot % PRODUCT_CATEGORIES.length;
+            const dist = Math.abs(dotIdx - activeIndex);
+
+            return (
+              <button
+                key={`cat-dot-${dotIdx}`}
+                type="button"
+                onClick={() => scrollToCategory(dotIdx % PRODUCT_CATEGORIES.length)}
+                aria-label={`اسلاید ${dotIdx + 1}`}
+                className={`rounded-full transition-all cursor-pointer ${
+                  dist === 0
+                    ? 'w-3.5 h-3.5 bg-[#222222] shadow-2xs'
+                    : dist === 1
+                    ? 'w-2.5 h-2.5 bg-[#dcdcdc] hover:bg-[#b08c57]'
+                    : 'w-1.5 h-1.5 bg-[#eaeaea] hover:bg-[#b08c57]'
+                }`}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ==================== حالت دسکتاپ (شبکه ۴ ستونه) ==================== */}
+      <div className="hidden md:block relative w-full py-10">
+        {/* پترن سمت راست دسکتاپ */}
         <CenteredVintageOrnament29
           direction="rtl"
           color="#ebe5dc"
-          className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 w-[215px] lg:w-[245px] h-[225px] lg:h-[255px] z-0"
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-[215px] lg:w-[245px] h-[225px] lg:h-[255px] z-0 pointer-events-none"
         />
 
-        {/* پترن سمت چپ: کاملاً چسبیده به لبه چپ صفحه (left-0) و بدون بریدگی */}
+        {/* پترن سمت چپ دسکتاپ */}
         <CenteredVintageOrnament29
           direction="ltr"
           color="#ebe5dc"
-          className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 w-[215px] lg:w-[245px] h-[225px] lg:h-[255px] z-0"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-[215px] lg:w-[245px] h-[225px] lg:h-[255px] z-0 pointer-events-none"
         />
 
-        {/* شبکه ۴ ستونه کارت‌ها با فاصله کناری دقیق تا سرنیزه و ۲ نقطه پترن بیرون کادر کارت قرار بگیرد */}
-        <div className="relative z-10 w-full max-w-[1800px] mx-auto px-4 sm:px-10 md:px-14 lg:px-[62px] xl:px-[68px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
+        {/* شبکه ۴ ستونه کارت‌ها */}
+        <div className="relative z-10 w-full max-w-[1800px] mx-auto px-10 md:px-14 lg:px-[62px] xl:px-[68px] grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
           {PRODUCT_CATEGORIES.map((category) => {
             const isActive = selectedCategory === category.filterKey;
             return (
@@ -57,21 +188,21 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   const el = document.getElementById('collection-salehi');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className={`group flex items-center justify-start gap-4 px-6 py-6 rounded-[22px] bg-white/82 backdrop-blur-[1px] border transition-all duration-300 cursor-pointer text-right ${
+                className={`group flex items-center justify-between gap-4 px-6 py-6 rounded-[22px] bg-white/90 backdrop-blur-[2px] border transition-all duration-300 cursor-pointer text-right ${
                   isActive
-                    ? 'border-[#b08c57] shadow-[0_10px_30px_rgba(176,140,87,0.1)]'
-                    : 'border-[#ededed] shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:border-[#d5c5a8]'
+                    ? 'border-[#b08c57] shadow-[0_10px_30px_rgba(176,140,87,0.12)] bg-white'
+                    : 'border-[#ededed] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-[#d5c5a8]'
                 }`}
               >
-                {/* آیکون تیک کنگره‌دار طلایی (verify.png) */}
+                {/* آیکون تیک وریفای طلایی در سمت راست در دسکتاپ */}
                 <CategoryStarSeal
-                  size={46}
-                  className="group-hover:scale-105 transition-transform duration-300"
+                  size={42}
+                  className="shrink-0 group-hover:scale-105 transition-transform duration-300"
                 />
 
                 {/* عنوان دسته‌بندی و تعداد محصول */}
-                <div className="text-right">
-                  <h3 className="text-[16px] sm:text-[17px] font-bold text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors">
+                <div className="text-right flex-1 min-w-0">
+                  <h3 className="text-[17px] font-bold text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-tight">
                     {category.title}
                   </h3>
                   <p className="text-[13.5px] text-[#777777] font-normal mt-2">

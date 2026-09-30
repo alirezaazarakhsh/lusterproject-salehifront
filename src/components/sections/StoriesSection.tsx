@@ -92,31 +92,31 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
   };
 
   return (
-    <section className="w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 pt-6 pb-5">
-      <div className="relative flex items-center justify-between gap-2 sm:gap-3">
-        {/* فلش سمت راست کروسل */}
+    <section className="w-full max-w-[1800px] mx-auto px-3 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-4 sm:pb-5">
+      <div className="relative flex items-center justify-between w-full gap-2">
+        {/* دکمه فلش سمت راست دسکتاپ (بدون بک‌گراند گرد - فقط آیکون خالی) */}
         <button
           type="button"
           onClick={() => handleScroll('right')}
-          aria-label="استوری‌های قبلی"
-          className="w-9 h-9 rounded-full hover:bg-[#f3f1ec] text-[#333] hover:text-[#b59766] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          aria-label="اسکرول به راست"
+          className="hidden md:flex items-center justify-center text-[#333333] hover:text-[#b08c57] shrink-0 transition-colors cursor-pointer z-10 p-1.5"
         >
-          <ChevronRight className="w-5 h-5 stroke-[1.9]" />
+          <ChevronRight className="w-5 h-5 text-[#333333] hover:text-[#b08c57] transition-colors" />
         </button>
 
-        {/* ردیف کروسل استوری‌های دایره‌ای */}
+        {/* ردیف کروسل استوری‌های دایره‌ای با قابلیت لمسی/سوایپ و درگ روی تمامی دستگاه‌ها */}
         <div
           ref={scrollRef}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUpOrLeave}
           onMouseLeave={handleMouseUpOrLeave}
-          className="flex items-center justify-start gap-4 sm:gap-6 overflow-x-auto py-1.5 flex-1 select-none cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden"
+          className="flex items-center justify-start gap-3.5 sm:gap-6 overflow-x-auto py-1 w-full select-none cursor-grab active:cursor-grabbing touch-pan-x [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {stories.map((story) => {
-            const isSpinningDashed =
-              loadingStoryId === story.id || activeStoryId === story.id;
+            const isDashed =
+              loadingStoryId === story.id || activeStoryId === story.id || Boolean(story.hasDashedRing);
 
             return (
               <button
@@ -125,14 +125,13 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
                 onClick={() => handleStoryClick(story)}
                 className="group flex flex-col items-center gap-2.5 shrink-0 w-[86px] sm:w-[96px] cursor-pointer focus:outline-none"
               >
-                {/* حلقه دور تصویر استوری دقیقاً مطابق تصویر ۴ */}
+                {/* حلقه دور تصویر استوری */}
                 <div className="relative w-[78px] h-[78px] sm:w-[84px] sm:h-[84px] flex items-center justify-center">
-                  {isSpinningDashed ? (
-                    /* حالت در حال باز شدن / مشاهده: خط‌چین تیره در حال چرخش */
+                  {isDashed ? (
+                    /* حالت فعال یا در حال لود: خط‌چین تیره بدون چرخش */
                     <svg
                       viewBox="0 0 88 88"
-                      className="absolute inset-0 w-full h-full text-[#2b2b2b] animate-spin"
-                      style={{ animationDuration: '3.2s' }}
+                      className="absolute inset-0 w-full h-full text-[#2b2b2b]"
                     >
                       <circle
                         cx="44"
@@ -182,14 +181,14 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
           })}
         </div>
 
-        {/* فلش سمت چپ کروسل */}
+        {/* دکمه فلش سمت چپ دسکتاپ (بدون بک‌گراند گرد - فقط آیکون خالی) */}
         <button
           type="button"
           onClick={() => handleScroll('left')}
-          aria-label="استوری‌های بعدی"
-          className="w-9 h-9 rounded-full hover:bg-[#f3f1ec] text-[#333] hover:text-[#b59766] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          aria-label="اسکرول به چپ"
+          className="hidden md:flex items-center justify-center text-[#333333] hover:text-[#b08c57] shrink-0 transition-colors cursor-pointer z-10 p-1.5"
         >
-          <ChevronLeft className="w-5 h-5 stroke-[1.9]" />
+          <ChevronLeft className="w-5 h-5 text-[#333333] hover:text-[#b08c57] transition-colors" />
         </button>
       </div>
     </section>

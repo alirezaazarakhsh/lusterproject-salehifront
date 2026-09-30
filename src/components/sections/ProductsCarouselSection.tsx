@@ -17,6 +17,7 @@ import { TransparentProductImage } from '../TransparentProductImage';
 interface ProductsCarouselSectionProps {
   sectionId: string;
   title: string;
+  mobileTitle?: string;
   products: ChandelierProduct[];
   variant: 'salehi-collection' | 'best-sellers';
   cartProductIds?: string[];
@@ -109,6 +110,7 @@ const CARD_PLATING_FINISHES: FinishType[] = [
 export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = ({
   sectionId,
   title,
+  mobileTitle,
   products,
   cartProductIds = [],
   cartQuantities = {},
@@ -172,12 +174,15 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
   return (
     <section
       id={sectionId}
-      className="w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 py-10 overflow-hidden"
+      className="w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 py-8 sm:py-10 overflow-hidden"
     >
-      <SectionHeading title={title} className="mb-10" />
+      <SectionHeading title={title} mobileTitle={mobileTitle} className="mb-6 sm:mb-10" />
 
-      {/* شبکه ۴ ستونه تمام‌عرض */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* در موبایل کاروسل افقی عریض با پوزیشن چسبیده به راست (مطابق Screenshot 2026-09-30 at 03.42.05.png) و در دسکتاپ شبکه ۴ ستونه */}
+      <div
+        className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory pr-4 pl-6 xs:pr-5 xs:pl-8 md:px-0 py-2 md:py-0 touch-pan-x [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
         {products.map((product) => {
           const isOutOfStock = Boolean(product.outOfStock);
           const qtyInCart = cartQuantities[product.id] || 0;
@@ -198,7 +203,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
               onMouseLeave={() => {
                 clearTemporaryTooltip(product.id);
               }}
-              className="group bg-white rounded-[34px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
+              className="group shrink-0 snap-start w-[83vw] max-w-[345px] md:w-auto md:max-w-none md:shrink bg-white rounded-[28px] sm:rounded-[34px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 {/* باکس عریض‌تر عکس با پس‌زمینه طوسی کم‌رنگ و گوشه‌های گرد */}
@@ -382,7 +387,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
                           clearTemporaryTooltip(product.id);
                         }
                       }}
-                      className={`h-12 min-w-[142px] px-6 rounded-[15px] text-[13px] font-bold transition-colors whitespace-nowrap ${
+                      className={`h-11 sm:h-12 min-w-[115px] sm:min-w-[142px] px-3.5 sm:px-6 rounded-[15px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap ${
                         isOutOfStock
                           ? 'bg-[#f3f3f3] text-[#222222] cursor-not-allowed'
                           : 'bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer'
@@ -479,10 +484,24 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
             </div>
           );
         })}
+
+        {/* کارت عمودی «مشاهده محصولات» در انتهای کاروسل موبایل (باریک‌تر و با فاصله بیشتر، دقیقاً مطابق Screenshot 2026-09-30 at 03.39.14.png) */}
+        <button
+          type="button"
+          onClick={() => onOpenProductModal(products[0])}
+          className="md:hidden shrink-0 snap-center h-[200px] xs:h-[220px] my-auto w-[38px] xs:w-[42px] mr-2 xs:mr-3 rounded-[14px] xs:rounded-[16px] bg-[#c7a975] hover:bg-[#b59766] active:bg-[#9e7f4c] text-white flex items-center justify-center cursor-pointer shadow-sm transition-all self-center"
+        >
+          <span
+            className="font-bold text-[12px] xs:text-[13px] tracking-wider text-white select-none whitespace-nowrap"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            مشاهده محصولات
+          </span>
+        </button>
       </div>
 
-      {/* دکمه‌های صفحه‌بندی پایین بخش */}
-      <div className="mt-8 flex items-center justify-center gap-3">
+      {/* دکمه‌های صفحه‌بندی پایین بخش (فقط در دسکتاپ - در موبایل طبق درخواست حذف شد) */}
+      <div className="hidden md:flex mt-8 items-center justify-center gap-3">
         <button
           type="button"
           onClick={() => onOpenProductModal(products[0])}

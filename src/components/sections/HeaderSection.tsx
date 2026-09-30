@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { HeaderBrandLogo } from '../Ornaments';
+import { ChevronDown, ChevronUp, X, Home, BookOpen, Phone, Info, FileText, Globe, MapPin } from 'lucide-react';
+import { HeaderBrandLogo, ExactPalmetteVector } from '../Ornaments';
 
 interface HeaderSectionProps {
   totalCartCount: number;
@@ -375,6 +375,10 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   >(null);
   const [selectedLang, setSelectedLang] = useState<'fa' | 'en'>('fa');
   const [hoveredLang, setHoveredLang] = useState<'fa' | 'en' | null>(null);
+  const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState<boolean>(false);
+  const [isMobileProfileOpen, setIsMobileProfileOpen] = useState<boolean>(false);
+  const [mobileAccordionOpen, setMobileAccordionOpen] = useState<string | null>('products');
+  const [activeMobileTab, setActiveMobileTab] = useState<'home' | 'categories' | 'cart' | 'profile'>('home');
   const closeTimeoutRef = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
 
@@ -426,7 +430,39 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
       ref={headerRef}
       className="w-full bg-white border-b border-[#efefef] relative z-40"
     >
-      <div className="w-full max-w-[1800px] mx-auto pr-0 pl-4 sm:pl-8 lg:pl-14 xl:pl-20 h-22 flex items-center justify-between gap-4">
+      {/* هدر مخصوص موبایل و تبلت (< lg) - دقیقاً مطابق تصویر Screenshot 2026-09-30 at 02.34.18.png */}
+      <div className="lg:hidden w-full h-24 px-2 sm:px-4 flex items-center justify-between relative overflow-hidden bg-white">
+        {/* پترن وکتور سمت راست: Vector2rtl.png پایه چسبیده به لبه راست و نوک به سمت مرکز */}
+        <div className="shrink-0 flex items-center -mr-3 sm:-mr-1">
+          <ExactPalmetteVector className="w-14 h-14 sm:w-16 sm:h-16 text-[#cbb592]" />
+        </div>
+
+        {/* لوگوی مرکزی متمرکز: Chandelier بالای AKBAR SALEHI */}
+        <a
+          href="#top"
+          className="flex flex-col items-center justify-center text-center select-none focus:outline-none py-2"
+          dir="ltr"
+          aria-label="گالری لوستر اکبر صالحی"
+        >
+          <span
+            className="text-[14px] sm:text-[15.5px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1"
+            style={{ fontFamily: "'Vazirmatn', sans-serif" }}
+          >
+            Chandelier
+          </span>
+          <span className="font-brand-serif text-[23px] sm:text-[29px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none">
+            AKBAR SALEHI
+          </span>
+        </a>
+
+        {/* پترن وکتور سمت چپ: Vector2ltr.png پایه چسبیده به لبه چپ و نوک به سمت مرکز */}
+        <div className="shrink-0 flex items-center -ml-3 sm:-ml-1">
+          <ExactPalmetteVector className="w-14 h-14 sm:w-16 sm:h-16 text-[#cbb592] -scale-x-100" />
+        </div>
+      </div>
+
+      {/* هدر مخصوص دسکتاپ (lg) */}
+      <div className="hidden lg:flex w-full max-w-[1800px] mx-auto pr-0 pl-4 sm:pl-8 lg:pl-14 xl:pl-20 h-22 items-center justify-between gap-4">
         {/* سمت راست: لوگو چسبیده به پترن طلایی لبه راست دقیقاً مطابق عکس ارسالی */}
         <a
           href="#top"
@@ -576,9 +612,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           </div>
         </nav>
 
-        {/* سمت چپ: انتخاب زبان (همراه با زیرمنوی EN / زبان فارسی)، سبد خرید و پروفایل با حالت هاور طلایی و آیکون سفید دقیقاً مطابق تصویر */}
+        {/* سمت چپ: انتخاب زبان، سبد خرید و حساب کاربری / پروفایل (ترتیب از راست به چپ در چیدمان RTL مطابق Screenshot 2026-09-30 at 03.19.25.png) */}
         <div className="flex items-center gap-3 shrink-0">
-          {/* دکمه و زیرمنوی تغییر زبان (فارسی / EN) */}
+          {/* ۱. دکمه و زیرمنوی تغییر زبان (فارسی / EN) - در سمت راست دکمه‌ها نزدیک لینک‌های منو */}
           <div
             className="relative"
             onMouseEnter={() => handleMenuEnter('lang')}
@@ -592,23 +628,23 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               title="تغییر زبان"
               className="h-12 px-4 rounded-[14px] bg-[#f4f4f4] hover:bg-[#ececec] flex items-center gap-2.5 text-[14px] font-bold text-[#292d32] transition-colors cursor-pointer whitespace-nowrap"
             >
-              {selectedLang === 'fa' ? (
-                <IranFlagIcon className="w-7 h-5" />
-              ) : (
-                <UkFlagIcon className="w-7 h-5" />
-              )}
-              <span>{selectedLang === 'fa' ? 'فارسی' : 'EN'}</span>
               <ChevronDown
                 className={`w-4 h-4 text-[#292d32] stroke-[2] transition-transform duration-200 ${
                   openSubmenu === 'lang' ? 'rotate-180' : ''
                 }`}
               />
+              <span>{selectedLang === 'fa' ? 'فارسی' : 'EN'}</span>
+              {selectedLang === 'fa' ? (
+                <IranFlagIcon className="w-7 h-5" />
+              ) : (
+                <UkFlagIcon className="w-7 h-5" />
+              )}
             </button>
 
             {openSubmenu === 'lang' && (
               <div
                 dir="rtl"
-                className="absolute top-[calc(100%+10px)] right-0 w-[195px] bg-white rounded-[18px] shadow-[0_14px_44px_rgba(0,0,0,0.12)] border border-[#f1f1f1] overflow-hidden z-50"
+                className="absolute top-[calc(100%+10px)] left-0 w-[195px] bg-white rounded-[18px] shadow-[0_14px_44px_rgba(0,0,0,0.12)] border border-[#f1f1f1] overflow-hidden z-50"
               >
                 {/* گزینه اول: EN */}
                 <button
@@ -656,7 +692,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             )}
           </div>
 
-          {/* دکمه سبد خرید (در حالت عادی خاکستری با آیکون تیره، در حالت هاور طلایی #b59766 با آیکون سفید دقیقاً مطابق تصویر) */}
+          {/* ۲. دکمه سبد خرید - در وسط دکمه‌های سمت چپ */}
           <button
             type="button"
             onClick={onOpenCart}
@@ -674,7 +710,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             )}
           </button>
 
-          {/* دکمه کاربری / لاگین به همراه دراپ‌داون حساب کاربری پس از ورود (دقیقاً مطابق Profile Dropdown 01 و 02) */}
+          {/* ۳. دکمه کاربری / لاگین به همراه دراپ‌داون حساب کاربری پس از ورود - در منتهی‌الیه سمت چپ هدر */}
           <div
             className="relative"
             onMouseEnter={() => {
@@ -772,7 +808,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     </div>
                   </button>
 
-                  {/* ۴. خروج از حساب کاربری (قرمز با هاور صورتی روشن مطابق تصویر اول) */}
+                  {/* ۴. خروج از حساب کاربری (قرمز با هاور صورتی روشن) */}
                   <button
                     type="button"
                     onClick={() => {
@@ -792,6 +828,493 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ۱. نوار ثابت ناوبری پایین در حالت موبایل و تبلت (< lg) - مطابق طرح‌های فیگما Mobile Menu 01-04 */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-[#e5e5e5] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] h-[66px] px-2 flex items-center justify-around">
+        {/* تب ۱: صفحه اصلی */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMobileTab('home');
+            setIsMobileCategoriesOpen(false);
+            setIsMobileProfileOpen(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
+            activeMobileTab === 'home' && !isMobileCategoriesOpen && !isMobileProfileOpen
+              ? 'text-[#2b2b2b] font-bold'
+              : 'text-[#888888] font-medium'
+          }`}
+        >
+          <Home className="w-[20px] h-[20px]" />
+          <span className="text-[11px] leading-none">صفحه اصلی</span>
+        </button>
+
+        {/* تب ۲: دسته بندی ها */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMobileTab('categories');
+            setIsMobileCategoriesOpen(true);
+            setIsMobileProfileOpen(false);
+          }}
+          className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
+            isMobileCategoriesOpen || activeMobileTab === 'categories'
+              ? 'text-[#2b2b2b] font-bold'
+              : 'text-[#888888] font-medium'
+          }`}
+        >
+          <ProfileDashboardIcon className="w-[20px] h-[20px]" />
+          <span className="text-[11px] leading-none">دسته بندی ها</span>
+        </button>
+
+        {/* تب ۳: سبد خرید */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMobileTab('cart');
+            setIsMobileCategoriesOpen(false);
+            setIsMobileProfileOpen(false);
+            onOpenCart();
+          }}
+          className="relative flex flex-col items-center justify-center gap-1 flex-1 py-1 cursor-pointer text-[#888888] hover:text-[#2b2b2b] font-medium transition-colors"
+        >
+          <div className="relative">
+            <HeaderBagIcon className="w-[20px] h-[20px]" />
+            {totalCartCount > 0 && (
+              <span className="absolute -top-1.5 -right-2 min-w-[17px] h-[17px] px-1 rounded-full bg-[#b59766] text-white text-[10px] font-bold flex items-center justify-center leading-none tabular-nums">
+                {totalCartCount.toLocaleString('fa-IR')}
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] leading-none">سبد خرید</span>
+        </button>
+
+        {/* تب ۴: پروفایل کاربری */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMobileTab('profile');
+            setIsMobileProfileOpen(true);
+            setIsMobileCategoriesOpen(false);
+          }}
+          className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
+            isMobileProfileOpen || activeMobileTab === 'profile'
+              ? 'text-[#2b2b2b] font-bold'
+              : 'text-[#888888] font-medium'
+          }`}
+        >
+          <HeaderUserIcon className="w-[20px] h-[20px]" />
+          <span className="text-[11px] leading-none">پروفایل کاربری</span>
+        </button>
+      </div>
+
+      {/* ۲. کشوی آکاردئونی دسته بندی های موبایل (دقیقاً مطابق تصاویر Mobile 11, 12, 13) */}
+      {isMobileCategoriesOpen && (
+        <div
+          dir="rtl"
+          className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
+          onClick={() => setIsMobileCategoriesOpen(false)}
+        >
+          <div
+            className="w-full bg-[#fcfbf9] rounded-t-[30px] max-h-[92vh] overflow-y-auto p-5 border-t border-[#e2ddd2] shadow-2xl flex flex-col justify-between"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              {/* هدر کشو: لوگوی لوستر اکبر صالحی + دکمه بستن */}
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#ece7dc]">
+                <div className="flex flex-col items-start select-none" dir="ltr">
+                  <span className="text-[11px] font-semibold tracking-wider text-[#b58d53] uppercase">
+                    Chandelier
+                  </span>
+                  <div className="flex items-center gap-1 -mt-0.5">
+                    <ExactPalmetteVector className="w-8 h-7 text-[#cbb592]" />
+                    <span className="font-brand-serif text-[18px] font-normal text-[#2b2b2b]">
+                      AKBAR SALEHI
+                    </span>
+                    <ExactPalmetteVector className="w-8 h-7 text-[#cbb592] -scale-x-100" />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsMobileCategoriesOpen(false)}
+                  className="w-9 h-9 rounded-full bg-[#f2efe6] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="بستن"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* کارت‌های آکاردئونی ناوبری موبایل */}
+              <div className="space-y-3">
+                {/* ۱. محصولات (آکاردئون با ۸ زیرمجموعه) */}
+                <div className="rounded-[20px] bg-white border border-[#eae6db] overflow-hidden shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileAccordionOpen((prev) =>
+                        prev === 'products' ? null : 'products'
+                      )
+                    }
+                    className="w-full p-4 flex items-center justify-between cursor-pointer text-right"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                        <ProfileDashboardIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-bold text-[#1f1f1f]">
+                          محصولات
+                        </h4>
+                        <p className="text-[12px] text-[#777777] mt-0.5">
+                          خدمات لوستر، آباژور، آینه و کنسول و...
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronDown
+                      className={`w-5 h-5 text-[#666666] transition-transform duration-200 ${
+                        mobileAccordionOpen === 'products' ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {mobileAccordionOpen === 'products' && (
+                    <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[#f2eee5] bg-[#faf8f3]">
+                      {PRODUCTS_SUBMENU_ITEMS.map((sub) => (
+                        <a
+                          key={sub.id}
+                          href={sub.href}
+                          onClick={() => setIsMobileCategoriesOpen(false)}
+                          className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white text-[13.5px] font-medium text-[#333333] transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#b59766]" />
+                            <span>{sub.label}</span>
+                          </span>
+                          <span className="text-xs text-[#888888]">←</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* ۲. پروژه ها */}
+                <a
+                  href="#executed-projects"
+                  onClick={() => setIsMobileCategoriesOpen(false)}
+                  className="block rounded-[20px] bg-white border border-[#eae6db] p-4 shadow-2xs hover:border-[#b59766] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                        <ProfileOrdersBagIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-bold text-[#1f1f1f]">
+                          پروژه ها
+                        </h4>
+                        <p className="text-[12px] text-[#777777] mt-0.5">
+                          نمونه کارهای انجام شده در سطح کل ایران!
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#888888]">←</span>
+                  </div>
+                </a>
+
+                {/* ۳. بلاگ */}
+                <a
+                  href="#magazine-section"
+                  onClick={() => setIsMobileCategoriesOpen(false)}
+                  className="block rounded-[20px] bg-white border border-[#eae6db] p-4 shadow-2xs hover:border-[#b59766] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                        <BookOpen className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-bold text-[#1f1f1f]">
+                          بلاگ
+                        </h4>
+                        <p className="text-[12px] text-[#777777] mt-0.5">
+                          مقاله های دانستنی و جذاب
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#888888]">←</span>
+                  </div>
+                </a>
+
+                {/* ۴. تماس با ما */}
+                <a
+                  href="#footer-contact"
+                  onClick={() => setIsMobileCategoriesOpen(false)}
+                  className="block rounded-[20px] bg-white border border-[#eae6db] p-4 shadow-2xs hover:border-[#b59766] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                        <Phone className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-bold text-[#1f1f1f]">
+                          تماس با ما
+                        </h4>
+                        <p className="text-[12px] text-[#777777] mt-0.5">
+                          راه ارتباطی با مجموعه لوستر صالحی
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#888888]">←</span>
+                  </div>
+                </a>
+
+                {/* ۵. درباره ما */}
+                <a
+                  href="#about-services"
+                  onClick={() => setIsMobileCategoriesOpen(false)}
+                  className="block rounded-[20px] bg-white border border-[#eae6db] p-4 shadow-2xs hover:border-[#b59766] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                        <Info className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-bold text-[#1f1f1f]">
+                          درباره ما
+                        </h4>
+                        <p className="text-[12px] text-[#777777] mt-0.5">
+                          داستان پیشرفت رشدی بی انتهای ما در ایران!
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-[#888888]">←</span>
+                  </div>
+                </a>
+
+                {/* ۶. موارد دیگر */}
+                <div className="rounded-[20px] bg-white border border-[#eae6db] overflow-hidden shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileAccordionOpen((prev) =>
+                        prev === 'more' ? null : 'more'
+                      )
+                    }
+                    className="w-full p-4 flex items-center justify-between cursor-pointer text-right"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-bold text-[#1f1f1f]">
+                          موارد دیگر
+                        </h4>
+                        <p className="text-[12px] text-[#777777] mt-0.5">
+                          مجوز و گواهی‌ها، قوانین و مقررات مجموعه
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronDown
+                      className={`w-5 h-5 text-[#666666] transition-transform duration-200 ${
+                        mobileAccordionOpen === 'more' ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {mobileAccordionOpen === 'more' && (
+                    <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[#f2eee5] bg-[#faf8f3]">
+                      {MORE_SUBMENU_ITEMS.map((more) => (
+                        <a
+                          key={more.id}
+                          href={more.href}
+                          onClick={() => setIsMobileCategoriesOpen(false)}
+                          className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white text-[13.5px] font-medium text-[#333333] transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#b59766]" />
+                            <span>{more.label}</span>
+                          </span>
+                          <span className="text-xs text-[#888888]">←</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ۳. کشوی پروفایل کاربری موبایل (دقیقاً مطابق تصاویر Mobile 14, 15) */}
+      {isMobileProfileOpen && (
+        <div
+          dir="rtl"
+          className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
+          onClick={() => setIsMobileProfileOpen(false)}
+        >
+          <div
+            className="w-full bg-[#fcfbf9] rounded-t-[30px] max-h-[92vh] overflow-y-auto p-5 border-t border-[#e2ddd2] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* هدر کشوی پروفایل: انتخاب زبان + نام کاربر + دکمه بستن */}
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#ece7dc]">
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedLang((l) => (l === 'fa' ? 'en' : 'fa'))
+                  }
+                  className="h-10 px-3 rounded-xl bg-[#f2efe6] flex items-center gap-2 text-xs font-bold text-[#222222] cursor-pointer"
+                >
+                  {selectedLang === 'fa' ? (
+                    <>
+                      <IranFlagIcon className="w-6 h-4" />
+                      <span>فارسی</span>
+                    </>
+                  ) : (
+                    <>
+                      <UkFlagIcon className="w-6 h-4" />
+                      <span>EN</span>
+                    </>
+                  )}
+                </button>
+
+                <div
+                  onClick={() => onToggleUserDisplayName?.()}
+                  title="تغییر نمایش عنوان کاربر"
+                  className="text-right cursor-pointer select-none"
+                >
+                  <span className="text-[15px] font-bold text-[#1f1f1f]">
+                    {userDisplayName}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMobileProfileOpen(false)}
+                className="w-9 h-9 rounded-full bg-[#f2efe6] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                aria-label="بستن"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* لیست اکشن‌های پروفایل موبایل */}
+            <div className="space-y-3">
+              {/* ۱. پنل پیشخوان */}
+              <button
+                type="button"
+                onClick={() => setIsMobileProfileOpen(false)}
+                className="w-full p-4 rounded-[20px] bg-white border border-[#eae6db] flex items-center justify-between text-right cursor-pointer hover:border-[#b59766] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                    <ProfileDashboardIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[14.5px] font-bold text-[#1f1f1f]">
+                      پنل پیشخوان
+                    </h4>
+                    <p className="text-[12px] text-[#777777] mt-0.5">
+                      مشاهده و ویرایش اطلاعات شخصی
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs text-[#888888]">←</span>
+              </button>
+
+              {/* ۲. سفارش های من */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileProfileOpen(false);
+                  onOpenCart();
+                }}
+                className="w-full p-4 rounded-[20px] bg-white border border-[#eae6db] flex items-center justify-between text-right cursor-pointer hover:border-[#b59766] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                    <ProfileOrdersBagIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[14.5px] font-bold text-[#1f1f1f]">
+                      سفارش های من
+                    </h4>
+                    <p className="text-[12px] text-[#777777] mt-0.5">
+                      محصولات ثبت شده در انتظار پرداخت
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs text-[#888888]">←</span>
+              </button>
+
+              {/* ۳. لیست علاقه مندی ها */}
+              <button
+                type="button"
+                onClick={() => setIsMobileProfileOpen(false)}
+                className="w-full p-4 rounded-[20px] bg-white border border-[#eae6db] flex items-center justify-between text-right cursor-pointer hover:border-[#b59766] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                    <ProfileArchiveBookmarkIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[14.5px] font-bold text-[#1f1f1f]">
+                      لیست علاقه مندی ها
+                    </h4>
+                    <p className="text-[12px] text-[#777777] mt-0.5">
+                      محصولات و مقاله های جذاب ذخیره شده
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs text-[#888888]">←</span>
+              </button>
+
+              {/* ۴. آدرس مسکونی */}
+              <button
+                type="button"
+                onClick={() => setIsMobileProfileOpen(false)}
+                className="w-full p-4 rounded-[20px] bg-white border border-[#eae6db] flex items-center justify-between text-right cursor-pointer hover:border-[#b59766] transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#f6f3eb] text-[#b59766] flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[14.5px] font-bold text-[#1f1f1f]">
+                      آدرس مسکونی
+                    </h4>
+                    <p className="text-[12px] text-[#777777] mt-0.5">
+                      ارسال مرسوله به منزل مسکونی‌تان
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs text-[#888888]">←</span>
+              </button>
+
+              {/* ۵. خروج از حساب کاربری (دکمه قرمز/صورتی مطابق Mobile 14, 15) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileProfileOpen(false);
+                  onLogout?.();
+                }}
+                className="w-full p-4 rounded-[20px] bg-[#fdecee] border border-[#f8d4d7] text-[#e02b3a] flex items-center justify-center gap-2.5 font-bold text-[14px] cursor-pointer hover:bg-[#fbd2d6] transition-colors mt-4"
+              >
+                <ProfileLogoutIcon className="w-5 h-5 shrink-0" />
+                <span>خروج از حساب کاربری</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

@@ -4,7 +4,8 @@
   html {
     font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
     scroll-behavior: smooth;
-    direction: ltr;
+    direction: ltr !important;
+    overflow-x: hidden;
   }
 
   body {
@@ -12,8 +13,14 @@
     background-color: #fcfbf9;
     color: #2b2b2b;
     overflow-x: hidden;
-    direction: rtl;
+    direction: ltr !important;
+  }
+
+  #root {
+    direction: rtl !important;
     text-align: right;
+    width: 100%;
+    min-height: 100vh;
   }
 }
 
