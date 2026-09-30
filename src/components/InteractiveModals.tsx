@@ -1917,6 +1917,115 @@ interface AuthToastItem {
   message: string;
 }
 
+const LocalMobileToast: React.FC<{
+  toast: AuthToastItem;
+  onDismiss: (id: string) => void;
+  renderToastIcon: (type: AuthToastItem['type']) => React.ReactNode;
+}> = ({ toast, onDismiss, renderToastIcon }) => {
+  const [isClosing, setIsClosing] = React.useState(false);
+  const isGreen = toast.type === 'success' || toast.type === 'otp-resent';
+
+  React.useEffect(() => {
+    // پر شدن خط پیشرفت در ۳۸۰۰ میلی‌ثانیه به پایان می‌رسد و سپس اسلاید خروج به مدت ۴۰۰ میلی‌ثانیه آغاز می‌شود (جمعاً ۴۲۰۰ میلی‌ثانیه)
+    const timer = setTimeout(() => {
+      setIsClosing(true);
+    }, 3800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  React.useEffect(() => {
+    if (isClosing) {
+      const dismissTimer = setTimeout(() => {
+        onDismiss(toast.id);
+      }, 380);
+      return () => clearTimeout(dismissTimer);
+    }
+  }, [isClosing, onDismiss, toast.id]);
+
+  const handleDismiss = () => {
+    setIsClosing(true);
+  };
+
+  return (
+    <>
+      <style>{`
+        @keyframes toastSlideInSpring {
+          0% { transform: translateY(110%); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes toastSlideOutSlow {
+          0% { transform: translateY(0); opacity: 1; }
+          100% { transform: translateY(100%); opacity: 0; }
+        }
+        .animate-toast-in {
+          animation: toastSlideInSpring 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .animate-toast-out {
+          animation: toastSlideOutSlow 400ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
+        }
+        @keyframes localToastProgress {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+        .animate-local-toast-progress {
+          animation: localToastProgress 3800ms linear forwards;
+        }
+        @keyframes localToastProgressVertical {
+          0% { height: 0%; }
+          100% { height: 100%; }
+        }
+        .animate-local-toast-progress-vertical {
+          animation: localToastProgressVertical 3800ms linear forwards;
+        }
+      `}</style>
+      <div
+        onClick={handleDismiss}
+        className="fixed inset-0 z-[65] bg-black/45 sm:hidden"
+      />
+      <div
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+        className={`fixed inset-x-0 bottom-0 z-[70] bg-white rounded-t-[26px] pt-3 pb-6 px-5 shadow-[0_-12px_40px_rgba(0,0,0,0.2)] sm:hidden ${
+          isClosing ? 'animate-toast-out' : 'animate-toast-in'
+        }`}
+      >
+        {/* دستگیره کپسولی بالای باتم‌شیت */}
+        <div className="w-11 h-1 rounded-full bg-[#d8d8d8] mx-auto mb-5" />
+
+        <div className="flex items-center justify-start gap-3.5">
+          <div
+            className={`w-12 h-12 rounded-[14px] border flex items-center justify-center shrink-0 ${
+              isGreen
+                ? 'bg-[#edfcf2] border-[#abefc6] text-[#17b26a]'
+                : 'bg-[#fff0f2] border-[#ffccd3] text-[#ff1f3d]'
+            }`}
+          >
+            {renderToastIcon(toast.type)}
+          </div>
+
+          <div className="text-right">
+            <h4 className="text-[14px] font-bold text-[#1e1e1e]">
+              {toast.title}
+            </h4>
+            <p className="text-[12px] text-[#555555] mt-1 leading-relaxed">
+              {toast.message}
+            </p>
+          </div>
+        </div>
+
+        {/* نوار پیشرفت افقی پایین باتم‌شیت موبایل با رشد واقعی از راست به چپ */}
+        <div className="mt-5 w-full h-[3.5px] bg-[#f3f0e9] overflow-hidden rounded-full relative">
+          <div
+            className={`absolute right-0 h-full rounded-full animate-local-toast-progress ${
+              isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
+            }`}
+          />
+        </div>
+      </div>
+    </>
+  );
+};
+
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -1952,6 +2061,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [secondsLeft, setSecondsLeft] = useState(60);
   const [resendClickCount, setResendClickCount] = useState(0);
   const [toasts, setToasts] = useState<AuthToastItem[]>([]);
+  const loginSuccessTimeoutRef = useRef<number | null>(null);
+  const hasCompletedLoginRef = useRef<boolean>(false);
 
   const desktopOtpRefs = [
     useRef<HTMLInputElement>(null),
@@ -1989,6 +2100,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   // ریست کامل فرم‌ها و شماره همراه هنگام باز یا بسته شدن مودال
   useEffect(() => {
+    if (loginSuccessTimeoutRef.current) {
+      window.clearTimeout(loginSuccessTimeoutRef.current);
+      loginSuccessTimeoutRef.current = null;
+    }
+    hasCompletedLoginRef.current = false;
+
     if (!isOpen) {
       setStep('phone');
       setPhoneNumber('');
@@ -2149,9 +2266,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }, 800);
   };
 
+  const completeLoginAfterToast = (phoneToPass: string) => {
+    if (hasCompletedLoginRef.current) return;
+    hasCompletedLoginRef.current = true;
+    if (loginSuccessTimeoutRef.current) {
+      window.clearTimeout(loginSuccessTimeoutRef.current);
+      loginSuccessTimeoutRef.current = null;
+    }
+    onLoginSuccess?.(phoneToPass);
+    onClose();
+  };
+
   const handleOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoading) return;
+    if (isLoading || toasts.some((t) => t.type === 'success')) return;
 
     const englishCode = otpDigits.map((d) => toEnglishDigits(d)).join('');
 
@@ -2170,7 +2298,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setIsLoading(true);
 
     window.setTimeout(() => {
-      // با هر کد ۴ رقمی که کاربر وارد کند عملیات ورود با موفقیت انجام می‌شود
+      // با هر کد ۴ رقمی که کاربر وارد کند، ابتدا نوتیفیکیشن ورود نمایش داده شده، خط پیشرفت کامل پر می‌شود، بسته می‌شود و سپس وارد حساب کاربری می‌شود
       setIsLoading(false);
       setOtpWrongError(false);
       setOtpIncompleteError(false);
@@ -2179,10 +2307,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         'ورود موفقیت آمیز',
         'مشتری گرامی به پنل خود خوش آمدید!'
       );
-      window.setTimeout(() => {
-        onLoginSuccess?.(formattedDisplayPhone);
-        onClose();
-      }, 900);
+      loginSuccessTimeoutRef.current = window.setTimeout(() => {
+        completeLoginAfterToast(formattedDisplayPhone);
+      }, 4200);
     }, 650);
   };
 
@@ -2437,63 +2564,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
         {/* باتم‌شیت نوتیفیکیشن موبایل (Mobile 04, 07, 08, 10, 11, 12, 13, 16) */}
         {activeMobileToast && (
-          <>
-            <div
-              onClick={() => setToasts([])}
-              className="fixed inset-0 z-[65] bg-black/45 sm:hidden"
-            />
-            <div
-              dir="rtl"
-              onClick={(e) => e.stopPropagation()}
-              className="fixed inset-x-0 bottom-0 z-[70] bg-white rounded-t-[26px] pt-3 pb-6 px-5 shadow-[0_-12px_40px_rgba(0,0,0,0.2)] sm:hidden"
-            >
-              {/* دستگیره کپسولی بالای باتم‌شیت */}
-              <div className="w-11 h-1 rounded-full bg-[#d8d8d8] mx-auto mb-5" />
-
-              {(() => {
-                const isGreen =
-                  activeMobileToast.type === 'success' ||
-                  activeMobileToast.type === 'otp-resent';
-                return (
-                  <>
-                    <div className="flex items-center justify-start gap-3.5">
-                      <div
-                        className={`w-12 h-12 rounded-[14px] border flex items-center justify-center shrink-0 ${
-                          isGreen
-                            ? 'bg-[#edfcf2] border-[#abefc6] text-[#17b26a]'
-                            : 'bg-[#fff0f2] border-[#ffccd3] text-[#ff1f3d]'
-                        }`}
-                      >
-                        {renderToastIcon(activeMobileToast.type)}
-                      </div>
-
-                      <div className="text-right">
-                        <h4 className="text-[14px] font-bold text-[#1e1e1e]">
-                          {activeMobileToast.title}
-                        </h4>
-                        <p className="text-[12px] text-[#555555] mt-1 leading-relaxed">
-                          {activeMobileToast.message}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* نوار پیشرفت افقی پایین باتم‌شیت موبایل */}
-                    <div
-                      className={`mt-5 w-full h-[3.5px] rounded-full overflow-hidden flex justify-end ${
-                        isGreen ? 'bg-[#dcfce7]' : 'bg-[#ffe4e8]'
-                      }`}
-                    >
-                      <span
-                        className={`w-[72%] h-full rounded-full ${
-                          isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
-                        }`}
-                      />
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          </>
+          <LocalMobileToast
+            key={activeMobileToast.id}
+            toast={activeMobileToast}
+            onDismiss={(id) => {
+              const dismissed = toasts.find((t) => t.id === id);
+              setToasts((prev) => prev.filter((t) => t.id !== id));
+              if (dismissed?.type === 'success') {
+                completeLoginAfterToast(formattedDisplayPhone);
+              }
+            }}
+            renderToastIcon={renderToastIcon}
+          />
         )}
       </div>
 
@@ -2685,65 +2767,81 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
         </div>
 
-        {/* نوتیفیکیشن‌های گوشه پایین-چپ صفحه دسکتاپ / پایین وسط موبایل */}
+        {/* نوتیفیکیشن‌های گوشه پایین-چپ صفحه دسکتاپ */}
         {toasts.length > 0 && (
-          <div
-            dir="rtl"
-            onClick={(e) => e.stopPropagation()}
-            className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto z-[60] flex flex-col gap-3 pointer-events-auto"
-          >
-            {toasts.map((t) => {
-              const isGreen = t.type === 'success' || t.type === 'otp-resent';
-              return (
-                <div
-                  key={t.id}
-                  className="relative w-full sm:w-[370px] bg-white rounded-[18px] shadow-[0_14px_40px_rgba(0,0,0,0.14)] px-4 pt-3.5 pb-4 flex items-center justify-between gap-3.5 overflow-hidden"
-                >
-                  <div className="flex items-center gap-3.5 pr-1">
+          <>
+            <style>{`
+              @keyframes toastSlideInSpring {
+                0% { transform: translateY(110%); opacity: 0; }
+                100% { transform: translateY(0); opacity: 1; }
+              }
+              @keyframes localToastProgressVertical {
+                0% { height: 0%; }
+                100% { height: 100%; }
+              }
+              .animate-desktop-toast-in {
+                animation: toastSlideInSpring 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+              }
+              .animate-local-toast-progress-vertical {
+                animation: localToastProgressVertical 3800ms linear forwards;
+              }
+            `}</style>
+            <div
+              dir="rtl"
+              onClick={(e) => e.stopPropagation()}
+              className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto z-[60] flex flex-col gap-3 pointer-events-auto"
+            >
+              {toasts.map((t) => {
+                const isGreen = t.type === 'success' || t.type === 'otp-resent';
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => {
+                      setToasts((prev) => prev.filter((item) => item.id !== t.id));
+                      if (t.type === 'success') {
+                        completeLoginAfterToast(formattedDisplayPhone);
+                      }
+                    }}
+                    className="relative w-full sm:w-[370px] bg-white rounded-[18px] shadow-[0_14px_40px_rgba(0,0,0,0.14)] px-4 pt-3.5 pb-4 flex items-center justify-between gap-3.5 overflow-hidden animate-desktop-toast-in cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5 pr-1">
+                      <div
+                        className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 ${
+                          isGreen
+                            ? 'bg-[#edfcf2] border-[#abefc6] text-[#17b26a]'
+                            : 'bg-[#fff0f2] border-[#ffccd3] text-[#ff1f3d]'
+                        }`}
+                      >
+                        {renderToastIcon(t.type)}
+                      </div>
+
+                      <div className="text-right">
+                        <h4 className="text-[13.5px] font-bold text-[#1e1e1e]">
+                          {t.title}
+                        </h4>
+                        <p className="text-[11.5px] text-[#555555] mt-1 leading-relaxed">
+                          {t.message}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* خط عمودی کوچک سمت چپ در دسکتاپ که از بالا به پایین پر می‌شود */}
                     <div
-                      className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 ${
-                        isGreen
-                          ? 'bg-[#edfcf2] border-[#abefc6] text-[#17b26a]'
-                          : 'bg-[#fff0f2] border-[#ffccd3] text-[#ff1f3d]'
+                      className={`w-[3.5px] h-9 rounded-full overflow-hidden shrink-0 flex flex-col justify-start ${
+                        isGreen ? 'bg-[#dcfce7]' : 'bg-[#ffe4e8]'
                       }`}
                     >
-                      {renderToastIcon(t.type)}
-                    </div>
-
-                    <div className="text-right">
-                      <h4 className="text-[13.5px] font-bold text-[#1e1e1e]">
-                        {t.title}
-                      </h4>
-                      <p className="text-[11.5px] text-[#555555] mt-1 leading-relaxed">
-                        {t.message}
-                      </p>
+                      <span
+                        className={`w-full rounded-full animate-local-toast-progress-vertical ${
+                          isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
+                        }`}
+                      />
                     </div>
                   </div>
-
-                  <div
-                    className={`w-[3.5px] h-9 rounded-full overflow-hidden shrink-0 flex flex-col justify-start ${
-                      isGreen ? 'bg-[#dcfce7]' : 'bg-[#ffe4e8]'
-                    }`}
-                  >
-                    <span
-                      className={`w-full h-6 rounded-full ${
-                        isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
-                      }`}
-                    />
-                  </div>
-
-                  {/* خط پیشرفت انیمیشنی پایینی (دراورها یا مودال‌های خطا طبق تصویر ۱ خطش پر شد بسته میشه) */}
-                  <div className="absolute bottom-0 inset-x-0 h-[3.5px] bg-[#f3f0e9] overflow-hidden">
-                    <div
-                      className={`h-full animate-toast-progress ${
-                        isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
-                      }`}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </>
@@ -2849,6 +2947,154 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
 /**
  * پاپ‌آپ‌های نوتیفیکیشن پایین صفحه (شامل خروج موفقیت‌آمیز و خطای خروج) دقیقاً مطابق با تصویر ارسالی فیگما
  */
+const SingleToast: React.FC<{
+  toast: AppToast;
+  onDismiss: (id: string) => void;
+}> = ({ toast, onDismiss }) => {
+  const [isClosing, setIsClosing] = React.useState(false);
+  const isGreen = toast.type === 'logout-success' || toast.type === 'success';
+
+  React.useEffect(() => {
+    // پر شدن خط پیشرفت در ۴۱۰۰ میلی‌ثانیه به پایان می‌رسد و سپس اسلاید خروج به مدت ۴۰۰ میلی‌ثانیه آغاز می‌شود (جمعاً ۴۵۰۰ میلی‌ثانیه)
+    const timer = setTimeout(() => {
+      setIsClosing(true);
+    }, 4100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  React.useEffect(() => {
+    if (isClosing) {
+      const dismissTimer = setTimeout(() => {
+        onDismiss(toast.id);
+      }, 380);
+      return () => clearTimeout(dismissTimer);
+    }
+  }, [isClosing, onDismiss, toast.id]);
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsClosing(true);
+  };
+
+  return (
+    <div
+      onClick={handleDismiss}
+      className={`relative w-full sm:w-[380px] bg-white rounded-t-[32px] sm:rounded-[18px] shadow-[0_-12px_45px_rgba(0,0,0,0.18)] sm:shadow-[0_14px_40px_rgba(0,0,0,0.14)] border-t border-[#eeeeee] sm:border px-6 sm:px-4 pb-8 sm:pb-4 pt-4 sm:pt-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between overflow-hidden cursor-pointer ${
+        isClosing ? 'animate-toast-out' : 'animate-toast-in'
+      }`}
+    >
+      {/* دستگیره کشیدن برای دراور موبایل */}
+      <div className="w-12 h-1 bg-[#e4e2dc] rounded-full mx-auto mb-4 sm:hidden shrink-0" />
+
+      {/* محتوای توست شامل آیکون و متون به همراه ترازبندی دقیق */}
+      <div className="flex items-center justify-between gap-4 w-full pr-0.5">
+        <div className="flex items-center gap-3.5 text-right">
+          {/* آیکون در کادر مربعی گوشه‌گرد در سمت راست */}
+          <div
+            className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 bg-white ${
+              isGreen
+                ? 'border-[#27ae60] text-[#27ae60]'
+                : 'border-[#ff1f3d] text-[#ff1f3d]'
+            }`}
+          >
+            {isGreen ? (
+              /* آیکون خروج موفقیت‌آمیز داخل کادر سبز */
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-[22px] h-[22px]"
+              >
+                <path
+                  d="M8.9 7.56C9.21 3.96 11.06 2.49 15.11 2.49H15.24C19.71 2.49 21.5 4.28 21.5 8.75V15.27C21.5 19.74 19.71 21.53 15.24 21.53H15.11C11.09 21.53 9.24 20.08 8.91 16.54"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-[#27ae60]"
+                />
+                <path
+                  d="M15 12H3.62"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-[#27ae60]"
+                />
+                <path
+                  d="M5.85 8.65L2.5 12L5.85 15.35"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-[#27ae60]"
+                />
+              </svg>
+            ) : (
+              /* آیکون ضربدر دایره‌ای در خطایی رخ داد داخل کادر قرمز */
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-[22px] h-[22px]"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="8.5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="text-[#ff1f3d]"
+                />
+                <path
+                  d="M9.5 14.5L14.5 9.5M14.5 14.5L9.5 9.5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-[#ff1f3d]"
+                />
+              </svg>
+            )}
+          </div>
+
+          <div className="text-right">
+            <h4 className="text-[14px] font-bold text-[#1e1e1e]">
+              {toast.title}
+            </h4>
+            <p className="text-[12px] sm:text-[11.5px] text-[#555555] mt-0.5 leading-relaxed font-normal">
+              {toast.message}
+            </p>
+          </div>
+        </div>
+
+        {/* خط باریک شاخص وضعیت در سمت چپ کادر دسکتاپ که از بالا به پایین پر می‌شود */}
+        <div
+          className={`hidden sm:flex w-[4px] h-9 rounded-full overflow-hidden shrink-0 flex-col justify-start ${
+            isGreen ? 'bg-[#dcfce7]' : 'bg-[#ffe4e8]'
+          }`}
+        >
+          <span
+            className={`w-full rounded-full animate-toast-progress-vertical ${
+              isGreen ? 'bg-[#27ae60]' : 'bg-[#ff1f3d]'
+            }`}
+          />
+        </div>
+      </div>
+
+      {/* خط پیشرفت انیمیشنی پایینی - فقط در موبایل (در دسکتاپ خط عمودی سمت چپ پر می‌شود) */}
+      <div className="sm:hidden absolute bottom-0 inset-x-0 h-[3.5px] bg-[#f3f0e9] overflow-hidden">
+        <div
+          className={`absolute right-0 top-0 h-full animate-toast-progress-full ${
+            isGreen ? 'bg-[#27ae60]' : 'bg-[#ff1f3d]'
+          }`}
+        />
+      </div>
+    </div>
+  );
+};
+
 export const AppToastContainer: React.FC<{
   toasts: AppToast[];
   onDismiss: (id: string) => void;
@@ -2856,125 +3102,46 @@ export const AppToastContainer: React.FC<{
   if (toasts.length === 0) return null;
 
   return (
-    <div
-      dir="rtl"
-      className="fixed bottom-0 inset-x-0 sm:bottom-6 sm:left-6 sm:right-auto sm:inset-x-auto z-[90] flex flex-col gap-0 sm:gap-3 pointer-events-auto select-none"
-    >
-      {toasts.map((toast) => {
-        const isGreen =
-          toast.type === 'logout-success' || toast.type === 'success';
-
-        return (
-          <div
-            key={toast.id}
-            onClick={() => onDismiss(toast.id)}
-            className="relative w-full sm:w-[380px] bg-white rounded-t-[32px] sm:rounded-[18px] shadow-[0_-12px_45px_rgba(0,0,0,0.18)] sm:shadow-[0_14px_40px_rgba(0,0,0,0.14)] border-t border-[#eeeeee] sm:border px-6 sm:px-4 pb-8 sm:pb-4 pt-4 sm:pt-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between overflow-hidden animate-in slide-in-from-bottom duration-300 cursor-pointer"
-          >
-            {/* دستگیره کشیدن برای دراور موبایل */}
-            <div className="w-12 h-1 bg-[#e4e2dc] rounded-full mx-auto mb-4 sm:hidden shrink-0" />
-
-            {/* محتوای توست شامل آیکون و متون به همراه ترازبندی دقیق */}
-            <div className="flex items-center justify-between gap-4 w-full pr-0.5">
-              <div className="flex items-center gap-3.5 text-right">
-                {/* آیکون در کادر مربعی گوشه‌گرد در سمت راست */}
-                <div
-                  className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 bg-white ${
-                    isGreen
-                      ? 'border-[#27ae60] text-[#27ae60]'
-                      : 'border-[#ff1f3d] text-[#ff1f3d]'
-                  }`}
-                >
-                  {isGreen ? (
-                    /* آیکون خروج موفقیت‌آمیز داخل کادر سبز */
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-[22px] h-[22px]"
-                    >
-                      <path
-                        d="M8.9 7.56C9.21 3.96 11.06 2.49 15.11 2.49H15.24C19.71 2.49 21.5 4.28 21.5 8.75V15.27C21.5 19.74 19.71 21.53 15.24 21.53H15.11C11.09 21.53 9.24 20.08 8.91 16.54"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#27ae60]"
-                      />
-                      <path
-                        d="M15 12H3.62"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#27ae60]"
-                      />
-                      <path
-                        d="M5.85 8.65L2.5 12L5.85 15.35"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#27ae60]"
-                      />
-                    </svg>
-                  ) : (
-                    /* آیکون ضربدر دایره‌ای در خطایی رخ داد داخل کادر قرمز */
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-[22px] h-[22px]"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="8.5"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        className="text-[#ff1f3d]"
-                      />
-                      <path
-                        d="M9.5 14.5L14.5 9.5M14.5 14.5L9.5 9.5"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#ff1f3d]"
-                      />
-                    </svg>
-                  )}
-                </div>
-
-                <div className="text-right">
-                  <h4 className="text-[14px] font-bold text-[#1e1e1e]">
-                    {toast.title}
-                  </h4>
-                  <p className="text-[12px] sm:text-[11.5px] text-[#555555] mt-0.5 leading-relaxed font-normal">
-                    {toast.message}
-                  </p>
-                </div>
-              </div>
-
-              {/* خط باریک شاخص وضعیت در سمت چپ کادر دسکتاپ */}
-              <div
-                className={`hidden sm:block w-[4px] h-9 rounded-full shrink-0 ${
-                  isGreen ? 'bg-[#27ae60]' : 'bg-[#ff1f3d]'
-                }`}
-              />
-            </div>
-
-            {/* خط پیشرفت انیمیشنی پایینی (دراورها یا مودال‌های خطا طبق تصویر ۱ خطش پر شد بسته میشه) */}
-            <div className="absolute bottom-0 inset-x-0 h-[3.5px] bg-[#f3f0e9] overflow-hidden">
-              <div
-                className={`h-full animate-toast-progress ${
-                  isGreen ? 'bg-[#27ae60]' : 'bg-[#ff1f3d]'
-                }`}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <>
+      <style>{`
+        @keyframes toastSlideInSpring {
+          0% { transform: translateY(110%); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes toastSlideOutSlow {
+          0% { transform: translateY(0); opacity: 1; }
+          100% { transform: translateY(100%); opacity: 0; }
+        }
+        .animate-toast-in {
+          animation: toastSlideInSpring 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .animate-toast-out {
+          animation: toastSlideOutSlow 400ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
+        }
+        @keyframes toastProgressFull {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+        .animate-toast-progress-full {
+          animation: toastProgressFull 4100ms linear forwards;
+        }
+        @keyframes toastProgressVertical {
+          0% { height: 0%; }
+          100% { height: 100%; }
+        }
+        .animate-toast-progress-vertical {
+          animation: toastProgressVertical 4100ms linear forwards;
+        }
+      `}</style>
+      <div
+        dir="rtl"
+        className="fixed bottom-0 inset-x-0 sm:bottom-6 sm:left-6 sm:right-auto sm:inset-x-auto z-[90] flex flex-col gap-0 sm:gap-3 pointer-events-auto select-none"
+      >
+        {toasts.map((toast) => (
+          <SingleToast key={toast.id} toast={toast} onDismiss={onDismiss} />
+        ))}
+      </div>
+    </>
   );
 };
 

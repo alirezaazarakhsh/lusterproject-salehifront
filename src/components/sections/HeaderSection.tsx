@@ -388,6 +388,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   useEffect(() => {
     if (forceOpenProfileMenu && isLoggedIn) {
       setOpenSubmenu('profile');
+      setIsMobileProfileOpen(true);
+      setActiveMobileTab('profile');
     }
   }, [forceOpenProfileMenu, isLoggedIn]);
 
@@ -897,9 +899,13 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         <button
           type="button"
           onClick={() => {
-            setActiveMobileTab('profile');
-            setIsMobileProfileOpen(true);
-            setIsMobileCategoriesOpen(false);
+            if (!isLoggedIn) {
+              onOpenLogin();
+            } else {
+              setActiveMobileTab('profile');
+              setIsMobileProfileOpen(true);
+              setIsMobileCategoriesOpen(false);
+            }
           }}
           className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 cursor-pointer transition-colors ${
             isMobileProfileOpen || activeMobileTab === 'profile'
@@ -1177,20 +1183,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setSelectedLang('fa')}
-                  className={`h-9 px-3 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
-                    selectedLang === 'fa'
-                      ? 'bg-[#2d2d2d] border-[#2d2d2d] text-white shadow-xs'
-                      : 'bg-white border-[#ece7dc] text-[#2d2d2d] hover:bg-[#2d2d2d] hover:text-white hover:border-[#2d2d2d]'
-                  }`}
-                >
-                  <IranFlagIcon className="w-5 h-3.5" />
-                  <span>فارسی</span>
-                </button>
-                <button
-                  type="button"
                   onClick={() => setSelectedLang('en')}
-                  className={`h-9 px-3 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+                  className={`h-9 px-3 rounded-[8px] border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
                     selectedLang === 'en'
                       ? 'bg-[#2d2d2d] border-[#2d2d2d] text-white shadow-xs'
                       : 'bg-white border-[#ece7dc] text-[#2d2d2d] hover:bg-[#2d2d2d] hover:text-white hover:border-[#2d2d2d]'
@@ -1199,17 +1193,17 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                   <UkFlagIcon className="w-5 h-3.5" />
                   <span>EN</span>
                 </button>
-
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsMobileProfileOpen(false);
-                    setActiveMobileTab('home');
-                  }}
-                  className="w-9 h-9 rounded-full bg-[#f2efe6] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer mr-1"
-                  aria-label="بستن"
+                  onClick={() => setSelectedLang('fa')}
+                  className={`h-9 px-3 rounded-[8px] border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    selectedLang === 'fa'
+                      ? 'bg-[#2d2d2d] border-[#2d2d2d] text-white shadow-xs'
+                      : 'bg-white border-[#ece7dc] text-[#2d2d2d] hover:bg-[#2d2d2d] hover:text-white hover:border-[#2d2d2d]'
+                  }`}
                 >
-                  <X className="w-4 h-4" />
+                  <IranFlagIcon className="w-5 h-3.5" />
+                  <span>فارسی</span>
                 </button>
               </div>
             </div>
