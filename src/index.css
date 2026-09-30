@@ -71,19 +71,37 @@
   font-family: 'Cormorant Garamond', Georgia, serif;
 }
 
-/* Subtle custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* در نسخه موبایل و تبلت اسکرول‌بار کناری کاملاً مخفی شود (پیمایش لمسی با دست) */
+@media (max-width: 1023px) {
+  html,
+  body,
+  * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
 }
-::-webkit-scrollbar-track {
-  background: #f6f5f0;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbb692;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #b59866;
+
+/* اسکرول‌بار اختصاصی فقط در نسخه دسکتاپ */
+@media (min-width: 1024px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f6f5f0;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbb692;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #b59866;
+  }
 }
 

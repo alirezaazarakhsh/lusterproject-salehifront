@@ -39,12 +39,7 @@ export const HomePage: React.FC = () => {
   );
   const [storiesList] = useState<StoryItem[]>(STORY_ITEMS);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    const defaultProd = SALEHI_COLLECTION_PRODUCTS.find(
-      (p) => p.id === 'prod-resans'
-    );
-    return defaultProd ? [{ product: defaultProd, quantity: 2 }] : [];
-  });
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] =
@@ -72,18 +67,43 @@ export const HomePage: React.FC = () => {
   const addAppToast = (
     type: AppToast['type'],
     title: string,
-    message: string
+    message: string,
+    onComplete?: () => void
   ) => {
     const id = `${Date.now()}-${Math.random()}`;
-    setAppToasts((prev) => [...prev.slice(-2), { id, type, title, message }]);
-    window.setTimeout(() => {
-      setAppToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4500);
+    setAppToasts((prev) => [
+      ...prev.slice(-2),
+      { id, type, title, message, onComplete },
+    ]);
+  };
+
+  const triggerCartAuthRequiredToast = () => {
+    if (isLoginModalOpen) return;
+    setAppToasts((prev) => {
+      if (prev.some((t) => t.type === 'cart-auth-required')) {
+        return prev;
+      }
+      const id = `${Date.now()}-${Math.random()}`;
+      return [
+        ...prev.slice(-2),
+        {
+          id,
+          type: 'cart-auth-required',
+          title: 'مورد ضروری',
+          message: 'برای فعال شدن سبد خرید ابتدا وارد حساب کاربری شوید.',
+          onComplete: () => {
+            setIsLoginModalOpen(true);
+          },
+        },
+      ];
+    });
   };
 
   const handleConfirmLogout = () => {
     setIsLogoutConfirmOpen(false);
     setIsLoggedIn(false);
+    setIsCartOpen(false);
+    setCartItems([]);
     setForceOpenProfileMenu(false);
     addAppToast(
       'logout-success',
@@ -102,6 +122,11 @@ export const HomePage: React.FC = () => {
 
   const handleAddToCart = (product: ChandelierProduct, qty = 1) => {
     if (product.outOfStock) return;
+    if (!isLoggedIn) {
+      setActiveProductModal(null);
+      triggerCartAuthRequiredToast();
+      return;
+    }
     setCartItems((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
@@ -157,7 +182,9 @@ export const HomePage: React.FC = () => {
       {/* ۱. هدر بالای صفحه با لوگو و پترن Vector.png دقیق */}
       <HeaderSection
         totalCartCount={totalCartCount}
+        isCartOpen={isCartOpen}
         onOpenCart={() => setIsCartOpen(true)}
+        onCloseCart={() => setIsCartOpen(false)}
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onLoginSuccess={() => {
           setIsLoggedIn(true);
@@ -280,6 +307,7 @@ export const HomePage: React.FC = () => {
         items={cartItems}
         onUpdateQty={handleUpdateCartQty}
         onClearCart={() => setCartItems([])}
+        onShowToast={addAppToast}
       />
 
       <LoginModal
