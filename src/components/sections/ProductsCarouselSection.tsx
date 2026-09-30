@@ -506,7 +506,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
           type="button"
           onClick={() => onOpenProductModal(products[0])}
           aria-label="قبلی"
-          className="w-10 h-10 rounded-xl bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -514,7 +514,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
         <button
           type="button"
           onClick={() => onOpenProductModal(products[1])}
-          className="h-10 px-6 rounded-[12px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+          className="h-10 px-6 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
         >
           مشاهده محصولات
         </button>
@@ -523,7 +523,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
           type="button"
           onClick={() => onOpenProductModal(products[3])}
           aria-label="بعدی"
-          className="w-10 h-10 rounded-xl bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>

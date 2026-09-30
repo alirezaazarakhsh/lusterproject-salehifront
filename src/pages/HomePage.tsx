@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SALEHI_COLLECTION_PRODUCTS,
   STORY_ITEMS,
@@ -16,6 +16,9 @@ import { ProductsCarouselSection } from '../components/sections/ProductsCarousel
 import { ProjectsSection } from '../components/sections/ProjectsSection';
 import { MagazineSection } from '../components/sections/MagazineSection';
 import { FooterSection } from '../components/sections/FooterSection';
+import { RuleContentSection } from '../rule';
+import { ContactUsContentSection } from '../contact-us';
+import { AppRoute, getCurrentRoute } from '../utils/navigation';
 import {
   ProductStudioModal,
   CustomProduct3DModal,
@@ -30,10 +33,27 @@ import {
 } from '../components/InteractiveModals';
 
 /**
- * کامپوننت صفحه اصلی (HomePage)
- * تمامی بخش‌ها به صورت ماژولار، سبک و خوانا در پوشه src/components/sections قرار دارند.
+ * کامپوننت صفحه اصلی (HomePage) و صفحه قوانین و مقررات (/rule)
+ * با هدر و فوتر و سبد خرید یکپارچه در دسکتاپ و موبایل
  */
 export const HomePage: React.FC = () => {
+  const [currentRoute, setCurrentRoute] = useState<AppRoute>(() =>
+    getCurrentRoute()
+  );
+
+  useEffect(() => {
+    const syncRoute = () => {
+      setCurrentRoute(getCurrentRoute());
+    };
+    window.addEventListener('popstate', syncRoute);
+    window.addEventListener('hashchange', syncRoute);
+    window.addEventListener('app-route-change', syncRoute);
+    return () => {
+      window.removeEventListener('popstate', syncRoute);
+      window.removeEventListener('hashchange', syncRoute);
+      window.removeEventListener('app-route-change', syncRoute);
+    };
+  }, []);
   const [productsList, setProductsList] = useState<ChandelierProduct[]>(
     SALEHI_COLLECTION_PRODUCTS
   );
@@ -211,63 +231,73 @@ export const HomePage: React.FC = () => {
         onOpenCustomProductModal={() => setIsCustom3DModalOpen(true)}
       />
 
-      {/* ۲. نوار استوری‌های دایره‌ای */}
-      <StoriesSection
-        stories={storiesList}
-        activeStoryId={activeStoryModal?.id || null}
-        onSelectStory={(story) => setActiveStoryModal(story)}
-      />
+      {currentRoute === 'rule' ? (
+        /* محتوای میانی صفحه قوانین و مقررات (/rule) */
+        <RuleContentSection />
+      ) : currentRoute === 'contact-us' ? (
+        /* محتوای میانی صفحه تماس با ما (/contact-us) */
+        <ContactUsContentSection onShowToast={addAppToast} />
+      ) : (
+        <>
+          {/* ۲. نوار استوری‌های دایره‌ای */}
+          <StoriesSection
+            stories={storiesList}
+            activeStoryId={activeStoryModal?.id || null}
+            onSelectStory={(story) => setActiveStoryModal(story)}
+          />
 
-      {/* ۳. بنر اصلی (Hero) با قابلیت نمای سه‌بعدی */}
-      <HeroSection />
+          {/* ۳. بنر اصلی (Hero) با قابلیت نمای سه‌بعدی */}
+          <HeroSection />
 
-      {/* ۴. دسته بندی محصولات */}
-      <CategorySection
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-      />
+          {/* ۴. دسته بندی محصولات */}
+          <CategorySection
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+          />
 
-      {/* ۵. درباره خدمات لوستر + قاب قوسی سه‌بعدی */}
-      <AboutServicesSection
-        featuredProduct={productsList[3] || productsList[0]}
-        onOpenProductModal={(prod) => handleOpenProductModal(prod)}
-      />
+          {/* ۵. درباره خدمات لوستر + قاب قوسی سه‌بعدی */}
+          <AboutServicesSection
+            featuredProduct={productsList[3] || productsList[0]}
+            onOpenProductModal={(prod) => handleOpenProductModal(prod)}
+          />
 
-      {/* ۶. محصولات کلکسیون صالحی (با قابلیت سه‌بعدی خودکار و تغییر رنگ روی هر محصول) */}
-      <ProductsCarouselSection
-        sectionId="collection-salehi"
-        title="محصولات کلکسیون صالحی"
-        mobileTitle="کلکسیون صالحی"
-        products={productsList}
-        variant="salehi-collection"
-        cartProductIds={cartProductIds}
-        cartQuantities={cartQuantities}
-        onOpenProductModal={handleOpenProductModal}
-        onAddToCart={(prod) => handleAddToCart(prod, 1)}
-      />
+          {/* ۶. محصولات کلکسیون صالحی (با قابلیت سه‌بعدی خودکار و تغییر رنگ روی هر محصول) */}
+          <ProductsCarouselSection
+            sectionId="collection-salehi"
+            title="محصولات کلکسیون صالحی"
+            mobileTitle="کلکسیون صالحی"
+            products={productsList}
+            variant="salehi-collection"
+            cartProductIds={cartProductIds}
+            cartQuantities={cartQuantities}
+            onOpenProductModal={handleOpenProductModal}
+            onAddToCart={(prod) => handleAddToCart(prod, 1)}
+          />
 
-      {/* ۷. پروژه های اجرایی */}
-      <ProjectsSection
-        onOpenProductModal={(prod) => handleOpenProductModal(prod)}
-      />
+          {/* ۷. پروژه های اجرایی */}
+          <ProjectsSection
+            onOpenProductModal={(prod) => handleOpenProductModal(prod)}
+          />
 
-      {/* ۸. محصولات کلکسیون پرفروش ترین ها */}
-      <ProductsCarouselSection
-        sectionId="best-sellers"
-        title="محصولات کلکسیون پرفروش ترین ها"
-        mobileTitle="پرفروش‌ترین‌ها"
-        products={productsList}
-        variant="best-sellers"
-        cartProductIds={cartProductIds}
-        cartQuantities={cartQuantities}
-        onOpenProductModal={handleOpenProductModal}
-        onAddToCart={(prod) => handleAddToCart(prod, 1)}
-      />
+          {/* ۸. محصولات کلکسیون پرفروش ترین ها */}
+          <ProductsCarouselSection
+            sectionId="best-sellers"
+            title="محصولات کلکسیون پرفروش ترین ها"
+            mobileTitle="پرفروش‌ترین‌ها"
+            products={productsList}
+            variant="best-sellers"
+            cartProductIds={cartProductIds}
+            cartQuantities={cartQuantities}
+            onOpenProductModal={handleOpenProductModal}
+            onAddToCart={(prod) => handleAddToCart(prod, 1)}
+          />
 
-      {/* ۹. مجله های لوستر */}
-      <MagazineSection
-        onSelectArticle={(article) => setActiveArticleModal(article)}
-      />
+          {/* ۹. مجله های لوستر */}
+          <MagazineSection
+            onSelectArticle={(article) => setActiveArticleModal(article)}
+          />
+        </>
+      )}
 
       {/* ۱۰. فوتر تمام‌عرض دو رنگ */}
       <FooterSection />

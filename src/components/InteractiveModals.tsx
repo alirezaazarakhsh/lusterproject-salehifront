@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { navigateToRoute } from '../utils/navigation';
 import {
   X,
   ShoppingBag,
@@ -2969,7 +2970,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {/* در مرحله اول موبایل، متن قوانین و مقررات بلافاصله زیر کادر شماره قرار دارد (Mobile 01 تا 04) */}
               <p className="mt-4 text-right text-[11.5px] text-[#555555]">
                 ورود شما به منزله موافقت با{' '}
-                <span className="text-[#b59766] font-medium">
+                <span
+                  onClick={() => {
+                    onClose();
+                    navigateToRoute('rule');
+                  }}
+                  className="text-[#b59766] font-medium cursor-pointer hover:underline"
+                >
                   قوانین و مقررات
                 </span>{' '}
                 است.
@@ -3080,7 +3087,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {step === 'otp' && (
             <p className="mb-3.5 text-right text-[11.5px] text-[#555555]">
               ورود شما به منزله موافقت با{' '}
-              <span className="text-[#b59766] font-medium">
+              <span
+                onClick={() => {
+                  onClose();
+                  navigateToRoute('rule');
+                }}
+                className="text-[#b59766] font-medium cursor-pointer hover:underline"
+              >
                 قوانین و مقررات
               </span>{' '}
               است.
@@ -3287,7 +3300,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
             <p className="text-[11.5px] text-[#555555] text-center">
               ورود شما به منزله موافقت با{' '}
-              <span className="text-[#b59766] font-medium cursor-pointer hover:underline">
+              <span
+                onClick={() => {
+                  onClose();
+                  navigateToRoute('rule');
+                }}
+                className="text-[#b59766] font-medium cursor-pointer hover:underline"
+              >
                 قوانین و مقررات
               </span>{' '}
               است.
@@ -3411,7 +3430,10 @@ export interface AppToast {
     | 'cart-auth-required'
     | 'cart-checkout-redirect'
     | 'cart-delete-success'
-    | 'cart-delete-error';
+    | 'cart-delete-error'
+    | 'contact-success'
+    | 'contact-empty-error'
+    | 'contact-send-error';
   title: string;
   message: string;
   onComplete?: () => void;
@@ -3521,7 +3543,8 @@ const SingleToast: React.FC<{
   const isGreen =
     toast.type === 'logout-success' ||
     toast.type === 'success' ||
-    toast.type === 'cart-delete-success';
+    toast.type === 'cart-delete-success' ||
+    toast.type === 'contact-success';
 
   React.useEffect(() => {
     // پر شدن خط پیشرفت در ۳۶۰۰ میلی‌ثانیه به پایان می‌رسد و سپس اسلاید خروج آغاز می‌شود
@@ -3619,8 +3642,11 @@ const SingleToast: React.FC<{
       );
     }
 
-    if (toast.type === 'cart-delete-success') {
-      /* آیکون تیک کنگره‌دار ۸ پر سبز برای «با موفقیت حذف شد» مطابق عکس اول و دوم */
+    if (
+      toast.type === 'cart-delete-success' ||
+      toast.type === 'contact-success'
+    ) {
+      /* آیکون تیک کنگره‌دار ۸ پر سبز برای «با موفقیت حذف شد» و «پیام شما با موفقیت ارسال شد» مطابق عکس‌ها */
       return (
         <svg
           viewBox="0 0 48 48"
@@ -3644,6 +3670,56 @@ const SingleToast: React.FC<{
           />
         </svg>
       );
+    }
+
+    if (toast.type === 'contact-empty-error') {
+      /* آیکون کلیپ‌بورد قرمز برای «مشتری عزیز فیلد فرم تماس با مجموعه خالی میباشد.» مطابق عکس یازدهم و سیزدهم */
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-[23px] h-[23px] lg:w-[21px] lg:h-[21px]"
+        >
+          <path
+            d="M8 12.2H15"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8 16.2H12.38"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M10 6H14C16 6 16 5 16 4C16 2 15 2 14 2H10C9 2 8 2 8 4C8 6 9 6 10 6Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M16 4.02C19.33 4.2 21 5.43 21 10V16C21 20 20 22 15 22H9C4 22 3 20 3 16V10C3 5.44 4.67 4.2 8 4.02"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    }
+
+    if (toast.type === 'contact-send-error') {
+      /* آیکون هشت‌ضلعی ضربدر قرمز برای «پیام شما ارسال نشد!» مطابق عکس دوازدهم و سیزدهم */
+      return <OctagonCrossIcon className="w-[23px] h-[23px] lg:w-[21px] lg:h-[21px]" />;
     }
 
     if (toast.type === 'cart-delete-error') {

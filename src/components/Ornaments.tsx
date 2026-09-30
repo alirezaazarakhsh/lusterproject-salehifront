@@ -354,7 +354,7 @@ export const ArabesqueCornerPattern: React.FC<{
 export const CalligraphyTrustBadge: React.FC<{ index: number }> = ({ index }) => {
   return (
     <div
-      className="w-full aspect-square sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl bg-white hover:bg-[#faf9f6] transition-all duration-200 flex flex-col items-center justify-center border border-[#e5e3dd] cursor-pointer group p-2 shadow-xs hover:shadow-sm"
+      className="w-full aspect-square sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-[10px] bg-white hover:bg-[#faf9f6] transition-all duration-200 flex flex-col items-center justify-center border border-[#e5e3dd] cursor-pointer group p-2 shadow-xs hover:shadow-sm"
       title={`نماد اعتماد الکترونیکی (ای‌نماد) شماره ${index + 1}`}
     >
       <img

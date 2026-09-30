@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowUp, Instagram, Linkedin, MessageCircle, ChevronDown } from 'lucide-react';
 import { FooterBrandLogo, CalligraphyTrustBadge } from '../Ornaments';
 import { SALEHI_PHONE_NUMBERS } from '../../data/chandelierData';
+import { getCurrentRoute, navigateToRoute } from '../../utils/navigation';
 
 /**
  * بخش فوتر دو رنگ تمام‌عرض (دقیقاً مطابق نیمه پایینی عکس چهارم)
@@ -77,7 +78,7 @@ export const FooterSection: React.FC = () => {
             <button
               type="button"
               onClick={scrollToTop}
-              className="h-11 px-5 rounded-xl bg-[#272727] hover:bg-[#1a1a1a] text-white text-xs font-bold flex items-center gap-2.5 shadow-md transition-colors cursor-pointer"
+              className="h-11 px-5 rounded-[8px] bg-[#272727] hover:bg-[#1a1a1a] text-white text-xs font-bold flex items-center gap-2.5 shadow-md transition-colors cursor-pointer"
             >
               <span>برو به بالا</span>
               <span className="w-5 h-5 rounded-full bg-white text-[#272727] flex items-center justify-center">
@@ -91,7 +92,7 @@ export const FooterSection: React.FC = () => {
         <div className="lg:col-span-7 bg-[#f7f6f2] p-8 sm:p-12 lg:p-14 flex flex-col justify-between">
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
             {/* ستون ۱: دسترسی سریع تر */}
-            <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[22px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
+            <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[12px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
               {/* هدر دسکتاپ */}
               <h4 className="hidden md:block text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]">
                 دسترسی سریع تر
@@ -118,8 +119,30 @@ export const FooterSection: React.FC = () => {
                 <ul className="relative pr-6 md:pr-0 space-y-4 text-xs text-[#1c1917] before:absolute before:right-[3.5px] before:top-1 before:bottom-3 before:w-[1px] before:bg-[#b39561]/40 md:before:hidden">
                   <li className="relative md:static">
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a href="#top" className="hover:text-[#b39561] transition-colors">
+                    <a
+                      href="/"
+                      onClick={(e) => {
+                        if (getCurrentRoute() !== 'home') {
+                          e.preventDefault();
+                          navigateToRoute('home');
+                        }
+                      }}
+                      className="hover:text-[#b39561] transition-colors"
+                    >
                       صفحه اصلی
+                    </a>
+                  </li>
+                  <li className="relative md:static">
+                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
+                    <a
+                      href="/rule"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToRoute('rule');
+                      }}
+                      className="hover:text-[#b39561] transition-colors"
+                    >
+                      قوانین و مقررات
                     </a>
                   </li>
                   <li className="relative md:static">
@@ -134,7 +157,11 @@ export const FooterSection: React.FC = () => {
                   <li className="relative md:static">
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
-                      href="#footer-contact"
+                      href="/contact-us"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateToRoute('contact-us');
+                      }}
                       className="hover:text-[#b39561] transition-colors"
                     >
                       تماس با ما
@@ -172,7 +199,7 @@ export const FooterSection: React.FC = () => {
             </div>
 
             {/* ستون ۲: کلکسیون صالحی */}
-            <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[22px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
+            <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[12px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
               {/* هدر دسکتاپ */}
               <h4 className="hidden md:block text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]">
                 کلکسیون صالحی
@@ -256,7 +283,7 @@ export const FooterSection: React.FC = () => {
             </div>
 
             {/* ستون ۳: شماره های مجموعه صالحی */}
-            <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[22px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
+            <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[12px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
               {/* هدر دسکتاپ */}
               <h4 className="hidden md:block text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]">
                 شماره های مجموعه صالحی
@@ -292,7 +319,7 @@ export const FooterSection: React.FC = () => {
                         key={item.id}
                         type="button"
                         onClick={() => handleCopyPhone(item.id, item.phone)}
-                        className="w-full py-2 px-3 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center justify-between gap-1.5 tabular-nums bg-[#eae9e4] text-[#333333] hover:bg-[#b39561] hover:text-white hover:shadow-xs"
+                        className="w-full py-2 px-3 rounded-[6px] text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center justify-between gap-1.5 tabular-nums bg-[#eae9e4] text-[#333333] hover:bg-[#b39561] hover:text-white hover:shadow-xs"
                       >
                         {copiedId === item.id ? (
                           <span className="w-full text-center text-[10.5px]">شماره کپی شد ✓</span>
@@ -327,7 +354,7 @@ export const FooterSection: React.FC = () => {
                   <a
                     href="#footer-contact"
                     aria-label="LinkedIn"
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer group"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-[8px] bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer group"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -339,7 +366,7 @@ export const FooterSection: React.FC = () => {
                   <a
                     href="#footer-contact"
                     aria-label="WhatsApp"
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer group"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-[8px] bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer group"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -351,7 +378,7 @@ export const FooterSection: React.FC = () => {
                   <a
                     href="#footer-contact"
                     aria-label="Instagram"
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-[8px] bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer"
                   >
                     <Instagram className="w-4 h-4 md:w-5 md:h-5" />
                   </a>
