@@ -203,7 +203,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
               onMouseLeave={() => {
                 clearTemporaryTooltip(product.id);
               }}
-              className="group shrink-0 snap-start w-[83vw] max-w-[345px] md:w-auto md:max-w-none md:shrink bg-white rounded-[28px] sm:rounded-[34px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
+              className="group shrink-0 snap-start w-[83vw] max-w-[345px] md:w-auto md:max-w-none md:shrink bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 {/* باکس عریض‌تر عکس با پس‌زمینه طوسی کم‌رنگ و گوشه‌های گرد */}
@@ -217,13 +217,13 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
                       onOpenProductModal(product, currentFinish);
                     }
                   }}
-                  className={`relative w-full h-56 sm:h-60 rounded-[24px] bg-[#f5f5f5] flex items-center justify-center overflow-hidden ${
+                  className={`relative w-full h-56 sm:h-60 rounded-[12px] bg-[#f5f5f5] flex items-center justify-center overflow-hidden ${
                     isOutOfStock ? 'cursor-not-allowed' : 'cursor-pointer'
                   }`}
                 >
                   {isCard3D ? (
                     <div
-                      className="w-full h-full rounded-[24px] overflow-hidden"
+                      className="w-full h-full rounded-[12px] overflow-hidden"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Chandelier3DViewer
@@ -387,7 +387,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
                           clearTemporaryTooltip(product.id);
                         }
                       }}
-                      className={`h-11 sm:h-12 min-w-[115px] sm:min-w-[142px] px-3.5 sm:px-6 rounded-[15px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap ${
+                      className={`h-11 sm:h-12 min-w-[115px] sm:min-w-[142px] px-3.5 sm:px-6 rounded-[12px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap ${
                         isOutOfStock
                           ? 'bg-[#f3f3f3] text-[#222222] cursor-not-allowed'
                           : 'bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer'
@@ -429,7 +429,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
                           type="button"
                           onClick={() => handleAddClick(product)}
                           aria-label="محصول در انبار وجود ندارد"
-                          className="w-12 h-12 rounded-[15px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
+                          className="w-12 h-12 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
                         >
                           <OutOfStockBagIcon className="w-[22px] h-[22px]" />
                         </button>
@@ -454,7 +454,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
                           type="button"
                           onClick={() => handleAddClick(product)}
                           aria-label="افزودن به سبد خرید"
-                          className={`w-12 h-12 rounded-[15px] flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                          className={`w-12 h-12 rounded-[12px] flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                             isHighlighted
                               ? 'bg-[#b59766] hover:bg-[#a38554] text-white'
                               : 'bg-[#f3f3f3] hover:bg-[#b59766] text-[#222222] hover:text-white'
@@ -514,7 +514,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
         <button
           type="button"
           onClick={() => onOpenProductModal(products[1])}
-          className="h-10 px-6 rounded-xl bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+          className="h-10 px-6 rounded-[12px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
         >
           مشاهده محصولات
         </button>

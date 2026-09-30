@@ -159,6 +159,15 @@ export const HomePage: React.FC = () => {
         totalCartCount={totalCartCount}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenLogin={() => setIsLoginModalOpen(true)}
+        onLoginSuccess={() => {
+          setIsLoggedIn(true);
+          // show a beautiful success toast for logging in
+          addAppToast(
+            'success',
+            'ورود موفقیت آمیز',
+            'مشتری گرامی از پنل کاربری خود وارد شده اید.'
+          );
+        }}
         isLoggedIn={isLoggedIn}
         userDisplayName={userDisplayName}
         onToggleUserDisplayName={() =>

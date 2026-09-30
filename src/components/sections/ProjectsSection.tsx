@@ -193,7 +193,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               const nextSample = (selectedSampleIdx + 1) % tabProjects.length;
               handleSelectSample(nextSample);
             }}
-            className="h-9 px-4 rounded-[12px] bg-[#f4f4f4] hover:bg-[#272727] text-[#222222] hover:text-white text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
+            className="h-9 px-4 rounded-[8px] bg-[#f4f4f4] hover:bg-[#272727] text-[#222222] hover:text-white text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
           >
             مشاهده پروژه ها
           </button>
@@ -218,7 +218,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   key={proj.id}
                   type="button"
                   onClick={() => handleSelectSample(idx)}
-                  className={`relative shrink-0 snap-center w-[50vw] max-w-[200px] rounded-[14px] py-3.5 px-4 text-center border transition-all cursor-pointer select-none ${
+                  className={`relative shrink-0 snap-center w-[50vw] max-w-[200px] rounded-[8px] py-3.5 px-4 text-center border transition-all cursor-pointer select-none ${
                     isSelected
                       ? 'bg-[#2b2b2b] text-white border-[#2b2b2b] shadow-xs'
                       : 'bg-white text-[#222222] border-[#e8e8e8] hover:border-[#b59766] shadow-2xs'
@@ -272,7 +272,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   key={proj.id}
                   type="button"
                   onClick={() => handleSelectSample(idx)}
-                  className={`relative overflow-hidden rounded-[18px] py-4 px-4 text-right border transition-all cursor-pointer ${
+                  className={`relative overflow-hidden rounded-[8px] py-4 px-4 text-right border transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-[#272727] text-white border-[#272727] shadow-md'
                       : 'bg-white text-[#222222] border-[#e8e8e8] hover:border-[#b59766]'
@@ -301,17 +301,17 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
         {/* ستون دوم (وسط - ۵ ستون): عنوان، توضیحات اختصاصی پروژه و لوسترهای استفاده شده (مخصوص دسکتاپ - در موبایل طبق درخواست حذف شد) */}
         <div className="hidden lg:flex lg:col-span-5 flex-col justify-between space-y-5 px-1">
           <div>
-            <h3 className="text-[16.5px] font-extrabold text-[#222222] mb-2.5">
+            <h3 className="text-[16.5px] font-semibold text-[#222222] mb-2.5">
               {currentProject.title}
             </h3>
-            <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify mb-5">
+            <p className="text-xs sm:text-[13px] leading-7 text-[#222222] text-justify mb-5">
               {currentProject.description}
             </p>
 
             <h4 className="text-[14px] font-bold text-[#222222] mb-2">
               لوستر های استفاده شده :
             </h4>
-            <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify mb-5">
+            <p className="text-xs sm:text-[13px] leading-7 text-[#222222] text-justify mb-5">
               {currentProject.usedChandeliersText}
             </p>
 
@@ -365,7 +365,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   ) || SALEHI_COLLECTION_PRODUCTS[0];
                 onOpenProductModal(targetProduct);
               }}
-              className="h-10 px-6 rounded-xl bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+              className="h-10 px-6 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
             >
               اطلاعات بیشتر
             </button>
@@ -375,7 +375,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
         {/* ستون سوم (سمت چپ - ۵ ستون): گالری تصاویر پروژه به همراه ۴ تصویر کوچک زیرین (مخصوص دسکتاپ - در موبایل طبق درخواست حذف شد) */}
         <div className="hidden lg:block lg:col-span-5 space-y-3.5">
           {/* تصویر بزرگ اصلی پروژه */}
-          <div className="relative rounded-[22px] overflow-hidden h-64 sm:h-72 bg-[#f6f5f2] shadow-xs">
+          <div className="relative rounded-[12px] overflow-hidden h-64 sm:h-72 bg-[#f6f5f2] shadow-xs">
             <AdaptiveGalleryImage
               key={`${currentProject.id}-${activeGalleryIdx}`}
               src={
@@ -422,7 +422,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                     <span className="absolute top-0 inset-x-1 h-[2.5px] bg-[#b59766] rounded-full" />
                   )}
                   <div
-                    className={`h-16 sm:h-20 rounded-[14px] overflow-hidden border transition-all ${
+                    className={`h-16 sm:h-20 rounded-[8px] overflow-hidden border transition-all ${
                       isThumbActive
                         ? 'border-[#b59766] opacity-100'
                         : 'border-transparent opacity-80 group-hover:opacity-100'

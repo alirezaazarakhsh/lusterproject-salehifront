@@ -28,13 +28,13 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
         {MAGAZINE_ARTICLES.map((article) => (
           <article
             key={article.id}
-            className="group shrink-0 snap-start w-[83vw] max-w-[345px] md:w-auto md:max-w-none md:shrink bg-white rounded-[24px] border border-[#eeeeee] p-4 shadow-[0_6px_26px_rgba(0,0,0,0.03)] hover:shadow-[0_14px_36px_rgba(181,151,102,0.12)] transition-all flex flex-col justify-between"
+            className="group shrink-0 snap-start w-[83vw] max-w-[345px] md:w-auto md:max-w-none md:shrink bg-white rounded-[16px] border border-[#eeeeee] p-4 shadow-[0_6px_26px_rgba(0,0,0,0.03)] hover:shadow-[0_14px_36px_rgba(181,151,102,0.12)] transition-all flex flex-col justify-between"
           >
             <div>
               {/* تصویر مقاله */}
               <div
                 onClick={() => onSelectArticle(article)}
-                className="rounded-[18px] h-48 sm:h-52 overflow-hidden bg-[#f2f2f2] cursor-pointer"
+                className="rounded-[12px] h-48 sm:h-52 overflow-hidden bg-[#f2f2f2] cursor-pointer"
               >
                 <img
                   src={article.image}
@@ -52,7 +52,7 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
                 >
                   {article.title}
                 </h3>
-                <p className="text-xs text-[#666666] leading-6 mt-2.5 text-justify line-clamp-4">
+                <p className="text-xs text-[#222222] leading-6 mt-2.5 text-justify line-clamp-4">
                   {article.excerpt}
                 </p>
               </div>
@@ -63,16 +63,12 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectArticle(article)}
-                className={`h-9 px-4 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                  article.isDarkButtonDefault
-                    ? 'bg-[#272727] text-white hover:bg-[#3d3d3d]'
-                    : 'bg-[#f2f2f2] text-[#222222] hover:bg-[#272727] hover:text-white'
-                }`}
+                className="h-9 px-4 rounded-[8px] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap bg-[#f2f2f2] text-[#222222] hover:bg-[#272727] hover:text-white"
               >
                 مطالعه بیشتر
               </button>
 
-              <span className="text-xs text-[#666666] tabular-nums">
+              <span className="text-xs text-[#222222] tabular-nums">
                 {article.date}
               </span>
             </div>
@@ -100,7 +96,7 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
           type="button"
           onClick={() => onSelectArticle(MAGAZINE_ARTICLES[0])}
           aria-label="قبلی"
-          className="w-10 h-10 rounded-xl bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-[12px] bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -108,7 +104,7 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
         <button
           type="button"
           onClick={() => onSelectArticle(MAGAZINE_ARTICLES[2])}
-          className="h-10 px-7 rounded-xl bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+          className="h-10 px-7 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
         >
           مشاهده تمامی مقالات
         </button>
@@ -117,7 +113,7 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
           type="button"
           onClick={() => onSelectArticle(MAGAZINE_ARTICLES[3])}
           aria-label="بعدی"
-          className="w-10 h-10 rounded-xl bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-[12px] bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>

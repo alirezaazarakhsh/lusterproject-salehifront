@@ -1,4 +1,5 @@
 import React from 'react';
+import logoEnamad from '../assets/images/Logo-Enamad1.svg';
 
 /**
  * ۱. وکتور دقیق پترن گل/برگ طلایی کنار لوگو و طرفین قاب قوسی (طراحی شده مو‌به‌مو از روی Vector2ltr.png و Vector2rtl.png)
@@ -192,7 +193,6 @@ export const HeaderBrandLogo: React.FC = () => {
       <div className="flex flex-col items-end pr-3">
         <span
           className="text-[13px] sm:text-[14px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1.5"
-          style={{ fontFamily: "'Vazirmatn', sans-serif" }}
         >
           Chandelier
         </span>
@@ -215,31 +215,51 @@ export const FooterBrandLogo: React.FC = () => {
     <div className="inline-flex items-center select-none" dir="ltr">
       <div className="relative flex flex-col items-end pr-3 border-r border-[#2b2b2b]/60">
         <svg
-          width="42"
-          height="28"
-          viewBox="0 0 48 32"
+          width="54"
+          height="54"
+          viewBox="0 0 80 80"
           fill="none"
-          className="absolute -top-4 -left-7 text-[#231f1c]"
+          className="absolute -top-7 -left-10"
         >
-          <path
-            d="M12 10C8 3 2 2 1 6C0 10 6 12 12 10ZM12 10C16 3 22 2 23 6C24 10 18 12 12 10ZM12 10C9 14 4 17 3 14C2 11 7 10 12 10ZM12 10C15 14 20 17 21 14C22 11 17 10 12 10Z"
-            fill="currentColor"
-          />
-          <path
-            d="M28 18C25 13 21 12 20 15C19 18 24 19 28 18ZM28 18C31 13 35 12 36 15C37 18 32 19 28 18Z"
-            fill="currentColor"
-            opacity="0.85"
-          />
-          <path
-            d="M19 24C17 21 14 20 13 22C12 24 16 25 19 24ZM19 24C21 21 24 20 25 22C26 24 22 25 19 24Z"
-            fill="currentColor"
-            opacity="0.7"
-          />
+          {/* ۱. پروانه بزرگ تیره (بالا چپ) */}
+          <g transform="translate(30, 30)">
+            {[0, 90, 180, 270].map((angle) => (
+              <path
+                key={angle}
+                d="M 0,0 C -4,-13 -15,-15 -15,-8 C -11,-3 -4,-1 0,0 Z"
+                transform={`rotate(${angle})`}
+                fill="#1c1917"
+              />
+            ))}
+          </g>
+
+          {/* ۲. پروانه متوسط برنزی (وسط راست) */}
+          <g transform="translate(62, 54)">
+            {[0, 90, 180, 270].map((angle) => (
+              <path
+                key={angle}
+                d="M 0,0 C -2.4,-7.8 -9,-9 -9,-4.8 C -6.6,-1.8 -2.4,-0.6 0,0 Z"
+                transform={`rotate(${angle})`}
+                fill="#7c6344"
+              />
+            ))}
+          </g>
+
+          {/* ۳. پروانه کوچک برنزی (پایین چپ) */}
+          <g transform="translate(24, 68)">
+            {[0, 90, 180, 270].map((angle) => (
+              <path
+                key={angle}
+                d="M 0,0 C -1.6,-5.2 -6,-6 -6,-3.2 C -4.4,-1.2 -1.6,-0.4 0,0 Z"
+                transform={`rotate(${angle})`}
+                fill="#7c6344"
+              />
+            ))}
+          </g>
         </svg>
 
         <span
           className="text-xs tracking-[0.03em] text-[#231f1c] font-semibold mb-1"
-          style={{ fontFamily: "'Vazirmatn', sans-serif" }}
         >
           Chandelier
         </span>
@@ -331,42 +351,17 @@ export const ArabesqueCornerPattern: React.FC<{
 /**
  * نشان خوشنویسی «لوستر صالحی» در شبکه ۲×۲ فوتر
  */
-export const CalligraphyTrustBadge: React.FC<{ index: number }> = ({
-  index,
-}) => (
-  <div
-    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#eeede9] hover:bg-[#e4e2dc] transition-colors flex flex-col items-center justify-center border border-[#e5e3dd] cursor-pointer group"
-    title={`گواهینامه و نشان اصالت شماره ${index + 1}`}
-  >
-    <svg
-      viewBox="0 0 48 44"
-      fill="none"
-      className="w-9 h-9 text-[#222222] group-hover:scale-105 transition-transform"
+export const CalligraphyTrustBadge: React.FC<{ index: number }> = ({ index }) => {
+  return (
+    <div
+      className="w-full aspect-square sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl bg-white hover:bg-[#faf9f6] transition-all duration-200 flex flex-col items-center justify-center border border-[#e5e3dd] cursor-pointer group p-2 shadow-xs hover:shadow-sm"
+      title={`نماد اعتماد الکترونیکی (ای‌نماد) شماره ${index + 1}`}
     >
-      <path
-        d="M12 28C18 26 28 16 35 10C32 17 26 24 30 28C33 30 37 26 38 22"
-        stroke="currentColor"
-        strokeWidth="2.4"
-        strokeLinecap="round"
+      <img
+        src={logoEnamad}
+        alt={`ای‌نماد ${index + 1}`}
+        className="w-[85%] h-[85%] object-contain group-hover:scale-105 transition-all duration-200"
       />
-      <path
-        d="M14 20C18 18 23 14 26 10"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <circle cx="19" cy="11" r="1.6" fill="currentColor" />
-      <circle cx="29" cy="31" r="1.5" fill="currentColor" />
-      <text
-        x="24"
-        y="39"
-        textAnchor="middle"
-        fontSize="5"
-        fill="#555"
-        className="font-sans"
-      >
-        لوستر صالحی
-      </text>
-    </svg>
-  </div>
-);
+    </div>
+  );
+};

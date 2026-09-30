@@ -542,6 +542,15 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   const [remainingSeconds, setRemainingSeconds] = useState<number>(45);
   const [isPaused, setIsPaused] = useState<boolean>(false);
 
+  // غیرفعال کردن اسکرول کل سایت هنگام باز بودن استوری
+  useEffect(() => {
+    const originalStyle = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   // مدیریت لود شدن استوری (نمایش کارت سفید لودینگ مطابق عکس اول)
   const [isMediaLoading, setIsMediaLoading] = useState<boolean>(true);
   const [selectedProductIdx, setSelectedProductIdx] = useState<number>(0);
@@ -578,21 +587,43 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
     onSelectStory(getStoryAtOffset(1));
   };
 
-  // تعیین اسلاید فعال
-  const currentSlide =
-    story?.slides && story.slides[activeSegment]
-      ? story.slides[activeSegment]
-      : null;
+  // ساخت پویای اسلایدهای مجزا برای استوری‌های چندمحصوله جهت نمایش هر عکس محصول در یک تیکه (اسلاید) بدون پرش
+  const effectiveSlides = React.useMemo(() => {
+    if (!story) return [];
+    if (story.storyType === 'multi-product' && story.products && story.products.length > 0) {
+      return story.products.map((prod) => ({
+        id: prod.id,
+        type: 'single-product' as const,
+        title: prod.name,
+        subtitle: `قیمت : ${prod.price}`,
+        mediaUrl: prod.image,
+        durationSeconds: 10,
+        products: [prod],
+      }));
+    }
+    return story.slides || [{
+      id: story.id,
+      type: story.storyType || 'single-product',
+      title: story.fullTitle,
+      subtitle: story.subtitle,
+      mediaUrl: story.image,
+      durationSeconds: 10,
+      products: story.products || []
+    }];
+  }, [story]);
 
-  // زمان اختصاصی هر استوری / اسلاید - استاندارد ۱۰ تا ۱۵ ثانیه‌ای اینستاگرام (۱۲ ثانیه)
-  const slideDurationSeconds = 12;
+  // تعیین اسلاید فعال
+  const currentSlide = effectiveSlides[activeSegment] || null;
+
+  // زمان اختصاصی هر استوری / اسلاید - استاندارد ۱۰ ثانیه‌ای اینستاگرام (۱۰ ثانیه)
+  const slideDurationSeconds = 10;
 
   // ریست وضعیت و نمایش حالت لودینگ هنگام باز شدن یا عوض شدن استوری
   useEffect(() => {
     if (!story) return;
     setActiveSegment(0);
     setProgress(0);
-    const initialDur = 12;
+    const initialDur = 10;
     setRemainingSeconds(initialDur);
     setSelectedProductIdx(0);
     setShowAllMultiProducts(false);
@@ -648,7 +679,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   const activeMediaUrl =
     currentSlide?.mediaUrl || story?.image || GENERATED_IMAGES.storyPortraitRustic;
 
-  const activeVideoUrl = currentSlide?.videoUrl || story?.videoUrl;
+  const activeVideoUrl = (currentSlide as any)?.videoUrl || story?.videoUrl;
 
   // پشتیبانی از درگ افقی ردیف محصولات در استوری چندمحصولی
   const multiProdScrollRef = React.useRef<HTMLDivElement | null>(null);
@@ -715,14 +746,14 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
 
   useEffect(() => {
     if (progress >= 100 && story && !isMediaLoading) {
-      const maxSegments = story.slides ? story.slides.length - 1 : 4;
+      const maxSegments = effectiveSlides.length - 1;
       if (activeSegment < maxSegments) {
         setActiveSegment((seg) => seg + 1);
       } else {
         handleNextStory();
       }
     }
-  }, [progress, activeSegment, isMediaLoading]);
+  }, [progress, activeSegment, isMediaLoading, effectiveSlides.length]);
 
   if (!story) return null;
 
@@ -805,21 +836,21 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 overflow-hidden px-2 sm:px-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 sm:bg-black/65 overflow-hidden p-0 sm:px-6"
       onClick={onClose}
     >
-      {/* دکمه «بستن صفحه» در گوشه بالا-چپ دقیقاً مطابق عکس */}
+      {/* دکمه «بستن صفحه» بیرونی مخصوص دسکتاپ */}
       <button
         type="button"
         onClick={onClose}
-        className="fixed top-5 left-5 sm:top-6 sm:left-8 z-50 h-10 px-5 rounded-[10px] bg-[#232323] hover:bg-[#141414] text-white text-xs font-bold flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+        className="hidden sm:flex fixed top-6 left-8 z-50 h-10 px-5 rounded-[10px] bg-[#232323] hover:bg-[#141414] text-white text-xs font-bold items-center justify-center shadow-lg transition-colors cursor-pointer"
       >
         بستن صفحه
       </button>
 
       {/* ردیف ۵ کارتی استوری (۲ کارت راست + کارت بزرگ وسط + ۲ کارت چپ) */}
       <div
-        className="relative w-full max-w-[1440px] flex items-center justify-center gap-3 sm:gap-4 lg:gap-5 select-none"
+        className="relative w-full h-full sm:h-auto max-w-[1440px] flex items-center justify-center gap-3 sm:gap-4 lg:gap-5 select-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* کارت ۱ سمت راست (بیرونی) */}
@@ -836,7 +867,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
           type="button"
           onClick={handlePrevStory}
           aria-label="استوری قبلی"
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] bg-white hover:bg-[#f5f5f5] text-[#222222] flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer shrink-0 z-20"
+          className="hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] bg-white hover:bg-[#f5f5f5] text-[#222222] items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer shrink-0 z-20"
         >
           <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
         </button>
@@ -844,11 +875,10 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
         {/* کارت بزرگ استوری در مرکز */}
         {isMediaLoading ? (
           /* ==================== حالت لود شدن استوری (دقیقاً مطابق تصویر اول: کارت سفید با لوگوی AKBAR SALEHI و وکتورهای Vector2ltr و Vector2rtl) ==================== */
-          <div className="relative w-[320px] sm:w-[375px] lg:w-[405px] h-[560px] sm:h-[620px] rounded-[22px] bg-white shadow-[0_25px_70px_rgba(0,0,0,0.55)] shrink-0 flex flex-col items-center justify-center p-6 text-center">
+          <div className="relative w-full h-full sm:w-[375px] lg:w-[405px] sm:h-[620px] rounded-none sm:rounded-[22px] bg-white shadow-[0_25px_70px_rgba(0,0,0,0.55)] shrink-0 flex flex-col items-center justify-center p-6 text-center">
             <div className="flex flex-col items-center justify-center select-none" dir="ltr">
               <span
                 className="text-[12px] sm:text-[13px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1"
-                style={{ fontFamily: "'Vazirmatn', sans-serif" }}
               >
                 Chandelier
               </span>
@@ -894,7 +924,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
           <div
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
-            className="relative w-[320px] sm:w-[375px] lg:w-[405px] h-[560px] sm:h-[620px] rounded-[22px] overflow-hidden bg-[#181614] shadow-[0_25px_70px_rgba(0,0,0,0.75)] shrink-0 flex flex-col justify-between"
+            className="relative w-full h-full sm:w-[375px] lg:w-[405px] sm:h-[620px] rounded-none sm:rounded-[22px] overflow-hidden bg-[#181614] shadow-[0_25px_70px_rgba(0,0,0,0.75)] shrink-0 flex flex-col justify-between"
           >
             {/* ۱. محتوای بصری استوری: ویدیو، عکس تک‌صفحه زیبا، یا تصویر کامل محصول */}
             {effectiveType === 'video' ? (
@@ -1020,39 +1050,65 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
               <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/65 via-black/20 to-transparent pointer-events-none z-10" />
             )}
 
-            {/* بخش بالای کارت مرکز: ۵ خط پیشرفت استوری + تایمر اختصاصی هر استوری در سمت چپ */}
+            {/* بخش بالای کارت مرکز: خطوط پیشرفت چندگانه برای سگمنت‌های هر استوری (مانند اینستاگرام) */}
             <div className="relative z-20 px-4 pt-3.5">
-              <div className="grid grid-cols-5 gap-2" dir="ltr">
-                {[0, 1, 2, 3, 4].map((segIdx) => {
-                  let fillWidth = '0%';
-                  if (segIdx === activeSegment) {
-                    fillWidth = `${progress}%`;
-                  } else if (segIdx < activeSegment) {
-                    fillWidth = '100%';
+              <div className="flex items-center gap-1.5 w-full" dir="ltr">
+                {Array.from({ length: effectiveSlides.length }).map((_, idx) => {
+                  let widthPercent = 0;
+                  if (idx < activeSegment) {
+                    widthPercent = 100;
+                  } else if (idx === activeSegment) {
+                    widthPercent = progress;
+                  } else {
+                    widthPercent = 0;
                   }
                   return (
                     <div
-                      key={segIdx}
-                      onClick={() => {
-                        setActiveSegment(segIdx);
-                        setProgress(0);
-                      }}
-                      className="h-[3.5px] rounded-full bg-white/30 overflow-hidden cursor-pointer"
+                      key={idx}
+                      className="flex-1 h-[3.5px] rounded-full bg-white/30 overflow-hidden"
                     >
                       <div
                         className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
-                        style={{ width: fillWidth }}
+                        style={{ width: `${widthPercent}%` }}
                       />
                     </div>
                   );
                 })}
               </div>
 
-              {/* تایمر اختصاصی هر استوری در سمت چپ بالا */}
-              <div className="mt-3 flex justify-end" dir="rtl">
-                <span className="text-xs sm:text-[13px] font-bold text-white tracking-wider tabular-nums drop-shadow-xs">
-                  {formatPersianTimer(remainingSeconds)}
-                </span>
+              {/* ردیف هدر بالای استوری: شامل اطلاعات استوری در راست و دکمه بستن در چپ (کپسولی مطابق عکس دوم) */}
+              <div className="mt-3 flex items-center justify-between" dir="rtl">
+                {/* راست: آواتار استوری، عنوان و تایمر */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full p-[1.5px] border border-[#b59766] bg-white shrink-0 overflow-hidden shadow-sm">
+                    <img
+                      src={story.image}
+                      alt={story.title}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col text-right">
+                    <span className="text-[12px] font-bold text-white leading-tight drop-shadow-sm">
+                      {story.title.replace('...', '')}
+                    </span>
+                    <span className="text-[10px] text-white/80 font-medium tabular-nums drop-shadow-sm mt-0.5">
+                      زمان باقی‌مانده : {formatPersianTimer(remainingSeconds)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* چپ: دکمه کپسولی بستن صفحه مخصوص موبایل و دسکتاپ دقیقاً مطابق عکس دوم فیدما */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }}
+                  className="h-8 px-4 rounded-full bg-black/40 hover:bg-black/60 text-white text-[11.5px] font-bold flex items-center justify-center backdrop-blur-xs transition-colors cursor-pointer border border-white/10 shadow-xs"
+                >
+                  بستن صفحه
+                </button>
               </div>
             </div>
 
@@ -1158,7 +1214,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
           type="button"
           onClick={handleNextStory}
           aria-label="استوری بعدی"
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] bg-white/75 hover:bg-white text-[#222222] flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer shrink-0 z-20"
+          className="hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] bg-white/75 hover:bg-white text-[#222222] items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer shrink-0 z-20"
         >
           <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
         </button>
@@ -2359,7 +2415,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             className={`w-full h-[50px] rounded-[12px] text-[13.5px] font-semibold flex items-center justify-center transition-colors cursor-pointer ${
               (step === 'phone' ? isPhoneBtnDark : isOtpBtnDark)
                 ? 'bg-[#2b2b2b] active:bg-[#1f1f1f] text-white'
-                : 'bg-[#f3f3f3] text-[#757575]'
+                : 'bg-[#f7f7f7] text-[#1a1a1a]'
             }`}
           >
             {isLoading ? (
@@ -2629,19 +2685,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
         </div>
 
-        {/* نوتیفیکیشن‌های گوشه پایین-چپ صفحه دسکتاپ */}
+        {/* نوتیفیکیشن‌های گوشه پایین-چپ صفحه دسکتاپ / پایین وسط موبایل */}
         {toasts.length > 0 && (
           <div
             dir="rtl"
             onClick={(e) => e.stopPropagation()}
-            className="fixed bottom-6 left-6 z-[60] flex flex-col gap-3 pointer-events-auto"
+            className="fixed bottom-20 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto z-[60] flex flex-col gap-3 pointer-events-auto"
           >
             {toasts.map((t) => {
               const isGreen = t.type === 'success' || t.type === 'otp-resent';
               return (
                 <div
                   key={t.id}
-                  className="relative w-[340px] sm:w-[370px] bg-white rounded-[18px] shadow-[0_14px_40px_rgba(0,0,0,0.14)] px-4 py-3.5 flex items-center justify-between gap-3.5 overflow-hidden"
+                  className="relative w-full sm:w-[370px] bg-white rounded-[18px] shadow-[0_14px_40px_rgba(0,0,0,0.14)] px-4 pt-3.5 pb-4 flex items-center justify-between gap-3.5 overflow-hidden"
                 >
                   <div className="flex items-center gap-3.5 pr-1">
                     <div
@@ -2665,12 +2721,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   </div>
 
                   <div
-                    className={`w-[3.5px] h-12 rounded-full overflow-hidden shrink-0 flex flex-col justify-start ${
+                    className={`w-[3.5px] h-9 rounded-full overflow-hidden shrink-0 flex flex-col justify-start ${
                       isGreen ? 'bg-[#dcfce7]' : 'bg-[#ffe4e8]'
                     }`}
                   >
                     <span
                       className={`w-full h-6 rounded-full ${
+                        isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
+                      }`}
+                    />
+                  </div>
+
+                  {/* خط پیشرفت انیمیشنی پایینی (دراورها یا مودال‌های خطا طبق تصویر ۱ خطش پر شد بسته میشه) */}
+                  <div className="absolute bottom-0 inset-x-0 h-[3.5px] bg-[#f3f0e9] overflow-hidden">
+                    <div
+                      className={`h-full animate-toast-progress ${
                         isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
                       }`}
                     />
@@ -2710,63 +2775,74 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-[2px] animate-in fade-in duration-200"
-      onClick={onClose}
-    >
+    <>
+      {/* بک‌دراپ تیره برای موبایل و دسکتاپ */}
+      <div
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[1px] animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+
+      {/* نگهدارنده محتوا */}
       <div
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[530px] sm:max-w-[560px] bg-white rounded-[22px] px-7 sm:px-9 pt-7 pb-7 shadow-[0_24px_60px_rgba(0,0,0,0.28)] border border-[#e8e8e8] flex flex-col items-start text-right select-none"
+        className="fixed z-50 
+          /* استایل‌های موبایل: دراور پایین صفحه */
+          bottom-0 inset-x-0 bg-white rounded-t-[32px] px-6 pb-10 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.18)] flex flex-col items-stretch justify-start animate-in slide-in-from-bottom duration-300
+          /* استایل‌های دسکتاپ */
+          sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[560px] sm:rounded-[22px] sm:px-10 sm:py-8 sm:shadow-[0_24px_60px_rgba(0,0,0,0.28)] sm:border sm:border-[#e8e8e8] sm:items-start"
       >
-        {/* دکمه ضربدر بستن در گوشه بالا-چپ */}
+        {/* دستگیره تاچ برای دراور موبایل */}
+        <div className="w-12 h-1 bg-[#e4e2dc] rounded-full mx-auto mb-5 sm:hidden shrink-0" />
+
+        {/* دکمه ضربدر بستن - فقط در دسکتاپ */}
         <button
           type="button"
           onClick={onClose}
           aria-label="بستن"
-          className="absolute top-5 left-5 w-7 h-7 flex items-center justify-center text-[#555555] hover:text-black transition-colors cursor-pointer"
+          className="hidden sm:flex absolute top-5 left-5 w-7 h-7 rounded-full flex items-center justify-center text-[#2b2b2b] hover:text-black transition-colors cursor-pointer"
         >
           <X className="w-4 h-4 stroke-[2]" />
         </button>
 
-        {/* عنوان مودال کاملاً راست‌چین */}
-        <h3 className="text-right w-full text-[16.5px] sm:text-[18px] font-bold text-[#1a1a1a] leading-snug mt-1">
+        {/* عنوان مودال کاملاً راست‌چین و خوانا */}
+        <h3 className="w-full text-[16.5px] sm:text-[18px] font-bold text-[#1a1a1a] leading-snug text-right mt-1">
           آیا مطمئن هستید میخواهید از حساب خود خارج شوید؟
         </h3>
 
-        {/* متن توضیحات مشتری عزیز با هایلایت قرمز کاملاً راست‌چین */}
-        <div className="text-right w-full text-[13px] sm:text-[13.5px] text-[#555555] leading-[1.85] mt-3.5 mb-7">
-          <p>مشتری گرامی عزیز</p>
+        {/* متن توضیحات مشتری عزیز با هایلایت قرمز کاملاً راست‌چین و با کنتراست بالا */}
+        <div className="w-full text-[12.5px] sm:text-[13.5px] text-[#2c2c2c] leading-[1.85] mt-4 mb-8 text-right">
+          <p className="font-bold text-[#141414] text-[13.5px] sm:text-[14px] mb-1">مشتری گرامی عزیز</p>
           <p>
             در صورت تایید دکمه{' '}
-            <span className="text-[#ff1f3d] font-bold">“بله مطمئن هستم”</span>{' '}
+            <span className="text-[#ff1f3d] font-bold">"بله مطمئن هستم"</span>{' '}
             از حساب کاربری خود اتوماسیون
           </p>
-          <p>خارج میشوید، از همراهی شما سپاس گذاریم.</p>
+          <p>خارج میشوید، از همراهی شما سپاس گزاریم.</p>
         </div>
 
-        {/* دکمه‌های عملیات کاملاً راست‌چین */}
+        {/* دکمه‌های عملیات کاملاً راست‌چین و منعطف */}
         <div className="flex items-center justify-start gap-3.5 w-full">
-          {/* دکمه بله مطمئن هستم (کادر سفید دور خاکستری در سمت راست) */}
+          {/* دکمه بله مطمئن هستم (در سمت راست در موبایل) */}
           <button
             type="button"
             onClick={onConfirmLogout}
-            className="min-w-[130px] sm:min-w-[145px] h-[44px] px-6 rounded-[12px] bg-white hover:bg-[#f7f7f7] active:bg-[#eeeeee] text-[#222222] border border-[#d6d6d6] text-[13.5px] font-bold transition-all cursor-pointer shadow-xs"
+            className="flex-1 sm:flex-none min-w-[130px] sm:min-w-[145px] h-[44px] px-6 rounded-[12px] bg-white hover:bg-[#f7f7f7] active:bg-[#eeeeee] text-[#222222] border border-[#d6d6d6] text-[13.5px] font-bold transition-all cursor-pointer shadow-xs text-center"
           >
             بله مطمئن هستم
           </button>
 
-          {/* دکمه منصرف شدم (قرمز رنگ در سمت چپ دکمه تایید) */}
+          {/* دکمه منصرف شدم (در سمت چپ در موبایل) */}
           <button
             type="button"
             onClick={onClose}
-            className="min-w-[120px] sm:min-w-[135px] h-[44px] px-6 rounded-[12px] bg-[#e52e40] hover:bg-[#cf2234] active:bg-[#b81d2e] text-white text-[13.5px] font-bold transition-all cursor-pointer shadow-sm"
+            className="flex-1 sm:flex-none min-w-[120px] sm:min-w-[135px] h-[44px] px-6 rounded-[12px] bg-[#e52e40] hover:bg-[#cf2234] active:bg-[#b81d2e] text-white text-[13.5px] font-bold transition-all cursor-pointer shadow-sm text-center"
           >
             منصرف شدم
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -2782,7 +2858,7 @@ export const AppToastContainer: React.FC<{
   return (
     <div
       dir="rtl"
-      className="fixed bottom-6 left-6 z-[90] flex flex-col gap-3 pointer-events-auto select-none"
+      className="fixed bottom-0 inset-x-0 sm:bottom-6 sm:left-6 sm:right-auto sm:inset-x-auto z-[90] flex flex-col gap-0 sm:gap-3 pointer-events-auto select-none"
     >
       {toasts.map((toast) => {
         const isGreen =
@@ -2792,89 +2868,109 @@ export const AppToastContainer: React.FC<{
           <div
             key={toast.id}
             onClick={() => onDismiss(toast.id)}
-            className="relative w-[345px] sm:w-[380px] bg-white rounded-[18px] shadow-[0_14px_40px_rgba(0,0,0,0.14)] border border-[#eeeeee] px-4 py-3.5 flex items-center justify-between gap-3.5 overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-300 cursor-pointer"
+            className="relative w-full sm:w-[380px] bg-white rounded-t-[32px] sm:rounded-[18px] shadow-[0_-12px_45px_rgba(0,0,0,0.18)] sm:shadow-[0_14px_40px_rgba(0,0,0,0.14)] border-t border-[#eeeeee] sm:border px-6 sm:px-4 pb-8 sm:pb-4 pt-4 sm:pt-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between overflow-hidden animate-in slide-in-from-bottom duration-300 cursor-pointer"
           >
-            {/* سمت راست: آیکون در کادر مربعی گوشه‌گرد و متن‌های عنوان و پیام */}
-            <div className="flex items-center gap-3.5 pr-0.5">
-              <div
-                className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 bg-white ${
-                  isGreen
-                    ? 'border-[#27ae60] text-[#27ae60]'
-                    : 'border-[#ff1f3d] text-[#ff1f3d]'
-                }`}
-              >
-                {isGreen ? (
-                  /* آیکون خروج موفقیت‌آمیز داخل کادر سبز */
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-[22px] h-[22px]"
-                  >
-                    <path
-                      d="M8.9 7.56C9.21 3.96 11.06 2.49 15.11 2.49H15.24C19.71 2.49 21.5 4.28 21.5 8.75V15.27C21.5 19.74 19.71 21.53 15.24 21.53H15.11C11.09 21.53 9.24 20.08 8.91 16.54"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M15 12H3.62"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M5.85 8.65L2.5 12L5.85 15.35"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  /* آیکون ضربدر دایره‌ای در خطایی رخ داد داخل کادر قرمز */
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-[22px] h-[22px]"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="8.5"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    />
-                    <path
-                      d="M9.5 14.5L14.5 9.5M14.5 14.5L9.5 9.5"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
+            {/* دستگیره کشیدن برای دراور موبایل */}
+            <div className="w-12 h-1 bg-[#e4e2dc] rounded-full mx-auto mb-4 sm:hidden shrink-0" />
+
+            {/* محتوای توست شامل آیکون و متون به همراه ترازبندی دقیق */}
+            <div className="flex items-center justify-between gap-4 w-full pr-0.5">
+              <div className="flex items-center gap-3.5 text-right">
+                {/* آیکون در کادر مربعی گوشه‌گرد در سمت راست */}
+                <div
+                  className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 bg-white ${
+                    isGreen
+                      ? 'border-[#27ae60] text-[#27ae60]'
+                      : 'border-[#ff1f3d] text-[#ff1f3d]'
+                  }`}
+                >
+                  {isGreen ? (
+                    /* آیکون خروج موفقیت‌آمیز داخل کادر سبز */
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-[22px] h-[22px]"
+                    >
+                      <path
+                        d="M8.9 7.56C9.21 3.96 11.06 2.49 15.11 2.49H15.24C19.71 2.49 21.5 4.28 21.5 8.75V15.27C21.5 19.74 19.71 21.53 15.24 21.53H15.11C11.09 21.53 9.24 20.08 8.91 16.54"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-[#27ae60]"
+                      />
+                      <path
+                        d="M15 12H3.62"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-[#27ae60]"
+                      />
+                      <path
+                        d="M5.85 8.65L2.5 12L5.85 15.35"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-[#27ae60]"
+                      />
+                    </svg>
+                  ) : (
+                    /* آیکون ضربدر دایره‌ای در خطایی رخ داد داخل کادر قرمز */
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-[22px] h-[22px]"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="8.5"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="text-[#ff1f3d]"
+                      />
+                      <path
+                        d="M9.5 14.5L14.5 9.5M14.5 14.5L9.5 9.5"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-[#ff1f3d]"
+                      />
+                    </svg>
+                  )}
+                </div>
+
+                <div className="text-right">
+                  <h4 className="text-[14px] font-bold text-[#1e1e1e]">
+                    {toast.title}
+                  </h4>
+                  <p className="text-[12px] sm:text-[11.5px] text-[#555555] mt-0.5 leading-relaxed font-normal">
+                    {toast.message}
+                  </p>
+                </div>
               </div>
 
-              <div className="text-right">
-                <h4 className="text-[14px] font-bold text-[#1e1e1e]">
-                  {toast.title}
-                </h4>
-                <p className="text-[11.5px] text-[#555555] mt-0.5 leading-relaxed">
-                  {toast.message}
-                </p>
-              </div>
+              {/* خط باریک شاخص وضعیت در سمت چپ کادر دسکتاپ */}
+              <div
+                className={`hidden sm:block w-[4px] h-9 rounded-full shrink-0 ${
+                  isGreen ? 'bg-[#27ae60]' : 'bg-[#ff1f3d]'
+                }`}
+              />
             </div>
 
-            {/* خط باریک شاخص وضعیت در سمت چپ کادر */}
-            <div
-              className={`w-[4px] h-9 rounded-full shrink-0 ${
-                isGreen ? 'bg-[#27ae60]' : 'bg-[#ff1f3d]'
-              }`}
-            />
+            {/* خط پیشرفت انیمیشنی پایینی (دراورها یا مودال‌های خطا طبق تصویر ۱ خطش پر شد بسته میشه) */}
+            <div className="absolute bottom-0 inset-x-0 h-[3.5px] bg-[#f3f0e9] overflow-hidden">
+              <div
+                className={`h-full animate-toast-progress ${
+                  isGreen ? 'bg-[#27ae60]' : 'bg-[#ff1f3d]'
+                }`}
+              />
+            </div>
           </div>
         );
       })}

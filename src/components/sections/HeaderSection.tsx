@@ -6,6 +6,7 @@ interface HeaderSectionProps {
   totalCartCount: number;
   onOpenCart: () => void;
   onOpenLogin?: () => void;
+  onLoginSuccess?: () => void;
   isLoggedIn?: boolean;
   userDisplayName?: string;
   onToggleUserDisplayName?: () => void;
@@ -362,6 +363,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   totalCartCount,
   onOpenCart,
   onOpenLogin,
+  onLoginSuccess,
   isLoggedIn = false,
   userDisplayName = 'مشتری عزیز!',
   onToggleUserDisplayName,
@@ -370,6 +372,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   onProfileMenuInteracted,
   onOpen3DStudio,
 }) => {
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [openSubmenu, setOpenSubmenu] = useState<
     'products' | 'more' | 'lang' | 'profile' | null
   >(null);
@@ -446,7 +449,6 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         >
           <span
             className="text-[14px] sm:text-[15.5px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1"
-            style={{ fontFamily: "'Vazirmatn', sans-serif" }}
           >
             Chandelier
           </span>
@@ -910,41 +912,40 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         </button>
       </div>
 
-      {/* ۲. کشوی آکاردئونی دسته بندی های موبایل (دقیقاً مطابق تصاویر Mobile 11, 12, 13) */}
+      {/* ۲. کشوی به سمت بالا باز شونده دسته‌بندی‌های موبایل (دقیقاً مطابق عکس چهارم: Bottom Sheet با بک‌دراپ و آیکون درگ هلی) */}
       {isMobileCategoriesOpen && (
-        <div
-          dir="rtl"
-          className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
-          onClick={() => setIsMobileCategoriesOpen(false)}
-        >
+        <>
+          {/* بک‌دراپ تیره پشت دراور برای بستن راحت تر */}
           <div
-            className="w-full bg-[#fcfbf9] rounded-t-[30px] max-h-[92vh] overflow-y-auto p-5 border-t border-[#e2ddd2] shadow-2xl flex flex-col justify-between"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div>
-              {/* هدر کشو: لوگوی لوستر اکبر صالحی + دکمه بستن */}
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#ece7dc]">
-                <div className="flex flex-col items-start select-none" dir="ltr">
-                  <span className="text-[11px] font-semibold tracking-wider text-[#b58d53] uppercase">
-                    Chandelier
-                  </span>
-                  <div className="flex items-center gap-1 -mt-0.5">
-                    <ExactPalmetteVector className="w-8 h-7 text-[#cbb592]" />
-                    <span className="font-brand-serif text-[18px] font-normal text-[#2b2b2b]">
-                      AKBAR SALEHI
-                    </span>
-                    <ExactPalmetteVector className="w-8 h-7 text-[#cbb592] -scale-x-100" />
-                  </div>
-                </div>
+            onClick={() => {
+              setIsMobileCategoriesOpen(false);
+              setActiveMobileTab('home');
+            }}
+            className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+          />
 
-                <button
-                  type="button"
-                  onClick={() => setIsMobileCategoriesOpen(false)}
-                  className="w-9 h-9 rounded-full bg-[#f2efe6] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                  aria-label="بستن"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+          {/* دراور کشویی به سمت بالا با زوایای گرد بالا */}
+          <div
+            dir="rtl"
+            className="lg:hidden fixed inset-x-0 bottom-0 z-50 bg-[#fcfbf9] rounded-t-[28px] shadow-[0_-12px_45px_rgba(0,0,0,0.28)] flex flex-col max-h-[80vh] p-5 pb-10 animate-slide-up border-t border-[#e2ddd2]"
+          >
+            {/* دستگیره کوچک بالای دراور باتم‌شیت (Drag Handle) */}
+            <div className="w-12 h-1.5 bg-[#eae5d9] rounded-full mx-auto mb-4 shrink-0" />
+
+            {/* بخش اسکرول‌شونده داخلی */}
+            <div className="overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {/* هدر کشو: لوگوی لوستر اکبر صالحی کاملاً متمرکز در وسط */}
+              <div className="flex flex-col items-center justify-center pb-4 mb-5 border-b border-[#ece7dc] w-full select-none" dir="ltr">
+                <span className="text-[10px] font-bold tracking-widest text-[#b59766] uppercase">
+                  Chandelier
+                </span>
+                <div className="flex items-center justify-center gap-3 mt-1 w-full">
+                  <ExactPalmetteVector className="w-9 h-7 text-[#cbb592] shrink-0" />
+                  <span className="font-brand-serif text-[20px] font-bold text-[#222222] tracking-wide">
+                    AKBAR SALEHI
+                  </span>
+                  <ExactPalmetteVector className="w-9 h-7 text-[#cbb592] -scale-x-100 shrink-0" />
+                </div>
               </div>
 
               {/* کارت‌های آکاردئونی ناوبری موبایل */}
@@ -984,10 +985,10 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     <div className="px-4 pb-4 pt-1 space-y-2 border-t border-[#f2eee5] bg-[#faf8f3]">
                       {PRODUCTS_SUBMENU_ITEMS.map((sub) => (
                         <a
-                          key={sub.id}
-                          href={sub.href}
-                          onClick={() => setIsMobileCategoriesOpen(false)}
-                          className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white text-[13.5px] font-medium text-[#333333] transition-colors"
+                           key={sub.id}
+                           href={sub.href}
+                           onClick={() => setIsMobileCategoriesOpen(false)}
+                           className="flex items-center justify-between p-2.5 rounded-xl hover:bg-white text-[13.5px] font-medium text-[#333333] transition-colors"
                         >
                           <span className="flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#b59766]" />
@@ -1149,66 +1150,105 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* ۳. کشوی پروفایل کاربری موبایل (دقیقاً مطابق تصاویر Mobile 14, 15) */}
+      {/* ۳. کشوی تمام‌صفحه پروفایل کاربری موبایل (دقیقاً مطابق تصویر ۳ فیگما) */}
       {isMobileProfileOpen && (
         <div
           dir="rtl"
-          className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end"
-          onClick={() => setIsMobileProfileOpen(false)}
+          className="lg:hidden fixed inset-0 top-0 bottom-[66px] z-30 bg-[#fcfbf9] overflow-y-auto p-5 select-none flex flex-col justify-start"
         >
-          <div
-            className="w-full bg-[#fcfbf9] rounded-t-[30px] max-h-[92vh] overflow-y-auto p-5 border-t border-[#e2ddd2] shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* هدر کشوی پروفایل: انتخاب زبان + نام کاربر + دکمه بستن */}
-            <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#ece7dc]">
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedLang((l) => (l === 'fa' ? 'en' : 'fa'))
-                  }
-                  className="h-10 px-3 rounded-xl bg-[#f2efe6] flex items-center gap-2 text-xs font-bold text-[#222222] cursor-pointer"
-                >
-                  {selectedLang === 'fa' ? (
-                    <>
-                      <IranFlagIcon className="w-6 h-4" />
-                      <span>فارسی</span>
-                    </>
-                  ) : (
-                    <>
-                      <UkFlagIcon className="w-6 h-4" />
-                      <span>EN</span>
-                    </>
-                  )}
-                </button>
-
-                <div
-                  onClick={() => onToggleUserDisplayName?.()}
-                  title="تغییر نمایش عنوان کاربر"
-                  className="text-right cursor-pointer select-none"
-                >
-                  <span className="text-[15px] font-bold text-[#1f1f1f]">
-                    {userDisplayName}
-                  </span>
-                </div>
+          {isLoggedIn ? (
+            /* هدر هنگامی که کاربر وارد شده است (تصویر ۳ فیگما) */
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#ece7dc] shrink-0">
+              {/* سمت راست: مشتری عزیز! */}
+              <div
+                onClick={() => onToggleUserDisplayName?.()}
+                title="تغییر نمایش عنوان کاربر"
+                className="text-right cursor-pointer select-none"
+              >
+                <span className="text-[15.5px] sm:text-[17px] font-bold text-[#1f1f1f]">
+                  {userDisplayName}
+                </span>
               </div>
 
+              {/* سمت چپ: دکمه‌های انتخاب زبان و بستن */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedLang('fa')}
+                  className={`h-9 px-3 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    selectedLang === 'fa'
+                      ? 'bg-[#2d2d2d] border-[#2d2d2d] text-white shadow-xs'
+                      : 'bg-white border-[#ece7dc] text-[#2d2d2d] hover:bg-[#2d2d2d] hover:text-white hover:border-[#2d2d2d]'
+                  }`}
+                >
+                  <IranFlagIcon className="w-5 h-3.5" />
+                  <span>فارسی</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLang('en')}
+                  className={`h-9 px-3 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+                    selectedLang === 'en'
+                      ? 'bg-[#2d2d2d] border-[#2d2d2d] text-white shadow-xs'
+                      : 'bg-white border-[#ece7dc] text-[#2d2d2d] hover:bg-[#2d2d2d] hover:text-white hover:border-[#2d2d2d]'
+                  }`}
+                >
+                  <UkFlagIcon className="w-5 h-3.5" />
+                  <span>EN</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileProfileOpen(false);
+                    setActiveMobileTab('home');
+                  }}
+                  className="w-9 h-9 rounded-full bg-[#f2efe6] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer mr-1"
+                  aria-label="بستن"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* هدر هنگامی که کاربر وارد نشده است - تصویر ۲ فیگما: فلش بازگشت چپ و لوگوی وسط */
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#ece7dc] w-full select-none relative shrink-0">
+              {/* دکمه بازگشت در سمت چپ (مطابق تصویر) */}
               <button
                 type="button"
-                onClick={() => setIsMobileProfileOpen(false)}
-                className="w-9 h-9 rounded-full bg-[#f2efe6] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                aria-label="بستن"
+                onClick={() => {
+                  setIsMobileProfileOpen(false);
+                  setActiveMobileTab('home');
+                }}
+                className="w-9 h-9 rounded-full bg-[#f2efe6] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                aria-label="بازگشت"
               >
-                <X className="w-4 h-4" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                </svg>
               </button>
-            </div>
 
-            {/* لیست اکشن‌های پروفایل موبایل */}
-            <div className="space-y-3">
+              {/* لوگوی متمرکز در وسط هدر */}
+              <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center justify-center" dir="ltr">
+                <span className="text-[10px] font-bold tracking-widest text-[#b59766] uppercase leading-none">
+                  Chandelier
+                </span>
+                <span className="font-brand-serif text-[17px] font-bold text-[#222222] tracking-wide mt-1.5 leading-none">
+                  AKBAR SALEHI
+                </span>
+              </div>
+
+              {/* یک دیو خالی توازن‌بخش در سمت راست هدر */}
+              <div className="w-9 h-9 opacity-0 shrink-0" />
+            </div>
+          )}
+
+          {/* لیست اکشن‌های پروفایل موبایل */}
+          {isLoggedIn ? (
+            <div className="space-y-3 overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {/* ۱. پنل پیشخوان */}
               <button
                 type="button"
@@ -1313,7 +1353,65 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 <span>خروج از حساب کاربری</span>
               </button>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col h-full justify-between select-none py-2">
+              {/* بخش فرم ورود شماره تماس */}
+              <div className="flex-1 mt-2">
+                <h4 className="text-[18px] font-bold text-[#1a1a1a] text-right">
+                  ورود به حساب کاربری
+                </h4>
+                <p className="text-[13px] text-[#777777] mt-1.5 text-right">
+                  برای ورود شماره همراه خود را وارد کنید.
+                </p>
+
+                {/* فیلد ورودی شماره همراه */}
+                <div className="mt-8">
+                  <div className="relative flex items-center border border-[#e4e2dc] bg-white rounded-[14px] h-[52px] px-4 w-full" dir="ltr">
+                    <span className="text-[14px] font-bold text-[#222222] pr-3.5 border-r border-[#e4e2dc] shrink-0" dir="rtl">
+                      +۹۸
+                    </span>
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhoneNumber(val);
+                      }}
+                      placeholder="۹********* "
+                      className="flex-1 bg-transparent text-left outline-none border-none text-[15.5px] font-bold tracking-widest text-[#222222] pl-3.5 placeholder-[#b5b3ad]"
+                    />
+                  </div>
+                </div>
+
+                {/* متن توافقنامه */}
+                <p className="text-[11.5px] text-[#777777] mt-4 text-right">
+                  ورود شما به منزله موافقت با{' '}
+                  <span className="text-[#b59561] font-bold cursor-pointer hover:underline">قوانین و مقررات</span>{' '}
+                  است.
+                </p>
+              </div>
+
+              {/* دکمه پایین: تایید و دریافت کد */}
+              <div className="mt-8 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (phoneNumber.length >= 10) {
+                      onLoginSuccess?.();
+                    }
+                  }}
+                  disabled={phoneNumber.length < 10}
+                  className={`w-full h-[50px] rounded-[14px] font-bold text-[14px] shadow-sm transition-all flex items-center justify-center cursor-pointer ${
+                    phoneNumber.length >= 10
+                      ? 'bg-[#2d2d2d] hover:bg-black text-white'
+                      : 'bg-[#f0ece3] text-[#b0aeaa] cursor-not-allowed'
+                  }`}
+                >
+                  تایید و دریافت کد
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </header>

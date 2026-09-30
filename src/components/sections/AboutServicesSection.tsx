@@ -86,7 +86,7 @@ export const AboutServicesSection: React.FC<AboutServicesSectionProps> = () => {
                 عملکرد پیاده سازی
               </h3>
             </div>
-            <p className="text-[12px] sm:text-[13.5px] leading-7 sm:leading-8 text-[#555555] text-justify font-normal">
+            <p className="text-[12px] sm:text-[13.5px] leading-7 sm:leading-8 text-[#222222] text-justify font-normal">
               گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری،
               آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب
               لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به
@@ -104,7 +104,7 @@ export const AboutServicesSection: React.FC<AboutServicesSectionProps> = () => {
                 خدمات بسته بندی، نصب لوستر
               </h3>
             </div>
-            <p className="text-[12px] sm:text-[13.5px] leading-7 sm:leading-8 text-[#555555] text-justify font-normal">
+            <p className="text-[12px] sm:text-[13.5px] leading-7 sm:leading-8 text-[#222222] text-justify font-normal">
               گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری،
               آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب
               لوستر طبقاتی و نصب کلاب میباشد. آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در
