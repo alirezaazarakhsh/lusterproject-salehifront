@@ -584,17 +584,15 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
       ? story.slides[activeSegment]
       : null;
 
-  // زمان اختصاصی هر استوری / اسلاید
-  const slideDurationSeconds =
-    currentSlide?.durationSeconds || story?.durationSeconds || 45;
+  // زمان اختصاصی هر استوری / اسلاید - استاندارد ۱۰ تا ۱۵ ثانیه‌ای اینستاگرام (۱۲ ثانیه)
+  const slideDurationSeconds = 12;
 
   // ریست وضعیت و نمایش حالت لودینگ هنگام باز شدن یا عوض شدن استوری
   useEffect(() => {
     if (!story) return;
     setActiveSegment(0);
     setProgress(0);
-    const initialDur =
-      story.slides?.[0]?.durationSeconds || story.durationSeconds || 45;
+    const initialDur = 12;
     setRemainingSeconds(initialDur);
     setSelectedProductIdx(0);
     setShowAllMultiProducts(false);

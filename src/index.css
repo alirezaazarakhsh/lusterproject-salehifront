@@ -1,15 +1,16 @@
 @import "tailwindcss";
+@import url('https://cdn.font-store.ir/yekanbakh.css');
 
 @layer base {
   html {
-    font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+    font-family: 'Yekan Bakh', 'YekanBakh', system-ui, -apple-system, sans-serif;
     scroll-behavior: smooth;
     direction: ltr !important;
     overflow-x: hidden;
   }
 
   body {
-    font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+    font-family: 'Yekan Bakh', 'YekanBakh', system-ui, -apple-system, sans-serif;
     background-color: #fcfbf9;
     color: #2b2b2b;
     overflow-x: hidden;

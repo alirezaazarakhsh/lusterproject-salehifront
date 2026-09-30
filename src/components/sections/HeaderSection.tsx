@@ -626,6 +626,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 setOpenSubmenu((prev) => (prev === 'lang' ? null : 'lang'))
               }
               title="تغییر زبان"
+              dir="ltr"
               className="h-12 px-4 rounded-[14px] bg-[#f4f4f4] hover:bg-[#ececec] flex items-center gap-2.5 text-[14px] font-bold text-[#292d32] transition-colors cursor-pointer whitespace-nowrap"
             >
               <ChevronDown

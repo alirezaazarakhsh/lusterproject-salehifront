@@ -77,9 +77,9 @@ export const FooterSection: React.FC = () => {
 
         {/* باکس کرم/خاکستری روشن سمت چپ (لینک‌ها، شماره‌ها و نشان‌ها) */}
         <div className="lg:col-span-7 bg-[#f7f6f2] p-8 sm:p-12 lg:p-14 flex flex-col justify-between">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
             {/* ستون ۱: دسترسی سریع تر */}
-            <div className="xl:col-span-3">
+            <div className="flex flex-col">
               <h4 className="text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]">
                 دسترسی سریع تر
               </h4>
@@ -133,7 +133,7 @@ export const FooterSection: React.FC = () => {
             </div>
 
             {/* ستون ۲: کلکسیون صالحی */}
-            <div className="xl:col-span-3">
+            <div className="flex flex-col">
               <h4 className="text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]">
                 کلکسیون صالحی
               </h4>
@@ -190,30 +190,44 @@ export const FooterSection: React.FC = () => {
             </div>
 
             {/* ستون ۳: شماره های مجموعه صالحی */}
-            <div className="xl:col-span-3">
+            <div className="flex flex-col">
               <h4 className="text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]">
                 شماره های مجموعه صالحی
               </h4>
               <div className="space-y-2.5">
-                {SALEHI_PHONE_NUMBERS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleCopyPhone(item.id, item.phone)}
-                    className={`w-full py-2 px-2.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap text-center tabular-nums ${
-                      item.highlighted
-                        ? 'bg-[#b39561] text-white shadow-xs'
-                        : 'bg-[#eae9e4] text-[#333333] hover:bg-[#dfddd6]'
-                    }`}
-                  >
-                    {copiedId === item.id ? 'شماره کپی شد ✓' : item.label}
-                  </button>
-                ))}
+                {SALEHI_PHONE_NUMBERS.map((item) => {
+                  // تفکیک نام شعبه و شماره تلفن جهت چیدمان فوق‌العاده شیک دوطرفه و جلوگیری از بیرون‌زدگی
+                  const isMatch = item.label.match(/(.+)\s*\((.+)\)/);
+                  const title = isMatch ? isMatch[1].replace('شماره تلفن', '').trim() : 'افسریه';
+                  const phoneNumber = isMatch ? isMatch[2].trim() : '۰۹۹۱۲۳۴۸۹۷۵';
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleCopyPhone(item.id, item.phone)}
+                      className={`w-full py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-between gap-1.5 tabular-nums ${
+                        item.highlighted
+                          ? 'bg-[#b39561] text-white shadow-xs'
+                          : 'bg-[#eae9e4] text-[#333333] hover:bg-[#dfddd6]'
+                      }`}
+                    >
+                      {copiedId === item.id ? (
+                        <span className="w-full text-center text-[10.5px]">شماره کپی شد ✓</span>
+                      ) : (
+                        <>
+                          <span className="text-[10px] opacity-80 shrink-0">{title}</span>
+                          <span className="tracking-wide">{phoneNumber}</span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* ستون ۴: شبکه‌های اجتماعی و ۴ نشان لوستر صالحی */}
-            <div className="xl:col-span-3 flex flex-col items-center sm:items-end justify-start">
+            <div className="flex flex-col items-center sm:items-end justify-start">
               {/* ۳ دکمه شبکه‌های اجتماعی (لینکدین، واتساپ طلایی، اینستاگرام) */}
               <div className="flex items-center gap-2.5 mb-4">
                 <a
