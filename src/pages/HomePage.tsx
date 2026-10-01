@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   SALEHI_COLLECTION_PRODUCTS,
   STORY_ITEMS,
@@ -18,8 +18,13 @@ import { MagazineSection } from '../components/sections/MagazineSection';
 import { FooterSection } from '../components/sections/FooterSection';
 import { RuleContentSection } from '../rule';
 import { ContactUsContentSection } from '../contact-us';
+import { AboutUsContentSection } from '../about-us';
+import { NotFoundContentSection } from '../not-found';
+import { ServerErrorContentSection } from '../server-error';
+import { PagePreloader } from '../components/PagePreloader';
 import {
   AppRoute,
+  VALID_HOME_HASHES,
   getCurrentRoute,
   navigateToRoute,
   subscribeToRoute,
@@ -45,23 +50,138 @@ export const HomePage: React.FC = () => {
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() =>
     getCurrentRoute()
   );
+  const [isPagePreloading, setIsPagePreloading] = useState<boolean>(true);
+  const preloaderTimeoutRef = useRef<number | null>(null);
+
+  const triggerPagePreloader = (durationMs = 1350) => {
+    setIsPagePreloading(true);
+    if (preloaderTimeoutRef.current) {
+      window.clearTimeout(preloaderTimeoutRef.current);
+    }
+    preloaderTimeoutRef.current = window.setTimeout(() => {
+      setIsPagePreloading(false);
+      preloaderTimeoutRef.current = null;
+    }, durationMs);
+  };
 
   useEffect(() => {
+    // نمایش پریلودر هنگام باز شدن اولیه سایت
+    triggerPagePreloader(1650);
+
     const unsubscribe = subscribeToRoute((nextRoute) => {
+      triggerPagePreloader(1350);
       setCurrentRoute(nextRoute);
     });
     const syncRoute = (e?: Event) => {
       const customRoute = (e as CustomEvent<AppRoute>)?.detail;
+      triggerPagePreloader(1350);
       setCurrentRoute(customRoute ?? getCurrentRoute());
     };
     window.addEventListener('popstate', syncRoute);
     window.addEventListener('hashchange', syncRoute);
     window.addEventListener('app-route-change', syncRoute);
+
+    // رهگیری کلیک روی لینک‌های داخلی یا هش‌هایی که در سایت وجود ندارند و هدایت به صفحه 404
+    const handleGlobalLinkClick = (e: MouseEvent) => {
+      if (e.defaultPrevented) return;
+      const target = e.target as HTMLElement | null;
+      const anchor = target?.closest('a');
+      if (!anchor) return;
+
+      const rawHref = anchor.getAttribute('href')?.trim();
+      if (!rawHref) return;
+
+      if (
+        rawHref.startsWith('http://') ||
+        rawHref.startsWith('https://') ||
+        rawHref.startsWith('tel:') ||
+        rawHref.startsWith('mailto:')
+      ) {
+        return;
+      }
+
+      const lowerHref = rawHref.toLowerCase();
+
+      if (lowerHref.startsWith('#')) {
+        if (
+          lowerHref === '#rule' ||
+          lowerHref === '#/rule' ||
+          lowerHref === '#contact-us' ||
+          lowerHref === '#/contact-us' ||
+          lowerHref === '#about-us' ||
+          lowerHref === '#/about-us'
+        ) {
+          return;
+        }
+        if (
+          lowerHref === '#500' ||
+          lowerHref === '#/500' ||
+          lowerHref === '#server-error' ||
+          lowerHref === '#/server-error'
+        ) {
+          e.preventDefault();
+          setCurrentRoute('server-error');
+          navigateToRoute('server-error');
+          return;
+        }
+        if (!VALID_HOME_HASHES.has(lowerHref)) {
+          e.preventDefault();
+          setCurrentRoute('not-found');
+          navigateToRoute('not-found');
+        }
+        return;
+      }
+
+      if (lowerHref.startsWith('/')) {
+        const cleanPath =
+          lowerHref.length > 1 && lowerHref.endsWith('/')
+            ? lowerHref.slice(0, -1)
+            : lowerHref;
+        if (
+          cleanPath === '/500' ||
+          cleanPath === '/server-error' ||
+          cleanPath === '/down' ||
+          cleanPath === '/maintenance'
+        ) {
+          e.preventDefault();
+          setCurrentRoute('server-error');
+          navigateToRoute('server-error');
+          return;
+        }
+        if (
+          cleanPath !== '/' &&
+          cleanPath !== '/index.html' &&
+          cleanPath !== '/rule' &&
+          cleanPath !== '/contact-us' &&
+          cleanPath !== '/about-us'
+        ) {
+          e.preventDefault();
+          setCurrentRoute('not-found');
+          navigateToRoute('not-found');
+        }
+      }
+    };
+
+    // تشخیص خودکار قطعی اینترنت/سرور و نمایش صفحه قطعی سرور
+    const handleServerDown = () => {
+      setCurrentRoute('server-error');
+      navigateToRoute('server-error');
+    };
+
+    window.addEventListener('offline', handleServerDown);
+    window.addEventListener('app-server-error', handleServerDown);
+    document.addEventListener('click', handleGlobalLinkClick);
     return () => {
       unsubscribe();
       window.removeEventListener('popstate', syncRoute);
       window.removeEventListener('hashchange', syncRoute);
       window.removeEventListener('app-route-change', syncRoute);
+      window.removeEventListener('offline', handleServerDown);
+      window.removeEventListener('app-server-error', handleServerDown);
+      document.removeEventListener('click', handleGlobalLinkClick);
+      if (preloaderTimeoutRef.current) {
+        window.clearTimeout(preloaderTimeoutRef.current);
+      }
     };
   }, []);
   const [productsList, setProductsList] = useState<ChandelierProduct[]>(
@@ -209,49 +329,76 @@ export const HomePage: React.FC = () => {
       dir="rtl"
       className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-hidden"
     >
-      {/* ۱. هدر بالای صفحه با لوگو و پترن Vector.png دقیق */}
-      <HeaderSection
-        currentRoute={currentRoute}
-        onNavigateRoute={(route, hashAnchor) => {
-          setCurrentRoute(route);
-          navigateToRoute(route, hashAnchor);
-        }}
-        totalCartCount={totalCartCount}
-        isCartOpen={isCartOpen}
-        onOpenCart={() => setIsCartOpen(true)}
-        onCloseCart={() => setIsCartOpen(false)}
-        onOpenLogin={() => setIsLoginModalOpen(true)}
-        onLoginSuccess={() => {
-          setIsLoggedIn(true);
-          // show a beautiful success toast for logging in
-          addAppToast(
-            'success',
-            'ورود موفقیت آمیز',
-            'مشتری گرامی از پنل کاربری خود وارد شده اید.'
-          );
-        }}
-        isLoggedIn={isLoggedIn}
-        userDisplayName={userDisplayName}
-        onToggleUserDisplayName={() =>
-          setUserDisplayName((prev) =>
-            prev === 'مشتری عزیز!' ? 'علیرضا آذرخش' : 'مشتری عزیز!'
-          )
+      {/* ۱. هدر بالای صفحه (در صفحات 404 و قطعی سرور 500 فقط در دسکتاپ نمایش داده می‌شود و در موبایل مخفی است مطابق تصاویر) */}
+      <div
+        className={
+          currentRoute === 'not-found' || currentRoute === 'server-error'
+            ? 'hidden md:block'
+            : ''
         }
-        onLogout={() => setIsLogoutConfirmOpen(true)}
-        forceOpenProfileMenu={forceOpenProfileMenu}
-        onProfileMenuInteracted={() => setForceOpenProfileMenu(false)}
-        onOpen3DStudio={() =>
-          handleOpenProductModal(productsList[3] || productsList[0])
-        }
-        onOpenCustomProductModal={() => setIsCustom3DModalOpen(true)}
-      />
+      >
+        <HeaderSection
+          currentRoute={currentRoute}
+          onNavigateRoute={(route, hashAnchor) => {
+            setCurrentRoute(route);
+            navigateToRoute(route, hashAnchor);
+          }}
+          totalCartCount={totalCartCount}
+          isCartOpen={isCartOpen}
+          onOpenCart={() => setIsCartOpen(true)}
+          onCloseCart={() => setIsCartOpen(false)}
+          onOpenLogin={() => setIsLoginModalOpen(true)}
+          onLoginSuccess={() => {
+            setIsLoggedIn(true);
+            // show a beautiful success toast for logging in
+            addAppToast(
+              'success',
+              'ورود موفقیت آمیز',
+              'مشتری گرامی از پنل کاربری خود وارد شده اید.'
+            );
+          }}
+          isLoggedIn={isLoggedIn}
+          userDisplayName={userDisplayName}
+          onToggleUserDisplayName={() =>
+            setUserDisplayName((prev) =>
+              prev === 'مشتری عزیز!' ? 'علیرضا آذرخش' : 'مشتری عزیز!'
+            )
+          }
+          onLogout={() => setIsLogoutConfirmOpen(true)}
+          forceOpenProfileMenu={forceOpenProfileMenu}
+          onProfileMenuInteracted={() => setForceOpenProfileMenu(false)}
+          onOpen3DStudio={() =>
+            handleOpenProductModal(productsList[3] || productsList[0])
+          }
+          onOpenCustomProductModal={() => setIsCustom3DModalOpen(true)}
+        />
+      </div>
 
-      {currentRoute === 'rule' ? (
+      {currentRoute === 'server-error' ? (
+        /* محتوای صفحه خطای سرور / دان شدن سایت (/500) */
+        <ServerErrorContentSection
+          onRetry={() => {
+            setCurrentRoute('home');
+            navigateToRoute('home');
+          }}
+        />
+      ) : currentRoute === 'not-found' ? (
+        /* محتوای صفحه ۴۰۴ (پیدا نشد) */
+        <NotFoundContentSection
+          onBackToHome={() => {
+            setCurrentRoute('home');
+            navigateToRoute('home');
+          }}
+        />
+      ) : currentRoute === 'rule' ? (
         /* محتوای میانی صفحه قوانین و مقررات (/rule) */
         <RuleContentSection />
       ) : currentRoute === 'contact-us' ? (
         /* محتوای میانی صفحه تماس با ما (/contact-us) */
         <ContactUsContentSection onShowToast={addAppToast} />
+      ) : currentRoute === 'about-us' ? (
+        /* محتوای میانی صفحه درباره ما (/about-us) */
+        <AboutUsContentSection onShowToast={addAppToast} />
       ) : (
         <>
           {/* ۲. نوار استوری‌های دایره‌ای */}
@@ -314,8 +461,16 @@ export const HomePage: React.FC = () => {
         </>
       )}
 
-      {/* ۱۰. فوتر تمام‌عرض دو رنگ */}
-      <FooterSection />
+      {/* ۱۰. فوتر تمام‌عرض دو رنگ (در صفحات 404 و 500 نمایش داده نمی‌شود مطابق تصاویر) */}
+      {currentRoute !== 'not-found' && currentRoute !== 'server-error' && (
+        <FooterSection
+          currentRoute={currentRoute}
+          onNavigateRoute={(route, hashAnchor) => {
+            setCurrentRoute(route);
+            navigateToRoute(route, hashAnchor);
+          }}
+        />
+      )}
 
       {/* پنجره مودال استودیو سه‌بعدی و تغییر رنگ محصول */}
       <ProductStudioModal
@@ -378,6 +533,9 @@ export const HomePage: React.FC = () => {
           setAppToasts((prev) => prev.filter((t) => t.id !== id))
         }
       />
+
+      {/* پریلودر بارگذاری اولیه سایت و انتقال بین صفحات (دسکتاپ و موبایل) */}
+      <PagePreloader isVisible={isPagePreloading} />
     </div>
   );
 };

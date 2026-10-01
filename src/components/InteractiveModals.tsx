@@ -3433,7 +3433,9 @@ export interface AppToast {
     | 'cart-delete-error'
     | 'contact-success'
     | 'contact-empty-error'
-    | 'contact-send-error';
+    | 'contact-send-error'
+    | 'catalog-download-success'
+    | 'catalog-download-error';
   title: string;
   message: string;
   onComplete?: () => void;
@@ -3544,7 +3546,8 @@ const SingleToast: React.FC<{
     toast.type === 'logout-success' ||
     toast.type === 'success' ||
     toast.type === 'cart-delete-success' ||
-    toast.type === 'contact-success';
+    toast.type === 'contact-success' ||
+    toast.type === 'catalog-download-success';
 
   React.useEffect(() => {
     // پر شدن خط پیشرفت در ۳۶۰۰ میلی‌ثانیه به پایان می‌رسد و سپس اسلاید خروج آغاز می‌شود
@@ -3717,8 +3720,45 @@ const SingleToast: React.FC<{
       );
     }
 
-    if (toast.type === 'contact-send-error') {
-      /* آیکون هشت‌ضلعی ضربدر قرمز برای «پیام شما ارسال نشد!» مطابق عکس دوازدهم و سیزدهم */
+    if (toast.type === 'catalog-download-success') {
+      /* آیکون دانلود فایل (frame.png) سبز برای «دانلود فایلPDF» مطابق عکس دوازدهم و سیزدهم */
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-[23px] h-[23px] lg:w-[21px] lg:h-[21px]"
+        >
+          <path
+            d="M16.44 8.90002C20.04 9.21002 21.51 11.06 21.51 15.11V15.24C21.51 19.71 19.72 21.5 15.25 21.5H8.73998C4.26998 21.5 2.47998 19.71 2.47998 15.24V15.11C2.47998 11.09 3.92998 9.24002 7.46998 8.91002"
+            stroke="currentColor"
+            strokeWidth="1.85"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12 2V14.88"
+            stroke="currentColor"
+            strokeWidth="1.85"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M15.35 12.65L12 16L8.65002 12.65"
+            stroke="currentColor"
+            strokeWidth="1.85"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    }
+
+    if (
+      toast.type === 'contact-send-error' ||
+      toast.type === 'catalog-download-error'
+    ) {
+      /* آیکون هشت‌ضلعی ضربدر قرمز برای «پیام شما ارسال نشد!» و «خطایی دانلود رخ داد!» مطابق عکس‌ها */
       return <OctagonCrossIcon className="w-[23px] h-[23px] lg:w-[21px] lg:h-[21px]" />;
     }
 

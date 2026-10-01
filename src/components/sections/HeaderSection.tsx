@@ -468,50 +468,58 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   }, []);
 
   const activeHighlightedLang = hoveredLang ?? selectedLang;
+  const isErrorPage =
+    activeRoute === 'not-found' || activeRoute === 'server-error';
 
   return (
     <header
       ref={headerRef}
-      className="w-full bg-white border-b border-[#efefef] relative z-40"
+      className={`w-full bg-white border-b border-[#efefef] relative z-40 ${
+        isErrorPage ? 'hidden md:block' : ''
+      }`}
     >
-      {/* هدر مخصوص موبایل و تبلت (< lg) - دقیقاً مطابق تصویر Screenshot 2026-09-30 at 02.34.18.png */}
-      <div className="lg:hidden w-full h-24 px-2 sm:px-4 flex items-center justify-between relative overflow-hidden bg-white">
-        {/* پترن وکتور سمت راست: Vector2rtl.png پایه چسبیده به لبه راست و نوک به سمت مرکز */}
-        <div className="shrink-0 flex items-center -mr-3 sm:-mr-1">
-          <ExactPalmetteVector className="w-14 h-14 sm:w-16 sm:h-16 text-[#cbb592]" />
-        </div>
+      {/* هدر مخصوص موبایل و تبلت (< lg) - در صفحات ۴۰۴ و خطای سرور مخفی است */}
+      {!isErrorPage && (
+        <div className="lg:hidden w-full h-24 px-2 sm:px-4 flex items-center justify-between relative overflow-hidden bg-white">
+          {/* پترن وکتور سمت راست: Vector2rtl.png پایه چسبیده به لبه راست و نوک به سمت مرکز */}
+          <div className="shrink-0 flex items-center -mr-3 sm:-mr-1">
+            <ExactPalmetteVector className="w-14 h-14 sm:w-16 sm:h-16 text-[#cbb592]" />
+          </div>
 
-        {/* لوگوی مرکزی متمرکز: Chandelier بالای AKBAR SALEHI */}
-        <a
-          href="/"
-          onClick={(e) => {
-            if (activeRoute !== 'home') {
-              e.preventDefault();
-              triggerRouteNavigation('home');
-            }
-          }}
-          className="flex flex-col items-center justify-center text-center select-none focus:outline-none py-2"
-          dir="ltr"
-          aria-label="گالری لوستر اکبر صالحی"
-        >
-          <span
-            className="text-[14px] sm:text-[15.5px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1"
+          {/* لوگوی مرکزی متمرکز: Chandelier بالای AKBAR SALEHI */}
+          <a
+            href="/"
+            onClick={(e) => {
+              if (activeRoute !== 'home') {
+                e.preventDefault();
+                triggerRouteNavigation('home');
+              }
+            }}
+            className="flex flex-col items-center justify-center text-center select-none focus:outline-none py-2"
+            dir="ltr"
+            aria-label="گالری لوستر اکبر صالحی"
           >
-            Chandelier
-          </span>
-          <span className="font-brand-serif text-[23px] sm:text-[29px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none">
-            AKBAR SALEHI
-          </span>
-        </a>
+            <span className="text-[14px] sm:text-[15.5px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1">
+              Chandelier
+            </span>
+            <span className="font-brand-serif text-[23px] sm:text-[29px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none">
+              AKBAR SALEHI
+            </span>
+          </a>
 
-        {/* پترن وکتور سمت چپ: Vector2ltr.png پایه چسبیده به لبه چپ و نوک به سمت مرکز */}
-        <div className="shrink-0 flex items-center -ml-3 sm:-ml-1">
-          <ExactPalmetteVector className="w-14 h-14 sm:w-16 sm:h-16 text-[#cbb592] -scale-x-100" />
+          {/* پترن وکتور سمت چپ: Vector2ltr.png پایه چسبیده به لبه چپ و نوک به سمت مرکز */}
+          <div className="shrink-0 flex items-center -ml-3 sm:-ml-1">
+            <ExactPalmetteVector className="w-14 h-14 sm:w-16 sm:h-16 text-[#cbb592] -scale-x-100" />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* هدر مخصوص دسکتاپ (lg) */}
-      <div className="hidden lg:flex w-full max-w-[1800px] mx-auto pr-0 pl-4 sm:pl-8 lg:pl-14 xl:pl-20 h-22 items-center justify-between gap-4">
+      {/* هدر مخصوص دسکتاپ */}
+      <div
+        className={`${
+          isErrorPage ? 'hidden md:flex' : 'hidden lg:flex'
+        } w-full max-w-[1800px] mx-auto pr-0 pl-4 sm:pl-8 lg:pl-14 xl:pl-20 h-22 items-center justify-between gap-4`}
+      >
         {/* سمت راست: لوگو چسبیده به پترن طلایی لبه راست دقیقاً مطابق عکس ارسالی */}
         <a
           href="/"
@@ -528,7 +536,11 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         </a>
 
         {/* وسط: لینک‌های منوی ناوبری به همراه زیرمنوهای آبشاری دقیقاً مطابق طرح فیگما */}
-        <nav className="hidden lg:flex items-center gap-8 text-[14px] font-medium text-[#2b2b2b]">
+        <nav
+          className={`${
+            isErrorPage ? 'hidden md:flex' : 'hidden lg:flex'
+          } items-center gap-5 lg:gap-8 text-[13.5px] lg:text-[14px] font-medium text-[#2b2b2b]`}
+        >
           {/* ۱. منوی محصولات با زیرمنوی ۷ آیتمی مطابق تصویر */}
           <div
             className="relative py-3"
@@ -631,14 +643,16 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             تماس با ما
           </a>
           <a
-            href="#about-services"
+            href="/about-us"
             onClick={(e) => {
-              if (activeRoute !== 'home') {
-                e.preventDefault();
-                triggerRouteNavigation('home', '#about-services');
-              }
+              e.preventDefault();
+              triggerRouteNavigation('about-us');
             }}
-            className="hover:text-[#b59766] transition-colors whitespace-nowrap py-3"
+            className={`transition-colors whitespace-nowrap py-3 cursor-pointer ${
+              activeRoute === 'about-us'
+                ? 'text-[#b59766]'
+                : 'hover:text-[#b59766]'
+            }`}
           >
             درباره ما
           </a>
@@ -680,12 +694,11 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                       key={item.id}
                       href={item.href}
                       onClick={(e) => {
+                        e.preventDefault();
                         setOpenSubmenu(null);
                         if (item.href === '/rule') {
-                          e.preventDefault();
                           triggerRouteNavigation('rule');
-                        } else if (activeRoute !== 'home') {
-                          e.preventDefault();
+                        } else {
                           triggerRouteNavigation('home', item.href);
                         }
                       }}
@@ -926,8 +939,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         </div>
       </div>
 
-      {/* ۱. نوار ثابت ناوبری پایین در حالت موبایل و تبلت (< lg) - مطابق طرح‌های فیگما Mobile Menu 01-04 */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-[#e5e5e5] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] h-[66px] px-2 flex items-center justify-around">
+      {/* ۱. نوار ثابت ناوبری پایین در حالت موبایل و تبلت (< lg) - در صفحات ۴۰۴ و خطای سرور مخفی است */}
+      {!isErrorPage && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-[#e5e5e5] shadow-[0_-4px_24px_rgba(0,0,0,0.08)] h-[66px] px-2 flex items-center justify-around">
         {/* تب ۱: صفحه اصلی */}
         <button
           type="button"
@@ -1050,6 +1064,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           <span className="text-[11px] leading-none">پروفایل کاربری</span>
         </button>
       </div>
+      )}
 
       {/* ۲. صفحه دسته‌بندی‌های موبایل تمام‌صفحه بالای نوار پایین (دقیقاً مطابق عکس دوم فیگما) */}
       {isMobileCategoriesOpen && (
@@ -1265,10 +1280,12 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
 
             {/* ۵. درباره ما */}
             <a
-              href="#about-services"
-              onClick={() => {
+              href="/about-us"
+              onClick={(e) => {
+                e.preventDefault();
                 setIsMobileCategoriesOpen(false);
                 setActiveMobileTab('home');
+                triggerRouteNavigation('about-us');
               }}
               className="group block rounded-[18px] bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5] border border-[#e9e9e9] px-4 py-4 transition-colors"
             >
@@ -1354,14 +1371,13 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                         key={more.id}
                         href={more.href}
                         onClick={(e) => {
+                          e.preventDefault();
                           setIsMobileCategoriesOpen(false);
                           setActiveMobileTab('home');
                           if (more.href === '/rule') {
-                            e.preventDefault();
-                            navigateToRoute('rule');
-                          } else if (getCurrentRoute() !== 'home') {
-                            e.preventDefault();
-                            navigateToRoute('home', more.href);
+                            triggerRouteNavigation('rule');
+                          } else {
+                            triggerRouteNavigation('home', more.href);
                           }
                         }}
                         className="group/item block w-full px-4 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] active:bg-[#f6f1e7] active:text-[#b59766] transition-colors"

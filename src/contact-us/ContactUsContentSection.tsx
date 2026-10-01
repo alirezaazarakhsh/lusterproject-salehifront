@@ -400,6 +400,7 @@ export const ContactUsContentSection: React.FC<
   const [mobilePhone, setMobilePhone] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [messageText, setMessageText] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // شمارنده‌های تست برای نمایش هر ۳ وضعیت مودال در دسکتاپ و موبایل
   const emptyAttemptCountRef = useRef<number>(0);
@@ -412,6 +413,9 @@ export const ContactUsContentSection: React.FC<
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
 
     const isFormIncomplete =
       !subject.trim() ||
@@ -420,53 +424,57 @@ export const ContactUsContentSection: React.FC<
       !email.trim() ||
       !messageText.trim();
 
-    if (isFormIncomplete) {
-      emptyAttemptCountRef.current += 1;
-      const cycle = emptyAttemptCountRef.current % 3;
+    window.setTimeout(() => {
+      setIsSubmitting(false);
 
-      if (cycle === 1) {
-        // وضعیت ۱: خطای خالی بودن فیلد فرم تماس (عکس ۱۱ موبایل و توست میانی عکس ۱۳ دسکتاپ)
-        onShowToast?.(
-          'contact-empty-error',
-          'خطایی رخ داد!',
-          'مشتری عزیز فیلد فرم تماس با مجموعه خالی میباشد.'
-        );
-      } else if (cycle === 2) {
-        // وضعیت ۲: خطای ارسال نشدن پیام (عکس ۱۲ موبایل و توست بالایی عکس ۱۳ دسکتاپ)
-        onShowToast?.(
-          'contact-send-error',
-          'پیام شما ارسال نشد!',
-          'برای ارسال فرم تماس با تیم مجموعه مجدد تلاش کنید.'
-        );
-      } else {
-        // وضعیت ۳: ارسال موفقیت‌آمیز پیام (عکس ۱۰ موبایل و توست پایینی عکس ۱۳ دسکتاپ)
+      if (isFormIncomplete) {
+        emptyAttemptCountRef.current += 1;
+        const cycle = emptyAttemptCountRef.current % 3;
+
+        if (cycle === 1) {
+          // وضعیت ۱: خطای خالی بودن فیلد فرم تماس (عکس ۱۱ موبایل و توست میانی عکس ۱۳ دسکتاپ)
+          onShowToast?.(
+            'contact-empty-error',
+            'خطایی رخ داد!',
+            'مشتری عزیز فیلد فرم تماس با مجموعه خالی میباشد.'
+          );
+        } else if (cycle === 2) {
+          // وضعیت ۲: خطای ارسال نشدن پیام (عکس ۱۲ موبایل و توست بالایی عکس ۱۳ دسکتاپ)
+          onShowToast?.(
+            'contact-send-error',
+            'پیام شما ارسال نشد!',
+            'برای ارسال فرم تماس با تیم مجموعه مجدد تلاش کنید.'
+          );
+        } else {
+          // وضعیت ۳: ارسال موفقیت‌آمیز پیام (عکس ۱۰ موبایل و توست پایینی عکس ۱۳ دسکتاپ)
+          onShowToast?.(
+            'contact-success',
+            'پیام شما با موفقیت ارسال شد',
+            'به زودی تیم پاسخگویی با شما تماس خواهند گرفت.'
+          );
+        }
+        return;
+      }
+
+      filledAttemptCountRef.current += 1;
+      if (filledAttemptCountRef.current % 2 === 1) {
         onShowToast?.(
           'contact-success',
           'پیام شما با موفقیت ارسال شد',
           'به زودی تیم پاسخگویی با شما تماس خواهند گرفت.'
         );
+        setFullName('');
+        setMobilePhone('');
+        setEmail('');
+        setMessageText('');
+      } else {
+        onShowToast?.(
+          'contact-send-error',
+          'پیام شما ارسال نشد!',
+          'برای ارسال فرم تماس با تیم مجموعه مجدد تلاش کنید.'
+        );
       }
-      return;
-    }
-
-    filledAttemptCountRef.current += 1;
-    if (filledAttemptCountRef.current % 2 === 1) {
-      onShowToast?.(
-        'contact-success',
-        'پیام شما با موفقیت ارسال شد',
-        'به زودی تیم پاسخگویی با شما تماس خواهند گرفت.'
-      );
-      setFullName('');
-      setMobilePhone('');
-      setEmail('');
-      setMessageText('');
-    } else {
-      onShowToast?.(
-        'contact-send-error',
-        'پیام شما ارسال نشد!',
-        'برای ارسال فرم تماس با تیم مجموعه مجدد تلاش کنید.'
-      );
-    }
+    }, 650);
   };
 
   return (
@@ -778,13 +786,21 @@ export const ContactUsContentSection: React.FC<
             </div>
           </div>
 
-          {/* دکمه ارسال درخواست در پایین سمت راست */}
+          {/* دکمه ارسال درخواست در پایین سمت راست به همراه لودینگ در دسکتاپ و موبایل */}
           <div className="mt-4 sm:mt-5 flex justify-start">
             <button
               type="submit"
-              className="h-[46px] px-7 rounded-[10px] bg-[#272727] hover:bg-[#1a1a1a] active:bg-[#111111] text-white text-[13px] font-bold transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="h-[46px] min-w-[146px] px-7 rounded-[10px] bg-[#272727] hover:bg-[#1a1a1a] active:bg-[#111111] disabled:opacity-85 text-white text-[13px] font-bold transition-all cursor-pointer flex items-center justify-center gap-2.5"
             >
-              ارسال درخواست
+              {isSubmitting ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin shrink-0" />
+                  <span>در حال ارسال...</span>
+                </>
+              ) : (
+                <span>ارسال درخواست</span>
+              )}
             </button>
           </div>
         </form>

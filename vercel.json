@@ -17,6 +17,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/about-us",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/about-us/(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

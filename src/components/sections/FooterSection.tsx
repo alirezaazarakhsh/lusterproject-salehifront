@@ -2,12 +2,33 @@ import React, { useState } from 'react';
 import { ArrowUp, Instagram, Linkedin, MessageCircle, ChevronDown } from 'lucide-react';
 import { FooterBrandLogo, CalligraphyTrustBadge } from '../Ornaments';
 import { SALEHI_PHONE_NUMBERS } from '../../data/chandelierData';
-import { getCurrentRoute, navigateToRoute } from '../../utils/navigation';
+import {
+  AppRoute,
+  getCurrentRoute,
+  navigateToRoute,
+} from '../../utils/navigation';
+
+interface FooterSectionProps {
+  currentRoute?: AppRoute;
+  onNavigateRoute?: (route: AppRoute, hashAnchor?: string) => void;
+}
 
 /**
  * بخش فوتر دو رنگ تمام‌عرض (دقیقاً مطابق نیمه پایینی عکس چهارم)
  */
-export const FooterSection: React.FC = () => {
+export const FooterSection: React.FC<FooterSectionProps> = ({
+  currentRoute,
+  onNavigateRoute,
+}) => {
+  const activeRoute = currentRoute ?? getCurrentRoute();
+
+  const triggerRouteNavigation = (route: AppRoute, hashAnchor?: string) => {
+    if (onNavigateRoute) {
+      onNavigateRoute(route, hashAnchor);
+    } else {
+      navigateToRoute(route, hashAnchor);
+    }
+  };
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     quickAccess: false,
@@ -122,12 +143,10 @@ export const FooterSection: React.FC = () => {
                     <a
                       href="/"
                       onClick={(e) => {
-                        if (getCurrentRoute() !== 'home') {
-                          e.preventDefault();
-                          navigateToRoute('home');
-                        }
+                        e.preventDefault();
+                        triggerRouteNavigation('home');
                       }}
-                      className="hover:text-[#b39561] transition-colors"
+                      className="hover:text-[#b39561] transition-colors cursor-pointer"
                     >
                       صفحه اصلی
                     </a>
@@ -138,9 +157,13 @@ export const FooterSection: React.FC = () => {
                       href="/rule"
                       onClick={(e) => {
                         e.preventDefault();
-                        navigateToRoute('rule');
+                        triggerRouteNavigation('rule');
                       }}
-                      className="hover:text-[#b39561] transition-colors"
+                      className={`transition-colors cursor-pointer ${
+                        activeRoute === 'rule'
+                          ? 'text-[#b39561]'
+                          : 'hover:text-[#b39561]'
+                      }`}
                     >
                       قوانین و مقررات
                     </a>
@@ -148,8 +171,16 @@ export const FooterSection: React.FC = () => {
                   <li className="relative md:static">
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
-                      href="#about-services"
-                      className="hover:text-[#b39561] transition-colors"
+                      href="/about-us"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        triggerRouteNavigation('about-us');
+                      }}
+                      className={`transition-colors cursor-pointer ${
+                        activeRoute === 'about-us'
+                          ? 'text-[#b39561]'
+                          : 'hover:text-[#b39561]'
+                      }`}
                     >
                       درباره ما
                     </a>
@@ -160,9 +191,13 @@ export const FooterSection: React.FC = () => {
                       href="/contact-us"
                       onClick={(e) => {
                         e.preventDefault();
-                        navigateToRoute('contact-us');
+                        triggerRouteNavigation('contact-us');
                       }}
-                      className="hover:text-[#b39561] transition-colors"
+                      className={`transition-colors cursor-pointer ${
+                        activeRoute === 'contact-us'
+                          ? 'text-[#b39561]'
+                          : 'hover:text-[#b39561]'
+                      }`}
                     >
                       تماس با ما
                     </a>
@@ -171,6 +206,12 @@ export const FooterSection: React.FC = () => {
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
                       href="#executed-projects"
+                      onClick={(e) => {
+                        if (activeRoute !== 'home') {
+                          e.preventDefault();
+                          triggerRouteNavigation('home', '#executed-projects');
+                        }
+                      }}
                       className="hover:text-[#b39561] transition-colors"
                     >
                       شعبه های مرکز
@@ -180,6 +221,12 @@ export const FooterSection: React.FC = () => {
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
                       href="#about-services"
+                      onClick={(e) => {
+                        if (activeRoute !== 'home') {
+                          e.preventDefault();
+                          triggerRouteNavigation('home', '#about-services');
+                        }
+                      }}
                       className="hover:text-[#b39561] transition-colors"
                     >
                       گواهی ها
@@ -189,6 +236,12 @@ export const FooterSection: React.FC = () => {
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
                       href="#executed-projects"
+                      onClick={(e) => {
+                        if (activeRoute !== 'home') {
+                          e.preventDefault();
+                          triggerRouteNavigation('home', '#executed-projects');
+                        }
+                      }}
                       className="hover:text-[#b39561] transition-colors"
                     >
                       نمونه کارهای صالحی
