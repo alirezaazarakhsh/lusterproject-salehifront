@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SectionHeading, CategoryStarSeal } from '../Ornaments';
+import { navigateToRoute } from '../../utils/navigation';
 import {
   PROJECT_TABS,
   EXECUTED_PROJECTS,
@@ -190,8 +191,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
           <button
             type="button"
             onClick={() => {
-              const nextSample = (selectedSampleIdx + 1) % tabProjects.length;
-              handleSelectSample(nextSample);
+              navigateToRoute('project');
             }}
             className="h-9 px-4 rounded-[8px] bg-[#f4f4f4] hover:bg-[#272727] text-[#222222] hover:text-white text-xs font-bold transition-colors cursor-pointer whitespace-nowrap"
           >

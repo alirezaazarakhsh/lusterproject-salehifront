@@ -235,14 +235,16 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                   <li className="relative md:static">
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
-                      href="#executed-projects"
+                      href="/project"
                       onClick={(e) => {
-                        if (activeRoute !== 'home') {
-                          e.preventDefault();
-                          triggerRouteNavigation('home', '#executed-projects');
-                        }
+                        e.preventDefault();
+                        triggerRouteNavigation('project');
                       }}
-                      className="hover:text-[#b39561] transition-colors"
+                      className={`transition-colors cursor-pointer ${
+                        activeRoute === 'project'
+                          ? 'text-[#b39561]'
+                          : 'hover:text-[#b39561]'
+                      }`}
                     >
                       نمونه کارهای صالحی
                     </a>

@@ -25,6 +25,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/project",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/project/(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

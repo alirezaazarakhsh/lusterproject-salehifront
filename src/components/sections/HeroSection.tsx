@@ -1,27 +1,63 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { HeroTitleOrnament } from '../Ornaments';
 import { GENERATED_IMAGES } from '../../data/chandelierData';
 
 /**
  * بخش بنر اصلی (Hero Slider)
- * - در موبایل و تبلت (چه عمودی/portrait چه افقی/landscape): اسلایدر افقی لایه‌ای با کارت‌های کناری (Peek Slider) + نقطه‌های افقی ۵گانه
- * - در دسکتاپ بزرگ: بنر عریض ماندگار با نقطه‌های عمودی در سمت چپ
+ * - در موبایل و تبلت (چه عمودی/portrait چه افقی/landscape): اسلایدر افقی لایه‌ای با کارت‌های کناری (Peek Slider) + نقطه‌های افقی ۵گانه با حرکت نرم
+ * - در دسکتاپ بزرگ: بنر عریض ماندگار با انیمیشن نرم Crossfade و نقطه‌های عمودی در سمت چپ
  */
 export const HeroSection: React.FC = () => {
   const [activeDot, setActiveDot] = useState(2);
+  const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const isProgrammaticScrollRef = useRef(false);
+  const programmaticTimerRef = useRef<number | null>(null);
+  const dragStartXRef = useRef<number | null>(null);
 
   const heroImages = [
-    GENERATED_IMAGES.heroBanner,
+    GENERATED_IMAGES.projectRoyalRestaurant,
     GENERATED_IMAGES.projectFereshteh,
     GENERATED_IMAGES.heroBanner,
     GENERATED_IMAGES.projectLobbyHotel,
     GENERATED_IMAGES.projectDuplexVilla,
   ];
 
-  // همگام‌سازی فوق‌العاده دقیق سوایپ و اسکرول لمسی موبایل با نقطه‌های ۵گانه با متد جئومتری مرکز
-  const handleScroll = () => {
+  // اسکرول نرم و دقیق به اسلاید انتخابی در موبایل/تبلت با محاسبه اختلاف مرکز (سازگار با RTL)
+  const scrollToSlide = useCallback((index: number, smooth = true) => {
+    setActiveDot(index);
     if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const card = container.children[index] as HTMLElement | undefined;
+    if (!card) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    if (containerRect.width === 0) return;
+
+    const deltaX =
+      cardRect.left +
+      cardRect.width / 2 -
+      (containerRect.left + containerRect.width / 2);
+
+    isProgrammaticScrollRef.current = true;
+    if (programmaticTimerRef.current) {
+      window.clearTimeout(programmaticTimerRef.current);
+    }
+
+    container.scrollBy({
+      left: deltaX,
+      behavior: smooth ? 'smooth' : 'auto',
+    });
+
+    programmaticTimerRef.current = window.setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+    }, 680);
+  }, []);
+
+  // همگام‌سازی سوایپ و اسکرول لمسی موبایل با نقطه‌های ۵گانه با متد جئومتری مرکز
+  const handleScroll = () => {
+    if (!scrollRef.current || isProgrammaticScrollRef.current) return;
     const container = scrollRef.current;
     const children = Array.from(container.children) as HTMLElement[];
     if (children.length === 0) return;
@@ -46,57 +82,88 @@ export const HeroSection: React.FC = () => {
     }
   };
 
-  // اسکرول نرم و مطمئن به اسلاید انتخابی به روش Cross-Browser
-  const scrollToSlide = (index: number) => {
-    setActiveDot(index);
-    if (!scrollRef.current) return;
-    const card = scrollRef.current.children[index] as HTMLElement;
-    if (card) {
-      card.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
-    }
-  };
+  useEffect(() => {
+    // قرارگیری اولیه روی اسلاید مرکز (اسلاید شماره ۳) بدون پرش
+    const initialTimer = window.setTimeout(() => {
+      scrollToSlide(2, false);
+    }, 80);
+
+    return () => {
+      window.clearTimeout(initialTimer);
+      if (programmaticTimerRef.current) {
+        window.clearTimeout(programmaticTimerRef.current);
+      }
+    };
+  }, [scrollToSlide]);
 
   useEffect(() => {
-    // اسکرول اولیه به اسلاید مرکز (اسلاید شماره ۳)
-    const initialTimer = setTimeout(() => {
-      scrollToSlide(2);
-    }, 100);
+    if (isPaused) return;
 
-    // اسلایدر اتوماتیک با زمان ۵.۵ ثانیه جهت تغییر نرم و بدون عجله
-    const interval = setInterval(() => {
+    // اسلایدر اتوماتیک با زمان ۵ ثانیه جهت تغییر نرم و بدون عجله
+    const interval = window.setInterval(() => {
       setActiveDot((prev) => {
         const nextIdx = (prev + 1) % heroImages.length;
         if (scrollRef.current && window.innerWidth < 1024) {
           const container = scrollRef.current;
-          const card = container.children[nextIdx] as HTMLElement;
+          const card = container.children[nextIdx] as HTMLElement | undefined;
           if (card) {
-            const scrollLeft =
-              card.offsetLeft - (container.offsetWidth - card.offsetWidth) / 2;
-            container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+            const containerRect = container.getBoundingClientRect();
+            const cardRect = card.getBoundingClientRect();
+            const deltaX =
+              cardRect.left +
+              cardRect.width / 2 -
+              (containerRect.left + containerRect.width / 2);
+
+            isProgrammaticScrollRef.current = true;
+            if (programmaticTimerRef.current) {
+              window.clearTimeout(programmaticTimerRef.current);
+            }
+            container.scrollBy({ left: deltaX, behavior: 'smooth' });
+            programmaticTimerRef.current = window.setTimeout(() => {
+              isProgrammaticScrollRef.current = false;
+            }, 680);
           }
         }
         return nextIdx;
       });
-    }, 5500);
+    }, 5000);
 
     return () => {
-      clearTimeout(initialTimer);
-      clearInterval(interval);
+      window.clearInterval(interval);
     };
-  }, [heroImages.length]);
+  }, [heroImages.length, isPaused]);
+
+  const handleDesktopPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStartXRef.current = e.clientX;
+  };
+
+  const handleDesktopPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartXRef.current === null) return;
+    const diff = e.clientX - dragStartXRef.current;
+    dragStartXRef.current = null;
+    if (Math.abs(diff) > 45) {
+      if (diff > 0) {
+        setActiveDot((prev) => (prev + 1) % heroImages.length);
+      } else {
+        setActiveDot((prev) => (prev - 1 + heroImages.length) % heroImages.length);
+      }
+    }
+  };
 
   return (
-    <section className="w-full max-w-[1800px] mx-auto px-0 sm:px-6 lg:px-14 xl:px-20 pb-6 sm:pb-12">
+    <section
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
+      className="w-full max-w-[1800px] mx-auto px-0 sm:px-6 lg:px-14 xl:px-20 pb-6 sm:pb-12"
+    >
       {/* ==================== حالت موبایل و تبلت ==================== */}
       <div className="block lg:hidden relative w-full overflow-hidden py-2">
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex gap-3.5 sm:gap-5 overflow-x-auto snap-x snap-mandatory px-[8vw] sm:px-[12vw] py-2 touch-pan-x [&::-webkit-scrollbar]:hidden"
+          className="flex gap-3.5 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth px-[8vw] sm:px-[12vw] py-2 touch-pan-x [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {heroImages.map((imgUrl, idx) => {
@@ -104,26 +171,34 @@ export const HeroSection: React.FC = () => {
             return (
               <div
                 key={`mobile-hero-${idx}`}
-                onClick={() => scrollToSlide(idx)}
-                className={`relative w-[84vw] max-w-[640px] shrink-0 snap-center rounded-[24px] sm:rounded-[30px] overflow-hidden h-[270px] xs:h-[300px] sm:h-[350px] bg-[#121110] shadow-[0_12px_36px_rgba(0,0,0,0.18)] flex flex-col justify-between transition-all duration-300 cursor-pointer ${
+                onClick={() => scrollToSlide(idx, true)}
+                className={`relative w-[84vw] max-w-[640px] shrink-0 snap-center rounded-[24px] sm:rounded-[30px] overflow-hidden h-[270px] xs:h-[300px] sm:h-[350px] bg-[#121110] shadow-[0_12px_36px_rgba(0,0,0,0.18)] flex flex-col justify-between transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
                   isCurrent
-                    ? 'opacity-100 scale-100 ring-1 ring-white/10'
-                    : 'opacity-75 scale-[0.98]'
+                    ? 'opacity-100 scale-100 ring-1 ring-white/15'
+                    : 'opacity-70 scale-[0.95]'
                 }`}
               >
-                {/* تصویر پس‌زمینه اسلاید */}
+                {/* تصویر پس‌زمینه اسلاید با زوم نرم هنگام فعال شدن */}
                 <img
                   src={imgUrl}
                   alt="با شکوهی ماندگار فضای زندگی‌تان را ارتقا دهید"
                   referrerPolicy="no-referrer"
-                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  className={`absolute inset-0 w-full h-full object-cover object-center transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    isCurrent ? 'scale-100' : 'scale-110'
+                  }`}
                 />
 
                 {/* گرادینت تیره روی تصویر برای خوانایی کامل متن */}
                 <div className="absolute inset-0 bg-gradient-to-l from-black/85 via-black/65 to-black/30" />
 
                 {/* محتوای متن و دکمه اسلاید */}
-                <div className="relative z-10 p-4 xs:p-5 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-4 pb-10 pr-5 xs:pr-6 sm:pr-8 pl-3 max-w-[90%]">
+                <div
+                  className={`relative z-10 p-4 xs:p-5 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-4 pb-10 pr-5 xs:pr-6 sm:pr-8 pl-3 max-w-[90%] transition-all duration-700 ease-out ${
+                    isCurrent
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-80 translate-y-1'
+                  }`}
+                >
                   <div className="flex items-center justify-start gap-1.5 xs:gap-2 mb-2">
                     <HeroTitleOrnament flip className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
                     <h1 className="text-right">
@@ -159,12 +234,12 @@ export const HeroSection: React.FC = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        scrollToSlide(dotIndex);
+                        scrollToSlide(dotIndex, true);
                       }}
                       aria-label={`اسلاید ${dotIndex + 1}`}
-                      className={`rounded-full transition-all cursor-pointer ${
+                      className={`rounded-full transition-all duration-500 ease-out cursor-pointer ${
                         activeDot === dotIndex
-                          ? 'w-3 h-3 bg-white shadow-xs'
+                          ? 'w-3 h-3 bg-white shadow-xs scale-105'
                           : 'w-2 h-2 bg-white/45 hover:bg-white/80'
                       }`}
                     />
@@ -177,17 +252,35 @@ export const HeroSection: React.FC = () => {
       </div>
 
       {/* ==================== حالت دسکتاپ بزرگ (lg به بالا) ==================== */}
-      <div className="hidden lg:flex relative w-full rounded-[28px] overflow-hidden min-h-[480px] lg:min-h-[520px] 2xl:min-h-[550px] bg-[#121110] shadow-[0_18px_50px_rgba(0,0,0,0.14)] items-center justify-start">
-        {/* تصویر پس‌زمینه اسلایدر */}
-        <img
-          src={heroImages[activeDot] || heroImages[0]}
-          alt="با شکوهی ماندگار فضای زندگی‌تان را ارتقا دهید"
-          referrerPolicy="no-referrer"
-          className="absolute inset-0 w-full h-full object-cover object-left"
-        />
+      <div
+        onPointerDown={handleDesktopPointerDown}
+        onPointerUp={handleDesktopPointerUp}
+        className="hidden lg:flex relative w-full rounded-[28px] overflow-hidden min-h-[480px] lg:min-h-[520px] 2xl:min-h-[550px] bg-[#121110] shadow-[0_18px_50px_rgba(0,0,0,0.14)] items-center justify-start select-none"
+      >
+        {/* تصاویر پس‌زمینه اسلایدر با انیمیشن نرم Crossfade و زوم/لایه سینمایی */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {heroImages.map((imgUrl, idx) => {
+            const isSelected = activeDot === idx;
+            return (
+              <img
+                key={`desktop-hero-slide-${idx}`}
+                src={imgUrl}
+                alt="با شکوهی ماندگار فضای زندگی‌تان را ارتقا دهید"
+                referrerPolicy="no-referrer"
+                className={`absolute inset-0 w-full h-full object-cover object-left transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] ${
+                  isSelected
+                    ? 'opacity-100 scale-100 translate-x-0 z-[1]'
+                    : idx < activeDot
+                      ? 'opacity-0 scale-[1.06] translate-x-5 z-0'
+                      : 'opacity-0 scale-[1.06] -translate-x-5 z-0'
+                }`}
+              />
+            );
+          })}
+        </div>
 
         {/* گرادینت تیره سمت راست برای کنتراست کامل متن سفید راست‌چین */}
-        <div className="absolute inset-0 bg-gradient-to-l from-black via-black/80 to-transparent" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-l from-black via-black/80 to-transparent pointer-events-none" />
 
         {/* بلوک محتوای کاملاً راست‌چین با سایز فونت استاندارد و فوق‌العاده شکیل‌تر دسکتاپ */}
         <div className="relative z-10 w-full lg:w-[62%] pr-8 lg:pr-14 pl-6 py-12 flex flex-col items-start justify-center text-right">
@@ -230,9 +323,9 @@ export const HeroSection: React.FC = () => {
                 type="button"
                 onClick={() => setActiveDot(dotIndex)}
                 aria-label={`اسلاید ${dotIndex + 1}`}
-                className={`rounded-full transition-all cursor-pointer ${
+                className={`rounded-full transition-all duration-500 ease-out cursor-pointer ${
                   isSelected
-                    ? 'w-3 h-3 bg-white shadow-xs'
+                    ? 'w-3 h-3 bg-white shadow-xs scale-105'
                     : 'w-1.5 h-1.5 bg-white/45 hover:bg-white/80'
                 }`}
               />

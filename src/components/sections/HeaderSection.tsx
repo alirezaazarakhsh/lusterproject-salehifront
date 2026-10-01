@@ -605,14 +605,16 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           </div>
 
           <a
-            href="#executed-projects"
+            href="/project"
             onClick={(e) => {
-              if (activeRoute !== 'home') {
-                e.preventDefault();
-                triggerRouteNavigation('home', '#executed-projects');
-              }
+              e.preventDefault();
+              triggerRouteNavigation('project');
             }}
-            className="hover:text-[#b59766] transition-colors whitespace-nowrap py-3"
+            className={`transition-colors whitespace-nowrap py-3 cursor-pointer ${
+              activeRoute === 'project'
+                ? 'text-[#b59766]'
+                : 'hover:text-[#b59766]'
+            }`}
           >
             پروژه ها
           </a>
@@ -1176,11 +1178,14 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             </div>
 
             {/* ۲. پروژه ها */}
+            {/* ۲. پروژه ها */}
             <a
-              href="#executed-projects"
-              onClick={() => {
+              href="/project"
+              onClick={(e) => {
+                e.preventDefault();
                 setIsMobileCategoriesOpen(false);
                 setActiveMobileTab('home');
+                triggerRouteNavigation('project');
               }}
               className="group block rounded-[18px] bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5] border border-[#e9e9e9] px-4 py-4 transition-colors"
             >

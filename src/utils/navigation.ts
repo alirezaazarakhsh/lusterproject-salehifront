@@ -3,6 +3,7 @@ export type AppRoute =
   | 'rule'
   | 'contact-us'
   | 'about-us'
+  | 'project'
   | 'not-found'
   | 'server-error';
 
@@ -19,7 +20,44 @@ export const VALID_HOME_HASHES = new Set([
 ]);
 
 let currentMemoryRoute: AppRoute | null = null;
+let currentMemoryProjectSlug: string | null = null;
 const routeListeners = new Set<(route: AppRoute) => void>();
+
+export const extractProjectSlugFromLocation = (): string | null => {
+  if (typeof window === 'undefined') return null;
+
+  const rawPathname = decodeURIComponent(window.location.pathname);
+  const cleanPathname =
+    rawPathname.length > 1 && rawPathname.endsWith('/')
+      ? rawPathname.slice(0, -1)
+      : rawPathname;
+
+  const pathMatch = cleanPathname.match(/^\/(?:project|projects)\/([^/?#]+)$/i);
+  if (pathMatch && pathMatch[1]) {
+    return pathMatch[1].trim();
+  }
+
+  const rawHash = decodeURIComponent(window.location.hash);
+  const hashMatch = rawHash.match(/^#\/?(?:project|projects)\/([^/?#]+)$/i);
+  if (hashMatch && hashMatch[1]) {
+    return hashMatch[1].trim();
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const querySlug = searchParams.get('slug') || searchParams.get('project');
+  if (querySlug) {
+    return querySlug.trim();
+  }
+
+  return null;
+};
+
+export const getCurrentProjectSlug = (): string | null => {
+  if (currentMemoryProjectSlug !== null) {
+    return currentMemoryProjectSlug;
+  }
+  return extractProjectSlugFromLocation();
+};
 
 export const detectRouteFromLocation = (): AppRoute => {
   if (typeof window === 'undefined') return 'home';
@@ -57,6 +95,25 @@ export const detectRouteFromLocation = (): AppRoute => {
     search.includes('page=about-us')
   ) {
     return 'about-us';
+  }
+  if (
+    pathname === '/project' ||
+    pathname === '/projects' ||
+    pathname.startsWith('/project/') ||
+    pathname.startsWith('/projects/') ||
+    pathname.endsWith('/project') ||
+    pathname.endsWith('/projects') ||
+    hash === '#project' ||
+    hash === '#/project' ||
+    hash === '#projects' ||
+    hash === '#/projects' ||
+    hash.startsWith('#project/') ||
+    hash.startsWith('#/project/') ||
+    hash.startsWith('#projects/') ||
+    hash.startsWith('#/projects/') ||
+    search.includes('page=project')
+  ) {
+    return 'project';
   }
   if (
     pathname === '/500' ||
@@ -106,6 +163,34 @@ export const subscribeToRoute = (listener: (route: AppRoute) => void) => {
   };
 };
 
+export const navigateToProjectSlug = (slug: string | null) => {
+  const cleanSlug = slug ? slug.trim().replace(/^\/+|\/+$/g, '') : null;
+  currentMemoryRoute = 'project';
+  currentMemoryProjectSlug = cleanSlug;
+
+  if (typeof window !== 'undefined') {
+    const targetUrl = cleanSlug
+      ? `/project/${encodeURIComponent(cleanSlug)}`
+      : '/project';
+    try {
+      window.history.pushState(
+        { route: 'project', projectSlug: cleanSlug },
+        '',
+        targetUrl
+      );
+    } catch {
+      window.location.hash = cleanSlug
+        ? `#/project/${encodeURIComponent(cleanSlug)}`
+        : '#/project';
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('app-project-slug-change', { detail: cleanSlug })
+    );
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+
 export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
   let resolvedRoute: AppRoute = route;
   const normalizedHash = hashAnchor ? hashAnchor.toLowerCase().trim() : '';
@@ -122,12 +207,23 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
       normalizedHash === '#/server-error'
     ) {
       resolvedRoute = 'server-error';
+    } else if (
+      normalizedHash === '#project' ||
+      normalizedHash === '#/project' ||
+      normalizedHash === '#projects' ||
+      normalizedHash === '#/projects' ||
+      normalizedHash.startsWith('#project/') ||
+      normalizedHash.startsWith('#/project/')
+    ) {
+      resolvedRoute = 'project';
     } else {
       resolvedRoute = 'not-found';
     }
   }
 
   currentMemoryRoute = resolvedRoute;
+  currentMemoryProjectSlug = null;
+
   if (typeof window !== 'undefined') {
     const targetUrl =
       resolvedRoute === 'rule'
@@ -136,15 +232,21 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
           ? '/contact-us'
           : resolvedRoute === 'about-us'
             ? '/about-us'
-            : resolvedRoute === 'server-error'
-              ? '/500'
-              : resolvedRoute === 'not-found'
-                ? '/404'
-                : hashAnchor
-                  ? `/${hashAnchor}`
-                  : '/';
+            : resolvedRoute === 'project'
+              ? '/project'
+              : resolvedRoute === 'server-error'
+                ? '/500'
+                : resolvedRoute === 'not-found'
+                  ? '/404'
+                  : hashAnchor
+                    ? `/${hashAnchor}`
+                    : '/';
     try {
-      window.history.pushState({ route: resolvedRoute }, '', targetUrl);
+      window.history.pushState(
+        { route: resolvedRoute, projectSlug: null },
+        '',
+        targetUrl
+      );
     } catch {
       window.location.hash =
         resolvedRoute === 'home' ? hashAnchor || '' : `#/${resolvedRoute}`;
@@ -154,12 +256,16 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
     window.dispatchEvent(
       new CustomEvent('app-route-change', { detail: resolvedRoute })
     );
+    window.dispatchEvent(
+      new CustomEvent('app-project-slug-change', { detail: null })
+    );
 
     if (
       !hashAnchor ||
       resolvedRoute === 'rule' ||
       resolvedRoute === 'contact-us' ||
       resolvedRoute === 'about-us' ||
+      resolvedRoute === 'project' ||
       resolvedRoute === 'not-found' ||
       resolvedRoute === 'server-error'
     ) {
@@ -176,8 +282,20 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
 };
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', () => {
+  currentMemoryProjectSlug = extractProjectSlugFromLocation();
+
+  window.addEventListener('popstate', (event) => {
+    const stateSlug =
+      event.state && typeof event.state.projectSlug !== 'undefined'
+        ? event.state.projectSlug
+        : extractProjectSlugFromLocation();
+    currentMemoryProjectSlug = stateSlug ?? null;
     currentMemoryRoute = detectRouteFromLocation();
     routeListeners.forEach((fn) => fn(currentMemoryRoute || 'home'));
+    window.dispatchEvent(
+      new CustomEvent('app-project-slug-change', {
+        detail: currentMemoryProjectSlug,
+      })
+    );
   });
 }

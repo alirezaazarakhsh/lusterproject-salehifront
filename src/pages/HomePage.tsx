@@ -19,6 +19,7 @@ import { FooterSection } from '../components/sections/FooterSection';
 import { RuleContentSection } from '../rule';
 import { ContactUsContentSection } from '../contact-us';
 import { AboutUsContentSection } from '../about-us';
+import { ProjectContentSection } from '../project';
 import { NotFoundContentSection } from '../not-found';
 import { ServerErrorContentSection } from '../server-error';
 import { PagePreloader } from '../components/PagePreloader';
@@ -109,7 +110,15 @@ export const HomePage: React.FC = () => {
           lowerHref === '#contact-us' ||
           lowerHref === '#/contact-us' ||
           lowerHref === '#about-us' ||
-          lowerHref === '#/about-us'
+          lowerHref === '#/about-us' ||
+          lowerHref === '#project' ||
+          lowerHref === '#/project' ||
+          lowerHref === '#projects' ||
+          lowerHref === '#/projects' ||
+          lowerHref.startsWith('#project/') ||
+          lowerHref.startsWith('#/project/') ||
+          lowerHref.startsWith('#projects/') ||
+          lowerHref.startsWith('#/projects/')
         ) {
           return;
         }
@@ -153,7 +162,11 @@ export const HomePage: React.FC = () => {
           cleanPath !== '/index.html' &&
           cleanPath !== '/rule' &&
           cleanPath !== '/contact-us' &&
-          cleanPath !== '/about-us'
+          cleanPath !== '/about-us' &&
+          cleanPath !== '/project' &&
+          cleanPath !== '/projects' &&
+          !cleanPath.startsWith('/project/') &&
+          !cleanPath.startsWith('/projects/')
         ) {
           e.preventDefault();
           setCurrentRoute('not-found');
@@ -399,6 +412,15 @@ export const HomePage: React.FC = () => {
       ) : currentRoute === 'about-us' ? (
         /* محتوای میانی صفحه درباره ما (/about-us) */
         <AboutUsContentSection onShowToast={addAppToast} />
+      ) : currentRoute === 'project' ? (
+        /* محتوای میانی صفحه پروژه‌ها (/project) */
+        <ProjectContentSection
+          onOpenProductModal={(prod) => handleOpenProductModal(prod)}
+          onAddToCart={handleAddToCart}
+          onShowToast={addAppToast}
+          onOpenLogin={() => setIsLoginModalOpen(true)}
+          isLoggedIn={isLoggedIn}
+        />
       ) : (
         <>
           {/* ۲. نوار استوری‌های دایره‌ای */}

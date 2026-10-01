@@ -3435,7 +3435,10 @@ export interface AppToast {
     | 'contact-empty-error'
     | 'contact-send-error'
     | 'catalog-download-success'
-    | 'catalog-download-error';
+    | 'catalog-download-error'
+    | 'project-like-success'
+    | 'project-dislike'
+    | 'product-add-error';
   title: string;
   message: string;
   onComplete?: () => void;
@@ -3547,7 +3550,8 @@ const SingleToast: React.FC<{
     toast.type === 'success' ||
     toast.type === 'cart-delete-success' ||
     toast.type === 'contact-success' ||
-    toast.type === 'catalog-download-success';
+    toast.type === 'catalog-download-success' ||
+    toast.type === 'project-like-success';
 
   React.useEffect(() => {
     // پر شدن خط پیشرفت در ۳۶۰۰ میلی‌ثانیه به پایان می‌رسد و سپس اسلاید خروج آغاز می‌شود
@@ -3710,6 +3714,110 @@ const SingleToast: React.FC<{
           />
           <path
             d="M16 4.02C19.33 4.2 21 5.43 21 10V16C21 20 20 22 15 22H9C4 22 3 20 3 16V10C3 5.44 4.67 4.2 8 4.02"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    }
+
+    if (toast.type === 'project-like-success') {
+      /* آیکون قلب با تیک تایید سبز برای «با موفقیت لایک شد» مطابق عکس ۴ و ۱۲ */
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-[24px] h-[24px] lg:w-[22px] lg:h-[22px]"
+        >
+          <path
+            d="M22 8.69C22 10.66 21.49 12.4 20.69 13.91C19.86 12.92 18.61 12.3 17.2 12.3C14.66 12.3 12.6 14.36 12.6 16.9C12.6 18.13 13.08 19.25 13.87 20.07C13.19 20.5 12.51 20.75 12.62 20.81C12.28 20.93 11.72 20.93 11.38 20.81C8.48 19.82 2 15.69 2 8.69C2 5.6 4.49 3.1 7.56 3.1C9.37 3.1 10.99 3.98 12 5.33C13.01 3.98 14.63 3.1 16.44 3.1C19.51 3.1 22 5.6 22 8.69Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle
+            cx="17.2"
+            cy="16.9"
+            r="4.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+          />
+          <path
+            d="M15.45 16.9L16.65 18.1L19.05 15.7"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    }
+
+    if (toast.type === 'project-dislike') {
+      /* آیکون قلب با ضربدر قرمز (heart-remove) برای حذف لایک / دیس‌لایک پروژه */
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-[24px] h-[24px] lg:w-[22px] lg:h-[22px]"
+        >
+          <path
+            d="M22 8.69C22 10.66 21.49 12.4 20.69 13.91C19.86 12.92 18.61 12.3 17.2 12.3C14.66 12.3 12.6 14.36 12.6 16.9C12.6 18.13 13.08 19.25 13.87 20.07C13.19 20.5 12.51 20.75 12.62 20.81C12.28 20.93 11.72 20.93 11.38 20.81C8.48 19.82 2 15.69 2 8.69C2 5.6 4.49 3.1 7.56 3.1C9.37 3.1 10.99 3.98 12 5.33C13.01 3.98 14.63 3.1 16.44 3.1C19.51 3.1 22 5.6 22 8.69Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle
+            cx="17.2"
+            cy="16.9"
+            r="4.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+          />
+          <path
+            d="M15.95 15.65L18.45 18.15"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M18.45 15.65L15.95 18.15"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    }
+
+    if (toast.type === 'product-add-error') {
+      /* آیکون چرخ‌دنده قرمز برای «خطا در اضافه شدن محصول!» مطابق عکس ۴ و ۱۳ */
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-[24px] h-[24px] lg:w-[22px] lg:h-[22px]"
+        >
+          <path
+            d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M2 12.88V11.12C2 10.08 2.85 9.22 3.9 9.22C5.71 9.22 6.45 7.94 5.54 6.37C5.02 5.47 5.33 4.3 6.24 3.78L7.97 2.79C8.76 2.32 9.78 2.6 10.25 3.39L10.36 3.58C11.26 5.15 12.74 5.15 13.65 3.58L13.76 3.39C14.23 2.6 15.25 2.32 16.04 2.79L17.77 3.78C18.68 4.3 18.99 5.47 18.47 6.37C17.56 7.94 18.3 9.22 20.11 9.22C21.15 9.22 22 10.07 22 11.12V12.88C22 13.92 21.15 14.78 20.1 14.78C18.29 14.78 17.55 16.06 18.46 17.63C18.98 18.54 18.67 19.7 17.76 20.22L16.03 21.21C15.24 21.68 14.22 21.4 13.75 20.61L13.64 20.42C12.74 18.85 11.26 18.85 10.35 20.42L10.24 20.61C9.77 21.4 8.75 21.68 7.96 21.21L6.23 20.22C5.32 19.7 5.01 18.53 5.53 17.63C6.44 16.06 5.7 14.78 3.89 14.78C2.85 14.78 2 13.92 2 12.88Z"
             stroke="currentColor"
             strokeWidth="1.8"
             strokeMiterlimit="10"
