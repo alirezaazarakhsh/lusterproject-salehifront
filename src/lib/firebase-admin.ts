@@ -1,6 +1,12 @@
+import fs from 'fs';
+import path from 'path';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+const firebaseConfig = fs.existsSync(configPath)
+  ? JSON.parse(fs.readFileSync(configPath, 'utf8'))
+  : {};
 
 if (!getApps().length) {
   initializeApp({
@@ -9,3 +15,4 @@ if (!getApps().length) {
 }
 
 export const adminAuth = getAuth();
+

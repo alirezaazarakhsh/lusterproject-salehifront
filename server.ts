@@ -1,7 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { requireAuth, AuthRequest } from './src/middleware/auth.ts';
+import { requireAuth, type AuthRequest } from './src/middleware/auth.ts';
 import {
   authenticateAdminByPhoneAndPassword,
   createAdminUser,
@@ -743,6 +744,12 @@ async function startServer() {
           .json({ error: error.message || 'خطا در ذخیره تنظیمات تماس با ما' });
       }
     }
+  );
+
+  // سرو فایل‌های استاتیک تصاویر در هر دو محیط توسعه و پروداکشن
+  app.use(
+    '/src/assets',
+    express.static(path.join(process.cwd(), 'src/assets'))
   );
 
   // Vite middleware for development

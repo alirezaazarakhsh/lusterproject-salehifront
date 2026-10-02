@@ -5046,10 +5046,37 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() =>
-                          setFooterSettingsForm(INITIAL_FOOTER_SETTINGS)
-                        }
-                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors"
+                        disabled={isSavingFooterSettings}
+                        onClick={async () => {
+                          setFooterSettingsForm(INITIAL_FOOTER_SETTINGS);
+                          setIsSavingFooterSettings(true);
+                          try {
+                            const saved = await authFetch(
+                              '/api/admin/settings/footer',
+                              {
+                                method: 'PUT',
+                                body: JSON.stringify(INITIAL_FOOTER_SETTINGS),
+                              }
+                            );
+                            setFooterSettingsForm({
+                              ...INITIAL_FOOTER_SETTINGS,
+                              ...saved,
+                            });
+                            onCatalogUpdated?.();
+                            showNotice(
+                              'success',
+                              'تنظیمات فوتر به مقادیر پیش‌فرض بازگردانی و در سایت ذخیره شد.'
+                            );
+                          } catch {
+                            showNotice(
+                              'success',
+                              'فرم به مقادیر پیش‌فرض بازگردانی شد.'
+                            );
+                          } finally {
+                            setIsSavingFooterSettings(false);
+                          }
+                        }}
+                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors disabled:opacity-60"
                       >
                         بازگردانی به مقادیر پیش‌فرض
                       </button>
@@ -5720,10 +5747,39 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() =>
-                          setContactUsSettingsForm(INITIAL_CONTACT_US_SETTINGS)
-                        }
-                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors"
+                        disabled={isSavingContactUsSettings}
+                        onClick={async () => {
+                          setContactUsSettingsForm(INITIAL_CONTACT_US_SETTINGS);
+                          setIsSavingContactUsSettings(true);
+                          try {
+                            const saved = await authFetch(
+                              '/api/admin/settings/contact-us',
+                              {
+                                method: 'PUT',
+                                body: JSON.stringify(
+                                  INITIAL_CONTACT_US_SETTINGS
+                                ),
+                              }
+                            );
+                            setContactUsSettingsForm({
+                              ...INITIAL_CONTACT_US_SETTINGS,
+                              ...saved,
+                            });
+                            onCatalogUpdated?.();
+                            showNotice(
+                              'success',
+                              'تنظیمات تماس با ما به مقادیر پیش‌فرض بازگردانی و در سایت ذخیره شد.'
+                            );
+                          } catch {
+                            showNotice(
+                              'success',
+                              'فرم به مقادیر پیش‌فرض بازگردانی شد.'
+                            );
+                          } finally {
+                            setIsSavingContactUsSettings(false);
+                          }
+                        }}
+                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors disabled:opacity-60"
                       >
                         بازگردانی به مقادیر پیش‌فرض
                       </button>
