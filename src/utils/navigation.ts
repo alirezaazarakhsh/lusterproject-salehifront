@@ -4,6 +4,8 @@ export type AppRoute =
   | 'contact-us'
   | 'about-us'
   | 'project'
+  | 'product'
+  | 'admin'
   | 'not-found'
   | 'server-error';
 
@@ -21,6 +23,7 @@ export const VALID_HOME_HASHES = new Set([
 
 let currentMemoryRoute: AppRoute | null = null;
 let currentMemoryProjectSlug: string | null = null;
+let currentMemoryProductCategorySlug: string | null = null;
 const routeListeners = new Set<(route: AppRoute) => void>();
 
 export const extractProjectSlugFromLocation = (): string | null => {
@@ -52,12 +55,79 @@ export const extractProjectSlugFromLocation = (): string | null => {
   return null;
 };
 
+export const extractProductCategorySlugFromLocation = (): string | null => {
+  if (typeof window === 'undefined') return null;
+
+  const rawPathname = decodeURIComponent(window.location.pathname);
+  const cleanPathname =
+    rawPathname.length > 1 && rawPathname.endsWith('/')
+      ? rawPathname.slice(0, -1)
+      : rawPathname;
+
+  const catPathMatch = cleanPathname.match(
+    /^\/(?:product|products)\/(?:categories|category)\/([^/?#]+)$/i
+  );
+  if (catPathMatch && catPathMatch[1]) {
+    return catPathMatch[1].trim();
+  }
+
+  const directPathMatch = cleanPathname.match(
+    /^\/(?:product|products)\/([^/?#]+)$/i
+  );
+  if (
+    directPathMatch &&
+    directPathMatch[1] &&
+    directPathMatch[1].toLowerCase() !== 'categories' &&
+    directPathMatch[1].toLowerCase() !== 'category'
+  ) {
+    return directPathMatch[1].trim();
+  }
+
+  const rawHash = decodeURIComponent(window.location.hash);
+  const catHashMatch = rawHash.match(
+    /^#\/?(?:product|products)\/(?:categories|category)\/([^/?#]+)$/i
+  );
+  if (catHashMatch && catHashMatch[1]) {
+    return catHashMatch[1].trim();
+  }
+
+  const directHashMatch = rawHash.match(
+    /^#\/?(?:product|products)\/([^/?#]+)$/i
+  );
+  if (
+    directHashMatch &&
+    directHashMatch[1] &&
+    directHashMatch[1].toLowerCase() !== 'categories' &&
+    directHashMatch[1].toLowerCase() !== 'category'
+  ) {
+    return directHashMatch[1].trim();
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const queryCategory = searchParams.get('category');
+  if (queryCategory) {
+    return queryCategory.trim();
+  }
+
+  return null;
+};
+
 export const getCurrentProjectSlug = (): string | null => {
   if (currentMemoryProjectSlug !== null) {
     return currentMemoryProjectSlug;
   }
   return extractProjectSlugFromLocation();
 };
+
+export const getCurrentProductCategorySlug = (): string | null => {
+  if (currentMemoryProductCategorySlug !== null) {
+    return currentMemoryProductCategorySlug;
+  }
+  return extractProductCategorySlugFromLocation();
+};
+
+export const getProductCategorySlugFromLocation =
+  getCurrentProductCategorySlug;
 
 export const detectRouteFromLocation = (): AppRoute => {
   if (typeof window === 'undefined') return 'home';
@@ -116,6 +186,35 @@ export const detectRouteFromLocation = (): AppRoute => {
     return 'project';
   }
   if (
+    pathname === '/product' ||
+    pathname === '/products' ||
+    pathname.startsWith('/product/') ||
+    pathname.startsWith('/products/') ||
+    pathname.endsWith('/product') ||
+    pathname.endsWith('/products') ||
+    hash === '#product' ||
+    hash === '#/product' ||
+    hash === '#products' ||
+    hash === '#/products' ||
+    hash.startsWith('#product/') ||
+    hash.startsWith('#/product/') ||
+    hash.startsWith('#products/') ||
+    hash.startsWith('#/products/') ||
+    search.includes('page=product')
+  ) {
+    return 'product';
+  }
+  if (
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/') ||
+    pathname.endsWith('/admin') ||
+    hash === '#admin' ||
+    hash === '#/admin' ||
+    search.includes('page=admin')
+  ) {
+    return 'admin';
+  }
+  if (
     pathname === '/500' ||
     pathname === '/server-error' ||
     pathname === '/down' ||
@@ -165,6 +264,7 @@ export const subscribeToRoute = (listener: (route: AppRoute) => void) => {
 
 export const navigateToProjectSlug = (slug: string | null) => {
   const cleanSlug = slug ? slug.trim().replace(/^\/+|\/+$/g, '') : null;
+  const wasAlreadyOnProject = currentMemoryRoute === 'project';
   currentMemoryRoute = 'project';
   currentMemoryProjectSlug = cleanSlug;
 
@@ -184,10 +284,65 @@ export const navigateToProjectSlug = (slug: string | null) => {
         : '#/project';
     }
 
+    if (!wasAlreadyOnProject) {
+      routeListeners.forEach((fn) => fn('project'));
+      window.dispatchEvent(
+        new CustomEvent('app-route-change', { detail: 'project' })
+      );
+    }
+
     window.dispatchEvent(
       new CustomEvent('app-project-slug-change', { detail: cleanSlug })
     );
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+
+export const navigateToProductCategory = (
+  slug: string | null,
+  eventOrOptions?:
+    | { preventDefault?: () => void; skipRouteChangeIfAlreadyOnProduct?: boolean }
+    | null
+) => {
+  if (eventOrOptions && typeof eventOrOptions.preventDefault === 'function') {
+    eventOrOptions.preventDefault();
+  }
+  const cleanSlug = slug ? slug.trim().replace(/^\/+|\/+$/g, '') : null;
+  const wasAlreadyOnProduct = currentMemoryRoute === 'product';
+  currentMemoryRoute = 'product';
+  currentMemoryProjectSlug = null;
+  currentMemoryProductCategorySlug = cleanSlug;
+
+  if (typeof window !== 'undefined') {
+    const targetUrl = cleanSlug
+      ? `/product/categories/${encodeURIComponent(cleanSlug)}`
+      : '/product';
+    try {
+      window.history.pushState(
+        { route: 'product', productCategorySlug: cleanSlug },
+        '',
+        targetUrl
+      );
+    } catch {
+      window.location.hash = cleanSlug
+        ? `#/product/categories/${encodeURIComponent(cleanSlug)}`
+        : '#/product';
+    }
+
+    if (
+      !wasAlreadyOnProduct ||
+      !eventOrOptions?.skipRouteChangeIfAlreadyOnProduct
+    ) {
+      routeListeners.forEach((fn) => fn('product'));
+      window.dispatchEvent(
+        new CustomEvent('app-route-change', { detail: 'product' })
+      );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('app-product-category-change', { detail: cleanSlug })
+    );
   }
 };
 
@@ -216,6 +371,20 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
       normalizedHash.startsWith('#/project/')
     ) {
       resolvedRoute = 'project';
+    } else if (
+      normalizedHash === '#product' ||
+      normalizedHash === '#/product' ||
+      normalizedHash === '#products' ||
+      normalizedHash === '#/products' ||
+      normalizedHash.startsWith('#product/') ||
+      normalizedHash.startsWith('#/product/')
+    ) {
+      resolvedRoute = 'product';
+    } else if (
+      normalizedHash === '#admin' ||
+      normalizedHash === '#/admin'
+    ) {
+      resolvedRoute = 'admin';
     } else {
       resolvedRoute = 'not-found';
     }
@@ -223,6 +392,9 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
 
   currentMemoryRoute = resolvedRoute;
   currentMemoryProjectSlug = null;
+  if (resolvedRoute !== 'product') {
+    currentMemoryProductCategorySlug = null;
+  }
 
   if (typeof window !== 'undefined') {
     const targetUrl =
@@ -234,16 +406,29 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
             ? '/about-us'
             : resolvedRoute === 'project'
               ? '/project'
-              : resolvedRoute === 'server-error'
-                ? '/500'
-                : resolvedRoute === 'not-found'
-                  ? '/404'
-                  : hashAnchor
-                    ? `/${hashAnchor}`
-                    : '/';
+              : resolvedRoute === 'product'
+                ? currentMemoryProductCategorySlug
+                  ? `/product/categories/${encodeURIComponent(currentMemoryProductCategorySlug)}`
+                  : '/product'
+                : resolvedRoute === 'admin'
+                  ? '/admin'
+                  : resolvedRoute === 'server-error'
+                  ? '/500'
+                  : resolvedRoute === 'not-found'
+                    ? '/404'
+                    : hashAnchor
+                      ? `/${hashAnchor}`
+                      : '/';
     try {
       window.history.pushState(
-        { route: resolvedRoute, projectSlug: null },
+        {
+          route: resolvedRoute,
+          projectSlug: null,
+          productCategorySlug:
+            resolvedRoute === 'product'
+              ? currentMemoryProductCategorySlug
+              : null,
+        },
         '',
         targetUrl
       );
@@ -259,6 +444,11 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
     window.dispatchEvent(
       new CustomEvent('app-project-slug-change', { detail: null })
     );
+    if (resolvedRoute !== 'product') {
+      window.dispatchEvent(
+        new CustomEvent('app-product-category-change', { detail: null })
+      );
+    }
 
     if (
       !hashAnchor ||
@@ -266,6 +456,8 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
       resolvedRoute === 'contact-us' ||
       resolvedRoute === 'about-us' ||
       resolvedRoute === 'project' ||
+      resolvedRoute === 'product' ||
+      resolvedRoute === 'admin' ||
       resolvedRoute === 'not-found' ||
       resolvedRoute === 'server-error'
     ) {
@@ -283,18 +475,29 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
 
 if (typeof window !== 'undefined') {
   currentMemoryProjectSlug = extractProjectSlugFromLocation();
+  currentMemoryProductCategorySlug = extractProductCategorySlugFromLocation();
 
   window.addEventListener('popstate', (event) => {
     const stateSlug =
       event.state && typeof event.state.projectSlug !== 'undefined'
         ? event.state.projectSlug
         : extractProjectSlugFromLocation();
+    const stateCategorySlug =
+      event.state && typeof event.state.productCategorySlug !== 'undefined'
+        ? event.state.productCategorySlug
+        : extractProductCategorySlugFromLocation();
     currentMemoryProjectSlug = stateSlug ?? null;
+    currentMemoryProductCategorySlug = stateCategorySlug ?? null;
     currentMemoryRoute = detectRouteFromLocation();
     routeListeners.forEach((fn) => fn(currentMemoryRoute || 'home'));
     window.dispatchEvent(
       new CustomEvent('app-project-slug-change', {
         detail: currentMemoryProjectSlug,
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent('app-product-category-change', {
+        detail: currentMemoryProductCategorySlug,
       })
     );
   });

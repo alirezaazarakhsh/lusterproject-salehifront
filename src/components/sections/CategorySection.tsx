@@ -4,11 +4,19 @@ import {
   CategoryStarSeal,
   CenteredVintageOrnament29,
 } from '../Ornaments';
-import { PRODUCT_CATEGORIES } from '../../data/chandelierData';
+import {
+  PRODUCT_CATEGORIES,
+  CategoryItem,
+  ChandelierProduct,
+} from '../../data/chandelierData';
+import { formatCategoryProductCount } from '../../product/ProductContentSection';
+import { navigateToProductCategory } from '../../utils/navigation';
 
 interface CategorySectionProps {
   selectedCategory: string;
   onSelectCategory: (filterKey: string) => void;
+  categories?: CategoryItem[];
+  products?: ChandelierProduct[];
 }
 
 /**
@@ -19,7 +27,13 @@ interface CategorySectionProps {
 export const CategorySection: React.FC<CategorySectionProps> = ({
   selectedCategory,
   onSelectCategory,
+  categories,
+  products = [],
 }) => {
+  const displayCategories =
+    categories && categories.length > 0
+      ? categories.slice(0, 4)
+      : PRODUCT_CATEGORIES;
   const [activeCategoryDot, setActiveCategoryDot] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -94,19 +108,18 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
           className="relative z-10 flex gap-3 overflow-x-auto snap-x snap-mandatory px-[8vw] py-2.5 touch-pan-x [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {PRODUCT_CATEGORIES.map((category, idx) => {
+          {displayCategories.map((category, idx) => {
             const isActive = selectedCategory === category.filterKey;
             const isDotActive = activeCategoryDot === idx;
 
             return (
-              <button
+              <a
                 key={category.id}
-                type="button"
-                onClick={() => {
+                href={`/product/categories/${category.slug}`}
+                onClick={(e) => {
                   onSelectCategory(category.filterKey);
                   scrollToCategory(idx);
-                  const el = document.getElementById('collection-salehi');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  navigateToProductCategory(category.slug, e);
                 }}
                 className={`group shrink-0 snap-center w-[78vw] max-w-[340px] flex items-center justify-between gap-4 px-5 py-5 rounded-[22px] bg-white border transition-all duration-300 cursor-pointer text-right shadow-[0_6px_25px_rgba(0,0,0,0.03)] ${
                   isActive || isDotActive
@@ -126,10 +139,10 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     {category.title}
                   </h3>
                   <p className="text-[13px] text-[#777777] font-medium mt-1">
-                    {category.countText}
+                    {formatCategoryProductCount(category.slug, products)}
                   </p>
                 </div>
-              </button>
+              </a>
             );
           })}
         </div>
@@ -137,14 +150,15 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         {/* نقطه‌های پیجینیشن ۵گانه مدرن پایین کاروسل دسته‌بندی (دقیقاً مطابق Screenshot 2026-09-30 at 03.12.16.png) */}
         <div className="relative z-10 flex items-center justify-center gap-2 mt-5">
           {[0, 1, 2, 3, 4].map((dotIdx) => {
-            const activeIndex = activeCategoryDot % PRODUCT_CATEGORIES.length;
+            const len = Math.max(1, displayCategories.length);
+            const activeIndex = activeCategoryDot % len;
             const dist = Math.abs(dotIdx - activeIndex);
 
             return (
               <button
                 key={`cat-dot-${dotIdx}`}
                 type="button"
-                onClick={() => scrollToCategory(dotIdx % PRODUCT_CATEGORIES.length)}
+                onClick={() => scrollToCategory(dotIdx % len)}
                 aria-label={`اسلاید ${dotIdx + 1}`}
                 className={`rounded-full transition-all cursor-pointer ${
                   dist === 0
@@ -177,16 +191,15 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 
         {/* شبکه ۴ ستونه کارت‌ها */}
         <div className="relative z-10 w-full max-w-[1800px] mx-auto px-10 md:px-14 lg:px-[62px] xl:px-[68px] grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
-          {PRODUCT_CATEGORIES.map((category) => {
+          {displayCategories.map((category) => {
             const isActive = selectedCategory === category.filterKey;
             return (
-              <button
+              <a
                 key={category.id}
-                type="button"
-                onClick={() => {
+                href={`/product/categories/${category.slug}`}
+                onClick={(e) => {
                   onSelectCategory(category.filterKey);
-                  const el = document.getElementById('collection-salehi');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  navigateToProductCategory(category.slug, e);
                 }}
                 className={`group flex items-center justify-between gap-4 px-6 py-6 rounded-[22px] bg-white/90 backdrop-blur-[2px] border transition-all duration-300 cursor-pointer text-right ${
                   isActive
@@ -206,10 +219,10 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     {category.title}
                   </h3>
                   <p className="text-[13.5px] text-[#777777] font-normal mt-2">
-                    {category.countText}
+                    {formatCategoryProductCount(category.slug, products)}
                   </p>
                 </div>
-              </button>
+              </a>
             );
           })}
         </div>

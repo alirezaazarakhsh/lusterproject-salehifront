@@ -5,6 +5,7 @@ import {
   AppRoute,
   getCurrentRoute,
   navigateToRoute,
+  navigateToProductCategory,
   subscribeToRoute,
 } from '../../utils/navigation';
 
@@ -31,29 +32,76 @@ interface SubMenuItem {
   id: string;
   label: string;
   href: string;
+  categorySlug?: string;
 }
 
 /**
- * آیتم‌های زیرمنوی «محصولات» دقیقاً مطابق تصویر فیگما
+ * آیتم‌های زیرمنوی «محصولات» دقیقاً مطابق تصویر فیگما و متصل به مسیر /product/categories/:slug
  */
 const PRODUCTS_SUBMENU_ITEMS: SubMenuItem[] = [
-  { id: 'sub-chandeliers', label: 'کلکسیون لوستر ها', href: '#collection-salehi' },
-  { id: 'sub-single-branch', label: 'کلکسیون تک شاخه ها', href: '#collection-salehi' },
-  { id: 'sub-kenar-saloni', label: 'کلکسیون کنار سالونی', href: '#collection-salehi' },
-  { id: 'sub-abalour', label: 'کلکسیون آباژور', href: '#collection-salehi' },
-  { id: 'sub-mirror-console', label: 'کلکسیون آینه و کنسول', href: '#collection-salehi' },
-  { id: 'sub-shamdooni', label: 'کلکسیون شمعدونی', href: '#collection-salehi' },
-  { id: 'sub-table', label: 'کلکسیون میز', href: '#collection-salehi' },
+  {
+    id: 'sub-chandeliers',
+    label: 'کلکسیون لوستر ها',
+    href: '/product/categories/chandeliers',
+    categorySlug: 'chandeliers',
+  },
+  {
+    id: 'sub-single-branch',
+    label: 'کلکسیون تک شاخه ها',
+    href: '/product/categories/single-branch',
+    categorySlug: 'single-branch',
+  },
+  {
+    id: 'sub-kenar-saloni',
+    label: 'کلکسیون کنار سالونی',
+    href: '/product/categories/kenar-saloni',
+    categorySlug: 'kenar-saloni',
+  },
+  {
+    id: 'sub-abalour',
+    label: 'کلکسیون آباژور',
+    href: '/product/categories/abalour',
+    categorySlug: 'abalour',
+  },
+  {
+    id: 'sub-mirror-console',
+    label: 'کلکسیون آینه و کنسول',
+    href: '/product/categories/mirror-console',
+    categorySlug: 'mirror-console',
+  },
+  {
+    id: 'sub-shamdooni',
+    label: 'کلکسیون شمعدونی',
+    href: '/product/categories/shamdooni',
+    categorySlug: 'shamdooni',
+  },
+  {
+    id: 'sub-table',
+    label: 'کلکسیون میز',
+    href: '/product/categories/table',
+    categorySlug: 'table',
+  },
 ];
 
 /**
  * آیتم‌های زیرمنوی «موارد دیگر» با همان استایل یکپارچه
  */
 const MORE_SUBMENU_ITEMS: SubMenuItem[] = [
+  { id: 'more-admin', label: 'پنل مدیریت (Admin)', href: '/admin' },
   { id: 'more-rules', label: 'قوانین و مقررات', href: '/rule' },
-  { id: 'more-bestsellers', label: 'پرفروش‌ترین محصولات', href: '#best-sellers' },
+  {
+    id: 'more-bestsellers',
+    label: 'پرفروش‌ترین محصولات',
+    href: '/product/categories/chandeliers',
+    categorySlug: 'chandeliers',
+  },
   { id: 'more-custom', label: 'سفارش اختصاصی لوستر', href: '#custom-chandelier' },
-  { id: 'more-categories', label: 'دسته‌بندی کلکسیون‌ها', href: '#product-categories' },
+  {
+    id: 'more-categories',
+    label: 'دسته‌بندی کلکسیون‌ها',
+    href: '/product/categories/chandeliers',
+    categorySlug: 'chandeliers',
+  },
   { id: 'more-testimonials', label: 'نظرات مشتریان', href: '#customer-reviews' },
   { id: 'more-faq', label: 'سوالات متداول', href: '#faq-section' },
 ];
@@ -555,16 +603,20 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 )
               }
               className={`flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
-                openSubmenu === 'products'
+                activeRoute === 'product'
+                  ? 'text-[#b59766]'
+                  : openSubmenu === 'products'
                   ? 'text-[#141414]'
                   : 'hover:text-[#b59766]'
               }`}
             >
               <span>محصولات</span>
               <ChevronDown
-                className={`w-4 h-4 text-[#2b2b2b] stroke-[1.9] transition-transform duration-200 ${
-                  openSubmenu === 'products' ? 'rotate-180' : ''
-                }`}
+                className={`w-4 h-4 stroke-[1.9] transition-transform duration-200 ${
+                  activeRoute === 'product'
+                    ? 'text-[#b59766]'
+                    : 'text-[#2b2b2b]'
+                } ${openSubmenu === 'products' ? 'rotate-180' : ''}`}
               />
             </button>
 
@@ -581,7 +633,10 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                       href={item.href}
                       onClick={(e) => {
                         setOpenSubmenu(null);
-                        if (activeRoute !== 'home') {
+                        if (item.categorySlug) {
+                          setActiveRoute('product');
+                          navigateToProductCategory(item.categorySlug, e);
+                        } else if (activeRoute !== 'home') {
                           e.preventDefault();
                           triggerRouteNavigation('home', item.href);
                         }
@@ -698,7 +753,12 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         setOpenSubmenu(null);
-                        if (item.href === '/rule') {
+                        if (item.categorySlug) {
+                          setActiveRoute('product');
+                          navigateToProductCategory(item.categorySlug, e);
+                        } else if (item.href === '/admin') {
+                          triggerRouteNavigation('admin');
+                        } else if (item.href === '/rule') {
                           triggerRouteNavigation('rule');
                         } else {
                           triggerRouteNavigation('home', item.href);
@@ -758,29 +818,31 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 dir="rtl"
                 className="absolute top-[calc(100%+10px)] left-0 w-[195px] bg-white rounded-[18px] shadow-[0_14px_44px_rgba(0,0,0,0.12)] border border-[#f1f1f1] overflow-hidden z-50"
               >
-                {/* گزینه اول: EN */}
+                {/* گزینه اول: EN (بزودی) */}
                 <button
                   type="button"
                   onMouseEnter={() => setHoveredLang('en')}
                   onClick={() => {
-                    setSelectedLang('en');
-                    setOpenSubmenu(null);
+                    setSelectedLang('fa');
                   }}
-                  className={`w-full px-5 text-right text-[15px] font-bold transition-colors cursor-pointer ${
+                  className={`w-full px-5 text-right text-[15px] font-bold transition-colors cursor-default ${
                     activeHighlightedLang === 'en'
                       ? 'bg-[#f5f0e8] text-[#b59766]'
                       : 'bg-white text-[#2b2b2b]'
                   }`}
                 >
                   <span
-                    className={`block py-4 ${
+                    className={`flex items-center justify-between py-4 ${
                       activeHighlightedLang !== 'en' &&
                       activeHighlightedLang !== 'fa'
                         ? 'border-b border-[#efefef]'
                         : 'border-b border-[#efefef]/60'
                     }`}
                   >
-                    EN
+                    <span>EN</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#f5f0e8] text-[#b59766]">
+                      بزودی
+                    </span>
                   </span>
                 </button>
 
@@ -878,7 +940,10 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                   {/* ۱. پنل پیشخوان */}
                   <button
                     type="button"
-                    onClick={() => setOpenSubmenu(null)}
+                    onClick={() => {
+                      setOpenSubmenu(null);
+                      triggerRouteNavigation('admin');
+                    }}
                     className="group/row w-full px-4 text-right transition-colors hover:bg-[#f5f5f5] cursor-pointer"
                   >
                     <div className="py-3.5 px-1 flex items-center justify-start gap-2.5 border-b border-[#efefef] group-hover/row:border-transparent text-[#6c6c6c]">
@@ -1155,9 +1220,13 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                       <a
                         key={sub.id}
                         href={sub.href}
-                        onClick={() => {
+                        onClick={(e) => {
                           setIsMobileCategoriesOpen(false);
                           setActiveMobileTab('home');
+                          if (sub.categorySlug) {
+                            setActiveRoute('product');
+                            navigateToProductCategory(sub.categorySlug, e);
+                          }
                         }}
                         className="group/item block w-full px-4 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] active:bg-[#f6f1e7] active:text-[#b59766] transition-colors"
                       >
@@ -1379,7 +1448,10 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                           e.preventDefault();
                           setIsMobileCategoriesOpen(false);
                           setActiveMobileTab('home');
-                          if (more.href === '/rule') {
+                          if (more.categorySlug) {
+                            setActiveRoute('product');
+                            navigateToProductCategory(more.categorySlug, e);
+                          } else if (more.href === '/rule') {
                             triggerRouteNavigation('rule');
                           } else {
                             triggerRouteNavigation('home', more.href);
@@ -1430,15 +1502,15 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setSelectedLang('en')}
-                  className={`h-9 px-3 rounded-[8px] border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
-                    selectedLang === 'en'
-                      ? 'bg-[#2d2d2d] border-[#2d2d2d] text-white shadow-xs'
-                      : 'bg-white border-[#ece7dc] text-[#2d2d2d] hover:bg-[#2d2d2d] hover:text-white hover:border-[#2d2d2d]'
-                  }`}
+                  onClick={() => setSelectedLang('fa')}
+                  title="زبان انگلیسی (بزودی)"
+                  className="h-9 px-2.5 rounded-[8px] border bg-white border-[#ece7dc] text-[#2d2d2d] flex items-center gap-1.5 text-xs font-bold transition-all cursor-default opacity-80"
                 >
                   <UkFlagIcon className="w-5 h-3.5" />
                   <span>EN</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#f5f0e8] text-[#b59766]">
+                    بزودی
+                  </span>
                 </button>
                 <button
                   type="button"

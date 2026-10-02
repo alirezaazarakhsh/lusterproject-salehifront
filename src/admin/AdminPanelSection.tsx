@@ -1,0 +1,5868 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Package,
+  Layers,
+  Building2,
+  FileText,
+  MessageSquare,
+  ShoppingBag,
+  Users,
+  Plus,
+  Trash2,
+  Edit3,
+  Check,
+  X,
+  LogOut,
+  RefreshCw,
+  ArrowRight,
+  Sparkles,
+  ShieldCheck,
+  Phone,
+  Lock,
+  UserPlus,
+  Eye,
+  EyeOff,
+  KeyRound,
+  PlayCircle,
+  Settings,
+  Save,
+  Upload,
+} from 'lucide-react';
+import { navigateToRoute } from '../utils/navigation';
+import { GENERATED_IMAGES } from '../data/chandelierData';
+import {
+  FooterSettingsConfig,
+  INITIAL_FOOTER_SETTINGS,
+} from '../components/sections/FooterSection';
+
+interface AdminPanelSectionProps {
+  onCatalogUpdated?: () => void;
+}
+
+type AdminTab =
+  | 'dashboard'
+  | 'admins'
+  | 'products'
+  | 'categories'
+  | 'projects'
+  | 'stories'
+  | 'articles'
+  | 'messages'
+  | 'orders'
+  | 'settings';
+
+type WebsiteSettingsSubTab =
+  | 'main'
+  | 'sms'
+  | 'general_settings'
+  | 'faq'
+  | 'about'
+  | 'contact'
+  | 'footer';
+
+interface AdminSessionUser {
+  id: number;
+  uid: string;
+  phone: string;
+  email: string;
+  displayName: string;
+  role: string;
+  password?: string;
+  avatarUrl?: string;
+  permissions?: string[];
+  permissionsJson?: string;
+}
+
+const ADMIN_TOKEN_STORAGE_KEY = 'salehi_admin_session_token';
+const ADMIN_USER_STORAGE_KEY = 'salehi_admin_session_user';
+const ADMIN_SESSION_START_KEY = 'salehi_admin_session_start_ts';
+const ADMIN_LAST_ACTIVITY_KEY = 'salehi_admin_last_activity_ts';
+
+// مهلت حضور در پنل: ۱۰ دقیقه عدم فعالیت و حداکثر ۳۰ دقیقه نشست کامل
+const ADMIN_INACTIVITY_LIMIT_MS = 10 * 60 * 1000;
+const ADMIN_MAX_SESSION_LIMIT_MS = 30 * 60 * 1000;
+
+const DEFAULT_ADMIN_AVATAR_URL =
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80';
+
+const PRESET_ADMIN_AVATARS = [
+  {
+    label: 'پرتره مدیر ارشد ۱ (رسمی)',
+    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+  },
+  {
+    label: 'پرتره مدیر فروش ۲',
+    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+  },
+  {
+    label: 'پرتره مدیر اجرایی ۳',
+    url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+  },
+  {
+    label: 'پرتره کارشناس محتوا ۴',
+    url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
+  },
+  {
+    label: 'تصویر نشان طلایی گالری صالحی',
+    url: GENERATED_IMAGES.crystaliCherub,
+  },
+];
+
+const ALL_ADMIN_PERMISSION_ITEMS: { id: AdminTab; label: string; desc: string }[] = [
+  { id: 'dashboard', label: 'داشبورد کلی', desc: 'مشاهده آمار و خلاصه وضعیت سایت' },
+  { id: 'admins', label: 'مدیریت ادمین‌ها', desc: 'افزودن، ویرایش و تعیین دسترسی مدیران' },
+  { id: 'products', label: 'مدیریت محصولات', desc: 'ثبت، ویرایش و قیمت‌گذاری لوسترها' },
+  { id: 'categories', label: 'دسته‌بندی‌ها', desc: 'مدیریت کالکشن‌ها و دسته‌بندی محصولات' },
+  { id: 'projects', label: 'پروژه‌های اجرایی', desc: 'مدیریت پروژه‌های مسکونی، تجاری و تالارها' },
+  { id: 'stories', label: 'استوری‌های سایت', desc: 'مدیریت دسته‌بندی استوری و انتشار در سایت' },
+  { id: 'articles', label: 'مجله و مقالات', desc: 'انتشار و ویرایش مطالب آموزشی مجله' },
+  { id: 'messages', label: 'پیام‌های تماس', desc: 'بررسی پیام‌ها و درخواست‌های مشاوره' },
+  { id: 'orders', label: 'سفارشات مشتریان', desc: 'مدیریت فاکتورها و وضعیت سفارشات خرید' },
+  { id: 'settings', label: 'تنظیمات وب سایت', desc: 'تنظیمات اصلی، پیامک، صفحات و فوتر سایت' },
+];
+
+const WEBSITE_SETTINGS_SUBTABS: { id: WebsiteSettingsSubTab; label: string }[] = [
+  { id: 'main', label: 'تب تنظیمات اصلی' },
+  { id: 'sms', label: 'تب تنظیمات پنل پیامک' },
+  { id: 'general_settings', label: 'تب تنظیمات' },
+  { id: 'faq', label: 'تب تنظیمات سوالات متداول صفحات' },
+  { id: 'about', label: 'تب تنظیم صفحه درباره ما' },
+  { id: 'contact', label: 'تب تنظیم صفحه تماس با ما' },
+  { id: 'footer', label: 'تب تنظیم فوتر سایت' },
+];
+
+const PRESET_PRODUCT_IMAGES = [
+  { label: 'لوستر کریستالی طرح فرشته', url: GENERATED_IMAGES.crystaliCherub },
+  { label: 'لوستر رسانس رز سرامیکی', url: GENERATED_IMAGES.resansRoses },
+  { label: 'لوستر ۱۲ شاخه تک برنزی', url: GENERATED_IMAGES.shakheh12 },
+  { label: 'لوستر طبقاتی شاه ملکه', url: GENERATED_IMAGES.shahMalakeh },
+  { label: 'لوستر ریستانی آنتیک', url: GENERATED_IMAGES.ristani },
+  { label: 'لوستر کریستالی طلایی', url: GENERATED_IMAGES.crystaliGold },
+  { label: 'آینه و کنسول سلطنتی', url: GENERATED_IMAGES.catMirror },
+  { label: 'شمعدانی لاله عباسی', url: GENERATED_IMAGES.catShamdooni },
+  { label: 'لاله و استکانی کریستال', url: GENERATED_IMAGES.catLaleh },
+  { label: 'ساعت دیواری سلطنتی', url: GENERATED_IMAGES.catClock },
+  { label: 'دیوارکوب کلاسیک', url: GENERATED_IMAGES.catWallSconce },
+];
+
+const PRESET_PROJECT_IMAGES = [
+  { label: 'پروژه تالار و عمارت فرشته', url: GENERATED_IMAGES.projectFereshteh },
+  { label: 'پروژه لابی هتل اسپیناس', url: GENERATED_IMAGES.projectLobbyHotel },
+  { label: 'پروژه ویلای دوبلکس لواسان', url: GENERATED_IMAGES.projectDuplexVilla },
+  { label: 'پروژه رستوران رویال زعفرانیه', url: GENERATED_IMAGES.projectRoyalRestaurant },
+];
+
+const PRESET_STORY_MAIN_IMAGES = [
+  {
+    label: 'قاب عمودی عمارت کاخ سلطنتی',
+    url: GENERATED_IMAGES.storyPortraitPalace,
+  },
+  {
+    label: 'قاب عمودی تالار روستیک و برنز',
+    url: GENERATED_IMAGES.storyPortraitRustic,
+  },
+  {
+    label: 'قاب عمودی آتریوم و وید دوبلکس',
+    url: GENERATED_IMAGES.storyPortraitAtrium,
+  },
+  { label: 'نمای پروژه عمارت فرشته', url: GENERATED_IMAGES.projectFereshteh },
+  { label: 'نمای لابی هتل مجلل', url: GENERATED_IMAGES.projectLobbyHotel },
+  { label: 'نمای تالار پذیرایی سلطنتی', url: GENERATED_IMAGES.projectRoyalRestaurant },
+  { label: 'نمای ویلای دوبلکس', url: GENERATED_IMAGES.projectDuplexVilla },
+  { label: 'نمای شبستان مسجد جامع', url: GENERATED_IMAGES.projectMosqueDome },
+  { label: 'لوستر کریستالی طرح فرشته', url: GENERATED_IMAGES.crystaliCherub },
+  { label: 'لوستر طبقاتی شاه ملکه', url: GENERATED_IMAGES.shahMalakeh },
+  { label: 'لوستر رسانس رز سرامیکی', url: GENERATED_IMAGES.resansRoses },
+  { label: 'لوستر ۱۲ شاخه تک برنزی', url: GENERATED_IMAGES.shakheh12 },
+];
+
+const PRESET_STORY_VIDEOS = [
+  {
+    label: 'ویدیو درخشش لوستر طلایی سلطنتی در سقف تالار',
+    url: 'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+  },
+  {
+    label: 'ویدیو نمای نزدیک کریستال‌های لوستر در سالن مجلل',
+    url: 'https://assets.mixkit.co/videos/preview/mixkit-crystal-chandelier-in-a-luxury-room-42921-large.mp4',
+  },
+];
+
+export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
+  onCatalogUpdated,
+}) => {
+  const [adminUser, setAdminUser] = useState<AdminSessionUser | null>(() => {
+    try {
+      const saved = localStorage.getItem(ADMIN_USER_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [sessionToken, setSessionToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  });
+
+  // فرم ورود با شماره موبایل و رمز عبور
+  const [loginPhone, setLoginPhone] = useState<string>('09120759419');
+  const [loginPassword, setLoginPassword] = useState<string>('sasha9419');
+  const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
+  const [isSubmittingLogin, setIsSubmittingLogin] = useState<boolean>(false);
+  const [authChecking, setAuthChecking] = useState<boolean>(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+  const [feedbackBanner, setFeedbackBanner] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  // داده‌های جداول دیتابیس PostgreSQL
+  const [summary, setSummary] = useState<{
+    productsCount: number;
+    categoriesCount: number;
+    projectsCount: number;
+    storiesCount: number;
+    articlesCount: number;
+    messagesCount: number;
+    ordersCount: number;
+    usersCount: number;
+  }>({
+    productsCount: 0,
+    categoriesCount: 0,
+    projectsCount: 0,
+    storiesCount: 0,
+    articlesCount: 0,
+    messagesCount: 0,
+    ordersCount: 0,
+    usersCount: 0,
+  });
+
+  const [adminsList, setAdminsList] = useState<AdminSessionUser[]>([]);
+  const [productsList, setProductsList] = useState<any[]>([]);
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [projectsList, setProjectsList] = useState<any[]>([]);
+  const [storiesList, setStoriesList] = useState<any[]>([]);
+  const [articlesList, setArticlesList] = useState<any[]>([]);
+  const [messagesList, setMessagesList] = useState<any[]>([]);
+  const [ordersList, setOrdersList] = useState<any[]>([]);
+
+  // ۱. فرم مدیریت ادمین‌ها (نام ادمین، شماره موبایل، رمز عبور، عکس ادمین، و تیک دسترسی هر بخش)
+  const [editingAdminId, setEditingAdminId] = useState<number | null>(null);
+  const [showAdminFormPassword, setShowAdminFormPassword] =
+    useState<boolean>(false);
+  const [visiblePasswordIds, setVisiblePasswordIds] = useState<
+    Record<number, boolean>
+  >({});
+  const [adminForm, setAdminForm] = useState<{
+    displayName: string;
+    phone: string;
+    password: string;
+    avatarUrl: string;
+    permissions: AdminTab[];
+  }>({
+    displayName: '',
+    phone: '',
+    password: '',
+    avatarUrl: DEFAULT_ADMIN_AVATAR_URL,
+    permissions: ALL_ADMIN_PERMISSION_ITEMS.map((item) => item.id),
+  });
+
+  // مودال خروج از حساب ادمین + تایمر حضور ادمین در پنل (۱۰ دقیقه عدم فعالیت / ۳۰ دقیقه کل نشست)
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
+  const [isLoggingOutProgress, setIsLoggingOutProgress] =
+    useState<boolean>(false);
+  const [logoutProgress, setLogoutProgress] = useState<number>(0);
+  const [remainingSessionSec, setRemainingSessionSec] = useState<number>(
+    30 * 60
+  );
+  const [remainingIdleSec, setRemainingIdleSec] = useState<number>(10 * 60);
+
+  // ۲. فرم محصول
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [productForm, setProductForm] = useState({
+    name: '',
+    subtitle: 'مناسب کلاسیک پذیرایی | کلاسیک خواب',
+    priceNumeric: 12500000,
+    productCode: '۱۲۸۹۸۵',
+    image: GENERATED_IMAGES.crystaliCherub,
+    modelType: 'crystali',
+    defaultFinish: 'gold-24k',
+    categorySlug: 'chandeliers',
+    outOfStock: false,
+    hasSnappPay: true,
+    isFeaturedSalehi: true,
+    isBestSeller: true,
+    dimensions: 'قطر ۸۵ سانتی‌متر | ارتفاع ۱۱۰ سانتی‌متر',
+    branchesCount: '۱۲ شاخه (۲۴ شعله)',
+    bodyMaterial: 'برنز خالص پرداخت‌شده با کریستال درجه یک',
+    warranty: '۱۰ سال ضمانت کتبی اصالت و ثبات رنگ',
+    description:
+      'ساخته‌شده در کارگاه مرکزی لوستر اکبر صالحی با بهترین متریال برنز و کریستال.',
+  });
+
+  // ۳. فرم دسته‌بندی
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(
+    null
+  );
+  const [categoryForm, setCategoryForm] = useState({
+    title: '',
+    slug: '',
+    countLabel: '۱۲ محصول',
+    image: GENERATED_IMAGES.catChandelier,
+  });
+
+  // ۴. فرم پروژه اجرایی
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [projectForm, setProjectForm] = useState({
+    title: '',
+    categoryTab: 'residential',
+    district: 'تهران، الهیه',
+    sampleCode: 'نمونه ۱',
+    description: '',
+    usedChandeliersText:
+      'استفاده از لوسترهای سفارشی کلکسیون صالحی متناسب با ارتفاع سقف و معماری کلاسیک فضا.',
+    mainImage: GENERATED_IMAGES.projectFereshteh,
+  });
+
+  // ۵. فرم استوری بالای سایت (دسته‌بندی استوری با امکان افزودن تا ۱۰ استوری با تایپ‌های مختلف در هر دسته‌بندی)
+  const [editingStoryId, setEditingStoryId] = useState<number | null>(null);
+  const [selectedTargetCategoryId, setSelectedTargetCategoryId] = useState<
+    number | 'new'
+  >('new');
+  const [storyFilterType, setStoryFilterType] = useState<
+    'all' | 'single-product' | 'image-only' | 'video'
+  >('all');
+  const [storyPage, setStoryPage] = useState<number>(1);
+  const STORIES_PER_PAGE = 10;
+
+  // مودال وضعیت انتشار یا حذف استوری در سایت (با نوار پیشرفت پرشونده)
+  const [storyActionModal, setStoryActionModal] = useState<{
+    mode: 'save' | 'delete';
+    title: string;
+    subtitle: string;
+    progress: number;
+  } | null>(null);
+
+  // اسلایدهای داخل دسته‌بندی استوری فعلی (حداکثر ۱۰ استوری با تایپ‌های مختلف در هر دسته‌بندی)
+  const [categorySlides, setCategorySlides] = useState<
+    Array<{
+      id: string;
+      type: 'single-product' | 'image-only' | 'video';
+      title: string;
+      mediaUrl: string;
+      videoUrl: string;
+      linkedProductKey: string;
+    }>
+  >([]);
+  const [activeSlideEditIdx, setActiveSlideEditIdx] = useState<number>(0);
+
+  const [storyForm, setStoryForm] = useState<{
+    storyType: 'single-product' | 'image-only' | 'video';
+    title: string;
+    slideTitle: string;
+    thumbnailImage: string;
+    mediaUrl: string;
+    videoUrl: string;
+    linkedProductKey: string;
+  }>({
+    storyType: 'single-product',
+    title: '',
+    slideTitle: '',
+    thumbnailImage: GENERATED_IMAGES.crystaliCherub,
+    mediaUrl: GENERATED_IMAGES.storyPortraitPalace,
+    videoUrl:
+      'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+    linkedProductKey: 'prod-crystali',
+  });
+
+  const parseStorySlidesFromRow = useCallback(
+    (st: any) => {
+      if (!st) return [];
+      if (typeof st.slidesJson === 'string' && st.slidesJson.trim()) {
+        try {
+          const parsed = JSON.parse(st.slidesJson);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.slice(0, 10).map((sl: any, idx: number) => ({
+              id: sl.id || `slide-${st.id}-${idx}`,
+              type: (sl.type === 'image-only' || sl.type === 'video'
+                ? sl.type
+                : 'single-product') as 'single-product' | 'image-only' | 'video',
+              title: sl.title || st.title || '',
+              mediaUrl:
+                sl.mediaUrl ||
+                st.mediaUrl ||
+                st.image ||
+                GENERATED_IMAGES.storyPortraitPalace,
+              videoUrl:
+                sl.videoUrl ||
+                st.videoUrl ||
+                'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+              linkedProductKey:
+                sl.linkedProductKey ||
+                st.linkedProductKey ||
+                productsList[0]?.productKey ||
+                'prod-crystali',
+            }));
+          }
+        } catch {
+          // ignore parse error
+        }
+      }
+      const fallbackType: 'single-product' | 'image-only' | 'video' =
+        st.storyType === 'image-only'
+          ? 'image-only'
+          : st.storyType === 'video'
+          ? 'video'
+          : 'single-product';
+      return [
+        {
+          id: `slide-${st.id || Date.now()}-0`,
+          type: fallbackType,
+          title: st.fullTitle || st.title || '',
+          mediaUrl:
+            st.mediaUrl || st.image || GENERATED_IMAGES.storyPortraitPalace,
+          videoUrl:
+            st.videoUrl ||
+            'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+          linkedProductKey:
+            st.linkedProductKey ||
+            productsList[0]?.productKey ||
+            'prod-crystali',
+        },
+      ];
+    },
+    [productsList]
+  );
+
+  const runStoryProgressModal = (
+    mode: 'save' | 'delete',
+    title: string,
+    subtitle: string,
+    onComplete: () => Promise<void> | void
+  ) => {
+    setStoryActionModal({ mode, title, subtitle, progress: 8 });
+    let currentProg = 8;
+    const intervalId = window.setInterval(() => {
+      currentProg = Math.min(100, currentProg + 14);
+      setStoryActionModal((prev) =>
+        prev ? { ...prev, progress: currentProg } : null
+      );
+      if (currentProg >= 100) {
+        window.clearInterval(intervalId);
+        Promise.resolve(onComplete()).finally(() => {
+          window.setTimeout(() => {
+            setStoryActionModal(null);
+          }, 260);
+        });
+      }
+    }, 120);
+  };
+
+  const handleFileUploadToDataUrl = (
+    file: File | undefined,
+    onResult: (dataUrl: string) => void
+  ) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        onResult(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ۶. فرم مقاله مجله
+  const [editingArticleId, setEditingArticleId] = useState<number | null>(null);
+  const [articleForm, setArticleForm] = useState({
+    title: '',
+    excerpt: '',
+    content: '',
+    category: 'راهنمای دکوراسیون سلطنتی',
+    readTime: '۵ دقیقه مطالعه',
+    publishDate: '۱۸ مهر ۱۴۰۴',
+    image: GENERATED_IMAGES.projectFereshteh,
+    featured: false,
+  });
+
+  // ۷. مدیریت پیام‌های تماس با ما (فقط خواندنی + صفحه‌بندی ۵ تایی)
+  const [messagePage, setMessagePage] = useState<number>(1);
+  const MESSAGES_PER_PAGE = 5;
+  const [viewingMessage, setViewingMessage] = useState<any | null>(null);
+
+  // تب فعال در منوی تنظیمات وب سایت
+  const [activeWebsiteSettingsTab, setActiveWebsiteSettingsTab] =
+    useState<WebsiteSettingsSubTab>('main');
+
+  // تنظیمات فوتر سایت (تب تنظیم فوتر سایت)
+  const [footerSettingsForm, setFooterSettingsForm] =
+    useState<FooterSettingsConfig>(INITIAL_FOOTER_SETTINGS);
+  const [isSavingFooterSettings, setIsSavingFooterSettings] =
+    useState<boolean>(false);
+
+  // ۸. فرم سفارش مشتریان
+  const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
+  const [orderForm, setOrderForm] = useState({
+    customerName: '',
+    customerPhone: '',
+    totalAmountFormatted: '۱۲,۵۰۰,۰۰۰ تومان',
+    totalAmountNumeric: 12500000,
+    status: 'pending',
+  });
+
+  const showNotice = (type: 'success' | 'error', text: string) => {
+    setFeedbackBanner({ type, text });
+    window.setTimeout(() => {
+      setFeedbackBanner((prev) => (prev?.text === text ? null : prev));
+    }, 4500);
+  };
+
+  const authFetch = useCallback(
+    async (url: string, options: RequestInit = {}) => {
+      if (!sessionToken) throw new Error('نشست ادمین معتبر نیست');
+      const headers = new Headers(options.headers || {});
+      headers.set('Authorization', `Bearer ${sessionToken}`);
+      if (options.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+      }
+      const res = await fetch(url, { ...options, headers });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+          localStorage.removeItem(ADMIN_USER_STORAGE_KEY);
+          setSessionToken(null);
+          setAdminUser(null);
+        }
+        throw new Error(errData.error || `خطای سرور (${res.status})`);
+      }
+      return res.json();
+    },
+    [sessionToken]
+  );
+
+  const loadAllAdminData = useCallback(async () => {
+    if (!sessionToken) return;
+    setIsLoadingData(true);
+    try {
+      const [
+        summaryRes,
+        adminsRes,
+        productsRes,
+        categoriesRes,
+        projectsRes,
+        storiesRes,
+        articlesRes,
+        messagesRes,
+        ordersRes,
+        footerSettingsRes,
+      ] = await Promise.all([
+        authFetch('/api/admin/dashboard'),
+        authFetch('/api/admin/users'),
+        authFetch('/api/admin/products'),
+        authFetch('/api/admin/categories'),
+        authFetch('/api/admin/projects'),
+        authFetch('/api/admin/stories'),
+        authFetch('/api/admin/articles'),
+        authFetch('/api/admin/messages'),
+        authFetch('/api/admin/orders'),
+        authFetch('/api/admin/settings/footer').catch(
+          () => INITIAL_FOOTER_SETTINGS
+        ),
+      ]);
+
+      setSummary(summaryRes);
+      setAdminsList(adminsRes);
+      setProductsList(productsRes);
+      setCategoriesList(categoriesRes);
+      setProjectsList(projectsRes);
+      setStoriesList(storiesRes);
+      setArticlesList(articlesRes);
+      setMessagesList(messagesRes);
+      setOrdersList(ordersRes);
+      if (footerSettingsRes) {
+        setFooterSettingsForm({
+          ...INITIAL_FOOTER_SETTINGS,
+          ...footerSettingsRes,
+          phones:
+            Array.isArray(footerSettingsRes.phones) &&
+            footerSettingsRes.phones.length > 0
+              ? footerSettingsRes.phones
+              : INITIAL_FOOTER_SETTINGS.phones,
+          otherLicenses:
+            Array.isArray(footerSettingsRes.otherLicenses) &&
+            footerSettingsRes.otherLicenses.length > 0
+              ? footerSettingsRes.otherLicenses
+              : INITIAL_FOOTER_SETTINGS.otherLicenses,
+        });
+      }
+    } catch (err: any) {
+      showNotice(
+        'error',
+        err?.message || 'خطا در دریافت اطلاعات از دیتابیس PostgreSQL'
+      );
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [sessionToken, authFetch]);
+
+  useEffect(() => {
+    const verifyExistingSession = async () => {
+      if (!sessionToken) {
+        setAuthChecking(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/me', {
+          headers: { Authorization: `Bearer ${sessionToken}` },
+        });
+        if (!res.ok) {
+          throw new Error('نشست منقضی شده است');
+        }
+        const data = await res.json();
+        if (data?.user) {
+          setAdminUser(data.user);
+          localStorage.setItem(
+            ADMIN_USER_STORAGE_KEY,
+            JSON.stringify(data.user)
+          );
+        }
+      } catch {
+        localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+        localStorage.removeItem(ADMIN_USER_STORAGE_KEY);
+        setSessionToken(null);
+        setAdminUser(null);
+      } finally {
+        setAuthChecking(false);
+      }
+    };
+    verifyExistingSession();
+  }, [sessionToken]);
+
+  useEffect(() => {
+    if (sessionToken && adminUser) {
+      loadAllAdminData();
+    }
+  }, [sessionToken, adminUser, loadAllAdminData]);
+
+  const performDirectLogout = useCallback((reasonMessage?: string) => {
+    localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+    localStorage.removeItem(ADMIN_USER_STORAGE_KEY);
+    localStorage.removeItem(ADMIN_SESSION_START_KEY);
+    localStorage.removeItem(ADMIN_LAST_ACTIVITY_KEY);
+    setSessionToken(null);
+    setAdminUser(null);
+    setShowLogoutModal(false);
+    setIsLoggingOutProgress(false);
+    setLogoutProgress(0);
+    if (reasonMessage) {
+      setAuthError(reasonMessage);
+    }
+  }, []);
+
+  const formatCountdown = (totalSec: number) => {
+    const safe = Math.max(0, Math.floor(totalSec));
+    const mins = Math.floor(safe / 60);
+    const secs = safe % 60;
+    const mStr = mins.toLocaleString('fa-IR', { minimumIntegerDigits: 2 });
+    const sStr = secs.toLocaleString('fa-IR', { minimumIntegerDigits: 2 });
+    return `${mStr}:${sStr}`;
+  };
+
+  // مدیریت زمان حضور ادمین در پنل (۱۰ دقیقه بدون فعالیت و حداکثر ۳۰ دقیقه کل نشست، سپس خروج خودکار و ورود مجدد)
+  useEffect(() => {
+    if (!sessionToken || !adminUser) return;
+
+    const now = Date.now();
+    if (!localStorage.getItem(ADMIN_SESSION_START_KEY)) {
+      localStorage.setItem(ADMIN_SESSION_START_KEY, String(now));
+    }
+    if (!localStorage.getItem(ADMIN_LAST_ACTIVITY_KEY)) {
+      localStorage.setItem(ADMIN_LAST_ACTIVITY_KEY, String(now));
+    }
+
+    const updateActivity = () => {
+      localStorage.setItem(ADMIN_LAST_ACTIVITY_KEY, String(Date.now()));
+    };
+
+    window.addEventListener('mousemove', updateActivity, { passive: true });
+    window.addEventListener('mousedown', updateActivity, { passive: true });
+    window.addEventListener('keydown', updateActivity, { passive: true });
+    window.addEventListener('touchstart', updateActivity, { passive: true });
+    window.addEventListener('scroll', updateActivity, { passive: true });
+
+    const timerId = window.setInterval(() => {
+      const currentNow = Date.now();
+      const startTs = Number(
+        localStorage.getItem(ADMIN_SESSION_START_KEY) || currentNow
+      );
+      const lastActTs = Number(
+        localStorage.getItem(ADMIN_LAST_ACTIVITY_KEY) || currentNow
+      );
+
+      const elapsedSessionMs = currentNow - startTs;
+      const elapsedIdleMs = currentNow - lastActTs;
+
+      const leftSessionSec = Math.max(
+        0,
+        Math.ceil((ADMIN_MAX_SESSION_LIMIT_MS - elapsedSessionMs) / 1000)
+      );
+      const leftIdleSec = Math.max(
+        0,
+        Math.ceil((ADMIN_INACTIVITY_LIMIT_MS - elapsedIdleMs) / 1000)
+      );
+
+      setRemainingSessionSec(leftSessionSec);
+      setRemainingIdleSec(leftIdleSec);
+
+      if (leftSessionSec <= 0) {
+        window.clearInterval(timerId);
+        performDirectLogout(
+          'مهلت ۳۰ دقیقه‌ای حضور شما در پنل مدیریت به پایان رسید. لطفاً مجدداً وارد شوید.'
+        );
+      } else if (leftIdleSec <= 0) {
+        window.clearInterval(timerId);
+        performDirectLogout(
+          'به دلیل ۱۰ دقیقه عدم فعالیت در پنل مدیریت، به صورت خودکار خارج شدید. لطفاً مجدداً وارد شوید.'
+        );
+      }
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('mousedown', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('touchstart', updateActivity);
+      window.removeEventListener('scroll', updateActivity);
+      window.clearInterval(timerId);
+    };
+  }, [sessionToken, adminUser, performDirectLogout]);
+
+  const handlePhonePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    if (!loginPhone.trim() || !loginPassword.trim()) {
+      setAuthError('لطفاً شماره موبایل و رمز عبور ادمین را وارد کنید.');
+      return;
+    }
+
+    setIsSubmittingLogin(true);
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: loginPhone.trim(),
+          password: loginPassword.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      const loggedInUser = data.user || data.admin;
+      if (!res.ok || !data.token || !loggedInUser) {
+        throw new Error(
+          data.error || 'شماره موبایل یا رمز عبور اشتباه است.'
+        );
+      }
+
+      const now = Date.now();
+      localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, data.token);
+      localStorage.setItem(
+        ADMIN_USER_STORAGE_KEY,
+        JSON.stringify(loggedInUser)
+      );
+      localStorage.setItem(ADMIN_SESSION_START_KEY, String(now));
+      localStorage.setItem(ADMIN_LAST_ACTIVITY_KEY, String(now));
+      setRemainingSessionSec(30 * 60);
+      setRemainingIdleSec(10 * 60);
+      setSessionToken(data.token);
+      setAdminUser(loggedInUser);
+      const allowedTabs: AdminTab[] =
+        Array.isArray(loggedInUser.permissions) &&
+        loggedInUser.permissions.length > 0
+          ? (loggedInUser.permissions as AdminTab[])
+          : ALL_ADMIN_PERMISSION_ITEMS.map((i) => i.id);
+      if (!allowedTabs.includes(activeTab)) {
+        setActiveTab(allowedTabs[0] || 'dashboard');
+      }
+      showNotice(
+        'success',
+        `خوش آمدید ${loggedInUser.displayName || 'مدیر گرامی'}! وارد پنل مدیریت شدید.`
+      );
+    } catch (err: any) {
+      setAuthError(err?.message || 'خطا در ورود به پنل ادمین');
+    } finally {
+      setIsSubmittingLogin(false);
+    }
+  };
+
+  // باز کردن مودال خروج هنگام کلیک روی دکمه خروج
+  const handleAdminLogout = () => {
+    setShowLogoutModal(true);
+    setIsLoggingOutProgress(false);
+    setLogoutProgress(0);
+  };
+
+  const handleConfirmAdminLogout = () => {
+    setIsLoggingOutProgress(true);
+    setLogoutProgress(15);
+    let prog = 15;
+    const intervalId = window.setInterval(() => {
+      prog = Math.min(100, prog + 22);
+      setLogoutProgress(prog);
+      if (prog >= 100) {
+        window.clearInterval(intervalId);
+        window.setTimeout(() => {
+          performDirectLogout();
+        }, 180);
+      }
+    }, 100);
+  };
+
+  const formatToman = (num: number) => {
+    const formatted = Number(num || 0).toLocaleString('fa-IR');
+    return `${formatted} تومان`;
+  };
+
+  const parseAdminPermissions = (adm: any): AdminTab[] => {
+    if (Array.isArray(adm?.permissions) && adm.permissions.length > 0) {
+      const perms = adm.permissions as AdminTab[];
+      if (perms.length >= 9 && !perms.includes('settings')) {
+        return [...perms, 'settings'];
+      }
+      return perms;
+    }
+    if (typeof adm?.permissionsJson === 'string' && adm.permissionsJson.trim()) {
+      try {
+        const parsed = JSON.parse(adm.permissionsJson);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const perms = parsed as AdminTab[];
+          if (perms.length >= 9 && !perms.includes('settings')) {
+            return [...perms, 'settings'];
+          }
+          return perms;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return ALL_ADMIN_PERMISSION_ITEMS.map((item) => item.id);
+  };
+
+  const handleToggleAdminPermission = (tabId: AdminTab) => {
+    setAdminForm((prev) => {
+      const exists = prev.permissions.includes(tabId);
+      const next = exists
+        ? prev.permissions.filter((id) => id !== tabId)
+        : [...prev.permissions, tabId];
+      return {
+        ...prev,
+        permissions: next,
+      };
+    });
+  };
+
+  // ==================== ۱. عملیات مدیریت ادمین‌ها ====================
+  const handleSaveAdminUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminForm.displayName.trim()) {
+      showNotice('error', 'لطفاً نام ادمین را وارد نمایید.');
+      return;
+    }
+    if (!adminForm.phone.trim()) {
+      showNotice('error', 'شماره موبایل ادمین الزامی است.');
+      return;
+    }
+    if (!editingAdminId && !adminForm.password.trim()) {
+      showNotice('error', 'رمز عبور برای ادمین جدید الزامی است.');
+      return;
+    }
+    if (adminForm.permissions.length === 0) {
+      showNotice(
+        'error',
+        'لطفاً حداقل تیک دسترسی یک بخش را برای این ادمین فعال نمایید.'
+      );
+      return;
+    }
+
+    try {
+      const payload = {
+        displayName: adminForm.displayName.trim(),
+        phone: adminForm.phone.trim(),
+        password: adminForm.password.trim(),
+        avatarUrl: adminForm.avatarUrl.trim() || DEFAULT_ADMIN_AVATAR_URL,
+        permissions: adminForm.permissions,
+        permissionsJson: JSON.stringify(adminForm.permissions),
+        role:
+          adminForm.permissions.length === ALL_ADMIN_PERMISSION_ITEMS.length
+            ? 'super_admin'
+            : 'admin',
+      };
+
+      if (editingAdminId) {
+        const updated = await authFetch(`/api/admin/users/${editingAdminId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+        if (adminUser && editingAdminId === adminUser.id) {
+          const nextCurrentAdmin: AdminSessionUser = {
+            ...adminUser,
+            displayName: updated.displayName || payload.displayName,
+            phone: updated.phone || payload.phone,
+            avatarUrl: updated.avatarUrl || payload.avatarUrl,
+            permissions: updated.permissions || payload.permissions,
+            permissionsJson: payload.permissionsJson,
+          };
+          setAdminUser(nextCurrentAdmin);
+          localStorage.setItem(
+            ADMIN_USER_STORAGE_KEY,
+            JSON.stringify(nextCurrentAdmin)
+          );
+        }
+        showNotice('success', 'مشخصات، عکس و دسترسی‌های ادمین بروزرسانی شد.');
+      } else {
+        await authFetch('/api/admin/users', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        showNotice('success', 'ادمین جدید با موفقیت ثبت شد.');
+      }
+      setEditingAdminId(null);
+      setAdminForm({
+        displayName: '',
+        phone: '',
+        password: '',
+        avatarUrl: DEFAULT_ADMIN_AVATAR_URL,
+        permissions: ALL_ADMIN_PERMISSION_ITEMS.map((item) => item.id),
+      });
+      await loadAllAdminData();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در ذخیره اطلاعات ادمین');
+    }
+  };
+
+  const handleDeleteAdminUser = async (id: number) => {
+    try {
+      await authFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      showNotice('success', 'ادمین انتخاب‌شده از دیتابیس حذف شد.');
+      await loadAllAdminData();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در حذف ادمین');
+    }
+  };
+
+  // ==================== ۲. عملیات مدیریت محصولات ====================
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!productForm.name.trim()) {
+      showNotice('error', 'لطفاً نام محصول را وارد نمایید.');
+      return;
+    }
+
+    try {
+      const payload = {
+        ...productForm,
+        priceNumeric: Number(productForm.priceNumeric) || 0,
+        priceFormatted: formatToman(Number(productForm.priceNumeric) || 0),
+      };
+
+      if (editingProductId) {
+        await authFetch(`/api/admin/products/${editingProductId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+        showNotice('success', 'محصول با موفقیت در دیتابیس ویرایش شد.');
+      } else {
+        await authFetch('/api/admin/products', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        showNotice(
+          'success',
+          'محصول جدید با موفقیت به دیتابیس PostgreSQL اضافه شد.'
+        );
+      }
+
+      setEditingProductId(null);
+      setProductForm({
+        ...productForm,
+        name: '',
+        productCode: `${Math.floor(100000 + Math.random() * 900000).toLocaleString('fa-IR', { useGrouping: false })}`,
+      });
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در ذخیره محصول');
+    }
+  };
+
+  const handleDeleteProduct = async (id: number) => {
+    try {
+      await authFetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+      showNotice('success', 'محصول از دیتابیس حذف شد.');
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در حذف محصول');
+    }
+  };
+
+  // ==================== ۳. عملیات مدیریت دسته‌بندی‌ها ====================
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryForm.title.trim() || !categoryForm.slug.trim()) {
+      showNotice('error', 'عنوان و اسلاگ دسته‌بندی الزامی است.');
+      return;
+    }
+    try {
+      if (editingCategoryId) {
+        await authFetch(`/api/admin/categories/${editingCategoryId}`, {
+          method: 'PUT',
+          body: JSON.stringify(categoryForm),
+        });
+        showNotice('success', 'دسته‌بندی با موفقیت در دیتابیس ویرایش شد.');
+      } else {
+        await authFetch('/api/admin/categories', {
+          method: 'POST',
+          body: JSON.stringify(categoryForm),
+        });
+        showNotice('success', 'دسته‌بندی جدید در دیتابیس ثبت شد.');
+      }
+      setEditingCategoryId(null);
+      setCategoryForm({
+        title: '',
+        slug: '',
+        countLabel: '۱۲ محصول',
+        image: GENERATED_IMAGES.catChandelier,
+      });
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در ذخیره دسته‌بندی');
+    }
+  };
+
+  const handleDeleteCategory = async (id: number) => {
+    try {
+      await authFetch(`/api/admin/categories/${id}`, { method: 'DELETE' });
+      showNotice('success', 'دسته‌بندی از دیتابیس حذف شد.');
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در حذف دسته‌بندی');
+    }
+  };
+
+  // ==================== ۴. عملیات مدیریت پروژه‌های اجرایی ====================
+  const handleSaveProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectForm.title.trim()) {
+      showNotice('error', 'عنوان پروژه اجرایی الزامی است.');
+      return;
+    }
+    try {
+      const payload = {
+        ...projectForm,
+        galleryImages: [
+          projectForm.mainImage,
+          GENERATED_IMAGES.projectLobbyHotel,
+          GENERATED_IMAGES.projectDuplexVilla,
+          GENERATED_IMAGES.projectRoyalRestaurant,
+        ],
+      };
+
+      if (editingProjectId) {
+        await authFetch(`/api/admin/projects/${editingProjectId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+        showNotice('success', 'پروژه اجرایی با موفقیت ویرایش شد.');
+      } else {
+        await authFetch('/api/admin/projects', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        showNotice('success', 'پروژه اجرایی جدید در دیتابیس ثبت شد.');
+      }
+
+      setEditingProjectId(null);
+      setProjectForm({
+        title: '',
+        categoryTab: 'residential',
+        district: 'تهران، الهیه',
+        sampleCode: 'نمونه ۱',
+        description: '',
+        usedChandeliersText:
+          'استفاده از لوسترهای سفارشی کلکسیون صالحی متناسب با ارتفاع سقف و معماری کلاسیک فضا.',
+        mainImage: GENERATED_IMAGES.projectFereshteh,
+      });
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در ذخیره پروژه');
+    }
+  };
+
+  const handleDeleteProject = async (id: number) => {
+    try {
+      await authFetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
+      showNotice('success', 'پروژه از دیتابیس حذف شد.');
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در حذف پروژه');
+    }
+  };
+
+  // ==================== ۵. عملیات مدیریت استوری‌ها (دسته‌بندی استوری با تا ۱۰ استوری از ۳ تایپ مجزا) ====================
+  const handleAddCurrentSlideToCategoryBuffer = () => {
+    if (categorySlides.length >= 10) {
+      showNotice(
+        'error',
+        'حداکثر ظرفیت هر دسته‌بندی استوری ۱۰ عدد استوری می‌باشد.'
+      );
+      return;
+    }
+    const newSlide = {
+      id: `slide-${Date.now()}-${categorySlides.length}`,
+      type: storyForm.storyType,
+      title: storyForm.slideTitle.trim() || storyForm.title.trim() || 'استوری جدید',
+      mediaUrl:
+        storyForm.storyType === 'video'
+          ? storyForm.thumbnailImage.trim()
+          : storyForm.mediaUrl.trim(),
+      videoUrl:
+        storyForm.storyType === 'video' ? storyForm.videoUrl.trim() : '',
+      linkedProductKey:
+        storyForm.storyType === 'single-product'
+          ? storyForm.linkedProductKey
+          : '',
+    };
+    const nextSlides = [...categorySlides, newSlide].slice(0, 10);
+    setCategorySlides(nextSlides);
+    setActiveSlideEditIdx(nextSlides.length - 1);
+    showNotice(
+      'success',
+      `استوری شماره ${nextSlides.length.toLocaleString('fa-IR')} (از ۱۰) به این دسته‌بندی اضافه شد.`
+    );
+  };
+
+  const handleSaveStory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!storyForm.title.trim()) {
+      showNotice('error', 'لطفاً عنوان دسته‌بندی / استوری را وارد نمایید.');
+      return;
+    }
+    if (!storyForm.thumbnailImage.trim()) {
+      showNotice('error', 'لطفاً عکس شاخص استوری را انتخاب یا آپلود نمایید.');
+      return;
+    }
+    if (
+      (storyForm.storyType === 'single-product' ||
+        storyForm.storyType === 'image-only') &&
+      !storyForm.mediaUrl.trim()
+    ) {
+      showNotice('error', 'لطفاً تصویر اصلی استوری را انتخاب یا آپلود نمایید.');
+      return;
+    }
+    if (storyForm.storyType === 'video' && !storyForm.videoUrl.trim()) {
+      showNotice('error', 'لطفاً لینک یا فایل ویدیوی استوری را وارد نمایید.');
+      return;
+    }
+
+    const currentActiveSlide = {
+      id:
+        categorySlides[activeSlideEditIdx]?.id ||
+        `slide-${Date.now()}-${activeSlideEditIdx}`,
+      type: storyForm.storyType,
+      title:
+        storyForm.slideTitle.trim() || storyForm.title.trim(),
+      mediaUrl:
+        storyForm.storyType === 'video'
+          ? storyForm.thumbnailImage.trim()
+          : storyForm.mediaUrl.trim(),
+      videoUrl:
+        storyForm.storyType === 'video' ? storyForm.videoUrl.trim() : '',
+      linkedProductKey:
+        storyForm.storyType === 'single-product'
+          ? storyForm.linkedProductKey
+          : '',
+    };
+
+    // اگر ادمین یک دسته‌بندی استوری موجود را برای افزودن استوری جدید انتخاب کرده باشد
+    const targetExistingId =
+      editingStoryId ||
+      (selectedTargetCategoryId !== 'new' ? selectedTargetCategoryId : null);
+
+    let finalSlides = [...categorySlides];
+    if (finalSlides.length === 0) {
+      finalSlides = [currentActiveSlide];
+    } else if (activeSlideEditIdx >= 0 && activeSlideEditIdx < finalSlides.length) {
+      finalSlides[activeSlideEditIdx] = currentActiveSlide;
+    } else {
+      if (finalSlides.length >= 10) {
+        showNotice(
+          'error',
+          'ظرفیت این دسته‌بندی استوری تکمیل است (حداکثر ۱۰ استوری در هر دسته‌بندی).'
+        );
+        return;
+      }
+      finalSlides.push(currentActiveSlide);
+    }
+
+    if (finalSlides.length > 10) {
+      showNotice(
+        'error',
+        'در هر دسته‌بندی حداکثر ۱۰ استوری می‌توان قرار داد.'
+      );
+      return;
+    }
+
+    const primarySlide = finalSlides[0] || currentActiveSlide;
+    const selectedProd = productsList.find(
+      (p) =>
+        p.productKey === primarySlide.linkedProductKey ||
+        `prod-${p.id}` === primarySlide.linkedProductKey ||
+        p.productCode === primarySlide.linkedProductKey
+    );
+
+    const payload = {
+      storyType: primarySlide.type,
+      title: storyForm.title.trim(),
+      fullTitle: primarySlide.title || storyForm.title.trim(),
+      subtitle:
+        finalSlides.length > 1
+          ? `دسته‌بندی شامل ${finalSlides.length.toLocaleString('fa-IR')} استوری در سایت`
+          : primarySlide.type === 'single-product'
+          ? 'استوری متصل به محصول'
+          : primarySlide.type === 'image-only'
+          ? 'استوری ساده تصویری'
+          : 'استوری ویدیویی',
+      thumbnailImage: storyForm.thumbnailImage.trim(),
+      image: primarySlide.mediaUrl || storyForm.thumbnailImage.trim(),
+      mediaUrl: primarySlide.mediaUrl || storyForm.thumbnailImage.trim(),
+      videoUrl: primarySlide.type === 'video' ? primarySlide.videoUrl : '',
+      linkedProductKey:
+        primarySlide.type === 'single-product'
+          ? primarySlide.linkedProductKey
+          : '',
+      slides: finalSlides.slice(0, 10),
+      price: selectedProd?.priceFormatted || '۱۶,۴۰۰,۰۰۰ تومان',
+      modelType: selectedProd?.modelType || 'crystali',
+      finish: selectedProd?.defaultFinish || 'gold-24k',
+    };
+
+    runStoryProgressModal(
+      'save',
+      'استوری در وب‌سایت قرار داده شد',
+      'در حال ثبت در بالای لیست و نمایش در اولین جایگاه صفحه اصلی وب‌سایت...',
+      async () => {
+        try {
+          if (targetExistingId) {
+            await authFetch(`/api/admin/stories/${targetExistingId}`, {
+              method: 'PUT',
+              body: JSON.stringify(payload),
+            });
+          } else {
+            await authFetch('/api/admin/stories', {
+              method: 'POST',
+              body: JSON.stringify(payload),
+            });
+          }
+          setEditingStoryId(null);
+          setSelectedTargetCategoryId('new');
+          setCategorySlides([]);
+          setActiveSlideEditIdx(0);
+          setStoryPage(1);
+          setStoryForm({
+            storyType: storyForm.storyType,
+            title: '',
+            slideTitle: '',
+            thumbnailImage: GENERATED_IMAGES.crystaliCherub,
+            mediaUrl: GENERATED_IMAGES.storyPortraitPalace,
+            videoUrl:
+              'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+            linkedProductKey:
+              productsList[0]?.productKey || 'prod-crystali',
+          });
+          await loadAllAdminData();
+          onCatalogUpdated?.();
+          showNotice(
+            'success',
+            'استوری با موفقیت در وب‌سایت قرار داده شد و در ابتدای لیست قرار گرفت.'
+          );
+        } catch (err: any) {
+          showNotice('error', err?.message || 'خطا در انتشار استوری در سایت');
+        }
+      }
+    );
+  };
+
+  const handleDeleteStory = async (id: number) => {
+    runStoryProgressModal(
+      'delete',
+      'استوری از وب‌سایت حذف شد',
+      'در حال حذف استوری از لیست و بروزرسانی نوار استوری‌های صفحه اصلی سایت...',
+      async () => {
+        try {
+          await authFetch(`/api/admin/stories/${id}`, { method: 'DELETE' });
+          await loadAllAdminData();
+          onCatalogUpdated?.();
+          showNotice('success', 'استوری با موفقیت از وب‌سایت حذف شد.');
+        } catch (err: any) {
+          showNotice('error', err?.message || 'خطا در حذف استوری از سایت');
+        }
+      }
+    );
+  };
+
+  // ==================== ۶. عملیات مدیریت مقالات مجله ====================
+  const handleSaveArticle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!articleForm.title.trim()) {
+      showNotice('error', 'عنوان مقاله الزامی است.');
+      return;
+    }
+    try {
+      const payload = {
+        ...articleForm,
+        fullContent: articleForm.content
+          ? articleForm.content
+              .split('\n')
+              .map((line) => line.trim())
+              .filter(Boolean)
+          : [articleForm.excerpt || articleForm.title],
+      };
+
+      if (editingArticleId) {
+        await authFetch(`/api/admin/articles/${editingArticleId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+        showNotice('success', 'مقاله مجله با موفقیت ویرایش شد.');
+      } else {
+        await authFetch('/api/admin/articles', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        showNotice('success', 'مقاله جدید در دیتابیس ثبت شد.');
+      }
+      setEditingArticleId(null);
+      setArticleForm({
+        title: '',
+        excerpt: '',
+        content: '',
+        category: 'راهنمای دکوراسیون سلطنتی',
+        readTime: '۵ دقیقه مطالعه',
+        publishDate: '۱۸ مهر ۱۴۰۴',
+        image: GENERATED_IMAGES.projectFereshteh,
+        featured: false,
+      });
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در ذخیره مقاله');
+    }
+  };
+
+  const handleDeleteArticle = async (id: number) => {
+    try {
+      await authFetch(`/api/admin/articles/${id}`, { method: 'DELETE' });
+      showNotice('success', 'مقاله از دیتابیس حذف شد.');
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در حذف مقاله');
+    }
+  };
+
+  // ==================== ۷. عملیات مدیریت پیام‌های تماس (فقط خواندنی + تغییر وضعیت و حذف) ====================
+  const handleOpenAndReadMessage = async (msg: any) => {
+    setViewingMessage(msg);
+    if (msg && msg.status === 'new') {
+      try {
+        await authFetch(`/api/admin/messages/${msg.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'read' }),
+        });
+        setViewingMessage((prev: any) =>
+          prev && prev.id === msg.id ? { ...prev, status: 'read' } : prev
+        );
+        await loadAllAdminData();
+      } catch {
+        // ignore status update error on open
+      }
+    }
+  };
+
+  const handleToggleMessageStatus = async (id: number, current: string) => {
+    try {
+      const next = current === 'new' ? 'read' : 'new';
+      await authFetch(`/api/admin/messages/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: next }),
+      });
+      await loadAllAdminData();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در تغییر وضعیت پیام');
+    }
+  };
+
+  const handleDeleteMessage = async (id: number) => {
+    try {
+      await authFetch(`/api/admin/messages/${id}`, { method: 'DELETE' });
+      showNotice('success', 'پیام از دیتابیس حذف شد.');
+      await loadAllAdminData();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در حذف پیام');
+    }
+  };
+
+  // ==================== ۸. عملیات مدیریت سفارشات ====================
+  const handleSaveOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orderForm.customerName.trim()) {
+      showNotice('error', 'نام مشتری الزامی است.');
+      return;
+    }
+    try {
+      const payload = {
+        ...orderForm,
+        totalPriceNumeric: Number(orderForm.totalAmountNumeric) || 0,
+        totalPriceFormatted: formatToman(
+          Number(orderForm.totalAmountNumeric) || 0
+        ),
+        totalAmountNumeric: Number(orderForm.totalAmountNumeric) || 0,
+        totalAmountFormatted: formatToman(
+          Number(orderForm.totalAmountNumeric) || 0
+        ),
+      };
+
+      if (editingOrderId) {
+        await authFetch(`/api/admin/orders/${editingOrderId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+        showNotice('success', 'سفارش با موفقیت ویرایش شد.');
+      } else {
+        await fetch('/api/public/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        showNotice('success', 'سفارش جدید در دیتابیس ثبت شد.');
+      }
+      setEditingOrderId(null);
+      setOrderForm({
+        customerName: '',
+        customerPhone: '',
+        totalAmountFormatted: '۱۲,۵۰۰,۰۰۰ تومان',
+        totalAmountNumeric: 12500000,
+        status: 'pending',
+      });
+      await loadAllAdminData();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در ذخیره سفارش');
+    }
+  };
+
+  const handleUpdateOrderStatus = async (id: number, status: string) => {
+    try {
+      await authFetch(`/api/admin/orders/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      showNotice('success', 'وضعیت سفارش بروزرسانی شد.');
+      await loadAllAdminData();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در تغییر وضعیت سفارش');
+    }
+  };
+
+  const handleDeleteOrder = async (id: number) => {
+    try {
+      await authFetch(`/api/admin/orders/${id}`, { method: 'DELETE' });
+      showNotice('success', 'سفارش از دیتابیس حذف شد.');
+      await loadAllAdminData();
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در حذف سفارش');
+    }
+  };
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen w-full bg-[#141414] flex items-center justify-center px-4">
+        <div className="text-center space-y-3">
+          <div className="w-11 h-11 rounded-full border-2 border-[#c09d62] border-t-transparent animate-spin mx-auto" />
+          <p className="text-sm font-bold text-[#e5dec9]">
+            در حال بارگذاری پنل مدیریت اختصاصی لوستر صالحی...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== صفحه ورود تمام‌صفحه و اختصاصی مدیر (بدون هدر و فوتر سایت + فونت یکپارچه سایت) ====================
+  if (!adminUser || !sessionToken) {
+    return (
+      <section
+        dir="rtl"
+        style={{
+          fontFamily: "'Vazirmatn', system-ui, -apple-system, sans-serif",
+        }}
+        className="min-h-screen w-full bg-[#121212] flex flex-col lg:flex-row overflow-hidden font-sans"
+      >
+        {/* ستون راست در دسکتاپ: ویترین بصری سلطنتی برند لوستر اکبر صالحی */}
+        <div className="relative hidden lg:flex lg:w-7/12 xl:w-7/12 flex-col justify-between p-12 xl:p-16 overflow-hidden">
+          <img
+            src={GENERATED_IMAGES.heroBanner}
+            alt="لوستر اکبر صالحی"
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 w-full h-full object-cover object-center scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] via-[#121212]/80 to-[#121212]/55" />
+
+          {/* نشان بالای پنل بصری */}
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-[#c09d62]/20 border border-[#c09d62]/50 backdrop-blur-md flex items-center justify-center text-[#dfc18d]">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="block text-base font-black text-white tracking-tight">
+                  گالری و کارخانه لوستر اکبر صالحی
+                </span>
+                <span className="block text-xs text-[#cbb894] mt-0.5">
+                  سامانه یکپارچه مدیریت محتوا و دیتابیس PostgreSQL
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigateToRoute('home')}
+              className="h-10 px-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold flex items-center gap-2 backdrop-blur-md transition-colors cursor-pointer"
+            >
+              <span>مشاهده ویترین فروشگاه</span>
+              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+            </button>
+          </div>
+
+          {/* متن میانی و آمار اتصال دیتابیس */}
+          <div className="relative z-10 max-w-xl space-y-6 my-auto">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-[#dfc18d]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>متصل به هسته مرکزی PostgreSQL و Express API</span>
+            </div>
+            <h2 className="text-3xl xl:text-4xl font-black text-white leading-[1.45]">
+              مدیریت مستقیم کلکسیون‌ها، پروژه‌های اجرایی و سفارشات مشتریان
+            </h2>
+            <p className="text-sm text-white/75 leading-7 text-justify">
+              از طریق این درگاه اختصاصی می‌توانید تمامی محصولات، دسته‌بندی‌ها،
+              پروژه‌های اجرایی، استوری‌های تعاملی، مقالات مجله و مدیران سیستم را
+              به‌صورت آنی در دیتابیس ویرایش، حذف یا اضافه نمایید.
+            </p>
+
+            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/15">
+              <div>
+                <span className="block text-2xl font-black text-[#dfc18d] tabular-nums">
+                  ۸ بخش
+                </span>
+                <span className="block text-xs text-white/70 mt-1">
+                  مدیریت کامل جداول سایت
+                </span>
+              </div>
+              <div>
+                <span className="block text-2xl font-black text-[#dfc18d] tabular-nums">
+                  ۱۰۰٪ زنده
+                </span>
+                <span className="block text-xs text-white/70 mt-1">
+                  بروزرسانی آنی در فروشگاه
+                </span>
+              </div>
+              <div>
+                <span className="block text-2xl font-black text-[#dfc18d] tabular-nums">
+                  PostgreSQL
+                </span>
+                <span className="block text-xs text-white/70 mt-1">
+                  ذخیره‌سازی دائمی و ایمن
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* پانویس پنل بصری */}
+          <div className="relative z-10 flex items-center justify-between text-xs text-white/50">
+            <span>پنل مدیریت اختصاصی لوستر اکبر صالحی</span>
+            <span>ورود امن با شماره موبایل و رمز عبور مدیریت</span>
+          </div>
+        </div>
+
+        {/* ستون چپ: فرم ورود شیک و مدرن */}
+        <div className="w-full lg:w-5/12 xl:w-5/12 min-h-screen bg-[#fcfbf8] flex flex-col justify-center px-5 sm:px-12 xl:px-16 py-10">
+          <div className="w-full max-w-[430px] mx-auto">
+            <div className="w-14 h-14 rounded-2xl bg-[#191919] text-[#dfc18d] flex items-center justify-center mb-6 shadow-md">
+              <KeyRound className="w-6 h-6" />
+            </div>
+
+            <h1 className="text-2xl sm:text-[26px] font-black text-[#181818]">
+              ورود به پنل مدیریت
+            </h1>
+            <p className="text-xs sm:text-[13px] text-[#666666] leading-7 mt-2">
+              لطفاً شماره موبایل و رمز عبور ادمین را جهت دسترسی به میز کار مدیریت
+              وارد نمایید.
+            </p>
+
+            {authError && (
+              <div className="mt-5 p-3.5 rounded-xl bg-[#fde8ea] border border-[#f8c5ca] text-[#ea1d2c] text-xs font-bold text-right">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handlePhonePasswordLogin} className="mt-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#2b2b2b] mb-2">
+                  شماره موبایل ادمین
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    dir="ltr"
+                    required
+                    value={loginPhone}
+                    onChange={(e) => setLoginPhone(e.target.value)}
+                    placeholder="09120759419"
+                    className="w-full h-12 rounded-xl border border-[#dcd5c7] bg-white pl-4 pr-11 text-left text-sm font-bold tabular-nums text-[#181818] focus:outline-none focus:border-[#b59766] transition-colors"
+                  />
+                  <Phone className="w-4 h-4 text-[#8c734b] absolute right-4 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#2b2b2b] mb-2">
+                  رمز عبور مدیریت
+                </label>
+                <div className="relative">
+                  <input
+                    type={showLoginPassword ? 'text' : 'password'}
+                    dir="ltr"
+                    required
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-12 rounded-xl border border-[#dcd5c7] bg-white pl-11 pr-11 text-left text-sm font-bold text-[#181818] focus:outline-none focus:border-[#b59766] transition-colors"
+                  />
+                  <Lock className="w-4 h-4 text-[#8c734b] absolute right-4 top-1/2 -translate-y-1/2" />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword((prev) => !prev)}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#777] hover:text-[#181818] cursor-pointer"
+                    aria-label="نمایش رمز عبور"
+                  >
+                    {showLoginPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* باکس جایگذاری سریع اطلاعات ادمین پیش‌فرض */}
+              <div className="p-4 rounded-xl bg-[#f6f1e7] border border-[#e5dac6] flex items-center justify-between gap-3">
+                <div className="text-xs text-[#4d3d24] space-y-1">
+                  <p className="font-bold">اکانت ادمین پیش‌فرض:</p>
+                  <p dir="ltr" className="text-xs font-bold tabular-nums text-right">
+                    09120759419 &nbsp;·&nbsp; sasha9419
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginPhone('09120759419');
+                    setLoginPassword('sasha9419');
+                  }}
+                  className="px-3.5 py-2 rounded-lg bg-[#191919] hover:bg-[#b59766] text-white text-[11px] font-bold transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                >
+                  پر کردن خودکار
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingLogin}
+                className="w-full h-12 rounded-xl bg-[#b59766] hover:bg-[#9d8052] disabled:opacity-60 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>
+                  {isSubmittingLogin
+                    ? 'در حال احراز هویت و ورود...'
+                    : 'ورود به میز کار مدیریت'}
+                </span>
+              </button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-[#eae5dc] flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => navigateToRoute('home')}
+                className="text-xs font-bold text-[#555] hover:text-[#181818] flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <ArrowRight className="w-4 h-4" />
+                <span>بازگشت به صفحه اصلی سایت</span>
+              </button>
+              <span className="text-[11px] text-[#888] tabular-nums">
+                نسخه اختصاصی ادمین
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const navItems: {
+    id: AdminTab;
+    label: string;
+    icon: React.ReactNode;
+    count?: number;
+  }[] = [
+    {
+      id: 'dashboard',
+      label: 'داشبورد کلی',
+      icon: <Sparkles className="w-4 h-4" />,
+    },
+    {
+      id: 'admins',
+      label: 'مدیریت ادمین‌ها',
+      icon: <Users className="w-4 h-4" />,
+      count: adminsList.length || summary.usersCount,
+    },
+    {
+      id: 'products',
+      label: 'مدیریت محصولات',
+      icon: <Package className="w-4 h-4" />,
+      count: productsList.length || summary.productsCount,
+    },
+    {
+      id: 'categories',
+      label: 'دسته‌بندی‌ها',
+      icon: <Layers className="w-4 h-4" />,
+      count: categoriesList.length || summary.categoriesCount,
+    },
+    {
+      id: 'projects',
+      label: 'پروژه‌های اجرایی',
+      icon: <Building2 className="w-4 h-4" />,
+      count: projectsList.length || summary.projectsCount,
+    },
+    {
+      id: 'stories',
+      label: 'استوری‌های سایت',
+      icon: <PlayCircle className="w-4 h-4" />,
+      count: storiesList.length || summary.storiesCount,
+    },
+    {
+      id: 'articles',
+      label: 'مجله و مقالات',
+      icon: <FileText className="w-4 h-4" />,
+      count: articlesList.length || summary.articlesCount,
+    },
+    {
+      id: 'messages',
+      label: 'پیام‌های تماس',
+      icon: <MessageSquare className="w-4 h-4" />,
+      count: messagesList.length || summary.messagesCount,
+    },
+    {
+      id: 'orders',
+      label: 'سفارشات مشتریان',
+      icon: <ShoppingBag className="w-4 h-4" />,
+      count: ordersList.length || summary.ordersCount,
+    },
+    {
+      id: 'settings',
+      label: 'تنظیمات وب سایت',
+      icon: <Settings className="w-4 h-4" />,
+    },
+  ];
+
+  const currentAdminPermissions = parseAdminPermissions(adminUser);
+  const visibleNavItems = navItems.filter((item) =>
+    currentAdminPermissions.includes(item.id)
+  );
+  const effectiveNavItems =
+    visibleNavItems.length > 0 ? visibleNavItems : navItems;
+
+  const activeTabMeta =
+    effectiveNavItems.find((item) => item.id === activeTab) ||
+    effectiveNavItems[0] ||
+    navItems[0];
+
+  const currentAdminAvatar =
+    adminUser.avatarUrl ||
+    adminsList.find((a) => a.id === adminUser.id)?.avatarUrl ||
+    DEFAULT_ADMIN_AVATAR_URL;
+
+  return (
+    <section
+      dir="rtl"
+      style={{
+        fontFamily: "'Vazirmatn', system-ui, -apple-system, sans-serif",
+      }}
+      className="min-h-screen w-full bg-[#f3f1ec] flex flex-col lg:flex-row text-[#181818] font-sans"
+    >
+      {/* سایدبار اختصاصی تیره و سلطنتی در سمت راست (بدون هدر و فوتر سایت) */}
+      <aside className="w-full lg:w-[290px] xl:w-[305px] bg-[#151515] text-white shrink-0 lg:min-h-screen lg:sticky lg:top-0 flex flex-col justify-between p-5 border-b lg:border-b-0 lg:border-l border-white/10">
+        <div className="space-y-5">
+          {/* هدر بالای سایدبار با عکس بزرگ ادمین در باکس انتخاب‌شده (CSS selector 1) */}
+          <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div className="flex items-center gap-3.5">
+              <div
+                onClick={() => setActiveTab('admins')}
+                title="مشاهده و تغییر عکس ادمین"
+                className="w-16 h-16 rounded-2xl bg-[#c09d62] p-[2px] flex items-center justify-center shadow-md shrink-0 cursor-pointer overflow-hidden group relative"
+              >
+                <img
+                  src={currentAdminAvatar}
+                  alt={adminUser.displayName}
+                  className="w-full h-full rounded-[14px] object-cover bg-[#1d1d1d]"
+                />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-sm font-black text-white truncate">
+                  {adminUser.displayName || 'مدیر سیستم'}
+                </h1>
+                <p
+                  dir="ltr"
+                  className="text-xs text-[#d6be92] tabular-nums text-right mt-0.5 font-bold"
+                >
+                  {adminUser.phone}
+                </p>
+                <span className="inline-block text-[10.5px] text-emerald-400 font-bold mt-1">
+                  ● ادمین آنلاین در پنل
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* باکس وضعیت زمان مجاز حضور ادمین در پنل (۱۰ دقیقه عدم فعالیت / ۳۰ دقیقه نشست کامل) */}
+          <div className="p-3.5 rounded-xl bg-white/[0.05] border border-white/10 space-y-2">
+            <div className="flex items-center justify-between gap-2 text-[11px]">
+              <span className="text-white/75 font-semibold">
+                مهلت حضور در پنل (۳۰ دقیقه):
+              </span>
+              <span className="text-[#dfc18d] font-black tabular-nums">
+                {formatCountdown(remainingSessionSec)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2 text-[11px]">
+              <span className="text-white/75 font-semibold">
+                خروج خودکار عدم فعالیت (۱۰ دقیقه):
+              </span>
+              <span className="text-emerald-400 font-black tabular-nums">
+                {formatCountdown(remainingIdleSec)}
+              </span>
+            </div>
+          </div>
+
+          {/* منوی ناوبری بخش‌های دارای دسترسی تیک‌خورده */}
+          <nav className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0">
+            {effectiveNavItems.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3.5 py-3 rounded-xl text-right flex items-center justify-between gap-3 transition-colors cursor-pointer shrink-0 lg:w-full ${
+                    active
+                      ? 'bg-[#c09d62] text-[#141414] font-black'
+                      : 'text-white/75 hover:bg-white/10 hover:text-white font-semibold'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 text-xs whitespace-nowrap">
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </div>
+                  {typeof tab.count === 'number' && (
+                    <span
+                      className={`text-[11px] tabular-nums font-bold ${
+                        active ? 'text-[#141414]' : 'text-[#cbb793]'
+                      }`}
+                    >
+                      {tab.count.toLocaleString('fa-IR')}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* دکمه‌های پایین سایدبار */}
+        <div className="hidden lg:flex flex-col gap-2 pt-5 border-t border-white/10 mt-6">
+          <button
+            type="button"
+            onClick={() => navigateToRoute('home')}
+            className="w-full h-10 px-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
+          >
+            <span>مشاهده زنده فروشگاه</span>
+            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+          </button>
+          <button
+            type="button"
+            onClick={handleAdminLogout}
+            className="w-full h-10 px-3.5 rounded-xl bg-[#ea1d2c]/15 hover:bg-[#ea1d2c] text-[#ff7b84] hover:text-white text-xs font-bold flex items-center justify-between transition-colors cursor-pointer"
+          >
+            <span>خروج از حساب ادمین</span>
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </aside>
+
+      {/* فضای کاری اصلی سمت چپ */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* نوار ابزار بالای میز کار (بدون دکمه افزودن ادمین جدید در هدر) */}
+        <header className="bg-white border-b border-[#e5dfd3] px-5 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-[#8c734b] font-semibold">
+              <span>پنل مدیریت</span>
+              <span>/</span>
+              <span>{activeTabMeta.label}</span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-black text-[#181818] mt-0.5">
+              {activeTabMeta.label}
+            </h2>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={loadAllAdminData}
+              className="h-10 px-4 rounded-xl bg-[#f6f2ea] hover:bg-[#ebe3d4] text-[#7c6238] text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${isLoadingData ? 'animate-spin' : ''}`}
+              />
+              <span>بروزرسانی اطلاعات سایت</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateToRoute('home')}
+              className="lg:hidden h-10 px-3.5 rounded-xl bg-[#f2f2f2] text-[#222] text-xs font-bold cursor-pointer"
+            >
+              فروشگاه
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAdminLogout}
+              className="lg:hidden h-10 px-3.5 rounded-xl bg-[#fde8ea] text-[#ea1d2c] text-xs font-bold cursor-pointer"
+            >
+              خروج
+            </button>
+          </div>
+        </header>
+
+        {/* محتوای داخلی میز کار */}
+        <div className="p-5 sm:p-8 max-w-[1440px] w-full mx-auto space-y-6">
+          {/* بنر اعلان عملیات */}
+          {feedbackBanner && (
+            <div
+              className={`px-5 py-3.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-between ${
+                feedbackBanner.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  : 'bg-[#fde8ea] text-[#ea1d2c] border border-[#f8c5ca]'
+              }`}
+            >
+              <span>{feedbackBanner.text}</span>
+              <button
+                type="button"
+                onClick={() => setFeedbackBanner(null)}
+                className="cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* ۱. تب داشبورد */}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  {
+                    title: 'ادمین‌های سیستم',
+                    value: adminsList.length || summary.usersCount,
+                    sub: 'دسترسی مدیریت فعال',
+                    tab: 'admins' as AdminTab,
+                  },
+                  {
+                    title: 'کل محصولات ثبت‌شده',
+                    value: productsList.length || summary.productsCount,
+                    sub: 'در کاتالوگ فروشگاه',
+                    tab: 'products' as AdminTab,
+                  },
+                  {
+                    title: 'دسته‌بندی‌های سایت',
+                    value: categoriesList.length || summary.categoriesCount,
+                    sub: 'کالکشن‌های فعال',
+                    tab: 'categories' as AdminTab,
+                  },
+                  {
+                    title: 'پروژه‌های اجرایی',
+                    value: projectsList.length || summary.projectsCount,
+                    sub: 'در ۵ دسته اجرایی',
+                    tab: 'projects' as AdminTab,
+                  },
+                  {
+                    title: 'استوری‌های بالای سایت',
+                    value: storiesList.length || summary.storiesCount,
+                    sub: 'نوار استوری صفحه اصلی',
+                    tab: 'stories' as AdminTab,
+                  },
+                  {
+                    title: 'مقالات مجله لوستر',
+                    value: articlesList.length || summary.articlesCount,
+                    sub: 'مطالب آموزشی و تخصصی',
+                    tab: 'articles' as AdminTab,
+                  },
+                  {
+                    title: 'پیام‌های مشاوره و تماس',
+                    value: messagesList.length || summary.messagesCount,
+                    sub: 'فرم ارتباط با ما',
+                    tab: 'messages' as AdminTab,
+                  },
+                  {
+                    title: 'سفارشات مشتریان',
+                    value: ordersList.length || summary.ordersCount,
+                    sub: 'سبدهای خرید ثبت‌شده',
+                    tab: 'orders' as AdminTab,
+                  },
+                ].map((stat, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setActiveTab(stat.tab)}
+                    className="bg-white rounded-2xl border border-[#e5dfd3] p-5 hover:border-[#b59766] transition-colors cursor-pointer flex flex-col justify-between"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#666]">
+                        {stat.title}
+                      </p>
+                      <p className="text-2xl sm:text-3xl font-black text-[#181818] tabular-nums mt-2">
+                        {stat.value.toLocaleString('fa-IR')}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-[#f2efe9] text-[11px]">
+                      <span className="text-[#888]">{stat.sub}</span>
+                      <span className="font-bold text-[#b59766]">
+                        مدیریت ←
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* خلاصه سریع آخرین محصولات و آخرین سفارشات در داشبورد */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-2xl border border-[#e5dfd3] p-5">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#f0ece3]">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      آخرین محصولات دیتابیس
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('products')}
+                      className="text-xs font-bold text-[#b59766] hover:underline cursor-pointer"
+                    >
+                      مشاهده همه محصولات ←
+                    </button>
+                  </div>
+                  <div className="divide-y divide-[#f4f1ea]">
+                    {productsList.slice(0, 5).map((p) => (
+                      <div
+                        key={p.id}
+                        className="py-2.5 flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img
+                            src={p.image}
+                            alt={p.name}
+                            referrerPolicy="no-referrer"
+                            className="w-10 h-10 rounded-lg object-cover bg-[#f5f5f5] shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-[#181818] truncate">
+                              {p.name}
+                            </p>
+                            <p className="text-[11px] text-[#777]">
+                              کد {p.productCode} · {p.categorySlug}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-[#8c6f41] tabular-nums shrink-0">
+                          {p.priceFormatted}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-[#e5dfd3] p-5">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#f0ece3]">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      آخرین سفارشات و پیام‌های مشتریان
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('orders')}
+                      className="text-xs font-bold text-[#b59766] hover:underline cursor-pointer"
+                    >
+                      مدیریت سفارشات ←
+                    </button>
+                  </div>
+                  <div className="divide-y divide-[#f4f1ea]">
+                    {ordersList.slice(0, 3).map((ord) => (
+                      <div
+                        key={`dash-ord-${ord.id}`}
+                        className="py-2.5 flex items-center justify-between gap-3"
+                      >
+                        <div>
+                          <p className="text-xs font-bold text-[#181818]">
+                            سفارش: {ord.customerName}
+                          </p>
+                          <p className="text-[11px] text-[#777] tabular-nums">
+                            {ord.customerPhone} ·{' '}
+                            {ord.status === 'completed'
+                              ? 'تکمیل شده'
+                              : 'در انتظار بررسی'}
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-[#181818] tabular-nums">
+                          {ord.totalPriceFormatted || ord.totalAmountFormatted}
+                        </span>
+                      </div>
+                    ))}
+                    {messagesList.slice(0, 2).map((msg) => (
+                      <div
+                        key={`dash-msg-${msg.id}`}
+                        className="py-2.5 flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-[#181818] truncate">
+                            پیام: {msg.fullName} ({msg.subject})
+                          </p>
+                          <p className="text-[11px] text-[#777] truncate">
+                            {msg.message}
+                          </p>
+                        </div>
+                        <span className="text-[11px] text-[#b59766] shrink-0">
+                          {msg.phone}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ۲. تب مدیریت ادمین‌ها (نام ادمین، شماره موبایل، رمز عبور، عکس ادمین، و تیک دسترسی هر بخش) */}
+          {activeTab === 'admins' && (
+            <div className="space-y-6">
+              <form
+                onSubmit={handleSaveAdminUser}
+                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <UserPlus className="w-5 h-5 text-[#b59766]" />
+                    <div>
+                      <h2 className="text-base font-black text-[#1e1e1e]">
+                        {editingAdminId
+                          ? 'ویرایش مشخصات، عکس و دسترسی‌های ادمین'
+                          : 'افزودن ادمین جدید به سیستم'}
+                      </h2>
+                      <p className="text-xs text-[#777] mt-0.5">
+                        نام ادمین، شماره موبایل، رمز عبور و عکس ادمین را وارد کنید و هر بخشی که می‌خواهید دسترسی داشته باشد را تیک بزنید.
+                      </p>
+                    </div>
+                  </div>
+                  {editingAdminId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingAdminId(null);
+                        setAdminForm({
+                          displayName: '',
+                          phone: '',
+                          password: '',
+                          avatarUrl: DEFAULT_ADMIN_AVATAR_URL,
+                          permissions: ALL_ADMIN_PERMISSION_ITEMS.map(
+                            (item) => item.id
+                          ),
+                        });
+                      }}
+                      className="h-9 px-3.5 rounded-xl bg-[#fde8ea] text-[#ea1d2c] text-xs font-bold cursor-pointer hover:bg-[#ea1d2c] hover:text-white transition-colors"
+                    >
+                      انصراف از ویرایش
+                    </button>
+                  )}
+                </div>
+
+                {/* فیلدهای اصلی: ۱. نام ادمین | ۲. شماره موبایل ادمین | ۳. رمز عبور ادمین */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      نام ادمین
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={adminForm.displayName}
+                      onChange={(e) =>
+                        setAdminForm({
+                          ...adminForm,
+                          displayName: e.target.value,
+                        })
+                      }
+                      placeholder="مثلاً: اکبر صالحی / ساشا صالحی"
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      شماره موبایل ادمین
+                    </label>
+                    <input
+                      type="tel"
+                      dir="ltr"
+                      required
+                      value={adminForm.phone}
+                      onChange={(e) =>
+                        setAdminForm({ ...adminForm, phone: e.target.value })
+                      }
+                      placeholder="09120000000"
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-left text-xs font-bold tabular-nums focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      رمز عبور ادمین
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showAdminFormPassword ? 'text' : 'password'}
+                        dir="ltr"
+                        required={!editingAdminId}
+                        value={adminForm.password}
+                        onChange={(e) =>
+                          setAdminForm({
+                            ...adminForm,
+                            password: e.target.value,
+                          })
+                        }
+                        placeholder={
+                          editingAdminId
+                            ? 'رمز جدید (خالی = بدون تغییر)'
+                            : 'مثلاً: sasha9419'
+                        }
+                        className="w-full h-11 rounded-xl border border-[#e0e0e0] pl-9 pr-3.5 text-left text-xs font-bold focus:outline-none focus:border-[#b59766]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowAdminFormPassword((prev) => !prev)
+                        }
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#777] hover:text-[#222] cursor-pointer"
+                      >
+                        {showAdminFormPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* بخش انتخاب یا آپلود عکس ادمین (با پیش‌نمایش بزرگ که در بالای سایدبار قرار می‌گیرد) */}
+                <div className="p-4 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-3.5 shrink-0">
+                    <div className="w-20 h-20 rounded-2xl border-2 border-[#b59766] bg-[#181818] p-[2px] overflow-hidden shadow-md shrink-0">
+                      <img
+                        src={adminForm.avatarUrl || DEFAULT_ADMIN_AVATAR_URL}
+                        alt={adminForm.displayName || 'عکس ادمین'}
+                        className="w-full h-full rounded-[14px] object-cover"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-xs font-black text-[#1e1e1e]">
+                        عکس پروفایل ادمین
+                      </span>
+                      <span className="block text-[11px] text-[#777] mt-0.5">
+                        نمایش در قاب بزرگ بالای سایدبار پنل مدیریت
+                      </span>
+                      <label className="mt-2 inline-flex h-8 px-3 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-[11px] font-bold items-center gap-1.5 cursor-pointer transition-colors">
+                        <span>آپلود عکس ادمین از سیستم</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) =>
+                            handleFileUploadToDataUrl(
+                              e.target.files?.[0],
+                              (dataUrl) =>
+                                setAdminForm((prev) => ({
+                                  ...prev,
+                                  avatarUrl: dataUrl,
+                                }))
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <span className="block text-[11px] font-bold text-[#555] mb-1">
+                        انتخاب از تصاویر پرتره آماده:
+                      </span>
+                      <select
+                        value={
+                          PRESET_ADMIN_AVATARS.some(
+                            (a) => a.url === adminForm.avatarUrl
+                          )
+                            ? adminForm.avatarUrl
+                            : ''
+                        }
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setAdminForm({
+                              ...adminForm,
+                              avatarUrl: e.target.value,
+                            });
+                          }
+                        }}
+                        className="w-full h-11 rounded-xl border border-[#dcd3c2] px-3 text-xs font-semibold bg-white"
+                      >
+                        <option value="">-- انتخاب عکس آماده ادمین --</option>
+                        {PRESET_ADMIN_AVATARS.map((av, idx) => (
+                          <option key={idx} value={av.url}>
+                            {av.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <span className="block text-[11px] font-bold text-[#555] mb-1">
+                        یا لینک مستقیم عکس ادمین (URL):
+                      </span>
+                      <input
+                        type="text"
+                        dir="ltr"
+                        value={adminForm.avatarUrl}
+                        onChange={(e) =>
+                          setAdminForm({
+                            ...adminForm,
+                            avatarUrl: e.target.value,
+                          })
+                        }
+                        placeholder="https://..."
+                        className="w-full h-11 rounded-xl border border-[#dcd3c2] bg-white px-3 text-xs font-medium text-left"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* بخش تعیین دسترسی‌ها به صورت تیک (چک‌باکس برای هر بخش پنل) */}
+                <div className="p-4 rounded-2xl bg-[#f7f3eb] border border-[#dfcfb3] space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-xs font-black text-[#1e1e1e]">
+                        تعیین دسترسی بخش‌ها برای این ادمین (به‌صورت تیک):
+                      </label>
+                      <p className="text-[11px] text-[#666] mt-0.5">
+                        هر بخشی که می‌خواهید این ادمین به آن دسترسی داشته باشد را تیک بزنید ({adminForm.permissions.length.toLocaleString('fa-IR')} از {ALL_ADMIN_PERMISSION_ITEMS.length.toLocaleString('fa-IR')} بخش فعال)
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAdminForm((prev) => ({
+                            ...prev,
+                            permissions: ALL_ADMIN_PERMISSION_ITEMS.map(
+                              (i) => i.id
+                            ),
+                          }))
+                        }
+                        className="h-8 px-3 rounded-lg bg-[#1a1814] text-[#d4b27c] text-[11px] font-bold cursor-pointer hover:bg-[#b59766] hover:text-white transition-colors"
+                      >
+                        تیک زدن همه بخش‌ها
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAdminForm((prev) => ({
+                            ...prev,
+                            permissions: ['dashboard'],
+                          }))
+                        }
+                        className="h-8 px-3 rounded-lg bg-white border border-[#d5c6ab] text-[#555] text-[11px] font-bold cursor-pointer hover:bg-[#eee] transition-colors"
+                      >
+                        فقط داشبورد
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                    {ALL_ADMIN_PERMISSION_ITEMS.map((perm) => {
+                      const isChecked = adminForm.permissions.includes(perm.id);
+                      return (
+                        <label
+                          key={perm.id}
+                          onClick={() => handleToggleAdminPermission(perm.id)}
+                          className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer select-none transition-all ${
+                            isChecked
+                              ? 'bg-[#1a1814] text-white border-[#b59766] shadow-xs'
+                              : 'bg-white text-[#444] border-[#e2d8c5] hover:border-[#b59766]'
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 border transition-colors ${
+                              isChecked
+                                ? 'bg-[#c09d62] border-[#c09d62] text-[#141414]'
+                                : 'bg-white border-[#bbb] text-transparent'
+                            }`}
+                          >
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block text-xs font-black">
+                              {perm.label}
+                            </span>
+                            <span
+                              className={`block text-[10.5px] mt-0.5 ${
+                                isChecked ? 'text-white/75' : 'text-[#777]'
+                              }`}
+                            >
+                              {perm.desc}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="pt-1">
+                  <button
+                    type="submit"
+                    className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>
+                      {editingAdminId
+                        ? 'ذخیره تغییرات و دسترسی‌های ادمین'
+                        : 'ثبت و افزودن ادمین جدید'}
+                    </span>
+                  </button>
+                </div>
+              </form>
+
+              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6">
+                <h3 className="text-sm font-black text-[#1e1e1e] mb-4">
+                  لیست ادمین‌های ثبت‌شده ({adminsList.length.toLocaleString('fa-IR')})
+                </h3>
+                <div className="space-y-3">
+                  {adminsList.map((adm) => {
+                    const isPasswordShown = Boolean(visiblePasswordIds[adm.id]);
+                    const admPerms = parseAdminPermissions(adm);
+                    const admAvatar = adm.avatarUrl || DEFAULT_ADMIN_AVATAR_URL;
+                    return (
+                      <div
+                        key={adm.id}
+                        className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-2xl border border-[#efefef] hover:border-[#d8c7a8] transition-colors"
+                      >
+                        <div className="flex items-start sm:items-center gap-4">
+                          {/* عکس بزرگ ادمین در لیست */}
+                          <img
+                            src={admAvatar}
+                            alt={adm.displayName}
+                            className="w-16 h-16 rounded-2xl object-cover border-2 border-[#b59766] bg-[#181818] shrink-0 shadow-xs"
+                          />
+
+                          <div className="space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-black text-[#1e1e1e]">
+                                {adm.displayName}
+                              </span>
+                              <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-[#fbf4e6] text-[#9b7639] border border-[#ead6b3] font-bold">
+                                دسترسی به {admPerms.length.toLocaleString('fa-IR')} بخش
+                              </span>
+                              {adm.phone === '09120759419' && (
+                                <span className="text-[10.5px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold">
+                                  ادمین اصلی سیستم
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-[#555]">
+                              <span>
+                                شماره موبایل:{' '}
+                                <strong
+                                  dir="ltr"
+                                  className="tabular-nums font-bold text-[#111]"
+                                >
+                                  {adm.phone}
+                                </strong>
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                رمز عبور:{' '}
+                                <strong
+                                  dir="ltr"
+                                  className="tabular-nums font-bold text-[#111]"
+                                >
+                                  {isPasswordShown
+                                    ? adm.password || '••••••••'
+                                    : '••••••••'}
+                                </strong>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setVisiblePasswordIds((prev) => ({
+                                      ...prev,
+                                      [adm.id]: !prev[adm.id],
+                                    }))
+                                  }
+                                  className="text-[#888] hover:text-[#222] cursor-pointer"
+                                  title="نمایش/مخفی کردن رمز"
+                                >
+                                  {isPasswordShown ? (
+                                    <EyeOff className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <Eye className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </span>
+                            </div>
+
+                            {/* تگ‌های بخش‌های تیک‌خورده برای این ادمین */}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              {ALL_ADMIN_PERMISSION_ITEMS.filter((item) =>
+                                admPerms.includes(item.id)
+                              ).map((permItem) => (
+                                <span
+                                  key={permItem.id}
+                                  className="inline-flex items-center gap-1 text-[10.5px] px-2 py-0.5 rounded-md bg-[#f4f1ea] text-[#5c4928] font-bold"
+                                >
+                                  <Check className="w-3 h-3 text-[#b59766] stroke-[2.5]" />
+                                  {permItem.label}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end lg:self-auto shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAdminId(adm.id);
+                              setAdminForm({
+                                displayName: adm.displayName || '',
+                                phone: adm.phone || '',
+                                password: adm.password || '',
+                                avatarUrl:
+                                  adm.avatarUrl || DEFAULT_ADMIN_AVATAR_URL,
+                                permissions: parseAdminPermissions(adm),
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="h-9 px-3.5 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>ویرایش عکس / رمز / دسترسی</span>
+                          </button>
+
+                          {adminsList.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAdminUser(adm.id)}
+                              className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>حذف</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ۳. تب مدیریت محصولات */}
+          {activeTab === 'products' && (
+            <div className="space-y-6">
+              <form
+                onSubmit={handleSaveProduct}
+                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4"
+              >
+                <div className="flex items-center justify-between border-b border-[#efefef] pb-3.5">
+                  <h2 className="text-base font-black text-[#1e1e1e]">
+                    {editingProductId
+                      ? 'ویرایش محصول در دیتابیس'
+                      : 'افزودن محصول جدید به دیتابیس'}
+                  </h2>
+                  {editingProductId && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingProductId(null)}
+                      className="text-xs font-bold text-[#ea1d2c] cursor-pointer"
+                    >
+                      انصراف از ویرایش
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      نام محصول
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={productForm.name}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, name: e.target.value })
+                      }
+                      placeholder="مثلاً: لوستر کریستالی ورسای ۱۶ شاخه"
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      زیرعنوان کاربرد
+                    </label>
+                    <input
+                      type="text"
+                      value={productForm.subtitle}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          subtitle: e.target.value,
+                        })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      قیمت (تومان - عددی)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={productForm.priceNumeric}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          priceNumeric: Number(e.target.value),
+                        })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      کد محصول
+                    </label>
+                    <input
+                      type="text"
+                      value={productForm.productCode}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          productCode: e.target.value,
+                        })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      دسته‌بندی محصول
+                    </label>
+                    <select
+                      value={productForm.categorySlug}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          categorySlug: e.target.value,
+                        })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white focus:outline-none focus:border-[#b59766]"
+                    >
+                      <option value="chandeliers">کلکسیون لوستر</option>
+                      <option value="mirrors">کلکسیون آینه و کنسول</option>
+                      <option value="shamdooni">کلکسیون شمعدانی</option>
+                      <option value="laleh-estekani">کلکسیون لاله و استکانی</option>
+                      <option value="saat-divari">کلکسیون ساعت دیواری</option>
+                      <option value="divarkoub">کلکسیون دیوارکوب</option>
+                      <option value="kenar-saloni">کلکسیون کنار سالونی</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      تصویر محصول
+                    </label>
+                    <select
+                      value={productForm.image}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          image: e.target.value,
+                        })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white focus:outline-none focus:border-[#b59766]"
+                    >
+                      {PRESET_PRODUCT_IMAGES.map((img, idx) => (
+                        <option key={idx} value={img.url}>
+                          {img.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-6 pt-2">
+                  <label className="flex items-center gap-2 text-xs font-bold text-[#333] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={productForm.hasSnappPay}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          hasSnappPay: e.target.checked,
+                        })
+                      }
+                      className="accent-[#b59766] w-4 h-4"
+                    />
+                    <span>دارای خرید اقساطی اسنپ‌پی (۴ قسط)</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-xs font-bold text-[#333] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={productForm.outOfStock}
+                      onChange={(e) =>
+                        setProductForm({
+                          ...productForm,
+                          outOfStock: e.target.checked,
+                        })
+                      }
+                      className="accent-[#ea1d2c] w-4 h-4"
+                    />
+                    <span>ناموجود در انبار</span>
+                  </label>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>
+                      {editingProductId
+                        ? 'ذخیره تغییرات محصول'
+                        : 'ثبت محصول در دیتابیس'}
+                    </span>
+                  </button>
+                </div>
+              </form>
+
+              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6">
+                <h3 className="text-sm font-black text-[#1e1e1e] mb-4">
+                  لیست محصولات موجود در دیتابیس ({productsList.length.toLocaleString('fa-IR')})
+                </h3>
+                <div className="space-y-3">
+                  {productsList.map((prod) => (
+                    <div
+                      key={prod.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-[#efefef] hover:border-[#d8c7a8] transition-colors"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <img
+                          src={prod.image}
+                          alt={prod.name}
+                          className="w-14 h-14 rounded-xl object-cover bg-[#f5f5f5] shrink-0"
+                        />
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-sm font-bold text-[#1e1e1e]">
+                              {prod.name}
+                            </h4>
+                            <span className="text-[11px] px-2 py-0.5 rounded-md bg-[#f5f2eb] text-[#8c6f41] font-bold">
+                              کد: {prod.productCode}
+                            </span>
+                            {prod.outOfStock && (
+                              <span className="text-[10.5px] px-2 py-0.5 rounded-md bg-[#fde8ea] text-[#ea1d2c] font-bold">
+                                ناموجود
+                              </span>
+                            )}
+                            {prod.hasSnappPay && (
+                              <span className="text-[10.5px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold">
+                                اسنپ‌پی
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-[#666] mt-1">
+                            {prod.priceFormatted} • دسته: {prod.categorySlug}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProductId(prod.id);
+                            setProductForm({
+                              name: prod.name,
+                              subtitle: prod.subtitle,
+                              priceNumeric: prod.priceNumeric,
+                              productCode: prod.productCode,
+                              image: prod.image,
+                              modelType: prod.modelType,
+                              defaultFinish: prod.defaultFinish,
+                              categorySlug: prod.categorySlug,
+                              outOfStock: Boolean(prod.outOfStock),
+                              hasSnappPay: Boolean(prod.hasSnappPay),
+                              isFeaturedSalehi: Boolean(prod.isFeaturedSalehi),
+                              isBestSeller: Boolean(prod.isBestSeller),
+                              dimensions: prod.dimensions || '',
+                              branchesCount: prod.branchesCount || '',
+                              bodyMaterial: prod.bodyMaterial || '',
+                              warranty: prod.warranty || '',
+                              description: prod.description || '',
+                            });
+                          }}
+                          className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>ویرایش</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProduct(prod.id)}
+                          className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>حذف</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ۴. تب دسته‌بندی‌ها (با افزودن، ویرایش و حذف) */}
+          {activeTab === 'categories' && (
+            <div className="space-y-6">
+              <form
+                onSubmit={handleSaveCategory}
+                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4"
+              >
+                <div className="flex items-center justify-between border-b border-[#efefef] pb-3">
+                  <h2 className="text-base font-black text-[#1e1e1e]">
+                    {editingCategoryId
+                      ? 'ویرایش دسته‌بندی در دیتابیس'
+                      : 'افزودن دسته‌بندی جدید'}
+                  </h2>
+                  {editingCategoryId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCategoryId(null);
+                        setCategoryForm({
+                          title: '',
+                          slug: '',
+                          countLabel: '۱۲ محصول',
+                          image: GENERATED_IMAGES.catChandelier,
+                        });
+                      }}
+                      className="text-xs font-bold text-[#ea1d2c] cursor-pointer"
+                    >
+                      انصراف از ویرایش
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <input
+                    type="text"
+                    required
+                    value={categoryForm.title}
+                    onChange={(e) =>
+                      setCategoryForm({
+                        ...categoryForm,
+                        title: e.target.value,
+                      })
+                    }
+                    placeholder="عنوان دسته‌بندی (مثلاً: کلکسیون لوستر)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={categoryForm.slug}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, slug: e.target.value })
+                    }
+                    placeholder="اسلاگ لاتین (مثلاً: chandeliers)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <input
+                    type="text"
+                    value={categoryForm.countLabel}
+                    onChange={(e) =>
+                      setCategoryForm({
+                        ...categoryForm,
+                        countLabel: e.target.value,
+                      })
+                    }
+                    placeholder="برچسب تعداد (مثلاً: ۱۸ محصول)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <select
+                    value={categoryForm.image}
+                    onChange={(e) =>
+                      setCategoryForm({
+                        ...categoryForm,
+                        image: e.target.value,
+                      })
+                    }
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
+                  >
+                    {PRESET_PRODUCT_IMAGES.map((img, idx) => (
+                      <option key={idx} value={img.url}>
+                        {img.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {editingCategoryId
+                      ? 'ذخیره تغییرات دسته‌بندی'
+                      : 'ثبت دسته‌بندی'}
+                  </span>
+                </button>
+              </form>
+
+              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-3">
+                <h3 className="text-sm font-black text-[#1e1e1e] mb-3">
+                  دسته‌بندی‌های ثبت‌شده در دیتابیس ({categoriesList.length.toLocaleString('fa-IR')})
+                </h3>
+                {categoriesList.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-[#efefef]"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src={cat.image}
+                        alt={cat.title}
+                        className="w-12 h-12 rounded-xl object-cover bg-[#f5f5f5] shrink-0"
+                      />
+                      <div>
+                        <p className="text-sm font-bold text-[#1e1e1e]">
+                          {cat.title}
+                        </p>
+                        <p className="text-xs text-[#777] mt-0.5">
+                          مسیر: /product/categories/{cat.slug} • {cat.countLabel}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCategoryId(cat.id);
+                          setCategoryForm({
+                            title: cat.title || '',
+                            slug: cat.slug || '',
+                            countLabel: cat.countLabel || '۱۲ محصول',
+                            image: cat.image || GENERATED_IMAGES.catChandelier,
+                          });
+                        }}
+                        className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>ویرایش</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>حذف</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ۵. تب پروژه‌های اجرایی (با افزودن، ویرایش و حذف) */}
+          {activeTab === 'projects' && (
+            <div className="space-y-6">
+              <form
+                onSubmit={handleSaveProject}
+                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4"
+              >
+                <div className="flex items-center justify-between border-b border-[#efefef] pb-3">
+                  <h2 className="text-base font-black text-[#1e1e1e]">
+                    {editingProjectId
+                      ? 'ویرایش پروژه اجرایی در دیتابیس'
+                      : 'ثبت پروژه اجرایی جدید'}
+                  </h2>
+                  {editingProjectId && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingProjectId(null)}
+                      className="text-xs font-bold text-[#ea1d2c] cursor-pointer"
+                    >
+                      انصراف از ویرایش
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <input
+                    type="text"
+                    required
+                    value={projectForm.title}
+                    onChange={(e) =>
+                      setProjectForm({ ...projectForm, title: e.target.value })
+                    }
+                    placeholder="عنوان پروژه (مثلاً: پروژه تالار نیاوران)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <input
+                    type="text"
+                    value={projectForm.district}
+                    onChange={(e) =>
+                      setProjectForm({
+                        ...projectForm,
+                        district: e.target.value,
+                      })
+                    }
+                    placeholder="محله / شهر (مثلاً: فرشته)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <select
+                    value={projectForm.categoryTab}
+                    onChange={(e) =>
+                      setProjectForm({
+                        ...projectForm,
+                        categoryTab: e.target.value,
+                      })
+                    }
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
+                  >
+                    <option value="gov">ارگان‌های دولتی</option>
+                    <option value="commercial">ارگان‌های تجاری</option>
+                    <option value="mosques">مساجد و حسینیه‌ها</option>
+                    <option value="restaurants">کافه و رستوران‌ها</option>
+                    <option value="residential">منازل مسکونی</option>
+                  </select>
+                  <select
+                    value={projectForm.mainImage}
+                    onChange={(e) =>
+                      setProjectForm({
+                        ...projectForm,
+                        mainImage: e.target.value,
+                      })
+                    }
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
+                  >
+                    {PRESET_PROJECT_IMAGES.map((img, i) => (
+                      <option key={i} value={img.url}>
+                        {img.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <textarea
+                  rows={3}
+                  value={projectForm.description}
+                  onChange={(e) =>
+                    setProjectForm({
+                      ...projectForm,
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder="توضیحات کامل اجرای پروژه..."
+                  className="w-full rounded-xl border border-[#e0e0e0] p-3.5 text-xs font-semibold"
+                />
+                <button
+                  type="submit"
+                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {editingProjectId
+                      ? 'ذخیره تغییرات پروژه'
+                      : 'ثبت پروژه در دیتابیس'}
+                  </span>
+                </button>
+              </form>
+
+              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-3">
+                <h3 className="text-sm font-black text-[#1e1e1e] mb-3">
+                  پروژه‌های اجرایی در دیتابیس ({projectsList.length.toLocaleString('fa-IR')})
+                </h3>
+                {projectsList.map((proj) => (
+                  <div
+                    key={proj.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 rounded-xl border border-[#efefef]"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src={proj.mainImage}
+                        alt={proj.title}
+                        className="w-14 h-14 rounded-xl object-cover shrink-0"
+                      />
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1e1e1e]">
+                          {proj.title}
+                        </h4>
+                        <p className="text-xs text-[#666] mt-0.5">
+                          دسته: {proj.categoryTab} • منطقه: {proj.district} •{' '}
+                          {proj.sampleCode}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingProjectId(proj.id);
+                          setProjectForm({
+                            title: proj.title || '',
+                            categoryTab: proj.categoryTab || 'residential',
+                            district: proj.district || '',
+                            sampleCode: proj.sampleCode || 'نمونه ۱',
+                            description: proj.description || '',
+                            usedChandeliersText: proj.usedChandeliersText || '',
+                            mainImage:
+                              proj.mainImage || GENERATED_IMAGES.projectFereshteh,
+                          });
+                        }}
+                        className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>ویرایش</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProject(proj.id)}
+                        className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>حذف</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ۶. تب استوری‌های بالای سایت (پشتیبانی از دسته‌بندی استوری و تا ۱۰ استوری با تایپ‌های مختلف در هر دسته‌بندی) */}
+          {activeTab === 'stories' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                {/* ستون راست: فرم ساخت و ویرایش دسته‌بندی استوری و استوری‌های داخل آن (تا ۱۰ استوری) */}
+                <form
+                  onSubmit={handleSaveStory}
+                  className="xl:col-span-8 bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-5 shadow-xs"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base font-black text-[#1e1e1e]">
+                        {editingStoryId
+                          ? 'ویرایش دسته‌بندی و استوری‌های داخل آن در سایت'
+                          : 'افزودن و انتشار استوری جدید در سایت'}
+                      </h2>
+                      <p className="text-xs text-[#777] mt-1">
+                        می‌توانید یک دسته‌بندی استوری انتخاب یا ایجاد کنید و در هر دسته‌بندی تا ۱۰ استوری با تایپ‌های مختلف (محصول‌دار، ساده، ویدیویی) قرار دهید.
+                      </p>
+                    </div>
+                    {(editingStoryId || selectedTargetCategoryId !== 'new') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingStoryId(null);
+                          setSelectedTargetCategoryId('new');
+                          setCategorySlides([]);
+                          setActiveSlideEditIdx(0);
+                          setStoryForm({
+                            storyType: 'single-product',
+                            title: '',
+                            slideTitle: '',
+                            thumbnailImage: GENERATED_IMAGES.crystaliCherub,
+                            mediaUrl: GENERATED_IMAGES.storyPortraitPalace,
+                            videoUrl:
+                              'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+                            linkedProductKey:
+                              productsList[0]?.productKey || 'prod-crystali',
+                          });
+                        }}
+                        className="h-9 px-3.5 rounded-xl bg-[#fde8ea] text-[#ea1d2c] text-xs font-bold cursor-pointer hover:bg-[#ea1d2c] hover:text-white transition-colors"
+                      >
+                        انصراف و ساخت دسته‌بندی جدید
+                      </button>
+                    )}
+                  </div>
+
+                  {/* بخش ۰: انتخاب دسته‌بندی استوری (ایجاد دسته‌بندی جدید یا افزودن به دسته‌بندی‌های موجود تا سقف ۱۰ استوری) */}
+                  <div className="p-4 rounded-2xl bg-[#f7f3eb] border border-[#dfcfb3] space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="text-xs font-black text-[#1e1e1e]">
+                        دسته‌بندی استوری در نوار بالای صفحه اصلی (ظرفیت هر دسته‌بندی: حداکثر ۱۰ استوری):
+                      </label>
+                      <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-[#1a1814] text-[#d4b27c] font-bold">
+                        {Math.max(1, categorySlides.length).toLocaleString('fa-IR')} از ۱۰ استوری در این دسته‌بندی
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <span className="block text-[11px] font-bold text-[#555] mb-1">
+                          انتخاب دسته‌بندی استوری موجود یا ساخت دسته‌بندی جدید:
+                        </span>
+                        <select
+                          value={
+                            editingStoryId
+                              ? editingStoryId
+                              : selectedTargetCategoryId
+                          }
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === 'new') {
+                              setEditingStoryId(null);
+                              setSelectedTargetCategoryId('new');
+                              setCategorySlides([]);
+                              setActiveSlideEditIdx(0);
+                              setStoryForm({
+                                storyType: 'single-product',
+                                title: '',
+                                slideTitle: '',
+                                thumbnailImage: GENERATED_IMAGES.crystaliCherub,
+                                mediaUrl: GENERATED_IMAGES.storyPortraitPalace,
+                                videoUrl:
+                                  'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+                                linkedProductKey:
+                                  productsList[0]?.productKey || 'prod-crystali',
+                              });
+                            } else {
+                              const numId = Number(val);
+                              const foundCat = storiesList.find(
+                                (s) => s.id === numId
+                              );
+                              if (foundCat) {
+                                const existingSlides =
+                                  parseStorySlidesFromRow(foundCat);
+                                if (existingSlides.length >= 10) {
+                                  showNotice(
+                                    'error',
+                                    'این دسته‌بندی دارای ۱۰ استوری است و ظرفیت آن تکمیل می‌باشد.'
+                                  );
+                                }
+                                setEditingStoryId(foundCat.id);
+                                setSelectedTargetCategoryId(foundCat.id);
+                                const nextSlides =
+                                  existingSlides.length < 10
+                                    ? [
+                                        ...existingSlides,
+                                        {
+                                          id: `slide-${Date.now()}`,
+                                          type: 'single-product' as const,
+                                          title: foundCat.title || '',
+                                          mediaUrl:
+                                            GENERATED_IMAGES.storyPortraitPalace,
+                                          videoUrl:
+                                            'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+                                          linkedProductKey:
+                                            productsList[0]?.productKey ||
+                                            'prod-crystali',
+                                        },
+                                      ]
+                                    : existingSlides;
+                                setCategorySlides(nextSlides);
+                                const targetIdx = nextSlides.length - 1;
+                                setActiveSlideEditIdx(targetIdx);
+                                const activeSl = nextSlides[targetIdx];
+                                setStoryForm({
+                                  storyType: activeSl.type,
+                                  title: foundCat.title || '',
+                                  slideTitle: activeSl.title || foundCat.title || '',
+                                  thumbnailImage:
+                                    foundCat.thumbnailImage ||
+                                    foundCat.image ||
+                                    GENERATED_IMAGES.crystaliCherub,
+                                  mediaUrl:
+                                    activeSl.mediaUrl ||
+                                    GENERATED_IMAGES.storyPortraitPalace,
+                                  videoUrl:
+                                    activeSl.videoUrl ||
+                                    'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+                                  linkedProductKey:
+                                    activeSl.linkedProductKey ||
+                                    productsList[0]?.productKey ||
+                                    'prod-crystali',
+                                });
+                              }
+                            }
+                          }}
+                          className="w-full h-11 rounded-xl border border-[#c9b48e] px-3 text-xs font-bold bg-white text-[#1e1e1e]"
+                        >
+                          <option value="new">
+                            + ایجاد دسته‌بندی استوری جدید در سایت
+                          </option>
+                          {storiesList.map((st) => {
+                            const sCount = parseStorySlidesFromRow(st).length;
+                            return (
+                              <option key={st.id} value={st.id}>
+                                دسته‌بندی: {st.title} ({sCount.toLocaleString('fa-IR')} از ۱۰ استوری)
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      <div>
+                        <span className="block text-[11px] font-bold text-[#555] mb-1">
+                          عنوان دسته‌بندی استوری (زیر دایره در صفحه اصلی سایت):
+                        </span>
+                        <input
+                          type="text"
+                          required
+                          value={storyForm.title}
+                          onChange={(e) =>
+                            setStoryForm({
+                              ...storyForm,
+                              title: e.target.value,
+                              slideTitle:
+                                storyForm.slideTitle || e.target.value,
+                            })
+                          }
+                          placeholder="مثلاً: کلکسیون لوستر سلطنتی / پروژه الهیه..."
+                          className="w-full h-11 rounded-xl border border-[#c9b48e] bg-white px-3.5 text-xs font-bold text-[#1e1e1e] focus:outline-none focus:border-[#b59766]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* نوار مدیریت چند استوری داخل همین دسته‌بندی (۱ تا ۱۰ استوری با تایپ‌های مختلف) */}
+                    <div className="pt-2 border-t border-[#e5d8c0] space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-[#444]">
+                          استوری‌های داخل این دسته‌بندی (هر استوری می‌تواند تایپ محصول‌دار، ساده یا ویدیویی داشته باشد):
+                        </span>
+                        <button
+                          type="button"
+                          disabled={categorySlides.length >= 10}
+                          onClick={handleAddCurrentSlideToCategoryBuffer}
+                          className={`h-8 px-3 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                            categorySlides.length >= 10
+                              ? 'bg-stone-200 text-stone-500 cursor-not-allowed'
+                              : 'bg-[#1a1814] hover:bg-[#b59766] text-white'
+                          }`}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>
+                            {categorySlides.length >= 10
+                              ? 'تکمیل ظرفیت (۱۰ از ۱۰ استوری)'
+                              : 'افزودن استوری دیگر به این دسته‌بندی'}
+                          </span>
+                        </button>
+                      </div>
+
+                      {categorySlides.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {categorySlides.map((sl, sIdx) => {
+                            const isCurrent = sIdx === activeSlideEditIdx;
+                            const typeLabel =
+                              sl.type === 'single-product'
+                                ? 'محصول‌دار'
+                                : sl.type === 'image-only'
+                                ? 'ساده'
+                                : 'ویدیو';
+                            return (
+                              <div
+                                key={sl.id}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all ${
+                                  isCurrent
+                                    ? 'bg-[#1a1814] text-[#d4b27c] border-[#b59766]'
+                                    : 'bg-white text-[#333] border-[#dcd3c2]'
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // ابتدا اسلاید فعلی را در آرایه ذخیره کنیم
+                                    const updated = [...categorySlides];
+                                    if (
+                                      activeSlideEditIdx >= 0 &&
+                                      activeSlideEditIdx < updated.length
+                                    ) {
+                                      updated[activeSlideEditIdx] = {
+                                        ...updated[activeSlideEditIdx],
+                                        type: storyForm.storyType,
+                                        title:
+                                          storyForm.slideTitle ||
+                                          storyForm.title,
+                                        mediaUrl: storyForm.mediaUrl,
+                                        videoUrl: storyForm.videoUrl,
+                                        linkedProductKey:
+                                          storyForm.linkedProductKey,
+                                      };
+                                      setCategorySlides(updated);
+                                    }
+                                    const target = updated[sIdx] || sl;
+                                    setActiveSlideEditIdx(sIdx);
+                                    setStoryForm((prev) => ({
+                                      ...prev,
+                                      storyType: target.type,
+                                      slideTitle: target.title || prev.title,
+                                      mediaUrl: target.mediaUrl,
+                                      videoUrl: target.videoUrl,
+                                      linkedProductKey: target.linkedProductKey,
+                                    }));
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  استوری {(sIdx + 1).toLocaleString('fa-IR')} ({typeLabel})
+                                </button>
+                                {categorySlides.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const next = categorySlides.filter(
+                                        (_, i) => i !== sIdx
+                                      );
+                                      setCategorySlides(next);
+                                      const nextIdx = Math.max(
+                                        0,
+                                        Math.min(activeSlideEditIdx, next.length - 1)
+                                      );
+                                      setActiveSlideEditIdx(nextIdx);
+                                      if (next[nextIdx]) {
+                                        setStoryForm((prev) => ({
+                                          ...prev,
+                                          storyType: next[nextIdx].type,
+                                          slideTitle: next[nextIdx].title,
+                                          mediaUrl: next[nextIdx].mediaUrl,
+                                          videoUrl: next[nextIdx].videoUrl,
+                                          linkedProductKey:
+                                            next[nextIdx].linkedProductKey,
+                                        }));
+                                      }
+                                    }}
+                                    className="text-[#ea1d2c] hover:opacity-80 cursor-pointer"
+                                    title="حذف این استوری از دسته‌بندی"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ۱. انتخابگر ۳ تایپ استوری برای استوری فعال داخل این دسته‌بندی */}
+                  <div>
+                    <label className="block text-xs font-black text-[#1e1e1e] mb-2.5">
+                      ۱. انتخاب تایپ استوری (برای استوری شماره {(activeSlideEditIdx + 1).toLocaleString('fa-IR')} در این دسته‌بندی):
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* تایپ ۱: استوری متصل به محصول */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStoryForm({
+                            ...storyForm,
+                            storyType: 'single-product',
+                            linkedProductKey:
+                              storyForm.linkedProductKey ||
+                              productsList[0]?.productKey ||
+                              'prod-crystali',
+                          })
+                        }
+                        className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer ${
+                          storyForm.storyType === 'single-product'
+                            ? 'bg-[#1a1814] text-white border-[#b59766] shadow-md'
+                            : 'bg-[#faf8f4] text-[#333] border-[#e6decb] hover:border-[#b59766]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-black">
+                            ۱. استوری محصول‌دار
+                          </span>
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              storyForm.storyType === 'single-product'
+                                ? 'bg-[#d4b27c]'
+                                : 'bg-[#ccc]'
+                            }`}
+                          />
+                        </div>
+                        <p
+                          className={`text-[11px] leading-relaxed ${
+                            storyForm.storyType === 'single-product'
+                              ? 'text-white/75'
+                              : 'text-[#666]'
+                          }`}
+                        >
+                          عکس شاخص + عنوان + تصویر اصلی استوری + اتصال به محصول مربوطه
+                        </p>
+                      </button>
+
+                      {/* تایپ ۲: استوری ساده تصویری */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStoryForm({
+                            ...storyForm,
+                            storyType: 'image-only',
+                          })
+                        }
+                        className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer ${
+                          storyForm.storyType === 'image-only'
+                            ? 'bg-[#1a1814] text-white border-[#b59766] shadow-md'
+                            : 'bg-[#faf8f4] text-[#333] border-[#e6decb] hover:border-[#b59766]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-black">
+                            ۲. استوری ساده
+                          </span>
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              storyForm.storyType === 'image-only'
+                                ? 'bg-[#d4b27c]'
+                                : 'bg-[#ccc]'
+                            }`}
+                          />
+                        </div>
+                        <p
+                          className={`text-[11px] leading-relaxed ${
+                            storyForm.storyType === 'image-only'
+                              ? 'text-white/75'
+                              : 'text-[#666]'
+                          }`}
+                        >
+                          عکس شاخص + عنوان + تصویر اصلی استوری (بدون اتصال به محصول)
+                        </p>
+                      </button>
+
+                      {/* تایپ ۳: استوری ویدیویی */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setStoryForm({
+                            ...storyForm,
+                            storyType: 'video',
+                            videoUrl:
+                              storyForm.videoUrl ||
+                              'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+                          })
+                        }
+                        className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer ${
+                          storyForm.storyType === 'video'
+                            ? 'bg-[#1a1814] text-white border-[#b59766] shadow-md'
+                            : 'bg-[#faf8f4] text-[#333] border-[#e6decb] hover:border-[#b59766]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-black">
+                            ۳. استوری ویدیویی
+                          </span>
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              storyForm.storyType === 'video'
+                                ? 'bg-[#d4b27c]'
+                                : 'bg-[#ccc]'
+                            }`}
+                          />
+                        </div>
+                        <p
+                          className={`text-[11px] leading-relaxed ${
+                            storyForm.storyType === 'video'
+                              ? 'text-white/75'
+                              : 'text-[#666]'
+                          }`}
+                        >
+                          تصویر شاخص + عنوان + ویدیوی استوری (پخش ویدیو در استوری)
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ۲. فیلد عنوان اختصاصی این استوری در بالای قاب */}
+                  <div className="p-4 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-2">
+                    <label className="block text-xs font-black text-[#1e1e1e]">
+                      ۲. عنوان این استوری در بالای قاب بازشده:
+                    </label>
+                    <input
+                      type="text"
+                      value={storyForm.slideTitle || storyForm.title}
+                      onChange={(e) =>
+                        setStoryForm({
+                          ...storyForm,
+                          slideTitle: e.target.value,
+                          title: storyForm.title || e.target.value,
+                        })
+                      }
+                      placeholder="مثلاً: لوستر کریستالی شاه ملکه / نمای تالار فرشته / ویدیو آبکاری..."
+                      className="w-full h-11 rounded-xl border border-[#dcd3c2] bg-white px-3.5 text-xs font-bold text-[#1e1e1e] focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  {/* ۳. فیلد عکس شاخص (دایره استوری و آواتار بالا) */}
+                  <div className="p-4 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-black text-[#1e1e1e]">
+                        ۳. عکس شاخص استوری (تصویر داخل دایره استوری در سایت و آواتار بالا)
+                      </label>
+                      <label className="h-8 px-3 rounded-lg bg-[#1e1e1e] hover:bg-[#b59766] text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors">
+                        <span>آپلود عکس شاخص از سیستم</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) =>
+                            handleFileUploadToDataUrl(
+                              e.target.files?.[0],
+                              (dataUrl) =>
+                                setStoryForm((prev) => ({
+                                  ...prev,
+                                  thumbnailImage: dataUrl,
+                                }))
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <span className="block text-[11px] font-bold text-[#666] mb-1">
+                          انتخاب سریع از تصاویر گالری:
+                        </span>
+                        <select
+                          value={
+                            PRESET_PRODUCT_IMAGES.some(
+                              (img) => img.url === storyForm.thumbnailImage
+                            ) ||
+                            PRESET_STORY_MAIN_IMAGES.some(
+                              (img) => img.url === storyForm.thumbnailImage
+                            )
+                              ? storyForm.thumbnailImage
+                              : ''
+                          }
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setStoryForm({
+                                ...storyForm,
+                                thumbnailImage: e.target.value,
+                              });
+                            }
+                          }}
+                          className="w-full h-11 rounded-xl border border-[#dcd3c2] px-3 text-xs font-semibold bg-white"
+                        >
+                          <option value="">-- انتخاب تصویر آماده --</option>
+                          {PRESET_PRODUCT_IMAGES.map((img, i) => (
+                            <option key={`thumb-p-${i}`} value={img.url}>
+                              {img.label}
+                            </option>
+                          ))}
+                          {PRESET_PROJECT_IMAGES.map((img, i) => (
+                            <option key={`thumb-pr-${i}`} value={img.url}>
+                              {img.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <span className="block text-[11px] font-bold text-[#666] mb-1">
+                          یا آدرس مستقیم تصویر شاخص (URL):
+                        </span>
+                        <input
+                          type="text"
+                          value={storyForm.thumbnailImage}
+                          onChange={(e) =>
+                            setStoryForm({
+                              ...storyForm,
+                              thumbnailImage: e.target.value,
+                            })
+                          }
+                          placeholder="آدرس تصویر شاخص..."
+                          dir="ltr"
+                          className="w-full h-11 rounded-xl border border-[#dcd3c2] bg-white px-3 text-xs font-medium text-left"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۴. فیلد تصویر اصلی استوری (مخصوص تایپ ۱ و تایپ ۲) یا ویدیوی استوری (مخصوص تایپ ۳) */}
+                  {storyForm.storyType !== 'video' ? (
+                    <div className="p-4 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-black text-[#1e1e1e]">
+                          ۴. تصویر اصلی استوری (عکس بزرگی که بعد از باز شدن استوری در سایت نمایش داده می‌شود)
+                        </label>
+                        <label className="h-8 px-3 rounded-lg bg-[#1e1e1e] hover:bg-[#b59766] text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors">
+                          <span>آپلود تصویر اصلی از سیستم</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) =>
+                              handleFileUploadToDataUrl(
+                                e.target.files?.[0],
+                                (dataUrl) =>
+                                  setStoryForm((prev) => ({
+                                    ...prev,
+                                    mediaUrl: dataUrl,
+                                  }))
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <span className="block text-[11px] font-bold text-[#666] mb-1">
+                            انتخاب سریع از قاب‌های استوری آماده:
+                          </span>
+                          <select
+                            value={
+                              PRESET_STORY_MAIN_IMAGES.some(
+                                (img) => img.url === storyForm.mediaUrl
+                              )
+                                ? storyForm.mediaUrl
+                                : ''
+                            }
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                setStoryForm({
+                                  ...storyForm,
+                                  mediaUrl: e.target.value,
+                                });
+                              }
+                            }}
+                            className="w-full h-11 rounded-xl border border-[#dcd3c2] px-3 text-xs font-semibold bg-white"
+                          >
+                            <option value="">-- انتخاب قاب اصلی استوری --</option>
+                            {PRESET_STORY_MAIN_IMAGES.map((img, i) => (
+                              <option key={`main-st-${i}`} value={img.url}>
+                                {img.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <span className="block text-[11px] font-bold text-[#666] mb-1">
+                            یا آدرس مستقیم تصویر اصلی استوری (URL):
+                          </span>
+                          <input
+                            type="text"
+                            value={storyForm.mediaUrl}
+                            onChange={(e) =>
+                              setStoryForm({
+                                ...storyForm,
+                                mediaUrl: e.target.value,
+                              })
+                            }
+                            placeholder="آدرس تصویر اصلی استوری..."
+                            dir="ltr"
+                            className="w-full h-11 rounded-xl border border-[#dcd3c2] bg-white px-3 text-xs font-medium text-left"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* فیلد ویدیو مخصوص تایپ ۳ (استوری ویدیویی) */
+                    <div className="p-4 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-black text-[#1e1e1e]">
+                          ۴. ویدیوی استوری (فایل یا لینک ویدیوی MP4 / WebM برای نمایش در سایت)
+                        </label>
+                        <label className="h-8 px-3 rounded-lg bg-[#1e1e1e] hover:bg-[#b59766] text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors">
+                          <span>آپلود فایل ویدیو از سیستم</span>
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm,video/*"
+                            className="hidden"
+                            onChange={(e) =>
+                              handleFileUploadToDataUrl(
+                                e.target.files?.[0],
+                                (dataUrl) =>
+                                  setStoryForm((prev) => ({
+                                    ...prev,
+                                    videoUrl: dataUrl,
+                                  }))
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <span className="block text-[11px] font-bold text-[#666] mb-1">
+                            انتخاب از ویدیوهای نمونه لوستر:
+                          </span>
+                          <select
+                            value={
+                              PRESET_STORY_VIDEOS.some(
+                                (v) => v.url === storyForm.videoUrl
+                              )
+                                ? storyForm.videoUrl
+                                : ''
+                            }
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                setStoryForm({
+                                  ...storyForm,
+                                  videoUrl: e.target.value,
+                                });
+                              }
+                            }}
+                            className="w-full h-11 rounded-xl border border-[#dcd3c2] px-3 text-xs font-semibold bg-white"
+                          >
+                            <option value="">-- انتخاب ویدیوی آماده --</option>
+                            {PRESET_STORY_VIDEOS.map((vid, i) => (
+                              <option key={`vid-${i}`} value={vid.url}>
+                                {vid.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <span className="block text-[11px] font-bold text-[#666] mb-1">
+                            یا لینک مستقیم ویدیو (MP4 URL):
+                          </span>
+                          <input
+                            type="text"
+                            value={storyForm.videoUrl}
+                            onChange={(e) =>
+                              setStoryForm({
+                                ...storyForm,
+                                videoUrl: e.target.value,
+                              })
+                            }
+                            placeholder="https://.../video.mp4"
+                            dir="ltr"
+                            className="w-full h-11 rounded-xl border border-[#dcd3c2] bg-white px-3 text-xs font-medium text-left"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ۵. فیلد اتصال به محصول مربوطه (فقط در تایپ ۱: استوری محصول‌دار) */}
+                  {storyForm.storyType === 'single-product' && (
+                    <div className="p-4 rounded-2xl bg-[#f5efe4] border border-[#d8c7a8] space-y-3">
+                      <label className="block text-xs font-black text-[#1e1e1e]">
+                        ۵. اتصال استوری به محصول مربوطه در سایت (نمایش کارت خرید محصول در پایین استوری)
+                      </label>
+                      <select
+                        value={storyForm.linkedProductKey}
+                        onChange={(e) =>
+                          setStoryForm({
+                            ...storyForm,
+                            linkedProductKey: e.target.value,
+                          })
+                        }
+                        className="w-full h-11 rounded-xl border border-[#c9b48e] px-3.5 text-xs font-bold bg-white text-[#1e1e1e] focus:outline-none focus:border-[#b59766]"
+                      >
+                        {productsList.map((prod) => {
+                          const pKey = prod.productKey || `prod-${prod.id}`;
+                          return (
+                            <option key={prod.id} value={pKey}>
+                              {prod.name} — کد: {prod.productCode} ({prod.priceFormatted})
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="pt-1 flex flex-wrap items-center gap-3">
+                    <button
+                      type="submit"
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>
+                        {editingStoryId
+                          ? 'ذخیره تغییرات استوری در سایت'
+                          : 'ثبت و انتشار استوری در سایت'}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+
+                {/* ستون چپ: پیش‌نمایش زنده قاب استوری دقیقاً مطابق نمایش در سایت */}
+                <div className="xl:col-span-4 bg-white rounded-[22px] border border-[#e7dfd1] p-5 flex flex-col items-center">
+                  <div className="w-full flex items-center justify-between border-b border-[#efefef] pb-3 mb-4">
+                    <span className="text-xs font-black text-[#1e1e1e]">
+                      پیش‌نمایش زنده استوری در سایت
+                    </span>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-[#f5efe4] text-[#8c6f41] font-bold">
+                      {storyForm.storyType === 'single-product'
+                        ? 'تایپ ۱: متصل به محصول'
+                        : storyForm.storyType === 'image-only'
+                        ? 'تایپ ۲: استوری ساده'
+                        : 'تایپ ۳: استوری ویدیویی'}
+                    </span>
+                  </div>
+
+                  {/* پیش‌نمایش دایره استوری در نوار بالای صفحه اصلی */}
+                  <div className="flex flex-col items-center mb-4">
+                    <div className="w-16 h-16 rounded-full p-[2px] border-2 border-[#b59766] bg-white overflow-hidden shadow-xs">
+                      <img
+                        src={
+                          storyForm.thumbnailImage ||
+                          GENERATED_IMAGES.crystaliCherub
+                        }
+                        alt={storyForm.title || 'عکس شاخص'}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    </div>
+                    <span className="text-[11px] font-bold text-[#1e1e1e] mt-1.5 max-w-[110px] truncate">
+                      {storyForm.title || 'عنوان دسته‌بندی'}
+                    </span>
+                    <span className="text-[10px] text-[#888]">
+                      نمای دایره در صفحه اصلی سایت ({Math.max(1, categorySlides.length).toLocaleString('fa-IR')} استوری)
+                    </span>
+                  </div>
+
+                  {/* پیش‌نمایش قاب بازشده استوری */}
+                  {(() => {
+                    const previewLinkedProd =
+                      productsList.find(
+                        (p) =>
+                          (p.productKey || `prod-${p.id}`) ===
+                          storyForm.linkedProductKey
+                      ) || productsList[0];
+                    const totalPreviewSegments = Math.max(
+                      1,
+                      categorySlides.length
+                    );
+
+                    return (
+                      <div className="relative w-[265px] h-[430px] rounded-[20px] overflow-hidden bg-[#181614] shadow-xl flex flex-col justify-between border border-[#2c2824]">
+                        {/* تصویر اصلی یا ویدیو در پس‌زمینه قاب */}
+                        {storyForm.storyType === 'video' ? (
+                          <video
+                            key={storyForm.videoUrl}
+                            src={storyForm.videoUrl}
+                            poster={storyForm.thumbnailImage}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={
+                              storyForm.mediaUrl ||
+                              storyForm.thumbnailImage ||
+                              GENERATED_IMAGES.storyPortraitPalace
+                            }
+                            alt={storyForm.title || 'پیش‌نمایش استوری'}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        )}
+
+                        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 via-black/25 to-transparent pointer-events-none z-10" />
+                        {storyForm.storyType === 'single-product' && (
+                          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/75 via-black/25 to-transparent pointer-events-none z-10" />
+                        )}
+
+                        {/* هدر بالای قاب استوری: نوارهای پیشرفت چندگانه + عکس شاخص + عنوان */}
+                        <div className="relative z-20 p-3">
+                          <div className="flex items-center gap-1 mb-2.5" dir="ltr">
+                            {Array.from({ length: totalPreviewSegments }).map(
+                              (_, segIdx) => (
+                                <div
+                                  key={segIdx}
+                                  className="flex-1 h-1 rounded-full bg-white/35 overflow-hidden"
+                                >
+                                  <div
+                                    className={`h-full bg-white rounded-full ${
+                                      segIdx <= activeSlideEditIdx
+                                        ? 'w-full'
+                                        : 'w-0'
+                                    }`}
+                                  />
+                                </div>
+                              )
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full p-[1.5px] border border-[#b59766] bg-white overflow-hidden shrink-0">
+                                <img
+                                  src={
+                                    storyForm.thumbnailImage ||
+                                    GENERATED_IMAGES.crystaliCherub
+                                  }
+                                  alt=""
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[11px] font-bold text-white leading-tight">
+                                  {storyForm.slideTitle ||
+                                    storyForm.title ||
+                                    'عنوان استوری'}
+                                </p>
+                                <p className="text-[9.5px] text-white/80 mt-0.5">
+                                  زمان باقی‌مانده : ۰۰:۱۰
+                                </p>
+                              </div>
+                            </div>
+                            <span className="h-6 px-2.5 rounded-full bg-black/45 text-white text-[9.5px] font-bold flex items-center">
+                              بستن صفحه
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* فوتر پایین قاب استوری: فقط در تایپ ۱ (محصول‌دار) */}
+                        {storyForm.storyType === 'single-product' &&
+                          previewLinkedProd && (
+                            <div className="relative z-20 p-3">
+                              <div className="w-full bg-white rounded-[13px] p-2 shadow-lg flex items-center gap-2.5">
+                                <div className="w-11 h-11 rounded-lg bg-[#f4f4f4] p-1 shrink-0 overflow-hidden">
+                                  <img
+                                    src={previewLinkedProd.image}
+                                    alt={previewLinkedProd.name}
+                                    className="w-full h-full object-contain"
+                                  />
+                                </div>
+                                <div className="min-w-0 flex-1 text-right">
+                                  <p className="text-[11.5px] font-bold text-[#141414] truncate">
+                                    {previewLinkedProd.name}
+                                  </p>
+                                  <p className="text-[10px] font-medium text-[#2b2b2b] mt-0.5 truncate">
+                                    قیمت : {previewLinkedProd.priceFormatted}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* لیست استوری‌های ثبت‌شده در سایت (جدیدترین‌ها بالا + صفحه‌بندی ۱۰ تایی) */}
+              {(() => {
+                const filteredStories = storiesList.filter((st) => {
+                  if (storyFilterType === 'all') return true;
+                  const slidesArr = parseStorySlidesFromRow(st);
+                  return (
+                    (st.storyType || 'single-product') === storyFilterType ||
+                    slidesArr.some((sl) => sl.type === storyFilterType)
+                  );
+                });
+                const totalStoryPages = Math.max(
+                  1,
+                  Math.ceil(filteredStories.length / STORIES_PER_PAGE)
+                );
+                const safeCurrentStoryPage = Math.min(
+                  storyPage,
+                  totalStoryPages
+                );
+                const paginatedStories = filteredStories.slice(
+                  (safeCurrentStoryPage - 1) * STORIES_PER_PAGE,
+                  safeCurrentStoryPage * STORIES_PER_PAGE
+                );
+
+                return (
+                  <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-3.5">
+                      <div>
+                        <h3 className="text-sm font-black text-[#1e1e1e]">
+                          استوری‌های ثبت‌شده در سایت ({filteredStories.length.toLocaleString('fa-IR')})
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          مرتب‌شده از جدیدترین به قدیمی‌ترین (نمایش ۱۰ استوری در هر صفحه)
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {[
+                          { id: 'all', label: 'همه استوری‌های سایت' },
+                          { id: 'single-product', label: '۱. متصل به محصول' },
+                          { id: 'image-only', label: '۲. استوری ساده' },
+                          { id: 'video', label: '۳. استوری ویدیویی' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => {
+                              setStoryFilterType(tab.id as any);
+                              setStoryPage(1);
+                            }}
+                            className={`h-8 px-3 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                              storyFilterType === tab.id
+                                ? 'bg-[#1a1814] text-[#d4b27c]'
+                                : 'bg-[#f5f3ef] text-[#555] hover:bg-[#eae5dc]'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {paginatedStories.map((st, rowIdx) => {
+                        const slidesInCat = parseStorySlidesFromRow(st);
+                        const stType: 'single-product' | 'image-only' | 'video' =
+                          st.storyType === 'image-only'
+                            ? 'image-only'
+                            : st.storyType === 'video'
+                            ? 'video'
+                            : 'single-product';
+                        const thumbUrl = st.thumbnailImage || st.image;
+                        const mainMedia = st.mediaUrl || st.image;
+                        const connectedProd = productsList.find(
+                          (p) =>
+                            (p.productKey || `prod-${p.id}`) ===
+                              st.linkedProductKey ||
+                            p.productCode === st.linkedProductKey
+                        );
+                        const globalIndex =
+                          (safeCurrentStoryPage - 1) * STORIES_PER_PAGE +
+                          rowIdx +
+                          1;
+
+                        return (
+                          <div
+                            key={st.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 rounded-2xl border border-[#efefef] hover:border-[#d8c7a8] transition-colors"
+                          >
+                            <div className="flex items-center gap-3.5">
+                              {/* شماره ردیف (جدیدترین‌ها از ۱ در بالا) */}
+                              <span className="w-7 h-7 rounded-lg bg-[#f6f2ea] text-[#8c6f41] text-xs font-black flex items-center justify-center shrink-0 tabular-nums">
+                                {globalIndex.toLocaleString('fa-IR')}
+                              </span>
+
+                              {/* تصویر شاخص دایره‌ای */}
+                              <div className="relative shrink-0">
+                                <img
+                                  src={thumbUrl}
+                                  alt={st.title}
+                                  title="عکس شاخص استوری"
+                                  className="w-13 h-13 rounded-full object-cover border-2 border-[#b59766]"
+                                />
+                              </div>
+
+                              {/* تصویر اصلی یا پیش‌نمایش ویدیو */}
+                              <div className="w-11 h-14 rounded-lg overflow-hidden bg-[#181614] border border-[#e0d6c3] shrink-0 flex items-center justify-center">
+                                {stType === 'video' ? (
+                                  <PlayCircle className="w-5 h-5 text-[#d4b27c]" />
+                                ) : (
+                                  <img
+                                    src={mainMedia}
+                                    alt=""
+                                    title="تصویر اصلی استوری"
+                                    className="w-full h-full object-cover"
+                                  />
+                                )}
+                              </div>
+
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="text-sm font-bold text-[#1e1e1e]">
+                                    {st.title}
+                                  </h4>
+                                  <span className="text-[10.5px] px-2.5 py-0.5 rounded-md bg-[#1a1814] text-[#d4b27c] font-bold">
+                                    {slidesInCat.length.toLocaleString('fa-IR')} از ۱۰ استوری در این دسته
+                                  </span>
+                                  <span
+                                    className={`text-[10.5px] px-2.5 py-0.5 rounded-md font-bold ${
+                                      stType === 'single-product'
+                                        ? 'bg-[#f5efe4] text-[#8c6f41]'
+                                        : stType === 'image-only'
+                                        ? 'bg-stone-100 text-stone-700'
+                                        : 'bg-amber-950 text-[#e2c48e]'
+                                    }`}
+                                  >
+                                    {stType === 'single-product'
+                                      ? 'استوری محصول‌دار'
+                                      : stType === 'image-only'
+                                      ? 'استوری ساده'
+                                      : 'استوری ویدیویی'}
+                                  </span>
+                                </div>
+
+                                <p className="text-xs text-[#666] mt-1">
+                                  {stType === 'single-product'
+                                    ? `متصل به محصول در سایت: ${
+                                        connectedProd
+                                          ? `${connectedProd.name} (${connectedProd.priceFormatted})`
+                                          : st.linkedProductKey || 'لوستر منتخب'
+                                      }`
+                                    : stType === 'image-only'
+                                    ? 'استوری ساده تصویری در سایت (بدون باکس محصول)'
+                                    : `استوری ویدیویی فعال در سایت`}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto shrink-0">
+                              {slidesInCat.length < 10 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const nextSlides = [
+                                      ...slidesInCat,
+                                      {
+                                        id: `slide-${Date.now()}`,
+                                        type: 'single-product' as const,
+                                        title: st.title || '',
+                                        mediaUrl:
+                                          GENERATED_IMAGES.storyPortraitPalace,
+                                        videoUrl:
+                                          'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+                                        linkedProductKey:
+                                          productsList[0]?.productKey ||
+                                          'prod-crystali',
+                                      },
+                                    ];
+                                    setEditingStoryId(st.id);
+                                    setSelectedTargetCategoryId(st.id);
+                                    setCategorySlides(nextSlides);
+                                    const newIdx = nextSlides.length - 1;
+                                    setActiveSlideEditIdx(newIdx);
+                                    setStoryForm({
+                                      storyType: 'single-product',
+                                      title: st.title || '',
+                                      slideTitle: st.title || '',
+                                      thumbnailImage:
+                                        st.thumbnailImage ||
+                                        st.image ||
+                                        GENERATED_IMAGES.crystaliCherub,
+                                      mediaUrl:
+                                        GENERATED_IMAGES.storyPortraitPalace,
+                                      videoUrl:
+                                        'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+                                      linkedProductKey:
+                                        productsList[0]?.productKey ||
+                                        'prod-crystali',
+                                    });
+                                    window.scrollTo({
+                                      top: 0,
+                                      behavior: 'smooth',
+                                    });
+                                  }}
+                                  className="h-9 px-3 rounded-lg bg-[#f5efe4] hover:bg-[#b59766] text-[#8c6f41] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>افزودن استوری به این دسته</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingStoryId(st.id);
+                                  setSelectedTargetCategoryId(st.id);
+                                  setCategorySlides(slidesInCat);
+                                  setActiveSlideEditIdx(0);
+                                  const firstSl = slidesInCat[0];
+                                  setStoryForm({
+                                    storyType: firstSl?.type || stType,
+                                    title: st.title || '',
+                                    slideTitle:
+                                      firstSl?.title || st.title || '',
+                                    thumbnailImage:
+                                      st.thumbnailImage ||
+                                      st.image ||
+                                      GENERATED_IMAGES.crystaliCherub,
+                                    mediaUrl:
+                                      firstSl?.mediaUrl ||
+                                      st.mediaUrl ||
+                                      st.image ||
+                                      GENERATED_IMAGES.storyPortraitPalace,
+                                    videoUrl:
+                                      firstSl?.videoUrl ||
+                                      st.videoUrl ||
+                                      'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4',
+                                    linkedProductKey:
+                                      firstSl?.linkedProductKey ||
+                                      st.linkedProductKey ||
+                                      productsList[0]?.productKey ||
+                                      'prod-crystali',
+                                  });
+                                  window.scrollTo({
+                                    top: 0,
+                                    behavior: 'smooth',
+                                  });
+                                }}
+                                className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>ویرایش</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteStory(st.id)}
+                                className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>حذف</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* صفحه‌بندی ۱۰ تایی استوری‌ها */}
+                    {totalStoryPages > 1 && (
+                      <div className="pt-4 border-t border-[#efefef] flex flex-wrap items-center justify-between gap-3">
+                        <span className="text-xs font-bold text-[#666]">
+                          صفحه {safeCurrentStoryPage.toLocaleString('fa-IR')} از{' '}
+                          {totalStoryPages.toLocaleString('fa-IR')} (نمایش ۱۰ استوری در هر صفحه)
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={safeCurrentStoryPage <= 1}
+                            onClick={() =>
+                              setStoryPage((p) => Math.max(1, p - 1))
+                            }
+                            className={`h-9 px-3.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                              safeCurrentStoryPage <= 1
+                                ? 'bg-[#f5f5f5] text-[#bbb] cursor-not-allowed'
+                                : 'bg-[#f5efe4] text-[#8c6f41] hover:bg-[#1a1814] hover:text-white'
+                            }`}
+                          >
+                            صفحه قبل
+                          </button>
+
+                          {Array.from({ length: totalStoryPages }).map(
+                            (_, pIdx) => {
+                              const pNum = pIdx + 1;
+                              return (
+                                <button
+                                  key={pNum}
+                                  type="button"
+                                  onClick={() => setStoryPage(pNum)}
+                                  className={`w-9 h-9 rounded-xl text-xs font-black transition-colors cursor-pointer ${
+                                    safeCurrentStoryPage === pNum
+                                      ? 'bg-[#1a1814] text-[#d4b27c]'
+                                      : 'bg-[#f5f5f5] text-[#444] hover:bg-[#eaeaea]'
+                                  }`}
+                                >
+                                  {pNum.toLocaleString('fa-IR')}
+                                </button>
+                              );
+                            }
+                          )}
+
+                          <button
+                            type="button"
+                            disabled={safeCurrentStoryPage >= totalStoryPages}
+                            onClick={() =>
+                              setStoryPage((p) =>
+                                Math.min(totalStoryPages, p + 1)
+                              )
+                            }
+                            className={`h-9 px-3.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                              safeCurrentStoryPage >= totalStoryPages
+                                ? 'bg-[#f5f5f5] text-[#bbb] cursor-not-allowed'
+                                : 'bg-[#f5efe4] text-[#8c6f41] hover:bg-[#1a1814] hover:text-white'
+                            }`}
+                          >
+                            صفحه بعد
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* ۷. تب مقالات مجله (افزودن، ویرایش و حذف) */}
+          {activeTab === 'articles' && (
+            <div className="space-y-6">
+              <form
+                onSubmit={handleSaveArticle}
+                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4"
+              >
+                <div className="flex items-center justify-between border-b border-[#efefef] pb-3">
+                  <h2 className="text-base font-black text-[#1e1e1e]">
+                    {editingArticleId
+                      ? 'ویرایش مقاله مجله لوستر'
+                      : 'انتشار مقاله جدید در مجله لوستر'}
+                  </h2>
+                  {editingArticleId && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingArticleId(null)}
+                      className="text-xs font-bold text-[#ea1d2c] cursor-pointer"
+                    >
+                      انصراف از ویرایش
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <input
+                    type="text"
+                    required
+                    value={articleForm.title}
+                    onChange={(e) =>
+                      setArticleForm({ ...articleForm, title: e.target.value })
+                    }
+                    placeholder="عنوان مقاله..."
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <input
+                    type="text"
+                    value={articleForm.category}
+                    onChange={(e) =>
+                      setArticleForm({
+                        ...articleForm,
+                        category: e.target.value,
+                      })
+                    }
+                    placeholder="دسته‌بندی مقاله (مثلاً: راهنمای خرید)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <select
+                    value={articleForm.image}
+                    onChange={(e) =>
+                      setArticleForm({ ...articleForm, image: e.target.value })
+                    }
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
+                  >
+                    {PRESET_PROJECT_IMAGES.map((img, i) => (
+                      <option key={i} value={img.url}>
+                        {img.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <input
+                  type="text"
+                  value={articleForm.excerpt}
+                  onChange={(e) =>
+                    setArticleForm({ ...articleForm, excerpt: e.target.value })
+                  }
+                  placeholder="خلاصه کوتاه مقاله..."
+                  className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                />
+                <textarea
+                  rows={4}
+                  value={articleForm.content}
+                  onChange={(e) =>
+                    setArticleForm({ ...articleForm, content: e.target.value })
+                  }
+                  placeholder="متن کامل مقاله (هر پاراگراف در یک خط)..."
+                  className="w-full rounded-xl border border-[#e0e0e0] p-3.5 text-xs font-semibold"
+                />
+                <button
+                  type="submit"
+                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {editingArticleId ? 'ذخیره تغییرات مقاله' : 'انتشار مقاله'}
+                  </span>
+                </button>
+              </form>
+
+              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-3">
+                <h3 className="text-sm font-black text-[#1e1e1e] mb-3">
+                  مقالات منتشرشده در دیتابیس ({articlesList.length.toLocaleString('fa-IR')})
+                </h3>
+                {articlesList.map((art) => (
+                  <div
+                    key={art.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 rounded-xl border border-[#efefef]"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src={art.image}
+                        alt={art.title}
+                        className="w-14 h-14 rounded-xl object-cover shrink-0"
+                      />
+                      <div>
+                        <h4 className="text-sm font-bold text-[#1e1e1e]">
+                          {art.title}
+                        </h4>
+                        <p className="text-xs text-[#666] mt-0.5">
+                          {art.category} • {art.publishDate} • {art.readTime}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingArticleId(art.id);
+                          setArticleForm({
+                            title: art.title || '',
+                            excerpt: art.excerpt || '',
+                            content: Array.isArray(art.fullContent)
+                              ? art.fullContent.join('\n')
+                              : art.excerpt || '',
+                            category: art.category || 'راهنمای خرید',
+                            readTime: art.readTime || '۵ دقیقه مطالعه',
+                            publishDate: art.publishDate || '۱۵ شهریور ۱۴۰۴',
+                            image: art.image || GENERATED_IMAGES.projectFereshteh,
+                            featured: Boolean(art.featured),
+                          });
+                        }}
+                        className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>ویرایش</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteArticle(art.id)}
+                        className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>حذف</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ۸. تب پیام‌های تماس با ما (فقط خواندنی + نمایش ۵ پیام در هر صفحه) */}
+          {activeTab === 'messages' && (
+            <div className="space-y-6">
+              {(() => {
+                const totalMessagePages = Math.max(
+                  1,
+                  Math.ceil(messagesList.length / MESSAGES_PER_PAGE)
+                );
+                const safeCurrentMessagePage = Math.min(
+                  messagePage,
+                  totalMessagePages
+                );
+                const paginatedMessages = messagesList.slice(
+                  (safeCurrentMessagePage - 1) * MESSAGES_PER_PAGE,
+                  safeCurrentMessagePage * MESSAGES_PER_PAGE
+                );
+
+                return (
+                  <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-3.5">
+                      <div>
+                        <h2 className="text-base font-black text-[#1e1e1e]">
+                          پیام‌های ارسالی فرم تماس با ما و مشاوره ({messagesList.length.toLocaleString('fa-IR')})
+                        </h2>
+                        <p className="text-xs text-[#777] mt-1">
+                          نمایش ۵ پیام در هر صفحه • برای خواندن متن کامل، روی «مشاهده و خواندن پیام» کلیک کنید (فقط خواندنی)
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#f7f3eb] text-[#8c6f41] border border-[#e5d8c0] self-start sm:self-auto">
+                        صفحه {safeCurrentMessagePage.toLocaleString('fa-IR')} از{' '}
+                        {totalMessagePages.toLocaleString('fa-IR')}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {paginatedMessages.map((msg, idx) => {
+                        const globalMsgIndex =
+                          (safeCurrentMessagePage - 1) * MESSAGES_PER_PAGE +
+                          idx +
+                          1;
+                        return (
+                          <div
+                            key={msg.id}
+                            onClick={() => handleOpenAndReadMessage(msg)}
+                            className="p-4 rounded-2xl border border-[#efefef] hover:border-[#b59766] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer bg-[#fcfbf9]/60 hover:bg-white"
+                          >
+                            <div className="flex items-start gap-3.5 min-w-0">
+                              <span className="w-7 h-7 rounded-lg bg-[#f6f2ea] text-[#8c6f41] text-xs font-black flex items-center justify-center shrink-0 tabular-nums mt-0.5">
+                                {globalMsgIndex.toLocaleString('fa-IR')}
+                              </span>
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-sm font-bold text-[#1e1e1e]">
+                                    {msg.fullName}
+                                  </span>
+                                  <span
+                                    dir="ltr"
+                                    className="text-xs font-bold text-[#b59766] tabular-nums"
+                                  >
+                                    ({msg.phone})
+                                  </span>
+                                  <span
+                                    className={`text-[10.5px] px-2 py-0.5 rounded-md font-bold ${
+                                      msg.status === 'new'
+                                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    }`}
+                                  >
+                                    {msg.status === 'new'
+                                      ? 'پیام جدید (خوانده‌نشده)'
+                                      : 'خوانده شده'}
+                                  </span>
+                                </div>
+                                <p className="text-xs font-bold text-[#555] mt-1">
+                                  موضوع: {msg.subject}
+                                </p>
+                                <p className="text-xs text-[#444] mt-1 leading-6 line-clamp-1">
+                                  {msg.message}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div
+                              className="flex items-center gap-2 self-end sm:self-auto shrink-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAndReadMessage(msg)}
+                                className="h-9 px-3.5 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>مشاهده و خواندن پیام</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleToggleMessageStatus(msg.id, msg.status)
+                                }
+                                className="h-9 px-3 rounded-lg bg-[#f4f4f4] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>تغییر وضعیت</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMessage(msg.id)}
+                                className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* صفحه‌بندی ۵ تایی لیست پیام‌ها */}
+                    {totalMessagePages > 1 && (
+                      <div className="pt-4 border-t border-[#efefef] flex flex-wrap items-center justify-between gap-3">
+                        <span className="text-xs font-bold text-[#666]">
+                          صفحه {safeCurrentMessagePage.toLocaleString('fa-IR')} از{' '}
+                          {totalMessagePages.toLocaleString('fa-IR')} (نمایش ۵ پیام در هر صفحه)
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={safeCurrentMessagePage <= 1}
+                            onClick={() =>
+                              setMessagePage((p) => Math.max(1, p - 1))
+                            }
+                            className={`h-9 px-3.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                              safeCurrentMessagePage <= 1
+                                ? 'bg-[#f5f5f5] text-[#bbb] cursor-not-allowed'
+                                : 'bg-[#f5efe4] text-[#8c6f41] hover:bg-[#1a1814] hover:text-white'
+                            }`}
+                          >
+                            صفحه قبل
+                          </button>
+
+                          {Array.from({ length: totalMessagePages }).map(
+                            (_, pIdx) => {
+                              const pNum = pIdx + 1;
+                              return (
+                                <button
+                                  key={pNum}
+                                  type="button"
+                                  onClick={() => setMessagePage(pNum)}
+                                  className={`w-9 h-9 rounded-xl text-xs font-black transition-colors cursor-pointer ${
+                                    safeCurrentMessagePage === pNum
+                                      ? 'bg-[#1a1814] text-[#d4b27c]'
+                                      : 'bg-[#f5f5f5] text-[#444] hover:bg-[#eaeaea]'
+                                  }`}
+                                >
+                                  {pNum.toLocaleString('fa-IR')}
+                                </button>
+                              );
+                            }
+                          )}
+
+                          <button
+                            type="button"
+                            disabled={
+                              safeCurrentMessagePage >= totalMessagePages
+                            }
+                            onClick={() =>
+                              setMessagePage((p) =>
+                                Math.min(totalMessagePages, p + 1)
+                              )
+                            }
+                            className={`h-9 px-3.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                              safeCurrentMessagePage >= totalMessagePages
+                                ? 'bg-[#f5f5f5] text-[#bbb] cursor-not-allowed'
+                                : 'bg-[#f5efe4] text-[#8c6f41] hover:bg-[#1a1814] hover:text-white'
+                            }`}
+                          >
+                            صفحه بعد
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* ۹. تب سفارشات مشتریان (افزودن، ویرایش، تغییر وضعیت و حذف) */}
+          {activeTab === 'orders' && (
+            <div className="space-y-6">
+              <form
+                onSubmit={handleSaveOrder}
+                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4"
+              >
+                <div className="flex items-center justify-between border-b border-[#efefef] pb-3">
+                  <h2 className="text-base font-black text-[#1e1e1e]">
+                    {editingOrderId
+                      ? 'ویرایش سفارش مشتری در دیتابیس'
+                      : 'ثبت سفارش جدید در دیتابیس'}
+                  </h2>
+                  {editingOrderId && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingOrderId(null)}
+                      className="text-xs font-bold text-[#ea1d2c] cursor-pointer"
+                    >
+                      انصراف از ویرایش
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <input
+                    type="text"
+                    required
+                    value={orderForm.customerName}
+                    onChange={(e) =>
+                      setOrderForm({
+                        ...orderForm,
+                        customerName: e.target.value,
+                      })
+                    }
+                    placeholder="نام و نام خانوادگی مشتری"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={orderForm.customerPhone}
+                    onChange={(e) =>
+                      setOrderForm({
+                        ...orderForm,
+                        customerPhone: e.target.value,
+                      })
+                    }
+                    placeholder="شماره تماس مشتری"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <input
+                    type="number"
+                    required
+                    value={orderForm.totalAmountNumeric}
+                    onChange={(e) =>
+                      setOrderForm({
+                        ...orderForm,
+                        totalAmountNumeric: Number(e.target.value),
+                      })
+                    }
+                    placeholder="مبلغ کل سفارش (تومان)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {editingOrderId ? 'ذخیره تغییرات سفارش' : 'ثبت سفارش'}
+                  </span>
+                </button>
+              </form>
+
+              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-3">
+                <h2 className="text-base font-black text-[#1e1e1e] mb-4">
+                  سفارشات ثبت‌شده مشتریان ({ordersList.length.toLocaleString('fa-IR')})
+                </h2>
+                {ordersList.map((ord) => (
+                  <div
+                    key={ord.id}
+                    className="p-4 rounded-2xl border border-[#efefef] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-bold text-[#1e1e1e]">
+                          {ord.customerName}
+                        </span>
+                        <span className="text-xs text-[#666]">
+                          ({ord.customerPhone})
+                        </span>
+                        <span className="text-xs font-bold text-[#b59766]">
+                          {ord.totalPriceFormatted || ord.totalAmountFormatted}
+                        </span>
+                      </div>
+                      <p className="text-[11.5px] text-[#777] mt-1">
+                        وضعیت فعلی:{' '}
+                        {ord.status === 'completed'
+                          ? 'تکمیل و ارسال شده'
+                          : 'در انتظار بررسی'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingOrderId(ord.id);
+                          setOrderForm({
+                            customerName: ord.customerName || '',
+                            customerPhone: ord.customerPhone || '',
+                            totalAmountFormatted:
+                              ord.totalPriceFormatted ||
+                              ord.totalAmountFormatted ||
+                              '۱۲,۵۰۰,۰۰۰ تومان',
+                            totalAmountNumeric:
+                              Number(
+                                ord.totalPriceNumeric ?? ord.totalAmountNumeric
+                              ) || 12500000,
+                            status: ord.status || 'pending',
+                          });
+                        }}
+                        className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>ویرایش</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleUpdateOrderStatus(
+                            ord.id,
+                            ord.status === 'completed' ? 'pending' : 'completed'
+                          )
+                        }
+                        className="h-9 px-3.5 rounded-lg bg-[#b59766] text-white text-xs font-bold cursor-pointer"
+                      >
+                        {ord.status === 'completed'
+                          ? 'بازگردانی به در انتظار'
+                          : 'تایید و تکمیل سفارش'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOrder(ord.id)}
+                        className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ۱۰. منوی تنظیمات وب سایت (با ۷ تب مجزا و خالی آماده تکمیل) */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              {/* نوار تب‌های تنظیمات وب سایت */}
+              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {WEBSITE_SETTINGS_SUBTABS.map((subTab) => {
+                    const isSubActive = activeWebsiteSettingsTab === subTab.id;
+                    return (
+                      <button
+                        key={subTab.id}
+                        type="button"
+                        onClick={() => setActiveWebsiteSettingsTab(subTab.id)}
+                        className={`h-10 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isSubActive
+                            ? 'bg-[#1a1814] text-[#d4b27c] shadow-xs'
+                            : 'bg-[#f6f3ec] text-[#444] hover:bg-[#ece5d8]'
+                        }`}
+                      >
+                        {subTab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* محتوای تب انتخاب‌شده در تنظیمات وب سایت */}
+              {activeWebsiteSettingsTab === 'footer' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingFooterSettings(true);
+                    try {
+                      const saved = await authFetch(
+                        '/api/admin/settings/footer',
+                        {
+                          method: 'PUT',
+                          body: JSON.stringify(footerSettingsForm),
+                        }
+                      );
+                      setFooterSettingsForm({
+                        ...INITIAL_FOOTER_SETTINGS,
+                        ...saved,
+                      });
+                      onCatalogUpdated?.();
+                      showNotice(
+                        'success',
+                        'تنظیمات فوتر سایت با موفقیت ذخیره و در وب‌سایت اعمال شد.'
+                      );
+                    } catch (err: any) {
+                      showNotice(
+                        'error',
+                        err?.message || 'خطا در ذخیره تنظیمات فوتر سایت'
+                      );
+                    } finally {
+                      setIsSavingFooterSettings(false);
+                    }
+                  }}
+                  className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                        تنظیمات فوتر وب‌سایت
+                      </h2>
+                      <p className="text-xs text-[#666] mt-1">
+                        تغییر رنگ دیو فوتر، متن توضیحات، شماره‌های تماس، لینک شبکه‌های اجتماعی، کد اینماد، تصویر سایر مجوزها و متن کلیه حقوق
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFooterSettingsForm(INITIAL_FOOTER_SETTINGS)
+                        }
+                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        بازگردانی به مقادیر پیش‌فرض
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingFooterSettings}
+                        className="h-10 px-5 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-60"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>
+                          {isSavingFooterSettings
+                            ? 'در حال ذخیره...'
+                            : 'ذخیره تنظیمات فوتر'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ۱. تغییر رنگ دیو فوتر */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۱. رنگ دیو فوتر (باکس توضیحات و پس‌زمینه فوتر)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {/* رنگ دیو اصلی فوتر (باکس سمت راست) */}
+                      <div className="space-y-2.5 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          رنگ دیو اصلی فوتر (باکس VIP سمت راست):
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={footerSettingsForm.cardBgColor || '#b39561'}
+                            onChange={(e) =>
+                              setFooterSettingsForm({
+                                ...footerSettingsForm,
+                                cardBgColor: e.target.value,
+                              })
+                            }
+                            className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
+                          />
+                          <input
+                            type="text"
+                            dir="ltr"
+                            value={footerSettingsForm.cardBgColor || '#b39561'}
+                            onChange={(e) =>
+                              setFooterSettingsForm({
+                                ...footerSettingsForm,
+                                cardBgColor: e.target.value,
+                              })
+                            }
+                            placeholder="#b39561"
+                            className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
+                          />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <span className="text-[11px] text-[#777]">
+                            رنگ‌های پیشنهادی:
+                          </span>
+                          {[
+                            { label: 'طلایی اصلی', color: '#b39561' },
+                            { label: 'قهوه‌ای کلاسیک', color: '#665643' },
+                            { label: 'مشکی ذغالی', color: '#231f1c' },
+                            { label: 'سبز زمردی', color: '#1f4238' },
+                            { label: 'سرمه‌ای سلطنتی', color: '#1e2d42' },
+                            { label: 'زرشکی سلطنتی', color: '#5c2228' },
+                          ].map((preset) => (
+                            <button
+                              key={preset.color}
+                              type="button"
+                              onClick={() =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  cardBgColor: preset.color,
+                                })
+                              }
+                              className="h-7 px-2.5 rounded-lg border border-[#dcd4c6] bg-white hover:border-[#181818] text-[10.5px] font-bold flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-black/15"
+                                style={{ backgroundColor: preset.color }}
+                              />
+                              <span>{preset.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* رنگ دیو سمت چپ فوتر (بخش لینک‌ها و شماره‌ها) */}
+                      <div className="space-y-2.5 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          رنگ پس‌زمینه دیو سمت چپ فوتر (بخش لینک‌ها و شماره‌ها):
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={
+                              footerSettingsForm.bottomCardBgColor || '#f7f6f2'
+                            }
+                            onChange={(e) =>
+                              setFooterSettingsForm({
+                                ...footerSettingsForm,
+                                bottomCardBgColor: e.target.value,
+                              })
+                            }
+                            className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
+                          />
+                          <input
+                            type="text"
+                            dir="ltr"
+                            value={
+                              footerSettingsForm.bottomCardBgColor || '#f7f6f2'
+                            }
+                            onChange={(e) =>
+                              setFooterSettingsForm({
+                                ...footerSettingsForm,
+                                bottomCardBgColor: e.target.value,
+                              })
+                            }
+                            placeholder="#f7f6f2"
+                            className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
+                          />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <span className="text-[11px] text-[#777]">
+                            رنگ‌های پیشنهادی:
+                          </span>
+                          {[
+                            { label: 'کرم روشن اصلی', color: '#f7f6f2' },
+                            { label: 'سفید خالص', color: '#ffffff' },
+                            { label: 'شامپاینی ملایم', color: '#f3ede2' },
+                            { label: 'طوسی روشن', color: '#f1f1ef' },
+                          ].map((preset) => (
+                            <button
+                              key={preset.color}
+                              type="button"
+                              onClick={() =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  bottomCardBgColor: preset.color,
+                                })
+                              }
+                              className="h-7 px-2.5 rounded-lg border border-[#dcd4c6] bg-white hover:border-[#181818] text-[10.5px] font-bold flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <span
+                                className="w-3.5 h-3.5 rounded-full border border-black/15"
+                                style={{ backgroundColor: preset.color }}
+                              />
+                              <span>{preset.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۲. متن توضیحات فوتر */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۲. متن توضیحات فوتر
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-[#333]">
+                          متن توضیحات اصلی (پاراگراف اول در باکس فوتر):
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={footerSettingsForm.descriptionParagraph1}
+                          onChange={(e) =>
+                            setFooterSettingsForm({
+                              ...footerSettingsForm,
+                              descriptionParagraph1: e.target.value,
+                            })
+                          }
+                          placeholder="متن توضیحات فوتر را وارد کنید..."
+                          className="w-full rounded-xl border border-[#e0e0e0] bg-white p-3.5 text-xs font-semibold leading-7"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-[#333]">
+                          متن خط دوم توضیحات (جمله پشتیبانی ۲۴ ساعته):
+                        </label>
+                        <input
+                          type="text"
+                          value={footerSettingsForm.descriptionParagraph2}
+                          onChange={(e) =>
+                            setFooterSettingsForm({
+                              ...footerSettingsForm,
+                              descriptionParagraph2: e.target.value,
+                            })
+                          }
+                          placeholder="پشتیبانی ۲۴ ساعته لوستر صالحی در کنار شما همیشه هستیم :)"
+                          className="w-full h-11 rounded-xl border border-[#e0e0e0] bg-white px-3.5 text-xs font-semibold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۳. ویرایش شماره‌های تماس فوتر */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          ۳. شماره‌های تماس مجموعه در فوتر
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          عنوان شعبه/بخش و شماره تلفن نمایش‌داده‌شده در ستون شماره‌های فوتر را ویرایش کنید
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFooterSettingsForm({
+                            ...footerSettingsForm,
+                            phones: [
+                              ...footerSettingsForm.phones,
+                              {
+                                id: `ph-${Date.now()}`,
+                                branchTitle: 'شعبه جدید',
+                                displayPhone: '021-33459665',
+                                phone: '02133459665',
+                              },
+                            ],
+                          })
+                        }
+                        className="h-9 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>افزودن شماره جدید</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {footerSettingsForm.phones.map((phoneItem, pIdx) => (
+                        <div
+                          key={phoneItem.id || `ph-row-${pIdx}`}
+                          className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-white p-3.5 rounded-xl border border-[#e7dfd1]"
+                        >
+                          <div className="sm:col-span-5 space-y-1">
+                            <label className="block text-[11px] font-bold text-[#666]">
+                              عنوان شعبه / بخش (شماره {(pIdx + 1).toLocaleString('fa-IR')}):
+                            </label>
+                            <input
+                              type="text"
+                              value={phoneItem.branchTitle}
+                              onChange={(e) => {
+                                const updated = [...footerSettingsForm.phones];
+                                updated[pIdx] = {
+                                  ...updated[pIdx],
+                                  branchTitle: e.target.value,
+                                };
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  phones: updated,
+                                });
+                              }}
+                              placeholder="مثلاً: شریعتی یا افسریه"
+                              className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-6 space-y-1">
+                            <label className="block text-[11px] font-bold text-[#666]">
+                              شماره تماس:
+                            </label>
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={phoneItem.displayPhone}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const updated = [...footerSettingsForm.phones];
+                                updated[pIdx] = {
+                                  ...updated[pIdx],
+                                  displayPhone: val,
+                                  phone: val.replace(/[^0-9+]/g, ''),
+                                };
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  phones: updated,
+                                });
+                              }}
+                              placeholder="021-22222635"
+                              className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold text-left tabular-nums"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-1 flex justify-end pt-4">
+                            {footerSettingsForm.phones.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFooterSettingsForm({
+                                    ...footerSettingsForm,
+                                    phones: footerSettingsForm.phones.filter(
+                                      (_, i) => i !== pIdx
+                                    ),
+                                  })
+                                }
+                                title="حذف این شماره"
+                                className="w-9 h-9 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ۴. لینک شبکه‌های اجتماعی فوتر */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۴. لینک شبکه‌های اجتماعی فوتر
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          لینک لینکدین / تلگرام (آیکون اول):
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={footerSettingsForm.linkedinUrl}
+                          onChange={(e) =>
+                            setFooterSettingsForm({
+                              ...footerSettingsForm,
+                              linkedinUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://linkedin.com/in/..."
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold text-left"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          لینک واتساپ (آیکون دوم):
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={footerSettingsForm.whatsappUrl}
+                          onChange={(e) =>
+                            setFooterSettingsForm({
+                              ...footerSettingsForm,
+                              whatsappUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://wa.me/98912..."
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold text-left"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          لینک اینستاگرام (آیکون سوم):
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={footerSettingsForm.instagramUrl}
+                          onChange={(e) =>
+                            setFooterSettingsForm({
+                              ...footerSettingsForm,
+                              instagramUrl: e.target.value,
+                            })
+                          }
+                          placeholder="https://instagram.com/..."
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold text-left"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۵. کد مجوز اینماد و تصاویر سایر مجوزها */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-5">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۵. مجوز اینماد (کد HTML) و تصاویر سایر مجوزهای فوتر
+                    </h3>
+
+                    {/* باکس ۱: کد مجوز اینماد */}
+                    <div className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="block text-xs font-black text-[#181818]">
+                          کد مجوز اینماد (جایگاه مجوز اول در فوتر):
+                        </label>
+                        {footerSettingsForm.enamadCode && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFooterSettingsForm({
+                                ...footerSettingsForm,
+                                enamadCode: '',
+                              })
+                            }
+                            className="text-[11px] font-bold text-[#ea1d2c] cursor-pointer"
+                          >
+                            حذف کد اینماد (نمایش نشان پیش‌فرض)
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[#777]">
+                        کد دریافتی از سامانه اینماد (تگ <code>&lt;a&gt;...&lt;/a&gt;</code>) را در کادر زیر قرار دهید. در صورت خالی بودن، نشان پیش‌فرض نمایش داده می‌شود.
+                      </p>
+                      <textarea
+                        rows={3}
+                        dir="ltr"
+                        value={footerSettingsForm.enamadCode}
+                        onChange={(e) =>
+                          setFooterSettingsForm({
+                            ...footerSettingsForm,
+                            enamadCode: e.target.value,
+                          })
+                        }
+                        placeholder='<a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=..."><img src="https://trustseal.enamad.ir/logo.aspx?id=..." alt="" style="cursor:pointer" code="..."></a>'
+                        className="w-full rounded-xl border border-[#e0e0e0] p-3 text-xs font-mono text-left bg-[#fcfbf9]"
+                      />
+                    </div>
+
+                    {/* باکس‌های ۲، ۳ و ۴: آپلود عکس برای ۳ مجوز دیگر */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[0, 1, 2].map((licIdx) => {
+                        const licItem = footerSettingsForm.otherLicenses[
+                          licIdx
+                        ] || {
+                          id: `license-${licIdx + 2}`,
+                          title: `مجوز شماره ${licIdx + 2}`,
+                          imageUrl: '',
+                          linkUrl: '',
+                        };
+                        return (
+                          <div
+                            key={licItem.id || `lic-box-${licIdx}`}
+                            className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-3 flex flex-col justify-between"
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black text-[#181818]">
+                                  تصویر مجوز {(licIdx + 2).toLocaleString('fa-IR')}
+                                </span>
+                                {licItem.imageUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const nextLicenses = [
+                                        ...footerSettingsForm.otherLicenses,
+                                      ];
+                                      nextLicenses[licIdx] = {
+                                        ...licItem,
+                                        imageUrl: '',
+                                      };
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        otherLicenses: nextLicenses,
+                                      });
+                                    }}
+                                    className="text-[11px] font-bold text-[#ea1d2c] cursor-pointer"
+                                  >
+                                    حذف عکس
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="block text-[11px] font-bold text-[#666]">
+                                  عنوان مجوز:
+                                </label>
+                                <input
+                                  type="text"
+                                  value={licItem.title}
+                                  onChange={(e) => {
+                                    const nextLicenses = [
+                                      ...footerSettingsForm.otherLicenses,
+                                    ];
+                                    nextLicenses[licIdx] = {
+                                      ...licItem,
+                                      title: e.target.value,
+                                    };
+                                    setFooterSettingsForm({
+                                      ...footerSettingsForm,
+                                      otherLicenses: nextLicenses,
+                                    });
+                                  }}
+                                  placeholder="مثلاً: مجوز ساماندهی"
+                                  className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
+                                />
+                              </div>
+
+                              {/* پیش‌نمایش و دکمه آپلود عکس مجوز */}
+                              <div className="flex items-center gap-3">
+                                <div className="w-16 h-16 rounded-xl border border-[#e0dacd] bg-[#faf8f4] flex items-center justify-center overflow-hidden shrink-0 p-1">
+                                  {licItem.imageUrl ? (
+                                    <img
+                                      src={licItem.imageUrl}
+                                      alt={licItem.title}
+                                      className="w-full h-full object-contain"
+                                    />
+                                  ) : (
+                                    <span className="text-[10px] text-[#888] text-center leading-4">
+                                      نشان پیش‌فرض
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex-1 space-y-1.5">
+                                  <label className="h-9 px-3 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>انتخاب عکس مجوز</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) =>
+                                        handleFileUploadToDataUrl(
+                                          e.target.files?.[0],
+                                          (dataUrl) => {
+                                            const nextLicenses = [
+                                              ...footerSettingsForm.otherLicenses,
+                                            ];
+                                            nextLicenses[licIdx] = {
+                                              ...licItem,
+                                              imageUrl: dataUrl,
+                                            };
+                                            setFooterSettingsForm({
+                                              ...footerSettingsForm,
+                                              otherLicenses: nextLicenses,
+                                            });
+                                          }
+                                        )
+                                      }
+                                    />
+                                  </label>
+                                  <input
+                                    type="text"
+                                    dir="ltr"
+                                    value={licItem.imageUrl}
+                                    onChange={(e) => {
+                                      const nextLicenses = [
+                                        ...footerSettingsForm.otherLicenses,
+                                      ];
+                                      nextLicenses[licIdx] = {
+                                        ...licItem,
+                                        imageUrl: e.target.value,
+                                      };
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        otherLicenses: nextLicenses,
+                                      });
+                                    }}
+                                    placeholder="یا آدرس تصویر (URL)..."
+                                    className="w-full h-8 rounded-lg border border-[#e0e0e0] px-2 text-[11px] text-left"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="block text-[11px] font-bold text-[#666]">
+                                  لینک کلیک روی مجوز (اختیاری):
+                                </label>
+                                <input
+                                  type="text"
+                                  dir="ltr"
+                                  value={licItem.linkUrl || ''}
+                                  onChange={(e) => {
+                                    const nextLicenses = [
+                                      ...footerSettingsForm.otherLicenses,
+                                    ];
+                                    nextLicenses[licIdx] = {
+                                      ...licItem,
+                                      linkUrl: e.target.value,
+                                    };
+                                    setFooterSettingsForm({
+                                      ...footerSettingsForm,
+                                      otherLicenses: nextLicenses,
+                                    });
+                                  }}
+                                  placeholder="https://..."
+                                  className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs text-left"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* ۶. متن کلیه حقوق (کپی‌رایت فوتر) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-3">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۶. متن کلیه حقوق وب‌سایت (کپی‌رایت پایین فوتر)
+                    </h3>
+                    <input
+                      type="text"
+                      value={footerSettingsForm.copyrightText}
+                      onChange={(e) =>
+                        setFooterSettingsForm({
+                          ...footerSettingsForm,
+                          copyrightText: e.target.value,
+                        })
+                      }
+                      placeholder="کلیه حقوق این سایت محفوظ و متعلق به لوستر اکبر صالحی است."
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] bg-white px-3.5 text-xs font-bold"
+                    />
+                  </div>
+
+                  {/* دکمه ذخیره پایانی */}
+                  <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
+                    <button
+                      type="submit"
+                      disabled={isSavingFooterSettings}
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-60"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>
+                        {isSavingFooterSettings
+                          ? 'در حال ذخیره و بروزرسانی فوتر...'
+                          : 'ثبت و اعمال تغییرات در فوتر سایت'}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-8 min-h-[360px]" />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* مودال فقط خواندنی مشاهده متن کامل پیام تماس با ما (بدون امکان ویرایش) */}
+      {viewingMessage && (
+        <div
+          onClick={() => setViewingMessage(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-[24px] bg-white border border-[#e7dfd1] p-6 shadow-2xl space-y-5"
+            dir="rtl"
+            style={{
+              fontFamily: "'Vazirmatn', system-ui, -apple-system, sans-serif",
+            }}
+          >
+            <div className="flex items-center justify-between border-b border-[#efefef] pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-[#f5efe4] text-[#b59766] flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-[#181818]">
+                    مشاهده پیام ارسالی (فقط خواندنی)
+                  </h3>
+                  <p className="text-[11px] text-[#777] mt-0.5">
+                    جزئیات کامل پیام ثبت‌شده توسط کاربر در سایت
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingMessage(null)}
+                className="w-8 h-8 rounded-lg bg-[#f5f5f5] hover:bg-[#eaeaea] text-[#444] flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#faf8f4] p-4 rounded-2xl border border-[#ece4d4]">
+              <div>
+                <span className="block text-[11px] font-bold text-[#777]">
+                  نام و نام خانوادگی فرستنده:
+                </span>
+                <span className="block text-sm font-black text-[#181818] mt-1">
+                  {viewingMessage.fullName}
+                </span>
+              </div>
+              <div>
+                <span className="block text-[11px] font-bold text-[#777]">
+                  شماره تماس:
+                </span>
+                <span
+                  dir="ltr"
+                  className="block text-sm font-black text-[#b59766] tabular-nums text-right mt-1"
+                >
+                  {viewingMessage.phone}
+                </span>
+              </div>
+              <div className="sm:col-span-2 pt-2 border-t border-[#e8dfd0]">
+                <span className="block text-[11px] font-bold text-[#777]">
+                  موضوع پیام:
+                </span>
+                <span className="block text-xs font-bold text-[#222] mt-1">
+                  {viewingMessage.subject}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="block text-xs font-black text-[#181818]">
+                متن کامل پیام:
+              </span>
+              <div className="p-4 rounded-2xl bg-[#fcfbf9] border border-[#e5dfd3] text-xs sm:text-sm text-[#2b2b2b] leading-7 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                {viewingMessage.message}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#efefef]">
+              <button
+                type="button"
+                onClick={() => setViewingMessage(null)}
+                className="h-10 px-6 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold cursor-pointer transition-colors"
+              >
+                بستن پنجره پیام
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* مودال خروج از حساب ادمین (وقتی دکمه خروج زده می‌شود) */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+          <div
+            className="w-full max-w-md rounded-[24px] bg-white border border-[#e7dfd1] p-6 shadow-2xl text-center space-y-5"
+            dir="rtl"
+            style={{
+              fontFamily: "'Vazirmatn', system-ui, -apple-system, sans-serif",
+            }}
+          >
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-20 h-20 rounded-2xl border-2 border-[#c09d62] p-[2px] bg-[#181818] overflow-hidden shadow-md">
+                <img
+                  src={currentAdminAvatar}
+                  alt={adminUser.displayName}
+                  className="w-full h-full rounded-[14px] object-cover"
+                />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-black text-[#181818]">
+                  خروج از حساب مدیریت ({adminUser.displayName})
+                </h3>
+                <p className="text-xs text-[#666] leading-relaxed">
+                  آیا مطمئن هستید که می‌خواهید از پنل مدیریت خارج شوید؟ پس از خروج، برای دسترسی مجدد نیاز به وارد کردن شماره موبایل و رمز عبور خواهید داشت.
+                </p>
+              </div>
+            </div>
+
+            {isLoggingOutProgress ? (
+              <div className="space-y-2 pt-1">
+                <div className="w-full h-3 rounded-full bg-[#f0ece3] overflow-hidden p-0.5">
+                  <div
+                    className="h-full rounded-full bg-[#ea1d2c] transition-all duration-100"
+                    style={{ width: `${logoutProgress}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px] font-bold text-[#777]">
+                  <span>در حال خروج امن از پنل مدیریت...</span>
+                  <span className="tabular-nums">
+                    {logoutProgress.toLocaleString('fa-IR')}٪
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleConfirmAdminLogout}
+                  className="h-11 rounded-xl bg-[#ea1d2c] hover:bg-[#c81422] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>تایید و خروج از پنل</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLogoutModal(false)}
+                  className="h-11 rounded-xl bg-[#f4f1ea] hover:bg-[#e5dec9] text-[#333] text-xs font-bold flex items-center justify-center cursor-pointer transition-colors"
+                >
+                  انصراف و ماندن در پنل
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* مودال وضعیت انتشار یا حذف استوری در وب‌سایت همراه با نوار پیشرفت پرشونده */}
+      {storyActionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+          <div
+            className="w-full max-w-md rounded-[24px] bg-white border border-[#e7dfd1] p-6 shadow-2xl text-center space-y-4"
+            dir="rtl"
+          >
+            <div
+              className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${
+                storyActionModal.mode === 'save'
+                  ? 'bg-[#f5efe4] text-[#b59766]'
+                  : 'bg-[#fde8ea] text-[#ea1d2c]'
+              }`}
+            >
+              {storyActionModal.mode === 'save' ? (
+                <Check className="w-7 h-7 stroke-[2.5]" />
+              ) : (
+                <Trash2 className="w-7 h-7 stroke-[2.2]" />
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-base font-black text-[#181818]">
+                {storyActionModal.title}
+              </h3>
+              <p className="text-xs text-[#666] leading-relaxed">
+                {storyActionModal.subtitle}
+              </p>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <div className="w-full h-3 rounded-full bg-[#f0ece3] overflow-hidden p-0.5">
+                <div
+                  className={`h-full rounded-full transition-all duration-150 ${
+                    storyActionModal.mode === 'save'
+                      ? 'bg-[#b59766]'
+                      : 'bg-[#ea1d2c]'
+                  }`}
+                  style={{ width: `${storyActionModal.progress}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#777]">
+                <span>
+                  {storyActionModal.mode === 'save'
+                    ? 'در حال قرار دادن در وب‌سایت...'
+                    : 'در حال حذف از وب‌سایت...'}
+                </span>
+                <span className="tabular-nums">
+                  {storyActionModal.progress.toLocaleString('fa-IR')}٪
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};

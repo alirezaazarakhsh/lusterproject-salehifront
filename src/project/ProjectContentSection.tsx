@@ -11,6 +11,7 @@ import {
   GENERATED_IMAGES,
   SALEHI_COLLECTION_PRODUCTS,
   ChandelierProduct,
+  ExecutedProject,
 } from '../data/chandelierData';
 import aboutGalleryShowroomImg from '../assets/images/about_gallery_showroom_1790844789780.jpg';
 import aboutGalleryEmeraldPalaceImg from '../assets/images/about_gallery_emerald_palace_1790844830735.jpg';
@@ -42,7 +43,7 @@ interface ProjectCategoryTab {
 const PROJECT_CATEGORY_TABS: ProjectCategoryTab[] = [
   { id: 'gov', label: 'ارگان های دولتی', badgeCountLabel: '۱۷۳ مجموعه پروژه' },
   { id: 'commercial', label: 'ارگان های تجاری', badgeCountLabel: '۹۴ مجموعه پروژه' },
-  { id: 'mosques', label: 'مساجد ایران', badgeCountLabel: '۰ مجموعه پروژه' },
+  { id: 'mosques', label: 'مساجد ایران', badgeCountLabel: '۴۲ مجموعه پروژه' },
   { id: 'restaurants', label: 'رستوران های بزرگ', badgeCountLabel: '۶۸ مجموعه پروژه' },
   { id: 'residential', label: 'منازل مسکونی', badgeCountLabel: '۱۲۵ مجموعه پروژه' },
 ];
@@ -532,23 +533,27 @@ const GOV_PAGE_2_NO_IMAGE_PROJECTS: ProjectPageItem[] =
     image: '',
   }));
 
-const buildProjectsForTabAndPage = (
+export const buildProjectsForTabAndPage = (
   tabId: 'gov' | 'commercial' | 'mosques' | 'restaurants' | 'residential',
   page: number
 ): ProjectPageItem[] => {
-  if (tabId === 'mosques') {
-    return [];
-  }
-
   if (tabId === 'gov' && page === 1) {
-    return GOV_PAGE_1_PROJECTS;
+    return GOV_PAGE_1_PROJECTS.map((item, idx) => ({
+      ...item,
+      galleryImages: [
+        item.image || ALL_GALLERY_PHOTOS[idx % ALL_GALLERY_PHOTOS.length],
+        ALL_GALLERY_PHOTOS[(idx + 1) % ALL_GALLERY_PHOTOS.length],
+        ALL_GALLERY_PHOTOS[(idx + 3) % ALL_GALLERY_PHOTOS.length],
+        ALL_GALLERY_PHOTOS[(idx + 5) % ALL_GALLERY_PHOTOS.length],
+      ],
+    }));
   }
   if (tabId === 'gov' && page === 2) {
     return GOV_PAGE_2_NO_IMAGE_PROJECTS;
   }
 
   const tabDataSets: Record<
-    Exclude<typeof tabId, 'mosques'>,
+    typeof tabId,
     Array<{
       slug: string;
       title: string;
@@ -559,7 +564,7 @@ const buildProjectsForTabAndPage = (
     gov: [
       { slug: 'niavaran-hall', title: 'پروژه تالار نیاوران', location: 'تهران، نیاوران' },
       { slug: 'sadabad-palace', title: 'پروژه عمارت سعدآباد', location: 'تهران، شمیرانات' },
-      { slug: 'khazar-summit-hall', title: 'پروژه سالن اجلاس خزر', location: 'مازندران، رامسر', noImageOnPage1: true },
+      { slug: 'khazar-summit-hall', title: 'پروژه سالن اجلاس خزر', location: 'مازندران، رامسر' },
       { slug: 'morvarid-palace', title: 'پروژه کاخ مروارید مهرشهر', location: 'البرز، کرج' },
       { slug: 'nesfe-jahan-center', title: 'پروژه مرکز همایش‌های نصف جهان', location: 'اصفهان، اصفهان' },
       { slug: 'ayeneh-khaneh-hall', title: 'پروژه تالار آیینه‌خانه', location: 'فارس، شیراز', noImageOnPage1: true },
@@ -570,7 +575,7 @@ const buildProjectsForTabAndPage = (
     commercial: [
       { slug: 'royal-mall-elahiyeh', title: 'پروژه رویال مال الهیه', location: 'تهران، الهیه' },
       { slug: 'espinas-hotel', title: 'پروژه هتل ۵ ستاره اسپیناس', location: 'تهران، سعادت‌آباد' },
-      { slug: 'palladium-mall', title: 'پروژه مرکز خرید پالادیوم', location: 'تهران، زعفرانیه', noImageOnPage1: true },
+      { slug: 'palladium-mall', title: 'پروژه مرکز خرید پالادیوم', location: 'تهران، زعفرانیه' },
       { slug: 'world-trade-tower', title: 'پروژه برج تجارت جهانی', location: 'آذربایجان شرقی، تبریز' },
       { slug: 'sam-jewelry-gallery', title: 'پروژه گالری طلا و جواهر سام', location: 'تهران، فرشته' },
       { slug: 'fadak-city-center', title: 'پروژه سیتی سنتر فدک', location: 'اصفهان، مرداویج', noImageOnPage1: true },
@@ -578,9 +583,20 @@ const buildProjectsForTabAndPage = (
       { slug: 'damoon-mall', title: 'پروژه مجتمع تجاری دامون', location: 'هرمزگان، کیش' },
       { slug: 'ghasr-monshi-hotel', title: 'پروژه هتل بوتیک قصر منشی', location: 'اصفهان، چهارباغ' },
     ],
+    mosques: [
+      { slug: 'fakhrabad-mosque', title: 'پروژه شبستان مسجد جامع فخرآباد', location: 'تهران، بهارستان' },
+      { slug: 'chahardah-masoum-mosque', title: 'پروژه گنبد اصلی مسجد چهارده معصوم', location: 'تهران، شهرری' },
+      { slug: 'tajrish-grand-mosque', title: 'پروژه رواق مرکزی مسجد اعظم تجریش', location: 'تهران، تجریش' },
+      { slug: 'rey-grand-mosalla', title: 'پروژه تالار محراب مصلی بزرگ ری', location: 'تهران، ری' },
+      { slug: 'nasirolmolk-mosque', title: 'پروژه شبستان مسجد نصیرالملک', location: 'فارس، شیراز' },
+      { slug: 'goharshad-mosque-hall', title: 'پروژه رواق مسجد گوهرشاد', location: 'خراسان رضوی، مشهد', noImageOnPage1: true },
+      { slug: 'kaboud-mosque-tabriz', title: 'پروژه شبستان مسجد کبود', location: 'آذربایجان شرقی، تبریز' },
+      { slug: 'sheikh-lotfollah-dome', title: 'پروژه گنبد مسجد شیخ لطف‌الله', location: 'اصفهان، میدان نقش جهان' },
+      { slug: 'jamkaran-central-courtyard', title: 'پروژه صحن اصلی مسجد جمکران', location: 'قم، قم' },
+    ],
     restaurants: [
       { slug: 'shandiz-royal-restaurant', title: 'پروژه رستوران سلطنتی شاندیز', location: 'خراسان رضوی، مشهد' },
-      { slug: 'aghdasiyeh-royal-lounge', title: 'پروژه رویال لانژ اقدسیه', location: 'تهران، اقدسیه', noImageOnPage1: true },
+      { slug: 'aghdasiyeh-royal-lounge', title: 'پروژه رویال لانژ اقدسیه', location: 'تهران، اقدسیه' },
       { slug: 'darband-mansion', title: 'پروژه عمارت پذیرایی دربند', location: 'تهران، دربند' },
       { slug: 'ghasr-sefid-hall', title: 'پروژه تالار مجلل قصر سفید', location: 'تهران، شهرک غرب' },
       { slug: 'haft-khan-restaurant', title: 'پروژه رستوران سنتی هفت‌خوان', location: 'فارس، شیراز' },
@@ -593,7 +609,7 @@ const buildProjectsForTabAndPage = (
       { slug: 'farmaniyeh', title: 'پروژه منطقه فرمانیه', location: 'تهران، پردیس' },
       { slug: 'lavasanat-classic-mansion', title: 'پروژه عمارت کلاسیک لواسانات', location: 'تهران، لواسان' },
       { slug: 'niavaran-private-villa', title: 'پروژه باغ‌ویلا اختصاصی نیاوران', location: 'تهران، نیاوران' },
-      { slug: 'zafaraniyeh-garden-tower', title: 'پروژه رزیدنس برج باغ زعفرانیه', location: 'تهران، زعفرانیه', noImageOnPage1: true },
+      { slug: 'zafaraniyeh-garden-tower', title: 'پروژه رزیدنس برج باغ زعفرانیه', location: 'تهران، زعفرانیه' },
       { slug: 'khazarshahr-coastal-villa', title: 'پروژه ویلای ساحلی خزرشهر', location: 'مازندران، بابلسر' },
       { slug: 'chenaran-penthouse', title: 'پروژه پنت‌هاوس برج چناران', location: 'تهران، فرشته' },
       { slug: 'motel-ghoo-duplex', title: 'پروژه عمارت دوبلکس متل قو', location: 'مازندران، سلمان‌شهر', noImageOnPage1: true },
@@ -617,8 +633,21 @@ const buildProjectsForTabAndPage = (
     const rotatedIdx = (idx + (page - 1) * 3) % baseList.length;
     const picked = baseList[rotatedIdx];
     const photoIdx =
-      (idx * 2 + (page - 1) * 3 + (tabId === 'commercial' ? 1 : tabId === 'restaurants' ? 4 : 7)) %
+      (idx * 2 +
+        (page - 1) * 3 +
+        (tabId === 'commercial'
+          ? 1
+          : tabId === 'mosques'
+          ? 2
+          : tabId === 'restaurants'
+          ? 4
+          : 7)) %
       ALL_GALLERY_PHOTOS.length;
+
+    const mainImg =
+      tabId === 'mosques' && idx === 0
+        ? GENERATED_IMAGES.projectMosqueDome
+        : ALL_GALLERY_PHOTOS[photoIdx];
 
     const hasNoImage =
       (page === 1 && picked.noImageOnPage1) ||
@@ -631,8 +660,14 @@ const buildProjectsForTabAndPage = (
       location: picked.location,
       categoryTab: tabId,
       categoryLabel: 'منازل مسکونی',
-      image: hasNoImage ? '' : ALL_GALLERY_PHOTOS[photoIdx],
+      image: hasNoImage ? '' : mainImg,
       description: DESKTOP_PROJECT_LONG_DESCRIPTION,
+      galleryImages: [
+        mainImg,
+        ALL_GALLERY_PHOTOS[(photoIdx + 1) % ALL_GALLERY_PHOTOS.length],
+        ALL_GALLERY_PHOTOS[(photoIdx + 3) % ALL_GALLERY_PHOTOS.length],
+        ALL_GALLERY_PHOTOS[(photoIdx + 5) % ALL_GALLERY_PHOTOS.length],
+      ],
     };
   });
 };
@@ -642,9 +677,10 @@ const findProjectBySlug = (rawSlug: string | null): ProjectPageItem | null => {
   const decoded = decodeURIComponent(rawSlug).trim().toLowerCase();
   if (!decoded) return null;
 
-  const tabs: Array<'gov' | 'commercial' | 'restaurants' | 'residential'> = [
+  const tabs: Array<'gov' | 'commercial' | 'mosques' | 'restaurants' | 'residential'> = [
     'gov',
     'commercial',
+    'mosques',
     'restaurants',
     'residential',
   ];
@@ -785,6 +821,8 @@ const PROJECT_USED_PRODUCTS_LIST: ProjectUsedProductRow[] = [
 ];
 
 interface ProjectContentSectionProps {
+  projects?: ExecutedProject[];
+  products?: ChandelierProduct[];
   onOpenProductModal?: (product: ChandelierProduct) => void;
   onAddToCart?: (product: ChandelierProduct, qty?: number) => void;
   onShowToast?: (
@@ -798,6 +836,8 @@ interface ProjectContentSectionProps {
 }
 
 export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
+  projects,
+  products: _products,
   onOpenProductModal,
   onAddToCart,
   onShowToast,
@@ -900,7 +940,43 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     PROJECT_CATEGORY_TABS.find((t) => t.id === activeTab) ||
     PROJECT_CATEGORY_TABS[0];
 
-  const currentProjects = buildProjectsForTabAndPage(activeTab, currentPage);
+  const dbProjectsForTab = (projects || []).filter(
+    (p) => p.categoryTab === activeTab
+  );
+
+  const mappedDbProjects: ProjectPageItem[] = dbProjectsForTab.map(
+    (dbProj, idx) => ({
+      id: dbProj.id,
+      slug:
+        (dbProj as any).slug ||
+        dbProj.id.replace(/^proj-/, '') ||
+        `project-${idx + 1}`,
+      title: dbProj.title,
+      description: dbProj.description,
+      image: dbProj.mainImage || dbProj.galleryImages?.[0] || null,
+      galleryImages:
+        dbProj.galleryImages && dbProj.galleryImages.length > 0
+          ? dbProj.galleryImages
+          : [dbProj.mainImage],
+      categoryTab: activeTab,
+      categoryLabel: activeTabInfo.label,
+      location: dbProj.district || 'تهران، پردیس',
+      projectDate: '۲۵ شهریور ماه ۱۴۰۴',
+      ownerName: 'جناب مهندس علیرضا آذرخش',
+      initialLikes: 7193 + idx * 42,
+    })
+  );
+
+  const fallbackPageProjects = buildProjectsForTabAndPage(
+    activeTab,
+    currentPage
+  );
+  const currentProjects =
+    mappedDbProjects.length > 0
+      ? currentPage === 1
+        ? mappedDbProjects
+        : fallbackPageProjects
+      : fallbackPageProjects;
   const isTabEmpty = currentProjects.length === 0;
 
   const handleBackToProjectsList = () => {
@@ -1467,14 +1543,13 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
 
           {/* لیست افقی تمام‌عرض در دسکتاپ (عکس ۲ و ۳) */}
           <div className="hidden md:flex flex-col gap-4">
-            {PROJECT_USED_PRODUCTS_LIST.slice(0, 3).map((row, idx) => {
-              const isRowOutOfStock = outOfStockMode;
+            {PROJECT_USED_PRODUCTS_LIST.slice(0, 3).map((row) => {
+              const isRowOutOfStock = outOfStockMode || Boolean(row.isOutOfStock);
               const qtyAdded = addedCounts[row.id] || 0;
               const isGoldenAdded = !isRowOutOfStock && qtyAdded > 0;
               const isBtnLoading = loadingDetailBtnId === row.id;
               const showPinkTooltip =
-                isRowOutOfStock &&
-                (activeTooltipRowId === row.id || idx === 0);
+                isRowOutOfStock && activeTooltipRowId === row.id;
               const showDarkAddedTooltip =
                 isGoldenAdded && activeTooltipRowId === row.id;
 
@@ -1560,18 +1635,19 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                     <div
                       className="relative"
                       onMouseEnter={() => setActiveTooltipRowId(row.id)}
+                      onMouseLeave={() => setActiveTooltipRowId(null)}
                     >
                       {showDarkAddedTooltip && (
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-[7px] bg-[#2b2b2b] text-white text-[11px] font-bold whitespace-nowrap shadow-md z-20 pointer-events-none">
+                        <div className="absolute -top-10 left-0 px-3 py-1.5 rounded-[7px] bg-[#2b2b2b] text-white text-[11px] font-bold whitespace-nowrap shadow-md z-20 pointer-events-none">
                           {toPersianDigits(qtyAdded)} محصول اضافه شد
-                          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#2b2b2b] rotate-45" />
+                          <span className="absolute -bottom-1 left-[17px] w-2 h-2 bg-[#2b2b2b] rotate-45" />
                         </div>
                       )}
 
                       {showPinkTooltip && (
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-[7px] bg-[#ffe4e6] text-[#ef4444] text-[11px] font-bold whitespace-nowrap shadow-xs z-20 pointer-events-none">
+                        <div className="absolute -top-10 left-0 px-3 py-1.5 rounded-[7px] bg-[#ffe4e6] text-[#ef4444] text-[11px] font-bold whitespace-nowrap shadow-xs z-20 pointer-events-none">
                           محصول در انبار وجود ندارد!
-                          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#ffe4e6] rotate-45" />
+                          <span className="absolute -bottom-1 left-[17px] w-2 h-2 bg-[#ffe4e6] rotate-45" />
                         </div>
                       )}
 
@@ -1612,8 +1688,9 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               const qtyAdded = addedCounts[row.id] || 0;
               const isGoldenAdded = !isRowOutOfStock && qtyAdded > 0;
               const showPinkTooltip =
-                isRowOutOfStock &&
-                (activeTooltipRowId === row.id || row.id === 'used-prod-4');
+                isRowOutOfStock && activeTooltipRowId === row.id;
+              const showDarkAddedTooltip =
+                isGoldenAdded && activeTooltipRowId === row.id;
 
               return (
                 <div
@@ -1662,11 +1739,22 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                         مشاهده و خرید
                       </button>
 
-                      <div className="relative">
+                      <div
+                        className="relative"
+                        onMouseEnter={() => setActiveTooltipRowId(row.id)}
+                        onMouseLeave={() => setActiveTooltipRowId(null)}
+                      >
+                        {showDarkAddedTooltip && (
+                          <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-[7px] bg-[#2b2b2b] text-white text-[10.5px] font-bold whitespace-nowrap shadow-md z-20 pointer-events-none">
+                            {toPersianDigits(qtyAdded)} محصول اضافه شد
+                            <span className="absolute -bottom-1 left-[15px] w-2 h-2 bg-[#2b2b2b] rotate-45" />
+                          </div>
+                        )}
+
                         {showPinkTooltip && (
-                          <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-[7px] bg-[#ffe4e6] text-[#ef4444] text-[10.5px] font-bold whitespace-nowrap shadow-xs z-20 pointer-events-none">
+                          <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-[7px] bg-[#ffe4e6] text-[#ef4444] text-[10.5px] font-bold whitespace-nowrap shadow-xs z-20 pointer-events-none">
                             محصول در انبار وجود ندارد!
-                            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#ffe4e6] rotate-45" />
+                            <span className="absolute -bottom-1 left-[15px] w-2 h-2 bg-[#ffe4e6] rotate-45" />
                           </div>
                         )}
 

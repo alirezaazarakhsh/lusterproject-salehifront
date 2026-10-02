@@ -6,13 +6,14 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { SectionHeading } from '../Ornaments';
-import { ChandelierProduct } from '../../data/chandelierData';
+import { ChandelierProduct, GENERATED_IMAGES } from '../../data/chandelierData';
 import {
   Chandelier3DViewer,
   FinishType,
   FINISH_PRESETS,
 } from '../Chandelier3DViewer';
 import { TransparentProductImage } from '../TransparentProductImage';
+import { navigateToProductCategory } from '../../utils/navigation';
 
 interface ProductsCarouselSectionProps {
   sectionId: string;
@@ -112,6 +113,7 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
   title,
   mobileTitle,
   products,
+  variant,
   cartProductIds = [],
   cartQuantities = {},
   onOpenProductModal,
@@ -122,6 +124,78 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [recentTooltipId, setRecentTooltipId] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<Record<string, number>>({});
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+  const desktopIndexRef = useRef<number>(0);
+  const isButtonScrollingRef = useRef<boolean>(false);
+  const buttonScrollTimeoutRef = useRef<number | null>(null);
+
+  // استفاده مستقیم از محصولات دیتابیس (در موبایل ۴ محصول اول نمایش داده می‌شوند تا چیدمان موبایل ۱۰۰٪ دست‌نخورده بماند و در دسکتاپ کل محصولات دیتابیس در کاروسل قرار می‌گیرند)
+  const allCarouselItems = products.map((item, idx) => ({
+    product: item,
+    desktopOnly: idx >= 4,
+  }));
+
+  const handleCarouselScroll = () => {
+    if (isButtonScrollingRef.current) return;
+    const container = carouselRef.current;
+    if (!container || window.innerWidth < 768) return;
+    const cards = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-carousel-card="true"]')
+    ).filter((el) => el.offsetParent !== null);
+    if (cards.length === 0) return;
+
+    const containerRight = container.getBoundingClientRect().right;
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    cards.forEach((card, idx) => {
+      const diff = Math.abs(card.getBoundingClientRect().right - containerRight);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+    desktopIndexRef.current = closestIdx;
+  };
+
+  const scrollDesktopCarousel = (direction: 'next' | 'prev') => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const cards = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-carousel-card="true"]')
+    ).filter((el) => el.offsetParent !== null);
+    if (cards.length === 0) return;
+
+    const visibleCount = window.innerWidth >= 1024 ? 4 : 2;
+    const maxStartIndex = Math.max(0, cards.length - visibleCount);
+
+    let nextIndex = desktopIndexRef.current;
+    if (direction === 'next') {
+      nextIndex = nextIndex >= maxStartIndex ? 0 : nextIndex + 1;
+    } else {
+      nextIndex = nextIndex <= 0 ? maxStartIndex : nextIndex - 1;
+    }
+    desktopIndexRef.current = nextIndex;
+
+    const targetCard = cards[nextIndex];
+    if (!targetCard) return;
+
+    isButtonScrollingRef.current = true;
+    if (buttonScrollTimeoutRef.current) {
+      window.clearTimeout(buttonScrollTimeoutRef.current);
+    }
+    buttonScrollTimeoutRef.current = window.setTimeout(() => {
+      isButtonScrollingRef.current = false;
+    }, 550);
+
+    const containerRight = container.getBoundingClientRect().right;
+    const targetRight = targetCard.getBoundingClientRect().right;
+    const deltaX = targetRight - containerRight;
+
+    container.scrollBy({
+      left: deltaX,
+      behavior: 'smooth',
+    });
+  };
 
   const triggerTemporaryTooltip = (productId: string) => {
     if (tooltipTimeoutRef.current[productId]) {
@@ -178,12 +252,14 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
     >
       <SectionHeading title={title} mobileTitle={mobileTitle} className="mb-6 sm:mb-10" />
 
-      {/* در موبایل کاروسل افقی عریض با پوزیشن چسبیده به راست (مطابق Screenshot 2026-09-30 at 03.42.05.png) و در دسکتاپ شبکه ۴ ستونه */}
+      {/* در موبایل کاروسل افقی عریض با پوزیشن چسبیده به راست (کاملاً دست‌نخورده) و در دسکتاپ کاروسل افقی ۴ ستونه */}
       <div
-        className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory pr-4 pl-6 xs:pr-5 xs:pl-8 md:px-0 py-2 md:py-0 touch-pan-x [&::-webkit-scrollbar]:hidden"
+        ref={carouselRef}
+        onScroll={handleCarouselScroll}
+        className="flex gap-3.5 sm:gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pr-4 pl-6 xs:pr-5 xs:pl-8 md:px-0 py-2 touch-pan-x [&::-webkit-scrollbar]:hidden"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {products.map((product) => {
+        {allCarouselItems.map(({ product, desktopOnly }) => {
           const isOutOfStock = Boolean(product.outOfStock);
           const qtyInCart = cartQuantities[product.id] || 0;
           const isHighlighted =
@@ -200,10 +276,13 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
           return (
             <div
               key={`${sectionId}-${product.id}`}
+              data-carousel-card="true"
               onMouseLeave={() => {
                 clearTemporaryTooltip(product.id);
               }}
-              className="group shrink-0 snap-start w-[83vw] max-w-[345px] md:w-auto md:max-w-none md:shrink bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
+              className={`group shrink-0 snap-start w-[83vw] max-w-[345px] md:w-[calc((100%-24px)/2)] lg:w-[calc((100%-72px)/4)] md:max-w-none bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 ${
+                desktopOnly ? 'hidden md:flex' : 'flex'
+              } flex-col justify-between`}
             >
               <div>
                 {/* باکس عریض‌تر عکس با پس‌زمینه طوسی کم‌رنگ و گوشه‌های گرد */}
@@ -486,9 +565,11 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
         })}
 
         {/* کارت عمودی «مشاهده محصولات» در انتهای کاروسل موبایل (باریک‌تر و با فاصله بیشتر، دقیقاً مطابق Screenshot 2026-09-30 at 03.39.14.png) */}
-        <button
-          type="button"
-          onClick={() => onOpenProductModal(products[0])}
+        <a
+          href="/product/categories/chandeliers"
+          onClick={(e) => {
+            navigateToProductCategory('chandeliers', e);
+          }}
           className="md:hidden shrink-0 snap-center h-[200px] xs:h-[220px] my-auto w-[38px] xs:w-[42px] mr-2 xs:mr-3 rounded-[14px] xs:rounded-[16px] bg-[#c7a975] hover:bg-[#b59766] active:bg-[#9e7f4c] text-white flex items-center justify-center cursor-pointer shadow-sm transition-all self-center"
         >
           <span
@@ -497,33 +578,33 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
           >
             مشاهده محصولات
           </span>
-        </button>
+        </a>
       </div>
 
       {/* دکمه‌های صفحه‌بندی پایین بخش (فقط در دسکتاپ - در موبایل طبق درخواست حذف شد) */}
       <div className="hidden md:flex mt-8 items-center justify-center gap-3">
         <button
           type="button"
-          onClick={() => onOpenProductModal(products[0])}
+          onClick={() => scrollDesktopCarousel('prev')}
           aria-label="قبلی"
-          className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#b59766] hover:text-white hover:border-[#b59766] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer active:scale-95"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
 
-        <button
-          type="button"
-          onClick={() => onOpenProductModal(products[1])}
-          className="h-10 px-6 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
+        <a
+          href="/product/categories/chandeliers"
+          onClick={(e) => navigateToProductCategory('chandeliers', e)}
+          className="h-10 px-6 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer whitespace-nowrap"
         >
           مشاهده محصولات
-        </button>
+        </a>
 
         <button
           type="button"
-          onClick={() => onOpenProductModal(products[3])}
+          onClick={() => scrollDesktopCarousel('next')}
           aria-label="بعدی"
-          className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
+          className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#b59766] hover:text-white hover:border-[#b59766] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer active:scale-95"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>

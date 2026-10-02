@@ -4,6 +4,7 @@ import { SectionHeading } from '../Ornaments';
 import { MAGAZINE_ARTICLES, MagazineArticle } from '../../data/chandelierData';
 
 interface MagazineSectionProps {
+  articles?: MagazineArticle[];
   onSelectArticle: (article: MagazineArticle) => void;
 }
 
@@ -11,8 +12,11 @@ interface MagazineSectionProps {
  * بخش «مجله های لوستر» (دقیقاً مطابق نیمه بالایی عکس چهارم)
  */
 export const MagazineSection: React.FC<MagazineSectionProps> = ({
+  articles,
   onSelectArticle,
 }) => {
+  const displayArticles =
+    articles && articles.length > 0 ? articles : MAGAZINE_ARTICLES;
   return (
     <section
       id="magazine-section"
@@ -25,7 +29,7 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
         className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory pr-4 pl-6 xs:pr-5 xs:pl-8 md:px-0 py-2 md:py-0 touch-pan-x [&::-webkit-scrollbar]:hidden"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {MAGAZINE_ARTICLES.map((article) => (
+        {displayArticles.map((article) => (
           <article
             key={article.id}
             className="group shrink-0 snap-start w-[83vw] max-w-[345px] md:w-auto md:max-w-none md:shrink bg-white rounded-[16px] border border-[#eeeeee] p-4 shadow-[0_6px_26px_rgba(0,0,0,0.03)] hover:shadow-[0_14px_36px_rgba(181,151,102,0.12)] transition-all flex flex-col justify-between"
@@ -76,25 +80,27 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
         ))}
 
         {/* دکمه عمودی «مشاهده تمامی مقالات» در انتهای کاروسل مجله در موبایل */}
-        <button
-          type="button"
-          onClick={() => onSelectArticle(MAGAZINE_ARTICLES[0])}
-          className="md:hidden shrink-0 snap-center h-[200px] xs:h-[220px] my-auto w-[38px] xs:w-[42px] mr-2 xs:mr-3 rounded-[14px] xs:rounded-[16px] bg-[#c7a975] hover:bg-[#b59766] active:bg-[#9e7f4c] text-white flex items-center justify-center cursor-pointer shadow-sm transition-all self-center"
-        >
-          <span
-            className="font-bold text-[12px] xs:text-[13px] tracking-wider text-white select-none whitespace-nowrap"
-            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+        {displayArticles[0] && (
+          <button
+            type="button"
+            onClick={() => onSelectArticle(displayArticles[0])}
+            className="md:hidden shrink-0 snap-center h-[200px] xs:h-[220px] my-auto w-[38px] xs:w-[42px] mr-2 xs:mr-3 rounded-[14px] xs:rounded-[16px] bg-[#c7a975] hover:bg-[#b59766] active:bg-[#9e7f4c] text-white flex items-center justify-center cursor-pointer shadow-sm transition-all self-center"
           >
-            مشاهده تمامی مقالات
-          </span>
-        </button>
+            <span
+              className="font-bold text-[12px] xs:text-[13px] tracking-wider text-white select-none whitespace-nowrap"
+              style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+            >
+              مشاهده تمامی مقالات
+            </span>
+          </button>
+        )}
       </div>
 
       {/* دکمه‌های صفحه‌بندی پایین مجله (فقط در دسکتاپ) */}
       <div className="hidden md:flex mt-8 items-center justify-center gap-3">
         <button
           type="button"
-          onClick={() => onSelectArticle(MAGAZINE_ARTICLES[0])}
+          onClick={() => displayArticles[0] && onSelectArticle(displayArticles[0])}
           aria-label="قبلی"
           className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
         >
@@ -103,7 +109,10 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
 
         <button
           type="button"
-          onClick={() => onSelectArticle(MAGAZINE_ARTICLES[2])}
+          onClick={() =>
+            (displayArticles[2] || displayArticles[0]) &&
+            onSelectArticle(displayArticles[2] || displayArticles[0])
+          }
           className="h-10 px-7 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
         >
           مشاهده تمامی مقالات
@@ -111,7 +120,10 @@ export const MagazineSection: React.FC<MagazineSectionProps> = ({
 
         <button
           type="button"
-          onClick={() => onSelectArticle(MAGAZINE_ARTICLES[3])}
+          onClick={() =>
+            (displayArticles[3] || displayArticles[0]) &&
+            onSelectArticle(displayArticles[3] || displayArticles[0])
+          }
           aria-label="بعدی"
           className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#f5f5f5] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer"
         >

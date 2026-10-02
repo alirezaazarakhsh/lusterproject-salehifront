@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   SALEHI_COLLECTION_PRODUCTS,
+  PRODUCT_CATEGORIES,
+  EXECUTED_PROJECTS,
   STORY_ITEMS,
+  MAGAZINE_ARTICLES,
   ChandelierProduct,
+  CategoryItem,
+  ExecutedProject,
   StoryItem,
   MagazineArticle,
 } from '../data/chandelierData';
@@ -15,11 +20,17 @@ import { AboutServicesSection } from '../components/sections/AboutServicesSectio
 import { ProductsCarouselSection } from '../components/sections/ProductsCarouselSection';
 import { ProjectsSection } from '../components/sections/ProjectsSection';
 import { MagazineSection } from '../components/sections/MagazineSection';
-import { FooterSection } from '../components/sections/FooterSection';
+import {
+  FooterSection,
+  FooterSettingsConfig,
+  INITIAL_FOOTER_SETTINGS,
+} from '../components/sections/FooterSection';
 import { RuleContentSection } from '../rule';
 import { ContactUsContentSection } from '../contact-us';
 import { AboutUsContentSection } from '../about-us';
 import { ProjectContentSection } from '../project';
+import { ProductContentSection } from '../product';
+import { AdminPanelSection } from '../admin';
 import { NotFoundContentSection } from '../not-found';
 import { ServerErrorContentSection } from '../server-error';
 import { PagePreloader } from '../components/PagePreloader';
@@ -118,7 +129,17 @@ export const HomePage: React.FC = () => {
           lowerHref.startsWith('#project/') ||
           lowerHref.startsWith('#/project/') ||
           lowerHref.startsWith('#projects/') ||
-          lowerHref.startsWith('#/projects/')
+          lowerHref.startsWith('#/projects/') ||
+          lowerHref === '#product' ||
+          lowerHref === '#/product' ||
+          lowerHref === '#products' ||
+          lowerHref === '#/products' ||
+          lowerHref.startsWith('#product/') ||
+          lowerHref.startsWith('#/product/') ||
+          lowerHref.startsWith('#products/') ||
+          lowerHref.startsWith('#/products/') ||
+          lowerHref === '#admin' ||
+          lowerHref === '#/admin'
         ) {
           return;
         }
@@ -166,7 +187,13 @@ export const HomePage: React.FC = () => {
           cleanPath !== '/project' &&
           cleanPath !== '/projects' &&
           !cleanPath.startsWith('/project/') &&
-          !cleanPath.startsWith('/projects/')
+          !cleanPath.startsWith('/projects/') &&
+          cleanPath !== '/product' &&
+          cleanPath !== '/products' &&
+          !cleanPath.startsWith('/product/') &&
+          !cleanPath.startsWith('/products/') &&
+          cleanPath !== '/admin' &&
+          !cleanPath.startsWith('/admin/')
         ) {
           e.preventDefault();
           setCurrentRoute('not-found');
@@ -200,7 +227,273 @@ export const HomePage: React.FC = () => {
   const [productsList, setProductsList] = useState<ChandelierProduct[]>(
     SALEHI_COLLECTION_PRODUCTS
   );
-  const [storiesList] = useState<StoryItem[]>(STORY_ITEMS);
+  const [categoriesList, setCategoriesList] =
+    useState<CategoryItem[]>(PRODUCT_CATEGORIES);
+  const [projectsList, setProjectsList] =
+    useState<ExecutedProject[]>(EXECUTED_PROJECTS);
+  const [storiesList, setStoriesList] = useState<StoryItem[]>(STORY_ITEMS);
+  const [articlesList, setArticlesList] =
+    useState<MagazineArticle[]>(MAGAZINE_ARTICLES);
+  const [footerSettings, setFooterSettings] = useState<FooterSettingsConfig>(
+    INITIAL_FOOTER_SETTINGS
+  );
+
+  const fetchLiveCatalogFromDb = async () => {
+    try {
+      const res = await fetch('/api/public/catalog');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.footerSettings) {
+        setFooterSettings((prev) => ({
+          ...prev,
+          ...data.footerSettings,
+        }));
+      }
+      if (Array.isArray(data.products) && data.products.length > 0) {
+        const mappedProducts: ChandelierProduct[] = data.products.map(
+          (row: any) => ({
+            id: row.productKey || `db-prod-${row.id}`,
+            name: row.name,
+            subtitle: row.subtitle,
+            priceFormatted: row.priceFormatted,
+            priceNumeric: Number(row.priceNumeric) || 0,
+            productCode: row.productCode,
+            image: row.image,
+            modelType: (row.modelType as any) || 'crystali',
+            defaultFinish: (row.defaultFinish as any) || 'gold-24k',
+            categoryKey: row.categorySlug || 'all',
+            outOfStock: Boolean(row.outOfStock),
+            hasSnappPay: Boolean(row.hasSnappPay),
+            dimensions: row.dimensions || '',
+            branchesCount: row.branchesCount || '',
+            bodyMaterial: row.bodyMaterial || '',
+            warranty: row.warranty || '',
+            description: row.description || '',
+          })
+        );
+        setProductsList(mappedProducts);
+
+        if (Array.isArray(data.categories) && data.categories.length > 0) {
+          const mappedCategories: CategoryItem[] = data.categories.map(
+            (catRow: any, idx: number) => {
+              const fallbackCat =
+                PRODUCT_CATEGORIES.find((c) => c.key === catRow.slug) ||
+                PRODUCT_CATEGORIES[idx] ||
+                PRODUCT_CATEGORIES[0];
+              return {
+                id: `cat-${catRow.id}`,
+                key: catRow.slug,
+                title: catRow.title,
+                count: catRow.countLabel || fallbackCat.count,
+                image: catRow.image || fallbackCat.image,
+              };
+            }
+          );
+          setCategoriesList(mappedCategories);
+        }
+
+        if (Array.isArray(data.projects) && data.projects.length > 0) {
+          const mappedProjects: ExecutedProject[] = data.projects.map(
+            (projRow: any) => {
+              let parsedGallery: string[] = [];
+              if (Array.isArray(projRow.galleryImages)) {
+                parsedGallery = projRow.galleryImages;
+              } else if (typeof projRow.galleryJson === 'string') {
+                try {
+                  parsedGallery = JSON.parse(projRow.galleryJson);
+                } catch {
+                  parsedGallery = [];
+                }
+              }
+              return {
+                id: projRow.slug ? `proj-${projRow.slug}` : `proj-${projRow.id}`,
+                slug: projRow.slug,
+                sampleCode: projRow.sampleCode || 'نمونه ۱',
+                district: projRow.district || 'فرشته',
+                categoryTab: (projRow.categoryTab as any) || 'gov',
+                title: projRow.title,
+                description: projRow.description,
+                usedChandeliersText: projRow.usedChandeliersText || '',
+                usedProducts: [
+                  {
+                    id: `up-${projRow.id}-1`,
+                    name: mappedProducts[0]?.name || 'لوستر ۱۲ شاخه تک',
+                    price:
+                      mappedProducts[0]?.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان',
+                    productId: mappedProducts[0]?.id || 'prod-3',
+                  },
+                  {
+                    id: `up-${projRow.id}-2`,
+                    name: mappedProducts[1]?.name || 'لوستر شاه ملکه',
+                    price:
+                      mappedProducts[1]?.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان',
+                    productId: mappedProducts[1]?.id || 'prod-4',
+                  },
+                ],
+                mainImage: projRow.mainImage,
+                galleryImages:
+                  parsedGallery.length > 0 ? parsedGallery : [projRow.mainImage],
+              };
+            }
+          );
+          setProjectsList(mappedProjects);
+        }
+
+        if (Array.isArray(data.stories) && data.stories.length > 0) {
+          const mappedStories: StoryItem[] = data.stories.map(
+            (stRow: any, idx: number) => {
+              const rawType = stRow.storyType || 'single-product';
+              const normalizedType =
+                rawType === 'image-only' || rawType === 'simple'
+                  ? 'image-only'
+                  : rawType === 'video'
+                  ? 'video'
+                  : 'single-product';
+
+              const linkedProd =
+                mappedProducts.find(
+                  (p) =>
+                    p.id === stRow.linkedProductKey ||
+                    p.productCode === stRow.linkedProductKey
+                ) ||
+                mappedProducts[idx % mappedProducts.length] ||
+                SALEHI_COLLECTION_PRODUCTS[0];
+
+              const thumbImg =
+                stRow.thumbnailImage || stRow.image || linkedProd.image;
+              const mainImg =
+                stRow.mediaUrl || stRow.image || stRow.thumbnailImage || thumbImg;
+
+              let parsedSlides: any[] = [];
+              if (typeof stRow.slidesJson === 'string' && stRow.slidesJson.trim()) {
+                try {
+                  const arr = JSON.parse(stRow.slidesJson);
+                  if (Array.isArray(arr) && arr.length > 0) {
+                    parsedSlides = arr.slice(0, 10).map((sl: any, sIdx: number) => {
+                      const slType =
+                        sl.type === 'image-only' || sl.type === 'simple'
+                          ? 'image-only'
+                          : sl.type === 'video'
+                          ? 'video'
+                          : 'single-product';
+                      const slLinkedProd =
+                        mappedProducts.find(
+                          (p) =>
+                            p.id === sl.linkedProductKey ||
+                            p.productCode === sl.linkedProductKey
+                        ) || linkedProd;
+                      return {
+                        id: sl.id || `slide-${stRow.id}-${sIdx}`,
+                        type: slType,
+                        title: sl.title || stRow.title,
+                        subtitle: sl.subtitle || '',
+                        mediaUrl: sl.mediaUrl || mainImg,
+                        videoUrl:
+                          slType === 'video'
+                            ? sl.videoUrl ||
+                              'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4'
+                            : '',
+                        durationSeconds: 10,
+                        products:
+                          slType === 'single-product'
+                            ? [
+                                {
+                                  id: slLinkedProd.id,
+                                  name: slLinkedProd.name,
+                                  price: slLinkedProd.priceFormatted,
+                                  image: slLinkedProd.image,
+                                  productCode: slLinkedProd.productCode,
+                                  modelType: slLinkedProd.modelType,
+                                  finish: slLinkedProd.defaultFinish,
+                                },
+                              ]
+                            : [],
+                      };
+                    });
+                  }
+                } catch {
+                  parsedSlides = [];
+                }
+              }
+
+              return {
+                id: stRow.storyKey || `story-${stRow.id}`,
+                storyType: normalizedType,
+                title: stRow.title,
+                fullTitle: stRow.fullTitle || stRow.title,
+                subtitle: stRow.subtitle || '',
+                category: (stRow.category as any) || 'chandeliers',
+                categoryLabel: stRow.categoryLabel || 'کلکسیون لوستر',
+                durationSeconds: Number(stRow.durationSeconds) || 10,
+                thumbnailImage: thumbImg,
+                image: mainImg,
+                mediaUrl: mainImg,
+                productImage: linkedProd.image,
+                videoUrl:
+                  normalizedType === 'video'
+                    ? stRow.videoUrl ||
+                      'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4'
+                    : '',
+                linkedProductKey:
+                  normalizedType === 'single-product'
+                    ? stRow.linkedProductKey || linkedProd.id
+                    : '',
+                price: stRow.price || linkedProd.priceFormatted,
+                modelType: (stRow.modelType as any) || linkedProd.modelType,
+                finish: (stRow.finish as any) || linkedProd.defaultFinish,
+                products:
+                  normalizedType === 'single-product'
+                    ? [
+                        {
+                          id: linkedProd.id,
+                          name: linkedProd.name,
+                          price: linkedProd.priceFormatted,
+                          image: linkedProd.image,
+                          productCode: linkedProd.productCode,
+                          modelType: linkedProd.modelType,
+                          finish: linkedProd.defaultFinish,
+                        },
+                      ]
+                    : [],
+                slides: parsedSlides.length > 0 ? parsedSlides : undefined,
+              };
+            }
+          );
+          setStoriesList(mappedStories);
+        }
+
+        if (Array.isArray(data.articles) && data.articles.length > 0) {
+          const mappedArticles: MagazineArticle[] = data.articles.map(
+            (artRow: any, idx: number) => ({
+              id: artRow.articleKey || artRow.slug || `mag-${artRow.id}`,
+              title: artRow.title,
+              excerpt: artRow.excerpt,
+              fullContent: Array.isArray(artRow.fullContent)
+                ? artRow.fullContent
+                : artRow.content
+                  ? String(artRow.content)
+                      .split('\n')
+                      .map((s: string) => s.trim())
+                      .filter(Boolean)
+                  : [artRow.excerpt],
+              date: artRow.publishDate || '۱۵ شهریور ۱۴۰۴',
+              readTime: artRow.readTime || '۴ دقیقه مطالعه',
+              category: artRow.category || 'راهنمای دکوراسیون سلطنتی',
+              image: artRow.image,
+              featured: idx === 0 || Boolean(artRow.featured),
+            })
+          );
+          setArticlesList(mappedArticles);
+        }
+      }
+    } catch {
+      // حفظ داده‌های محلی در صورت عدم پاسخگویی موقت
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveCatalogFromDb();
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
@@ -342,50 +635,51 @@ export const HomePage: React.FC = () => {
       dir="rtl"
       className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-hidden"
     >
-      {/* ۱. هدر بالای صفحه (در صفحات 404 و قطعی سرور 500 فقط در دسکتاپ نمایش داده می‌شود و در موبایل مخفی است مطابق تصاویر) */}
-      <div
-        className={
-          currentRoute === 'not-found' || currentRoute === 'server-error'
-            ? 'hidden md:block'
-            : ''
-        }
-      >
-        <HeaderSection
-          currentRoute={currentRoute}
-          onNavigateRoute={(route, hashAnchor) => {
-            setCurrentRoute(route);
-            navigateToRoute(route, hashAnchor);
-          }}
-          totalCartCount={totalCartCount}
-          isCartOpen={isCartOpen}
-          onOpenCart={() => setIsCartOpen(true)}
-          onCloseCart={() => setIsCartOpen(false)}
-          onOpenLogin={() => setIsLoginModalOpen(true)}
-          onLoginSuccess={() => {
-            setIsLoggedIn(true);
-            // show a beautiful success toast for logging in
-            addAppToast(
-              'success',
-              'ورود موفقیت آمیز',
-              'مشتری گرامی از پنل کاربری خود وارد شده اید.'
-            );
-          }}
-          isLoggedIn={isLoggedIn}
-          userDisplayName={userDisplayName}
-          onToggleUserDisplayName={() =>
-            setUserDisplayName((prev) =>
-              prev === 'مشتری عزیز!' ? 'علیرضا آذرخش' : 'مشتری عزیز!'
-            )
+      {/* ۱. هدر بالای صفحه (در پنل ادمین حذف شده و در صفحات 404 و 500 فقط در دسکتاپ نمایش داده می‌شود) */}
+      {currentRoute !== 'admin' && (
+        <div
+          className={
+            currentRoute === 'not-found' || currentRoute === 'server-error'
+              ? 'hidden md:block'
+              : ''
           }
-          onLogout={() => setIsLogoutConfirmOpen(true)}
-          forceOpenProfileMenu={forceOpenProfileMenu}
-          onProfileMenuInteracted={() => setForceOpenProfileMenu(false)}
-          onOpen3DStudio={() =>
-            handleOpenProductModal(productsList[3] || productsList[0])
-          }
-          onOpenCustomProductModal={() => setIsCustom3DModalOpen(true)}
-        />
-      </div>
+        >
+          <HeaderSection
+            currentRoute={currentRoute}
+            onNavigateRoute={(route, hashAnchor) => {
+              setCurrentRoute(route);
+              navigateToRoute(route, hashAnchor);
+            }}
+            totalCartCount={totalCartCount}
+            isCartOpen={isCartOpen}
+            onOpenCart={() => setIsCartOpen(true)}
+            onCloseCart={() => setIsCartOpen(false)}
+            onOpenLogin={() => setIsLoginModalOpen(true)}
+            onLoginSuccess={() => {
+              setIsLoggedIn(true);
+              addAppToast(
+                'success',
+                'ورود موفقیت آمیز',
+                'مشتری گرامی از پنل کاربری خود وارد شده اید.'
+              );
+            }}
+            isLoggedIn={isLoggedIn}
+            userDisplayName={userDisplayName}
+            onToggleUserDisplayName={() =>
+              setUserDisplayName((prev) =>
+                prev === 'مشتری عزیز!' ? 'علیرضا آذرخش' : 'مشتری عزیز!'
+              )
+            }
+            onLogout={() => setIsLogoutConfirmOpen(true)}
+            forceOpenProfileMenu={forceOpenProfileMenu}
+            onProfileMenuInteracted={() => setForceOpenProfileMenu(false)}
+            onOpen3DStudio={() =>
+              handleOpenProductModal(productsList[3] || productsList[0])
+            }
+            onOpenCustomProductModal={() => setIsCustom3DModalOpen(true)}
+          />
+        </div>
+      )}
 
       {currentRoute === 'server-error' ? (
         /* محتوای صفحه خطای سرور / دان شدن سایت (/500) */
@@ -415,8 +709,25 @@ export const HomePage: React.FC = () => {
       ) : currentRoute === 'project' ? (
         /* محتوای میانی صفحه پروژه‌ها (/project) */
         <ProjectContentSection
+          projects={projectsList}
+          products={productsList}
           onOpenProductModal={(prod) => handleOpenProductModal(prod)}
           onAddToCart={handleAddToCart}
+          onShowToast={addAppToast}
+          onOpenLogin={() => setIsLoginModalOpen(true)}
+          isLoggedIn={isLoggedIn}
+        />
+      ) : currentRoute === 'admin' ? (
+        /* محتوای پنل مدیریت گرافیکی (/admin) متصل به PostgreSQL و Express */
+        <AdminPanelSection onCatalogUpdated={fetchLiveCatalogFromDb} />
+      ) : currentRoute === 'product' ? (
+        /* محتوای میانی صفحه محصولات و دسته‌بندی‌ها (/product و /product/categories/:slug) */
+        <ProductContentSection
+          products={productsList}
+          cartProductIds={cartProductIds}
+          cartQuantities={cartQuantities}
+          onOpenProductModal={handleOpenProductModal}
+          onAddToCart={(prod) => handleAddToCart(prod, 1)}
           onShowToast={addAppToast}
           onOpenLogin={() => setIsLoginModalOpen(true)}
           isLoggedIn={isLoggedIn}
@@ -437,6 +748,8 @@ export const HomePage: React.FC = () => {
           <CategorySection
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
+            categories={categoriesList}
+            products={productsList}
           />
 
           {/* ۵. درباره خدمات لوستر + قاب قوسی سه‌بعدی */}
@@ -460,6 +773,8 @@ export const HomePage: React.FC = () => {
 
           {/* ۷. پروژه های اجرایی */}
           <ProjectsSection
+            projects={projectsList}
+            products={productsList}
             onOpenProductModal={(prod) => handleOpenProductModal(prod)}
           />
 
@@ -478,21 +793,25 @@ export const HomePage: React.FC = () => {
 
           {/* ۹. مجله های لوستر */}
           <MagazineSection
+            articles={articlesList}
             onSelectArticle={(article) => setActiveArticleModal(article)}
           />
         </>
       )}
 
-      {/* ۱۰. فوتر تمام‌عرض دو رنگ (در صفحات 404 و 500 نمایش داده نمی‌شود مطابق تصاویر) */}
-      {currentRoute !== 'not-found' && currentRoute !== 'server-error' && (
-        <FooterSection
-          currentRoute={currentRoute}
-          onNavigateRoute={(route, hashAnchor) => {
-            setCurrentRoute(route);
-            navigateToRoute(route, hashAnchor);
-          }}
-        />
-      )}
+      {/* ۱۰. فوتر تمام‌عرض دو رنگ (در پنل ادمین و صفحات 404 و 500 نمایش داده نمی‌شود) */}
+      {currentRoute !== 'not-found' &&
+        currentRoute !== 'server-error' &&
+        currentRoute !== 'admin' && (
+          <FooterSection
+            currentRoute={currentRoute}
+            footerSettings={footerSettings}
+            onNavigateRoute={(route, hashAnchor) => {
+              setCurrentRoute(route);
+              navigateToRoute(route, hashAnchor);
+            }}
+          />
+        )}
 
       {/* پنجره مودال استودیو سه‌بعدی و تغییر رنگ محصول */}
       <ProductStudioModal
@@ -513,6 +832,7 @@ export const HomePage: React.FC = () => {
       <StorySpotlightModal
         story={activeStoryModal}
         stories={storiesList}
+        allProducts={productsList}
         onClose={() => setActiveStoryModal(null)}
         onSelectStory={(nextStory) => setActiveStoryModal(nextStory)}
         onOpenProduct={(prod) => handleOpenProductModal(prod, 'original')}

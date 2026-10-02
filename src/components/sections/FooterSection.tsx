@@ -1,26 +1,109 @@
 import React, { useState } from 'react';
-import { ArrowUp, Instagram, Linkedin, MessageCircle, ChevronDown } from 'lucide-react';
+import { ArrowUp, Instagram, ChevronDown } from 'lucide-react';
 import { FooterBrandLogo, CalligraphyTrustBadge } from '../Ornaments';
 import { SALEHI_PHONE_NUMBERS } from '../../data/chandelierData';
 import {
   AppRoute,
   getCurrentRoute,
   navigateToRoute,
+  navigateToProductCategory,
 } from '../../utils/navigation';
+
+export interface FooterPhoneConfig {
+  id: string;
+  branchTitle: string;
+  displayPhone: string;
+  phone?: string;
+}
+
+export interface FooterLicenseConfig {
+  id: string;
+  title: string;
+  imageUrl: string;
+  linkUrl?: string;
+}
+
+export interface FooterSettingsConfig {
+  cardBgColor: string;
+  bottomCardBgColor?: string;
+  descriptionParagraph1: string;
+  descriptionParagraph2: string;
+  phones: FooterPhoneConfig[];
+  linkedinUrl: string;
+  whatsappUrl: string;
+  instagramUrl: string;
+  enamadCode: string;
+  otherLicenses: FooterLicenseConfig[];
+  copyrightText: string;
+}
+
+export const INITIAL_FOOTER_SETTINGS: FooterSettingsConfig = {
+  cardBgColor: '#b39561',
+  bottomCardBgColor: '#f7f6f2',
+  descriptionParagraph1:
+    'شعبه VIP مجموعه لوستر صالحی یکی از بخش‌های منحصربه‌فرد این مجموعه است که با هدف ارائه تجربه‌ای ویژه برای شما عزیزان طراحی شده است. در این شعبه، امکان ثبت سفارش تمامی محصولات مجموعه مطابق با سلیقه و نیاز شخصی شما فراهم شده است.',
+  descriptionParagraph2:
+    'پشتیبانی ۲۴ ساعته لوستر صالحی در کنار شما همیشه هستیم :)',
+  phones: SALEHI_PHONE_NUMBERS.map((p) => ({
+    id: p.id,
+    branchTitle: p.branchTitle,
+    displayPhone: p.displayPhone,
+    phone: p.phone,
+  })),
+  linkedinUrl: '#footer-contact',
+  whatsappUrl: '#footer-contact',
+  instagramUrl: '#footer-contact',
+  enamadCode: '',
+  otherLicenses: [
+    {
+      id: 'license-2',
+      title: 'مجوز ساماندهی',
+      imageUrl: '',
+      linkUrl: '',
+    },
+    {
+      id: 'license-3',
+      title: 'مجوز اتحادیه لوستر',
+      imageUrl: '',
+      linkUrl: '',
+    },
+    {
+      id: 'license-4',
+      title: 'گواهی اصالت و ضمانت',
+      imageUrl: '',
+      linkUrl: '',
+    },
+  ],
+  copyrightText: 'کلیه حقوق این سایت محفوظ و متعلق به لوستر اکبر صالحی است.',
+};
 
 interface FooterSectionProps {
   currentRoute?: AppRoute;
   onNavigateRoute?: (route: AppRoute, hashAnchor?: string) => void;
+  footerSettings?: FooterSettingsConfig;
 }
 
 /**
- * بخش فوتر دو رنگ تمام‌عرض (دقیقاً مطابق نیمه پایینی عکس چهارم)
+ * بخش فوتر دو رنگ تمام‌عرض (متصل به تنظیمات فوتر در پنل مدیریت)
  */
 export const FooterSection: React.FC<FooterSectionProps> = ({
   currentRoute,
   onNavigateRoute,
+  footerSettings,
 }) => {
   const activeRoute = currentRoute ?? getCurrentRoute();
+  const settings: FooterSettingsConfig = {
+    ...INITIAL_FOOTER_SETTINGS,
+    ...(footerSettings || {}),
+    phones:
+      footerSettings?.phones && footerSettings.phones.length > 0
+        ? footerSettings.phones
+        : INITIAL_FOOTER_SETTINGS.phones,
+    otherLicenses:
+      footerSettings?.otherLicenses && footerSettings.otherLicenses.length > 0
+        ? footerSettings.otherLicenses
+        : INITIAL_FOOTER_SETTINGS.otherLicenses,
+  };
 
   const triggerRouteNavigation = (route: AppRoute, hashAnchor?: string) => {
     if (onNavigateRoute) {
@@ -29,7 +112,6 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
       navigateToRoute(route, hashAnchor);
     }
   };
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     quickAccess: false,
     collection: false,
@@ -47,24 +129,23 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCopyPhone = (id: string, phone: string) => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(phone);
-    }
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 1800);
-  };
-
   return (
-    <footer id="footer-contact" className="w-full mt-12 bg-[#f7f6f2] pb-20 lg:pb-0">
+    <footer
+      id="footer-contact"
+      className="w-full mt-12 pb-20 lg:pb-0"
+      style={{ backgroundColor: settings.bottomCardBgColor || '#f7f6f2' }}
+    >
       <div className="w-full max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-12">
-        {/* باکس طلایی سمت راست (شعبه VIP لوستر اکبر صالحی) */}
-        <div className="lg:col-span-5 bg-[#b39561] text-white p-8 sm:p-12 lg:p-14 relative overflow-hidden flex flex-col justify-between min-h-[380px]">
+        {/* باکس سمت راست (شعبه VIP لوستر اکبر صالحی) - قابل تغییر رنگ دیو از پنل ادمین */}
+        <div
+          className="lg:col-span-5 text-white p-8 sm:p-12 lg:p-14 relative overflow-hidden flex flex-col justify-between min-h-[380px] transition-colors duration-300"
+          style={{ backgroundColor: settings.cardBgColor || '#b39561' }}
+        >
           {/* طرح خطی گل و برگ در گوشه پایین-چپ باکس طلایی (مطابق عکس چهارم) */}
           <svg
             viewBox="0 0 220 220"
             fill="none"
-            className="w-52 h-52 absolute -bottom-8 -left-6 text-[#6f5932] opacity-45 pointer-events-none select-none"
+            className="w-52 h-52 absolute -bottom-8 -left-6 text-black/25 opacity-45 pointer-events-none select-none"
           >
             <g stroke="currentColor" strokeWidth="1.2">
               <path d="M20 200C30 140 70 90 130 65C105 115 75 160 20 200Z" />
@@ -81,16 +162,14 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
               <FooterBrandLogo />
             </div>
 
-            {/* متن شعبه VIP */}
+            {/* متن شعبه VIP (قابل ویرایش از پنل ادمین) */}
             <p className="text-xs sm:text-[13.5px] leading-7 text-white/95 text-justify mb-6">
-              شعبه VIP مجموعه لوستر صالحی یکی از بخش‌های منحصربه‌فرد این مجموعه است که با
-              هدف ارائه تجربه‌ای ویژه برای شما عزیزان طراحی شده است. در این شعبه، امکان ثبت
-              سفارش تمامی محصولات مجموعه مطابق با سلیقه و نیاز شخصی شما فراهم شده است.
+              {settings.descriptionParagraph1}
             </p>
 
-            {/* متن پشتیبانی ۲۴ ساعته تیره */}
+            {/* متن پشتیبانی ۲۴ ساعته تیره (قابل ویرایش از پنل ادمین) */}
             <p className="text-xs sm:text-[13px] font-bold text-[#231f1c]">
-              پشتیبانی ۲۴ ساعته لوستر صالحی در کنار شما همیشه هستیم :)
+              {settings.descriptionParagraph2}
             </p>
           </div>
 
@@ -110,7 +189,10 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
         </div>
 
         {/* باکس کرم/خاکستری روشن سمت چپ (لینک‌ها، شماره‌ها و نشان‌ها) */}
-        <div className="lg:col-span-7 bg-[#f7f6f2] p-8 sm:p-12 lg:p-14 flex flex-col justify-between">
+        <div
+          className="lg:col-span-7 p-8 sm:p-12 lg:p-14 flex flex-col justify-between transition-colors duration-300"
+          style={{ backgroundColor: settings.bottomCardBgColor || '#f7f6f2' }}
+        >
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
             {/* ستون ۱: دسترسی سریع تر */}
             <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[12px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
@@ -282,8 +364,11 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                   <li className="relative md:static">
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
-                      href="#collection-salehi"
-                      className="hover:text-[#b39561] transition-colors"
+                      href="/product/categories/chandeliers"
+                      onClick={(e) => {
+                        navigateToProductCategory('chandeliers', e);
+                      }}
+                      className="hover:text-[#b39561] transition-colors cursor-pointer"
                     >
                       لوستر های کلاسیک
                     </a>
@@ -291,8 +376,11 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                   <li className="relative md:static">
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
-                      href="#best-sellers"
-                      className="hover:text-[#b39561] transition-colors"
+                      href="/product/categories/chandeliers"
+                      onClick={(e) => {
+                        navigateToProductCategory('chandeliers', e);
+                      }}
+                      className="hover:text-[#b39561] transition-colors cursor-pointer"
                     >
                       لوستر های مدرن
                     </a>
@@ -300,8 +388,11 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                   <li className="relative md:static">
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
-                      href="#collection-salehi"
-                      className="hover:text-[#b39561] transition-colors"
+                      href="/product/categories/abalour"
+                      onClick={(e) => {
+                        navigateToProductCategory('abalour', e);
+                      }}
+                      className="hover:text-[#b39561] transition-colors cursor-pointer"
                     >
                       آباژور کلاسیک
                     </a>
@@ -309,8 +400,11 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                   <li className="relative md:static">
                     <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
                     <a
-                      href="#collection-salehi"
-                      className="hover:text-[#b39561] transition-colors"
+                      href="/product/categories/mirror-console"
+                      onClick={(e) => {
+                        navigateToProductCategory('mirror-console', e);
+                      }}
+                      className="hover:text-[#b39561] transition-colors cursor-pointer"
                     >
                       آینه، کنسول
                     </a>
@@ -363,41 +457,86 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
               {/* محتوای ستون (همیشه در دسکتاپ باز، در موبایل آکاردئونی) */}
               <div className={`${openSections.phones ? 'block' : 'hidden'} md:block mt-2 md:mt-0`}>
                 <div className="space-y-2.5">
-                  {SALEHI_PHONE_NUMBERS.map((item) => {
-                    // تفکیک نام شعبه و شماره تلفن جهت چیدمان فوق‌العاده شیک دوطرفه و جلوگیری از بیرون‌زدگی
-                    const isMatch = item.label.match(/(.+)\s*\((.+)\)/);
-                    const title = isMatch ? isMatch[1].replace('شماره تلفن', '').trim() : 'افسریه';
-                    const phoneNumber = isMatch ? isMatch[2].trim() : '۰۹۹۱۲۳۴۸۹۷۵';
+                  {settings.phones.map((item, idx) => {
+                    const title = item.branchTitle || `شماره ${idx + 1}`;
+                    const phoneNumber = item.displayPhone || '021-33459665';
+                    const dialPhone =
+                      item.phone || phoneNumber.replace(/[^0-9+]/g, '');
 
                     return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleCopyPhone(item.id, item.phone)}
+                      <a
+                        key={item.id || `ph-${idx}`}
+                        href={`tel:${dialPhone}`}
                         className="w-full py-2 px-3 rounded-[6px] text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center justify-between gap-1.5 tabular-nums bg-[#eae9e4] text-[#333333] hover:bg-[#b39561] hover:text-white hover:shadow-xs"
                       >
-                        {copiedId === item.id ? (
-                          <span className="w-full text-center text-[10.5px]">شماره کپی شد ✓</span>
-                        ) : (
-                          <>
-                            <span className="text-[10px] opacity-80 shrink-0">{title}</span>
-                            <span className="tracking-wide">{phoneNumber}</span>
-                          </>
-                        )}
-                      </button>
+                        <span className="text-[10.5px] opacity-85 shrink-0">
+                          {title}
+                        </span>
+                        <span dir="ltr" className="tracking-wide">
+                          {phoneNumber}
+                        </span>
+                      </a>
                     );
                   })}
                 </div>
               </div>
             </div>
 
-            {/* ستون ۴: شبکه‌های اجتماعی و ۴ نشان لوستر صالحی */}
+            {/* ستون ۴: شبکه‌های اجتماعی و ۴ مجوز (اینماد + ۳ مجوز تصویری) */}
             <div className="flex flex-col items-center md:items-end justify-start bg-transparent p-0 mb-4 md:mb-0 w-full max-w-sm">
-              {/* شبکه نشان‌های خوشنویسی (۴ نشان در یک ردیف در موبایل و ۲×۲ در دسکتاپ) */}
+              {/* شبکه ۴ مجوز (مجوز اول: کد اینماد | ۳ مجوز بعدی: تصویر مجوزها) */}
               <div className="grid grid-cols-4 md:grid-cols-2 gap-2 md:gap-3 w-full max-w-sm md:max-w-[172px] mb-4 md:mb-0 order-1 md:order-2 md:mt-6">
-                {[0, 1, 2, 3].map((idx) => (
-                  <CalligraphyTrustBadge key={idx} index={idx} />
-                ))}
+                {/* باکس ۱: مجوز اینماد (پشتیبانی از کد HTML اینماد) */}
+                {settings.enamadCode && settings.enamadCode.trim() ? (
+                  <div
+                    title="نماد اعتماد الکترونیکی (اینماد)"
+                    className="aspect-square rounded-[10px] border border-[#e3e0d8] bg-white flex items-center justify-center p-1.5 shadow-2xs hover:border-[#b39561] transition-colors overflow-hidden [&_img]:max-w-full [&_img]:max-h-full [&_img]:object-contain"
+                    dangerouslySetInnerHTML={{ __html: settings.enamadCode }}
+                  />
+                ) : (
+                  <CalligraphyTrustBadge index={0} />
+                )}
+
+                {/* باکس‌های ۲، ۳ و ۴: سایر مجوزها (پشتیبانی از آپلود تصویر) */}
+                {[0, 1, 2].map((licIdx) => {
+                  const lic = settings.otherLicenses?.[licIdx];
+                  if (lic && lic.imageUrl && lic.imageUrl.trim()) {
+                    return (
+                      <div
+                        key={lic.id || `lic-${licIdx + 2}`}
+                        title={lic.title || `مجوز شماره ${licIdx + 2}`}
+                        className="aspect-square rounded-[10px] border border-[#e3e0d8] bg-white flex items-center justify-center p-1.5 shadow-2xs hover:border-[#b39561] transition-colors overflow-hidden"
+                      >
+                        {lic.linkUrl && lic.linkUrl.trim() ? (
+                          <a
+                            href={lic.linkUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full h-full flex items-center justify-center"
+                          >
+                            <img
+                              src={lic.imageUrl}
+                              alt={lic.title || `مجوز ${licIdx + 2}`}
+                              className="w-full h-full object-contain rounded-[6px]"
+                            />
+                          </a>
+                        ) : (
+                          <img
+                            src={lic.imageUrl}
+                            alt={lic.title || `مجوز ${licIdx + 2}`}
+                            className="w-full h-full object-contain rounded-[6px]"
+                          />
+                        )}
+                      </div>
+                    );
+                  }
+                  return (
+                    <CalligraphyTrustBadge
+                      key={`default-lic-${licIdx + 1}`}
+                      index={licIdx + 1}
+                    />
+                  );
+                })}
               </div>
 
               {/* بخش شبکه‌های اجتماعی: ردیف دوطرفه در موبایل و ساده در دسکتاپ */}
@@ -407,7 +546,14 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                 </span>
                 <div className="flex items-center gap-2.5">
                   <a
-                    href="#footer-contact"
+                    href={settings.linkedinUrl || '#footer-contact'}
+                    target={
+                      settings.linkedinUrl &&
+                      settings.linkedinUrl.startsWith('http')
+                        ? '_blank'
+                        : undefined
+                    }
+                    rel="noopener noreferrer"
                     aria-label="LinkedIn"
                     className="w-10 h-10 md:w-12 md:h-12 rounded-[8px] bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer group"
                   >
@@ -419,7 +565,14 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                     </svg>
                   </a>
                   <a
-                    href="#footer-contact"
+                    href={settings.whatsappUrl || '#footer-contact'}
+                    target={
+                      settings.whatsappUrl &&
+                      settings.whatsappUrl.startsWith('http')
+                        ? '_blank'
+                        : undefined
+                    }
+                    rel="noopener noreferrer"
                     aria-label="WhatsApp"
                     className="w-10 h-10 md:w-12 md:h-12 rounded-[8px] bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer group"
                   >
@@ -431,7 +584,14 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                     </svg>
                   </a>
                   <a
-                    href="#footer-contact"
+                    href={settings.instagramUrl || '#footer-contact'}
+                    target={
+                      settings.instagramUrl &&
+                      settings.instagramUrl.startsWith('http')
+                        ? '_blank'
+                        : undefined
+                    }
+                    rel="noopener noreferrer"
                     aria-label="Instagram"
                     className="w-10 h-10 md:w-12 md:h-12 rounded-[8px] bg-[#eae9e4] hover:bg-[#222222] text-[#222222] hover:text-white flex items-center justify-center transition-all cursor-pointer"
                   >
@@ -442,10 +602,10 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
             </div>
           </div>
 
-          {/* نوار کپی‌رایت پایین فوتر */}
+          {/* نوار کپی‌رایت پایین فوتر (قابل ویرایش از پنل ادمین) */}
           <div className="mt-10 pt-6 border-t-2 border-[#e4e2dc] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 text-[#222222] w-full font-bold">
             <p className="text-center md:text-right whitespace-nowrap text-[10px] xs:text-[11.5px] md:text-[12px] lg:text-[13.5px]">
-              کلیه حقوق این سایت محفوظ و متعلق به لوستر اکبر صالحی است.
+              {settings.copyrightText}
             </p>
             <p className="text-center md:text-left text-[10px] xs:text-[11.5px] md:text-[12px] lg:text-[13.5px]" dir="ltr">
               Design &amp; Develope By{' '}

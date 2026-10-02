@@ -1,17 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SectionHeading, CategoryStarSeal } from '../Ornaments';
-import { navigateToRoute } from '../../utils/navigation';
+import { navigateToRoute, navigateToProjectSlug } from '../../utils/navigation';
 import {
   PROJECT_TABS,
   EXECUTED_PROJECTS,
   SALEHI_COLLECTION_PRODUCTS,
   ChandelierProduct,
+  ExecutedProject,
 } from '../../data/chandelierData';
+import { buildProjectsForTabAndPage } from '../../project/ProjectContentSection';
 
 interface ProjectsSectionProps {
+  projects?: ExecutedProject[];
+  products?: ChandelierProduct[];
   onOpenProductModal: (product: ChandelierProduct) => void;
 }
+
+const SAMPLE_LABELS = ['نمونه ۱', 'نمونه ۲', 'نمونه ۳', 'نمونه ۴'];
 
 /**
  * کامپوننت هوشمند نمایش تصویر گالری:
@@ -40,7 +46,7 @@ const AdaptiveGalleryImage: React.FC<{
         <img
           src={src}
           alt=""
-           aria-hidden="true"
+          aria-hidden="true"
           referrerPolicy="no-referrer"
           className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-35 pointer-events-none"
         />
@@ -50,7 +56,7 @@ const AdaptiveGalleryImage: React.FC<{
         alt={alt}
         onLoad={handleLoad}
         referrerPolicy="no-referrer"
-        className={`relative z-10 w-full h-full transition-all duration-300 ${
+        className={`relative z-10 w-full h-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isPortraitOrSquare
             ? isThumbnail
               ? 'object-contain p-1'
@@ -64,27 +70,95 @@ const AdaptiveGalleryImage: React.FC<{
 
 /**
  * بخش «پروژه های اجرایی»
- * - نوار تب‌های بالا (ارگان‌های دولتی، تجاری، مساجد، رستوران‌ها، منازل مسکونی) با خط طلایی زیر تب فعال دقیقاً مطابق تصویر دوم
- * - تغییر کامل لیست نمونه‌ها، عنوان، توضیحات، لوسترهای استفاده‌شده و تصاویر محیطی گالری با تغییر هر تب یا هر نمونه (نمونه ۱ تا ۴)
+ * - خواندن ۴ پروژه جدید هر تب مستقیماً از صفحه پروژه‌ها (/project)
+ * - چرخش خودکار تصاویر گالری پروژه همراه با انیمیشن نرم Crossfade
  */
 export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
+  projects,
+  products,
   onOpenProductModal,
 }) => {
-  const [activeTab, setActiveTab] = useState<string>('gov');
+  const [activeTab, setActiveTab] = useState<
+    'gov' | 'commercial' | 'mosques' | 'restaurants' | 'residential'
+  >('gov');
   const [selectedSampleIdx, setSelectedSampleIdx] = useState<number>(0); // پیش‌فرض نمونه ۱
   const [activeGalleryIdx, setActiveGalleryIdx] = useState<number>(0);
   const projectScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // فیلتر ۴ پروژه مربوط به تب انتخاب‌شده
-  const tabProjects = EXECUTED_PROJECTS.filter(
+  const liveProducts =
+    products && products.length > 0 ? products : SALEHI_COLLECTION_PRODUCTS;
+
+  // خواندن ۴ پروژه مربوط به تب انتخاب‌شده مستقیماً از دیتابیس PostgreSQL
+  const dbTabProjects = (projects || [])
+    .filter((p) => p.categoryTab === activeTab)
+    .slice(0, 4);
+  const fallbackTabProjects = EXECUTED_PROJECTS.filter(
     (p) => p.categoryTab === activeTab
-  );
+  ).slice(0, 4);
+  const latestPageProjects = buildProjectsForTabAndPage(activeTab, 1).slice(0, 4);
+
+  const tabProjects = (
+    dbTabProjects.length > 0
+      ? dbTabProjects.map((dbProj, idx) => ({
+          ...dbProj,
+          sampleCode: SAMPLE_LABELS[idx] || dbProj.sampleCode || `نمونه ${idx + 1}`,
+          slug:
+            (dbProj as any).slug ||
+            dbProj.id.replace(/^proj-/, '') ||
+            'kiani-shomali',
+        }))
+      : latestPageProjects.map((pageProj, idx) => {
+          const fallbackProj =
+            fallbackTabProjects[idx] ||
+            fallbackTabProjects[0] ||
+            EXECUTED_PROJECTS[0];
+          const cleanDistrict = pageProj.title.replace(/^پروژه\s+/, '').trim();
+          const galleryList =
+            pageProj.galleryImages && pageProj.galleryImages.length >= 4
+              ? pageProj.galleryImages.slice(0, 4)
+              : fallbackProj.galleryImages;
+
+          return {
+            ...fallbackProj,
+            id: pageProj.id,
+            slug: pageProj.slug,
+            sampleCode: SAMPLE_LABELS[idx] || `نمونه ${idx + 1}`,
+            district: cleanDistrict || pageProj.location,
+            categoryTab: activeTab,
+            title: pageProj.title,
+            mainImage: pageProj.image || galleryList[0] || fallbackProj.mainImage,
+            galleryImages: galleryList,
+          };
+        })
+  ).slice(0, 4);
 
   const currentProject =
-    tabProjects[selectedSampleIdx] || tabProjects[0] || EXECUTED_PROJECTS[0];
+    tabProjects[selectedSampleIdx] || tabProjects[0] || {
+      ...EXECUTED_PROJECTS[0],
+      slug: 'kiani-shomali',
+    };
+
+  // چرخش خودکار و نرم تصاویر گالری پروژه
+  useEffect(() => {
+    const totalSlides = currentProject.galleryImages.length;
+    if (totalSlides <= 1) return;
+
+    const timer = window.setInterval(() => {
+      setActiveGalleryIdx((prev) => (prev + 1) % totalSlides);
+    }, 3600);
+
+    return () => window.clearInterval(timer);
+  }, [
+    activeTab,
+    selectedSampleIdx,
+    activeGalleryIdx,
+    currentProject.galleryImages.length,
+  ]);
 
   const handleSelectTab = (tabId: string) => {
-    setActiveTab(tabId);
+    setActiveTab(
+      tabId as 'gov' | 'commercial' | 'mosques' | 'restaurants' | 'residential'
+    );
     setSelectedSampleIdx(0);
     setActiveGalleryIdx(0);
     if (projectScrollRef.current) {
@@ -319,9 +393,9 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
             <div className="space-y-3 pt-1">
               {currentProject.usedProducts.map((up) => {
                 const linkedProduct =
-                  SALEHI_COLLECTION_PRODUCTS.find(
-                    (p) => p.id === up.productId
-                  ) || SALEHI_COLLECTION_PRODUCTS[2];
+                  liveProducts.find((p) => p.id === up.productId) ||
+                  liveProducts[2] ||
+                  liveProducts[0];
 
                 return (
                   <div
@@ -357,12 +431,15 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
             <button
               type="button"
               onClick={() => {
+                if (currentProject.slug) {
+                  navigateToProjectSlug(currentProject.slug);
+                  return;
+                }
                 const firstUsedProductId =
                   currentProject.usedProducts[0]?.productId;
                 const targetProduct =
-                  SALEHI_COLLECTION_PRODUCTS.find(
-                    (p) => p.id === firstUsedProductId
-                  ) || SALEHI_COLLECTION_PRODUCTS[0];
+                  liveProducts.find((p) => p.id === firstUsedProductId) ||
+                  liveProducts[0];
                 onOpenProductModal(targetProduct);
               }}
               className="h-10 px-6 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
@@ -374,16 +451,27 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
 
         {/* ستون سوم (سمت چپ - ۵ ستون): گالری تصاویر پروژه به همراه ۴ تصویر کوچک زیرین (مخصوص دسکتاپ - در موبایل طبق درخواست حذف شد) */}
         <div className="hidden lg:block lg:col-span-5 space-y-3.5">
-          {/* تصویر بزرگ اصلی پروژه */}
+          {/* تصویر بزرگ اصلی پروژه با انیمیشن چرخش خودکار و انتقال نرم (Crossfade + Scale) */}
           <div className="relative rounded-[12px] overflow-hidden h-64 sm:h-72 bg-[#f6f5f2] shadow-xs">
-            <AdaptiveGalleryImage
-              key={`${currentProject.id}-${activeGalleryIdx}`}
-              src={
-                currentProject.galleryImages[activeGalleryIdx] ||
-                currentProject.mainImage
-              }
-              alt={currentProject.title}
-            />
+            <div className="relative w-full h-full overflow-hidden bg-[#f6f5f2] flex items-center justify-center">
+              {currentProject.galleryImages.map((imgUrl, idx) => {
+                const isActiveSlide =
+                  activeGalleryIdx % currentProject.galleryImages.length === idx;
+                return (
+                  <img
+                    key={`${currentProject.id}-slide-${idx}`}
+                    src={imgUrl}
+                    alt={`${currentProject.title} - تصویر ${idx + 1}`}
+                    referrerPolicy="no-referrer"
+                    className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] ${
+                      isActiveSlide
+                        ? 'opacity-100 scale-100 z-10'
+                        : 'opacity-0 scale-[1.04] z-0 pointer-events-none'
+                    }`}
+                  />
+                );
+              })}
+            </div>
 
             {/* دکمه فلش راست داخل عکس */}
             <button
@@ -392,7 +480,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               aria-label="تصویر بعدی"
               className="absolute right-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg bg-white/90 hover:bg-white text-[#222222] flex items-center justify-center shadow-md cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" />
             </button>
 
             {/* دکمه فلش چپ داخل عکس */}
@@ -402,7 +490,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               aria-label="تصویر قبلی"
               className="absolute left-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg bg-white/65 hover:bg-white text-[#222222] flex items-center justify-center shadow-md cursor-pointer"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
           </div>
 
@@ -417,12 +505,16 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   onClick={() => setActiveGalleryIdx(idx)}
                   className="relative pt-1.5 focus:outline-none cursor-pointer group"
                 >
-                  {/* خط طلایی بالای تصویر کوچک فعال */}
-                  {isThumbActive && (
-                    <span className="absolute top-0 inset-x-1 h-[2.5px] bg-[#b59766] rounded-full" />
-                  )}
+                  {/* خط طلایی بالای تصویر کوچک فعال با انیمیشن نرم */}
+                  <span
+                    className={`absolute top-0 inset-x-1 h-[2.5px] bg-[#b59766] rounded-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                      isThumbActive
+                        ? 'opacity-100 scale-x-100'
+                        : 'opacity-0 scale-x-50'
+                    }`}
+                  />
                   <div
-                    className={`h-16 sm:h-20 rounded-[8px] overflow-hidden border transition-all ${
+                    className={`h-16 sm:h-20 rounded-[8px] overflow-hidden border transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                       isThumbActive
                         ? 'border-[#b59766] opacity-100'
                         : 'border-transparent opacity-80 group-hover:opacity-100'

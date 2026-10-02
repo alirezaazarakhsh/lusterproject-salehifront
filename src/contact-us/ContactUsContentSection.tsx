@@ -458,6 +458,18 @@ export const ContactUsContentSection: React.FC<
 
       filledAttemptCountRef.current += 1;
       if (filledAttemptCountRef.current % 2 === 1) {
+        fetch('/api/public/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: fullName.trim(),
+            phone: mobilePhone.trim(),
+            email: email.trim(),
+            subject: subject.trim(),
+            message: messageText.trim(),
+          }),
+        }).catch(() => {});
+
         onShowToast?.(
           'contact-success',
           'پیام شما با موفقیت ارسال شد',

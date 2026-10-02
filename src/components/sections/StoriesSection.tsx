@@ -164,7 +164,7 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
                   {/* تصویر دایره‌ای تمام‌پر (۱۰۰٪ داخل گردی) با فاصله سفید تمیز از حلقه بیرونی */}
                   <div className="w-[66px] h-[66px] sm:w-[71px] sm:h-[71px] rounded-full overflow-hidden bg-[#1b1815]">
                     <img
-                      src={story.image}
+                      src={story.thumbnailImage || story.image}
                       alt={story.fullTitle}
                       referrerPolicy="no-referrer"
                       draggable={false}

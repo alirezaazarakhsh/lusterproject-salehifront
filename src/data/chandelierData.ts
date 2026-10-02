@@ -94,9 +94,12 @@ export interface StoryItem {
   categoryLabel: string;
   storyType: StorySlideType;
   durationSeconds: number;
+  thumbnailImage?: string;
   image: string;
+  mediaUrl?: string;
   productImage?: string;
   videoUrl?: string;
+  linkedProductKey?: string;
   price?: string;
   hasDashedRing?: boolean;
   simulateLoading?: boolean;
@@ -670,6 +673,7 @@ export interface CategoryItem {
   title: string;
   countText: string;
   filterKey: string;
+  slug: string;
 }
 
 /**
@@ -679,26 +683,30 @@ export const PRODUCT_CATEGORIES: CategoryItem[] = [
   {
     id: 'cat-chandeliers',
     title: 'کلکسیون لوستر ها',
-    countText: '۴۰ محصول',
+    countText: '۱۸ محصول',
     filterKey: 'all',
+    slug: 'chandeliers',
   },
   {
     id: 'cat-single-branch',
     title: 'کلکسیون تک شاخه ها',
-    countText: '۴۰ محصول',
+    countText: '۱۴ محصول',
     filterKey: 'single',
+    slug: 'single-branch',
   },
   {
     id: 'cat-mirror-console',
     title: 'کلکسیون آینه و کنسول',
-    countText: '۴۰ محصول',
+    countText: '۱۰ محصول',
     filterKey: 'mirror',
+    slug: 'mirror-console',
   },
   {
     id: 'cat-lampshade',
     title: 'کلکسیون آباژور',
-    countText: '۴۰ محصول',
+    countText: '۱۲ محصول',
     filterKey: 'abalour',
+    slug: 'abalour',
   },
 ];
 
@@ -715,6 +723,9 @@ export interface ChandelierProduct {
   categoryKey: string;
   isHighlightedDefault?: boolean;
   outOfStock?: boolean;
+  mobileOutOfStock?: boolean;
+  hasSnappPay?: boolean;
+  cardFinishOverride?: FinishType;
   dimensions: string;
   branchesCount: string;
   bodyMaterial: string;
@@ -730,8 +741,8 @@ export const SALEHI_COLLECTION_PRODUCTS: ChandelierProduct[] = [
     id: 'prod-crystali',
     name: 'لوستر کریستالی',
     subtitle: 'مناسب کلاسیک پذیرایی | کلاسیک خواب',
-    priceFormatted: '۱۲,۵۰۰,۰۰۰ تومان',
-    priceNumeric: 12500000,
+    priceFormatted: '۱۶,۴۰۰,۰۰۰ تومان',
+    priceNumeric: 16400000,
     productCode: '۱۲۸۹۸۲',
     image: GENERATED_IMAGES.crystaliCherub,
     modelType: 'crystali',
@@ -748,9 +759,9 @@ export const SALEHI_COLLECTION_PRODUCTS: ChandelierProduct[] = [
     id: 'prod-resans',
     name: 'لوستر رسانس',
     subtitle: 'مناسب کلاسیک پذیرایی | کلاسیک خواب',
-    priceFormatted: '۱۲,۵۰۰,۰۰۰ تومان',
-    priceNumeric: 12500000,
-    productCode: '۱۲۸۹۸۲',
+    priceFormatted: '۱۱,۸۰۰,۰۰۰ تومان',
+    priceNumeric: 11800000,
+    productCode: '۱۲۸۹۸۵',
     image: GENERATED_IMAGES.resansRoses,
     modelType: 'ristani',
     defaultFinish: 'antique-bronze',
@@ -767,9 +778,9 @@ export const SALEHI_COLLECTION_PRODUCTS: ChandelierProduct[] = [
     id: 'prod-12-shakheh',
     name: 'لوستر ۱۲ شاخه تک',
     subtitle: 'مناسب کلاسیک پذیرایی | کلاسیک خواب',
-    priceFormatted: '۱۲,۵۰۰,۰۰۰ تومان',
-    priceNumeric: 12500000,
-    productCode: '۱۲۸۹۸۲',
+    priceFormatted: '۱۴,۲۰۰,۰۰۰ تومان',
+    priceNumeric: 14200000,
+    productCode: '۱۲۸۹۸۸',
     image: GENERATED_IMAGES.shakheh12,
     modelType: '12-shakheh',
     defaultFinish: 'antique-bronze',
@@ -786,9 +797,9 @@ export const SALEHI_COLLECTION_PRODUCTS: ChandelierProduct[] = [
     id: 'prod-shah-malakeh',
     name: 'لوستر شاه ملکه',
     subtitle: 'مناسب کلاسیک پذیرایی | کلاسیک خواب',
-    priceFormatted: '۱۲,۵۰۰,۰۰۰ تومان',
-    priceNumeric: 12500000,
-    productCode: '۱۲۸۹۸۲',
+    priceFormatted: '۱۹,۵۰۰,۰۰۰ تومان',
+    priceNumeric: 19500000,
+    productCode: '۱۲۸۹۹۱',
     image: GENERATED_IMAGES.shahMalakeh,
     modelType: 'shah-malakeh',
     defaultFinish: 'dark-patina',
@@ -1554,32 +1565,42 @@ export const MAGAZINE_ARTICLES: MagazineArticle[] = [
 export const SALEHI_PHONE_NUMBERS = [
   {
     id: 'ph-1',
-    label: 'شماره تلفن افسریه (۰۹۹۱۲۳۴۸۹۷۵)',
-    phone: '09912348975',
+    branchTitle: 'شریعتی',
+    displayPhone: '021-22222635',
+    label: 'شریعتی (021-22222635)',
+    phone: '02122222635',
     highlighted: false,
   },
   {
     id: 'ph-2',
-    label: 'شماره تلفن افسریه (۰۹۹۱۲۳۴۸۹۷۵)',
-    phone: '09912348975',
+    branchTitle: 'لاله زار نو',
+    displayPhone: '021-33333632',
+    label: 'لاله زار نو (021-33333632)',
+    phone: '02133333632',
     highlighted: false,
   },
   {
     id: 'ph-3',
-    label: 'شماره تلفن افسریه (۰۹۹۱۲۳۴۸۹۷۵)',
-    phone: '09912348975',
+    branchTitle: 'غرب بزودی',
+    displayPhone: '02144444653',
+    label: 'غرب بزودی (02144444653)',
+    phone: '02144444653',
     highlighted: false,
   },
   {
     id: 'ph-4',
-    label: 'شماره تلفن افسریه (۰۹۹۱۲۳۴۸۹۷۵)',
-    phone: '09912348975',
+    branchTitle: 'افسریه',
+    displayPhone: '021-33459665',
+    label: 'افسریه (021-33459665)',
+    phone: '02133459665',
     highlighted: true,
   },
   {
     id: 'ph-5',
-    label: 'شماره تلفن افسریه (۰۹۹۱۲۳۴۸۹۷۵)',
-    phone: '09912348975',
+    branchTitle: 'همراه',
+    displayPhone: '0912-3779149',
+    label: 'همراه (0912-3779149)',
+    phone: '09123779149',
     highlighted: false,
   },
 ];

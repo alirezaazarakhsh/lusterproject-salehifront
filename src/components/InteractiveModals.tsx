@@ -467,6 +467,7 @@ export const CustomProduct3DModal: React.FC<CustomProduct3DModalProps> = ({
 interface StoryModalProps {
   story: StoryItem | null;
   stories?: StoryItem[];
+  allProducts?: ChandelierProduct[];
   onClose: () => void;
   onSelectStory?: (story: StoryItem) => void;
   onOpenProduct?: (product: ChandelierProduct) => void;
@@ -534,6 +535,7 @@ const SideCardPlaceholderIcon: React.FC = () => (
 export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   story,
   stories = STORY_ITEMS,
+  allProducts = SALEHI_COLLECTION_PRODUCTS,
   onClose,
   onSelectStory,
   onOpenProduct,
@@ -542,6 +544,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   const [activeSegment, setActiveSegment] = useState<number>(0);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(45);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const videoElementRef = React.useRef<HTMLVideoElement | null>(null);
 
   // غیرفعال کردن اسکرول کل سایت هنگام باز بودن استوری
   useEffect(() => {
@@ -588,7 +591,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
     onSelectStory(getStoryAtOffset(1));
   };
 
-  // ساخت پویای اسلایدهای مجزا برای استوری‌های چندمحصوله جهت نمایش هر عکس محصول در یک تیکه (اسلاید) بدون پرش
+  // ساخت پویای اسلایدهای مجزا برای استوری‌ها بر اساس تایپ (محصول‌دار، ساده تصویری، ویدیویی)
   const effectiveSlides = React.useMemo(() => {
     if (!story) return [];
     if (story.storyType === 'multi-product' && story.products && story.products.length > 0) {
@@ -607,11 +610,28 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
       type: story.storyType || 'single-product',
       title: story.fullTitle,
       subtitle: story.subtitle,
-      mediaUrl: story.image,
+      mediaUrl: story.mediaUrl || story.image,
+      videoUrl: story.videoUrl || '',
       durationSeconds: 10,
       products: story.products || []
     }];
   }, [story]);
+
+  const handlePrevSlideOrStory = () => {
+    if (activeSegment > 0) {
+      setActiveSegment((seg) => seg - 1);
+      return;
+    }
+    handlePrevStory();
+  };
+
+  const handleNextSlideOrStory = () => {
+    if (activeSegment < effectiveSlides.length - 1) {
+      setActiveSegment((seg) => seg + 1);
+      return;
+    }
+    handleNextStory();
+  };
 
   // تعیین اسلاید فعال
   const currentSlide = effectiveSlides[activeSegment] || null;
@@ -651,24 +671,53 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   const effectiveType: StorySlideType =
     currentSlide?.type || story?.storyType || 'single-product';
 
-  // لیست محصولات مربوط به این استوری / اسلاید
-  const effectiveProducts: StoryProductAttachment[] =
-    effectiveType === 'image-only'
-      ? []
-      : currentSlide?.products && currentSlide.products.length > 0
-      ? currentSlide.products
-      : story?.products && story.products.length > 0
-      ? story.products
-      : story
-      ? [
-          {
-            id: story.id,
-            name: story.fullTitle,
-            price: story.price || '۱۲,۵۰۰,۰۰۰ تومان',
-            image: story.productImage || story.image,
-          },
-        ]
-      : [];
+  // لیست محصولات مربوط به این استوری (فقط برای تایپ محصول‌دار نمایش داده می‌شود؛ در تایپ ساده و ویدیویی مخفی است)
+  const effectiveProducts: StoryProductAttachment[] = React.useMemo(() => {
+    if (!story) return [];
+    if (effectiveType === 'image-only' || effectiveType === 'video') {
+      return [];
+    }
+    if (currentSlide?.products && currentSlide.products.length > 0) {
+      return currentSlide.products;
+    }
+    if (story.products && story.products.length > 0) {
+      return story.products;
+    }
+    const catalogPool =
+      allProducts && allProducts.length > 0
+        ? allProducts
+        : SALEHI_COLLECTION_PRODUCTS;
+    const matchedProd = story.linkedProductKey
+      ? catalogPool.find(
+          (p) =>
+            p.id === story.linkedProductKey ||
+            p.productCode === story.linkedProductKey
+        )
+      : null;
+
+    if (matchedProd) {
+      return [
+        {
+          id: matchedProd.id,
+          name: matchedProd.name,
+          price: matchedProd.priceFormatted,
+          image: matchedProd.image,
+          productCode: matchedProd.productCode,
+          modelType: matchedProd.modelType,
+          finish: matchedProd.defaultFinish,
+        },
+      ];
+    }
+
+    return [
+      {
+        id: story.linkedProductKey || story.id,
+        name: story.fullTitle || story.title,
+        price: story.price || '۱۲,۵۰۰,۰۰۰ تومان',
+        image: story.productImage || story.thumbnailImage || story.image,
+      },
+    ];
+  }, [story, effectiveType, currentSlide, allProducts]);
 
   const safeProductIdx =
     effectiveProducts.length > 0
@@ -678,9 +727,27 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
 
   // تصویر اصلی که در مرکز استوری نمایش داده می‌شود
   const activeMediaUrl =
-    currentSlide?.mediaUrl || story?.image || GENERATED_IMAGES.storyPortraitRustic;
+    currentSlide?.mediaUrl ||
+    story?.mediaUrl ||
+    story?.image ||
+    GENERATED_IMAGES.storyPortraitRustic;
 
-  const activeVideoUrl = (currentSlide as any)?.videoUrl || story?.videoUrl;
+  const activeVideoUrl =
+    (currentSlide as any)?.videoUrl ||
+    story?.videoUrl ||
+    (effectiveType === 'video'
+      ? 'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4'
+      : '');
+
+  useEffect(() => {
+    const vid = videoElementRef.current;
+    if (!vid || effectiveType !== 'video') return;
+    if (isVideoPlaying && !isPaused && !isMediaLoading) {
+      vid.play().catch(() => {});
+    } else {
+      vid.pause();
+    }
+  }, [isVideoPlaying, isPaused, isMediaLoading, effectiveType, activeVideoUrl]);
 
   // پشتیبانی از درگ افقی ردیف محصولات در استوری چندمحصولی
   const multiProdScrollRef = React.useRef<HTMLDivElement | null>(null);
@@ -770,15 +837,23 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
       return;
     }
     if (!onOpenProduct) return;
+    const catalogPool =
+      allProducts && allProducts.length > 0
+        ? allProducts
+        : SALEHI_COLLECTION_PRODUCTS;
     const found =
-      SALEHI_COLLECTION_PRODUCTS.find((p) => p.id === prodItem.id) ||
+      catalogPool.find(
+        (p) => p.id === prodItem.id || p.productCode === prodItem.productCode
+      ) ||
+      catalogPool.find((p) => p.name === prodItem.name) ||
+      catalogPool[0] ||
       SALEHI_COLLECTION_PRODUCTS[0];
     onClose();
     onOpenProduct({
       ...found,
-      name: prodItem.name,
-      priceFormatted: prodItem.price,
-      image: prodItem.image,
+      name: prodItem.name || found.name,
+      priceFormatted: prodItem.price || found.priceFormatted,
+      image: prodItem.image || found.image,
     });
   };
 
@@ -808,18 +883,18 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
         className={`${visibilityClass} relative h-[430px] rounded-[18px] overflow-hidden bg-[#181614] cursor-pointer group shrink-0 shadow-xl`}
       >
         <img
-          src={sideStory.image}
+          src={sideStory.mediaUrl || sideStory.image}
           alt={sideStory.fullTitle}
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover brightness-[0.48] group-hover:brightness-[0.65] group-hover:scale-105 transition-all duration-300"
         />
 
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/75 to-transparent pointer-events-none" />
-        {/* هدر بالا-راست کارت کناری: آواتار دایره‌ای تمام‌پر + عنوان */}
+        {/* هدر بالا-راست کارت کناری: آواتار دایره‌ای تمام‌پر (عکس شاخص) + عنوان */}
         <div className="absolute top-3.5 right-3.5 left-3.5 flex items-center justify-start gap-2.5">
           <div className="w-9 h-9 rounded-full p-[1.5px] border border-[#b59766] bg-white shrink-0 overflow-hidden">
             <img
-              src={sideStory.image}
+              src={sideStory.thumbnailImage || sideStory.image}
               alt={sideStory.title}
               referrerPolicy="no-referrer"
               className="w-full h-full rounded-full object-cover object-center"
@@ -939,14 +1014,14 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
 
                 {activeVideoUrl ? (
                   <video
+                    ref={videoElementRef}
                     src={activeVideoUrl}
+                    poster={story.thumbnailImage || activeMediaUrl}
                     autoPlay
                     loop
                     muted={isVideoMuted}
                     playsInline
-                    onLoadStart={() => setIsMediaLoading(true)}
-                    onLoadedData={() => setIsMediaLoading(false)}
-                    className="relative z-10 w-full h-full object-contain pt-16 pb-28 px-3"
+                    className="relative z-10 w-full h-full object-cover"
                   />
                 ) : (
                   <div
@@ -1066,7 +1141,11 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                   return (
                     <div
                       key={idx}
-                      className="flex-1 h-[3.5px] rounded-full bg-white/30 overflow-hidden"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveSegment(idx);
+                      }}
+                      className="flex-1 h-[3.5px] rounded-full bg-white/30 overflow-hidden cursor-pointer"
                     >
                       <div
                         className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
@@ -1079,11 +1158,11 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
 
               {/* ردیف هدر بالای استوری: شامل اطلاعات استوری در راست و دکمه بستن در چپ (کپسولی مطابق عکس دوم) */}
               <div className="mt-3 flex items-center justify-between" dir="rtl">
-                {/* راست: آواتار استوری، عنوان و تایمر */}
+                {/* راست: آواتار استوری (عکس شاخص)، عنوان و تایمر */}
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full p-[1.5px] border border-[#b59766] bg-white shrink-0 overflow-hidden shadow-sm">
                     <img
-                      src={story.image}
+                      src={story.thumbnailImage || story.image}
                       alt={story.title}
                       referrerPolicy="no-referrer"
                       className="w-full h-full rounded-full object-cover"
@@ -1091,10 +1170,13 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                   </div>
                   <div className="flex flex-col text-right">
                     <span className="text-[12px] font-bold text-white leading-tight drop-shadow-sm">
-                      {story.title.replace('...', '')}
+                      {(currentSlide?.title || story.title).replace('...', '')}
                     </span>
                     <span className="text-[10px] text-white/80 font-medium tabular-nums drop-shadow-sm mt-0.5">
                       زمان باقی‌مانده : {formatPersianTimer(remainingSeconds)}
+                      {effectiveSlides.length > 1
+                        ? ` • استوری ${(activeSegment + 1).toLocaleString('fa-IR')} از ${effectiveSlides.length.toLocaleString('fa-IR')}`
+                        : ''}
                     </span>
                   </div>
                 </div>
@@ -1116,12 +1198,12 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
             {/* نواحی کلیک چپ و راست روی عکس برای ورق زدن سریع */}
             <div className="relative z-10 flex-1 grid grid-cols-2">
               <div
-                onClick={handlePrevStory}
+                onClick={handlePrevSlideOrStory}
                 className="h-full cursor-pointer"
                 title="استوری قبلی"
               />
               <div
-                onClick={handleNextStory}
+                onClick={handleNextSlideOrStory}
                 className="h-full cursor-pointer"
                 title="استوری بعدی"
               />
@@ -1473,6 +1555,24 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     if (isCheckingOut || isUpdatingPrices) return;
     setPendingDeleteItem(null);
     setIsCheckingOut(true);
+
+    // ثبت سفارش در جدول orders دیتابیس PostgreSQL
+    fetch('/api/public/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: 'مشتری آنلاین سایت',
+        customerPhone: '۰۹۱۲۰۷۵۹۴۱۹',
+        totalAmountFormatted: `${toPersianDigits(totalPrice.toLocaleString('en-US'))} تومان`,
+        totalAmountNumeric: totalPrice,
+        itemsJson: items.map((item) => ({
+          id: item.product.id,
+          name: item.product.name,
+          quantity: item.quantity,
+          priceFormatted: item.product.priceFormatted,
+        })),
+      }),
+    }).catch(() => {});
 
     if (onShowToast) {
       onShowToast(
