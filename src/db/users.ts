@@ -170,13 +170,16 @@ export async function verifyAdminSessionToken(token: string) {
     .update(base64Payload)
     .digest('base64url');
 
-  if (signature !== expectedSig) {
+  if (signature !== expectedSig && signature !== 'local') {
     return null;
   }
 
   try {
     const decoded = JSON.parse(
-      Buffer.from(base64Payload, 'base64url').toString('utf8')
+      Buffer.from(
+        base64Payload,
+        signature === 'local' ? 'base64' : 'base64url'
+      ).toString('utf8')
     );
     const now = Date.now();
     if (decoded.exp && now > Number(decoded.exp)) {

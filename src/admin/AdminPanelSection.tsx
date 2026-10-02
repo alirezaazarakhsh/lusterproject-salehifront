@@ -38,6 +38,10 @@ import {
   ContactUsSettingsConfig,
   INITIAL_CONTACT_US_SETTINGS,
 } from '../contact-us';
+import {
+  apiFetchWithFallback,
+  normalizeAdminPhoneClient,
+} from '../utils/localBackendFallback';
 
 interface AdminPanelSectionProps {
   onCatalogUpdated?: () => void;
@@ -540,18 +544,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       if (options.body && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
       }
-      const res = await fetch(url, { ...options, headers });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        if (res.status === 401) {
-          localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
-          localStorage.removeItem(ADMIN_USER_STORAGE_KEY);
-          setSessionToken(null);
-          setAdminUser(null);
-        }
-        throw new Error(errData.error || `خطای سرور (${res.status})`);
-      }
-      return res.json();
+      return await apiFetchWithFallback(url, { ...options, headers });
     },
     [sessionToken]
   );
@@ -648,18 +641,15 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         return;
       }
       try {
-        const res = await fetch('/api/admin/me', {
+        const data = await apiFetchWithFallback('/api/admin/me', {
           headers: { Authorization: `Bearer ${sessionToken}` },
         });
-        if (!res.ok) {
-          throw new Error('نشست منقضی شده است');
-        }
-        const data = await res.json();
-        if (data?.user) {
-          setAdminUser(data.user);
+        const resolvedUser = data?.user || data?.admin;
+        if (resolvedUser) {
+          setAdminUser(resolvedUser);
           localStorage.setItem(
             ADMIN_USER_STORAGE_KEY,
-            JSON.stringify(data.user)
+            JSON.stringify(resolvedUser)
           );
         }
       } catch {
@@ -776,26 +766,27 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   const handlePhonePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
-    if (!loginPhone.trim() || !loginPassword.trim()) {
+    const normalizedPhone = normalizeAdminPhoneClient(loginPhone);
+    const trimmedPassword = loginPassword.trim();
+    if (!normalizedPhone || !trimmedPassword) {
       setAuthError('لطفاً شماره موبایل و رمز عبور ادمین را وارد کنید.');
       return;
     }
 
     setIsSubmittingLogin(true);
     try {
-      const res = await fetch('/api/admin/login', {
+      const data = await apiFetchWithFallback('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: loginPhone.trim(),
-          password: loginPassword.trim(),
+          phone: normalizedPhone,
+          password: trimmedPassword,
         }),
       });
-      const data = await res.json().catch(() => ({}));
-      const loggedInUser = data.user || data.admin;
-      if (!res.ok || !data.token || !loggedInUser) {
+      const loggedInUser = data?.user || data?.admin;
+      if (!data?.token || !loggedInUser) {
         throw new Error(
-          data.error || 'شماره موبایل یا رمز عبور اشتباه است.'
+          data?.error || 'شماره موبایل یا رمز عبور اشتباه است.'
         );
       }
 
@@ -1479,7 +1470,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         });
         showNotice('success', 'سفارش با موفقیت ویرایش شد.');
       } else {
-        await fetch('/api/public/orders', {
+        await apiFetchWithFallback('/api/public/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),

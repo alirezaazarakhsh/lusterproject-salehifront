@@ -45,6 +45,7 @@ import {
   navigateToRoute,
   subscribeToRoute,
 } from '../utils/navigation';
+import { apiFetchWithFallback } from '../utils/localBackendFallback';
 import {
   ProductStudioModal,
   CustomProduct3DModal,
@@ -246,9 +247,8 @@ export const HomePage: React.FC = () => {
 
   const fetchLiveCatalogFromDb = async () => {
     try {
-      const res = await fetch('/api/public/catalog');
-      if (!res.ok) return;
-      const data = await res.json();
+      const data = await apiFetchWithFallback('/api/public/catalog');
+      if (!data) return;
       if (data.footerSettings) {
         setFooterSettings((prev) => ({
           ...prev,
