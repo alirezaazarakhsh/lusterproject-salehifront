@@ -43,6 +43,8 @@ import {
   getDashboardSummary,
   getFooterSettings,
   saveFooterSettings,
+  getContactUsSettings,
+  saveContactUsSettings,
 } from './src/db/repository.ts';
 
 async function startServer() {
@@ -61,6 +63,7 @@ async function startServer() {
         storiesList,
         articlesList,
         footerSettings,
+        contactUsSettings,
       ] = await Promise.all([
         getAllCategories(),
         getAllProducts(),
@@ -68,6 +71,7 @@ async function startServer() {
         getAllStories(),
         getAllArticles(),
         getFooterSettings(),
+        getContactUsSettings(),
       ]);
       res.json({
         categories: categoriesList,
@@ -76,6 +80,7 @@ async function startServer() {
         stories: storiesList,
         articles: articlesList,
         footerSettings,
+        contactUsSettings,
       });
     } catch (error: any) {
       console.error('Failed to load public catalog:', error);
@@ -703,6 +708,39 @@ async function startServer() {
         res
           .status(500)
           .json({ error: error.message || 'خطا در ذخیره تنظیمات فوتر' });
+      }
+    }
+  );
+
+  // مدیریت تنظیمات صفحه تماس با ما
+  app.get(
+    '/api/admin/settings/contact-us',
+    requireAuth,
+    async (_req: AuthRequest, res) => {
+      try {
+        const settings = await getContactUsSettings();
+        res.json(settings);
+      } catch (error: any) {
+        console.error('Failed to fetch contact-us settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در دریافت تنظیمات تماس با ما' });
+      }
+    }
+  );
+
+  app.put(
+    '/api/admin/settings/contact-us',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveContactUsSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save contact-us settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات تماس با ما' });
       }
     }
   );

@@ -26,7 +26,11 @@ import {
   INITIAL_FOOTER_SETTINGS,
 } from '../components/sections/FooterSection';
 import { RuleContentSection } from '../rule';
-import { ContactUsContentSection } from '../contact-us';
+import {
+  ContactUsContentSection,
+  ContactUsSettingsConfig,
+  INITIAL_CONTACT_US_SETTINGS,
+} from '../contact-us';
 import { AboutUsContentSection } from '../about-us';
 import { ProjectContentSection } from '../project';
 import { ProductContentSection } from '../product';
@@ -237,6 +241,8 @@ export const HomePage: React.FC = () => {
   const [footerSettings, setFooterSettings] = useState<FooterSettingsConfig>(
     INITIAL_FOOTER_SETTINGS
   );
+  const [contactUsSettings, setContactUsSettings] =
+    useState<ContactUsSettingsConfig>(INITIAL_CONTACT_US_SETTINGS);
 
   const fetchLiveCatalogFromDb = async () => {
     try {
@@ -247,6 +253,12 @@ export const HomePage: React.FC = () => {
         setFooterSettings((prev) => ({
           ...prev,
           ...data.footerSettings,
+        }));
+      }
+      if (data.contactUsSettings) {
+        setContactUsSettings((prev) => ({
+          ...prev,
+          ...data.contactUsSettings,
         }));
       }
       if (Array.isArray(data.products) && data.products.length > 0) {
@@ -702,7 +714,10 @@ export const HomePage: React.FC = () => {
         <RuleContentSection />
       ) : currentRoute === 'contact-us' ? (
         /* محتوای میانی صفحه تماس با ما (/contact-us) */
-        <ContactUsContentSection onShowToast={addAppToast} />
+        <ContactUsContentSection
+          contactUsSettings={contactUsSettings}
+          onShowToast={addAppToast}
+        />
       ) : currentRoute === 'about-us' ? (
         /* محتوای میانی صفحه درباره ما (/about-us) */
         <AboutUsContentSection onShowToast={addAppToast} />

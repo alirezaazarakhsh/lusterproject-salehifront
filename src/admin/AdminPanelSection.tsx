@@ -34,6 +34,10 @@ import {
   FooterSettingsConfig,
   INITIAL_FOOTER_SETTINGS,
 } from '../components/sections/FooterSection';
+import {
+  ContactUsSettingsConfig,
+  INITIAL_CONTACT_US_SETTINGS,
+} from '../contact-us';
 
 interface AdminPanelSectionProps {
   onCatalogUpdated?: () => void;
@@ -505,6 +509,12 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   const [isSavingFooterSettings, setIsSavingFooterSettings] =
     useState<boolean>(false);
 
+  // تنظیمات صفحه تماس با ما (تب تنظیم صفحه تماس با ما)
+  const [contactUsSettingsForm, setContactUsSettingsForm] =
+    useState<ContactUsSettingsConfig>(INITIAL_CONTACT_US_SETTINGS);
+  const [isSavingContactUsSettings, setIsSavingContactUsSettings] =
+    useState<boolean>(false);
+
   // ۸. فرم سفارش مشتریان
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [orderForm, setOrderForm] = useState({
@@ -561,6 +571,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         messagesRes,
         ordersRes,
         footerSettingsRes,
+        contactUsSettingsRes,
       ] = await Promise.all([
         authFetch('/api/admin/dashboard'),
         authFetch('/api/admin/users'),
@@ -573,6 +584,9 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         authFetch('/api/admin/orders'),
         authFetch('/api/admin/settings/footer').catch(
           () => INITIAL_FOOTER_SETTINGS
+        ),
+        authFetch('/api/admin/settings/contact-us').catch(
+          () => INITIAL_CONTACT_US_SETTINGS
         ),
       ]);
 
@@ -599,6 +613,22 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
             footerSettingsRes.otherLicenses.length > 0
               ? footerSettingsRes.otherLicenses
               : INITIAL_FOOTER_SETTINGS.otherLicenses,
+        });
+      }
+      if (contactUsSettingsRes) {
+        setContactUsSettingsForm({
+          ...INITIAL_CONTACT_US_SETTINGS,
+          ...contactUsSettingsRes,
+          branchLocations:
+            Array.isArray(contactUsSettingsRes.branchLocations) &&
+            contactUsSettingsRes.branchLocations.length > 0
+              ? contactUsSettingsRes.branchLocations
+              : INITIAL_CONTACT_US_SETTINGS.branchLocations,
+          branchPhones:
+            Array.isArray(contactUsSettingsRes.branchPhones) &&
+            contactUsSettingsRes.branchPhones.length > 0
+              ? contactUsSettingsRes.branchPhones
+              : INITIAL_CONTACT_US_SETTINGS.branchPhones,
         });
       }
     } catch (err: any) {
@@ -5641,6 +5671,618 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                         {isSavingFooterSettings
                           ? 'در حال ذخیره و بروزرسانی فوتر...'
                           : 'ثبت و اعمال تغییرات در فوتر سایت'}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              ) : activeWebsiteSettingsTab === 'contact' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingContactUsSettings(true);
+                    try {
+                      const saved = await authFetch(
+                        '/api/admin/settings/contact-us',
+                        {
+                          method: 'PUT',
+                          body: JSON.stringify(contactUsSettingsForm),
+                        }
+                      );
+                      setContactUsSettingsForm({
+                        ...INITIAL_CONTACT_US_SETTINGS,
+                        ...saved,
+                      });
+                      onCatalogUpdated?.();
+                      showNotice(
+                        'success',
+                        'تنظیمات صفحه تماس با ما و لینک‌های مسیریابی نشان با موفقیت در وب‌سایت بروزرسانی شد.'
+                      );
+                    } catch (err: any) {
+                      showNotice(
+                        'error',
+                        err?.message || 'خطا در ذخیره تنظیمات صفحه تماس با ما'
+                      );
+                    } finally {
+                      setIsSavingContactUsSettings(false);
+                    }
+                  }}
+                  className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                        تنظیمات صفحه تماس با ما (`/contact-us`)
+                      </h2>
+                      <p className="text-xs text-[#666] mt-1">
+                        ویرایش ساعات کاری و تعطیلات، ایمیل، شماره مدیریت و شماره ثابت، آدرس شعب، لینک مسیریابی نشان و شماره‌های تماس شعب
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setContactUsSettingsForm(INITIAL_CONTACT_US_SETTINGS)
+                        }
+                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        بازگردانی به مقادیر پیش‌فرض
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingContactUsSettings}
+                        className="h-10 px-5 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-60"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>
+                          {isSavingContactUsSettings
+                            ? 'در حال ذخیره...'
+                            : 'ذخیره تنظیمات تماس با ما'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ۱. بخش فروش و امور مشتریان (پشتیبانی، روزهای کاری، روزهای تعطیل) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۱. بخش فروش و امور مشتریان (ساعات کاری و روزهای تعطیل)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* آیتم ۱: پشتیبانی */}
+                      <div className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-2.5">
+                        <span className="block text-xs font-black text-[#b59766]">
+                          باکس اول (پشتیبانی)
+                        </span>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            عنوان:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.supportTitle}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                supportTitle: e.target.value,
+                              })
+                            }
+                            placeholder="پشتیبانی :"
+                            className="w-full h-9 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            متن مقدار:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.supportValue}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                supportValue: e.target.value,
+                              })
+                            }
+                            placeholder="بخش پاسخگویی تلفنی"
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* آیتم ۲: روزهای کاری */}
+                      <div className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-2.5">
+                        <span className="block text-xs font-black text-[#b59766]">
+                          باکس دوم (روزهای کاری)
+                        </span>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            عنوان:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.workingDaysTitle}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                workingDaysTitle: e.target.value,
+                              })
+                            }
+                            placeholder="روز های کاری :"
+                            className="w-full h-9 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            ساعت فعالیت روزهای کاری:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.workingDaysHours}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                workingDaysHours: e.target.value,
+                              })
+                            }
+                            placeholder="۸ صبح الی ۸ شب"
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* آیتم ۳: روزهای تعطیل */}
+                      <div className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-2.5">
+                        <span className="block text-xs font-black text-[#b59766]">
+                          باکس سوم (روزهای تعطیل)
+                        </span>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            عنوان:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.holidaysTitle}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                holidaysTitle: e.target.value,
+                              })
+                            }
+                            placeholder="روز های تعطیل :"
+                            className="w-full h-9 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            ساعت فعالیت روزهای تعطیل:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.holidaysHours}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                holidaysHours: e.target.value,
+                              })
+                            }
+                            placeholder="۸ صبح الی ۶ بعدظهر"
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۲. بخش تماس با ما (ایمیل، شماره مدیریت، شماره ثابت) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۲. بخش تماس با ما (ایمیل، شماره مدیریت و شماره ثابت)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* آیتم ۱: آدرس ایمیل */}
+                      <div className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-2.5">
+                        <span className="block text-xs font-black text-[#b59766]">
+                          آدرس ایمیل مجموعه
+                        </span>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            عنوان:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.emailTitle}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                emailTitle: e.target.value,
+                              })
+                            }
+                            placeholder="آدرس ایمیل :"
+                            className="w-full h-9 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            ایمیل:
+                          </label>
+                          <input
+                            type="text"
+                            dir="ltr"
+                            value={contactUsSettingsForm.emailAddress}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                emailAddress: e.target.value,
+                              })
+                            }
+                            placeholder="info@lostersalehi.ir"
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold text-left"
+                          />
+                        </div>
+                      </div>
+
+                      {/* آیتم ۲: شماره مدیریت */}
+                      <div className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-2.5">
+                        <span className="block text-xs font-black text-[#b59766]">
+                          شماره مدیریت
+                        </span>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            عنوان:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.managerPhoneTitle}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                managerPhoneTitle: e.target.value,
+                              })
+                            }
+                            placeholder="شماره مدیریت :"
+                            className="w-full h-9 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            شماره تماس مدیریت:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.managerPhone}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                managerPhone: e.target.value,
+                              })
+                            }
+                            placeholder="۰۹۰۱۲۲۲۲۶۳۵"
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold tabular-nums"
+                          />
+                        </div>
+                      </div>
+
+                      {/* آیتم ۳: شماره ثابت */}
+                      <div className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-2.5">
+                        <span className="block text-xs font-black text-[#b59766]">
+                          شماره ثابت
+                        </span>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            عنوان:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.landlinePhoneTitle}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                landlinePhoneTitle: e.target.value,
+                              })
+                            }
+                            placeholder="شماره ثابت :"
+                            className="w-full h-9 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-[#666]">
+                            شماره تلفن ثابت:
+                          </label>
+                          <input
+                            type="text"
+                            value={contactUsSettingsForm.landlinePhone}
+                            onChange={(e) =>
+                              setContactUsSettingsForm({
+                                ...contactUsSettingsForm,
+                                landlinePhone: e.target.value,
+                              })
+                            }
+                            placeholder="۰۲۱-۳۳۳۳۳۶۳۲"
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold tabular-nums"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۳. آدرس شعبه‌های صالحی + لینک نشان برای مسیریابی */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          ۳. آدرس شعبه‌های صالحی و لینک مسیریابی نشان (Neshan)
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          نام شعبه، آدرس دقیق پستی و لینک مسیریابی نشان (دکمه «لوکیشن با نشان») را برای هر شعبه وارد کنید
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setContactUsSettingsForm({
+                            ...contactUsSettingsForm,
+                            branchLocations: [
+                              ...contactUsSettingsForm.branchLocations,
+                              {
+                                id: `branch-${Date.now()}`,
+                                branchTitle: 'شعبه جدید :',
+                                address: 'آدرس شعبه جدید را وارد کنید',
+                                neshanUrl: 'https://neshan.org',
+                              },
+                            ],
+                          })
+                        }
+                        className="h-9 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>افزودن شعبه جدید</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {contactUsSettingsForm.branchLocations.map(
+                        (branchItem, bIdx) => (
+                          <div
+                            key={branchItem.id || `branch-loc-${bIdx}`}
+                            className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-3"
+                          >
+                            <div className="flex items-center justify-between border-b border-[#f0ece3] pb-2">
+                              <span className="text-xs font-black text-[#181818]">
+                                شعبه شماره {(bIdx + 1).toLocaleString('fa-IR')}
+                              </span>
+                              {contactUsSettingsForm.branchLocations.length >
+                                1 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setContactUsSettingsForm({
+                                      ...contactUsSettingsForm,
+                                      branchLocations:
+                                        contactUsSettingsForm.branchLocations.filter(
+                                          (_, i) => i !== bIdx
+                                        ),
+                                    })
+                                  }
+                                  className="text-[11px] font-bold text-[#ea1d2c] flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>حذف شعبه</span>
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                              <div className="md:col-span-3 space-y-1">
+                                <label className="block text-[11px] font-bold text-[#666]">
+                                  عنوان شعبه:
+                                </label>
+                                <input
+                                  type="text"
+                                  value={branchItem.branchTitle}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...contactUsSettingsForm.branchLocations,
+                                    ];
+                                    updated[bIdx] = {
+                                      ...updated[bIdx],
+                                      branchTitle: e.target.value,
+                                    };
+                                    setContactUsSettingsForm({
+                                      ...contactUsSettingsForm,
+                                      branchLocations: updated,
+                                    });
+                                  }}
+                                  placeholder="مثلاً: شعبه لاله زار :"
+                                  className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                                />
+                              </div>
+
+                              <div className="md:col-span-5 space-y-1">
+                                <label className="block text-[11px] font-bold text-[#666]">
+                                  آدرس کامل شعبه:
+                                </label>
+                                <input
+                                  type="text"
+                                  value={branchItem.address}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...contactUsSettingsForm.branchLocations,
+                                    ];
+                                    updated[bIdx] = {
+                                      ...updated[bIdx],
+                                      address: e.target.value,
+                                    };
+                                    setContactUsSettingsForm({
+                                      ...contactUsSettingsForm,
+                                      branchLocations: updated,
+                                    });
+                                  }}
+                                  placeholder="آدرس شعبه را وارد کنید..."
+                                  className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold"
+                                />
+                              </div>
+
+                              <div className="md:col-span-4 space-y-1">
+                                <label className="block text-[11px] font-bold text-[#b59766]">
+                                  لینک نشان برای مسیریابی (لوکیشن با نشان):
+                                </label>
+                                <input
+                                  type="text"
+                                  dir="ltr"
+                                  value={branchItem.neshanUrl}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...contactUsSettingsForm.branchLocations,
+                                    ];
+                                    updated[bIdx] = {
+                                      ...updated[bIdx],
+                                      neshanUrl: e.target.value,
+                                    };
+                                    setContactUsSettingsForm({
+                                      ...contactUsSettingsForm,
+                                      branchLocations: updated,
+                                    });
+                                  }}
+                                  placeholder="https://neshan.org/maps/... یا https://nshn.ir/..."
+                                  className="w-full h-10 rounded-lg border border-[#d8c4a0] bg-[#fcfaf5] px-3 text-xs font-semibold text-left"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ۴. تماس با شعبات صالحی (شماره تلفن و واتساپ شعب) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          ۴. تماس با شعبات صالحی (شماره تلفن و واتساپ شعب)
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          عنوان و شماره تلفن هر یک از شعب در ستون «تماس با شعبات صالحی» را ویرایش کنید
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setContactUsSettingsForm({
+                            ...contactUsSettingsForm,
+                            branchPhones: [
+                              ...contactUsSettingsForm.branchPhones,
+                              {
+                                id: `phone-${Date.now()}`,
+                                title: 'شماره تلفن و واتساپ شعبه جدید :',
+                                phone: '۰۲۱-۳۳۳۳۳۶۳۲',
+                              },
+                            ],
+                          })
+                        }
+                        className="h-9 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>افزودن شماره شعبه</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {contactUsSettingsForm.branchPhones.map(
+                        (phoneItem, phIdx) => (
+                          <div
+                            key={phoneItem.id || `branch-ph-${phIdx}`}
+                            className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-white p-3.5 rounded-xl border border-[#e7dfd1]"
+                          >
+                            <div className="sm:col-span-6 space-y-1">
+                              <label className="block text-[11px] font-bold text-[#666]">
+                                عنوان (شعبه {(phIdx + 1).toLocaleString('fa-IR')}):
+                              </label>
+                              <input
+                                type="text"
+                                value={phoneItem.title}
+                                onChange={(e) => {
+                                  const updated = [
+                                    ...contactUsSettingsForm.branchPhones,
+                                  ];
+                                  updated[phIdx] = {
+                                    ...updated[phIdx],
+                                    title: e.target.value,
+                                  };
+                                  setContactUsSettingsForm({
+                                    ...contactUsSettingsForm,
+                                    branchPhones: updated,
+                                  });
+                                }}
+                                placeholder="شماره تلفن و واتساپ شعبه لاله زار نو :"
+                                className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-5 space-y-1">
+                              <label className="block text-[11px] font-bold text-[#666]">
+                                شماره تماس شعبه:
+                              </label>
+                              <input
+                                type="text"
+                                value={phoneItem.phone}
+                                onChange={(e) => {
+                                  const updated = [
+                                    ...contactUsSettingsForm.branchPhones,
+                                  ];
+                                  updated[phIdx] = {
+                                    ...updated[phIdx],
+                                    phone: e.target.value,
+                                  };
+                                  setContactUsSettingsForm({
+                                    ...contactUsSettingsForm,
+                                    branchPhones: updated,
+                                  });
+                                }}
+                                placeholder="۰۲۱-۳۳۳۳۳۶۳۲"
+                                className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold tabular-nums"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-1 flex justify-end pt-4">
+                              {contactUsSettingsForm.branchPhones.length >
+                                1 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setContactUsSettingsForm({
+                                      ...contactUsSettingsForm,
+                                      branchPhones:
+                                        contactUsSettingsForm.branchPhones.filter(
+                                          (_, i) => i !== phIdx
+                                        ),
+                                    })
+                                  }
+                                  title="حذف این شماره"
+                                  className="w-9 h-9 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {/* دکمه ذخیره پایانی */}
+                  <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
+                    <button
+                      type="submit"
+                      disabled={isSavingContactUsSettings}
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-60"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>
+                        {isSavingContactUsSettings
+                          ? 'در حال ذخیره و بروزرسانی...'
+                          : 'ثبت و اعمال تغییرات در صفحه تماس با ما'}
                       </span>
                     </button>
                   </div>

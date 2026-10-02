@@ -2720,3 +2720,307 @@ export async function saveFooterSettings(
     throw new Error('خطا در ذخیره تنظیمات فوتر سایت.', { cause: error });
   }
 }
+
+// ==================== ۹. تنظیمات صفحه تماس با ما ====================
+export interface ContactUsBranchLocationItem {
+  id: string;
+  branchTitle: string;
+  address: string;
+  neshanUrl: string;
+}
+
+export interface ContactUsBranchPhoneItem {
+  id: string;
+  title: string;
+  phone: string;
+}
+
+export interface ContactUsSettingsData {
+  supportTitle: string;
+  supportValue: string;
+  workingDaysTitle: string;
+  workingDaysHours: string;
+  holidaysTitle: string;
+  holidaysHours: string;
+  emailTitle: string;
+  emailAddress: string;
+  managerPhoneTitle: string;
+  managerPhone: string;
+  landlinePhoneTitle: string;
+  landlinePhone: string;
+  branchLocations: ContactUsBranchLocationItem[];
+  branchPhones: ContactUsBranchPhoneItem[];
+}
+
+export const DEFAULT_CONTACT_US_SETTINGS: ContactUsSettingsData = {
+  supportTitle: 'پشتیبانی :',
+  supportValue: 'بخش پاسخگویی تلفنی',
+  workingDaysTitle: 'روز های کاری :',
+  workingDaysHours: '۸ صبح الی ۸ شب',
+  holidaysTitle: 'روز های تعطیل :',
+  holidaysHours: '۸ صبح الی ۶ بعدظهر',
+  emailTitle: 'آدرس ایمیل :',
+  emailAddress: 'info@lostersalehi.ir',
+  managerPhoneTitle: 'شماره مدیریت :',
+  managerPhone: '۰۹۰۱۲۲۲۲۶۳۵',
+  landlinePhoneTitle: 'شماره ثابت :',
+  landlinePhone: '۰۲۱-۳۳۳۳۳۶۳۲',
+  branchLocations: [
+    {
+      id: 'branch-lalehzar',
+      branchTitle: 'شعبه لاله زار :',
+      address: 'لاله زار نو خیابان امین زاده پاساژ پردیس طبقه ۴ پلاک ۳',
+      neshanUrl: 'https://neshan.org',
+    },
+    {
+      id: 'branch-shariati',
+      branchTitle: 'شعبه شریعتی :',
+      address:
+        'خیابان ظفر، خیابان گوی آبادی، خیابان پور اردکانی، خیابان قره گوزلو پلاک ۵',
+      neshanUrl: 'https://neshan.org',
+    },
+    {
+      id: 'branch-afsarieh',
+      branchTitle: 'شعبه سه راه افسریه :',
+      address:
+        'افسریه مسعودیه خ اردیبهشت جنب پاساژ خانواده پلاک ۱۳۳۵ لوستر صالحی',
+      neshanUrl: 'https://neshan.org',
+    },
+  ],
+  branchPhones: [
+    {
+      id: 'phone-lalehzar',
+      title: 'شماره تلفن و واتساپ شعبه لاله زار نو :',
+      phone: '۰۲۱-۳۳۳۳۳۶۳۲',
+    },
+    {
+      id: 'phone-shariati',
+      title: 'شماره تلفن و واتساپ شعبه شریعتی :',
+      phone: '۰۲۱-۳۳۳۳۳۶۳۲',
+    },
+    {
+      id: 'phone-afsarieh',
+      title: 'شماره تلفن و واتساپ شعبه سه راه افسریه :',
+      phone: '۰۲۱-۳۳۳۳۳۶۳۲',
+    },
+  ],
+};
+
+export async function getContactUsSettings(): Promise<ContactUsSettingsData> {
+  try {
+    const rows = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'contact_us'))
+      .limit(1);
+
+    if (rows.length === 0) {
+      await db.insert(siteSettings).values({
+        settingKey: 'contact_us',
+        settingValueJson: JSON.stringify(DEFAULT_CONTACT_US_SETTINGS),
+      });
+      return DEFAULT_CONTACT_US_SETTINGS;
+    }
+
+    const parsed = JSON.parse(rows[0].settingValueJson || '{}');
+    return {
+      supportTitle:
+        typeof parsed.supportTitle === 'string'
+          ? parsed.supportTitle
+          : DEFAULT_CONTACT_US_SETTINGS.supportTitle,
+      supportValue:
+        typeof parsed.supportValue === 'string'
+          ? parsed.supportValue
+          : DEFAULT_CONTACT_US_SETTINGS.supportValue,
+      workingDaysTitle:
+        typeof parsed.workingDaysTitle === 'string'
+          ? parsed.workingDaysTitle
+          : DEFAULT_CONTACT_US_SETTINGS.workingDaysTitle,
+      workingDaysHours:
+        typeof parsed.workingDaysHours === 'string'
+          ? parsed.workingDaysHours
+          : DEFAULT_CONTACT_US_SETTINGS.workingDaysHours,
+      holidaysTitle:
+        typeof parsed.holidaysTitle === 'string'
+          ? parsed.holidaysTitle
+          : DEFAULT_CONTACT_US_SETTINGS.holidaysTitle,
+      holidaysHours:
+        typeof parsed.holidaysHours === 'string'
+          ? parsed.holidaysHours
+          : DEFAULT_CONTACT_US_SETTINGS.holidaysHours,
+      emailTitle:
+        typeof parsed.emailTitle === 'string'
+          ? parsed.emailTitle
+          : DEFAULT_CONTACT_US_SETTINGS.emailTitle,
+      emailAddress:
+        typeof parsed.emailAddress === 'string'
+          ? parsed.emailAddress
+          : DEFAULT_CONTACT_US_SETTINGS.emailAddress,
+      managerPhoneTitle:
+        typeof parsed.managerPhoneTitle === 'string'
+          ? parsed.managerPhoneTitle
+          : DEFAULT_CONTACT_US_SETTINGS.managerPhoneTitle,
+      managerPhone:
+        typeof parsed.managerPhone === 'string'
+          ? parsed.managerPhone
+          : DEFAULT_CONTACT_US_SETTINGS.managerPhone,
+      landlinePhoneTitle:
+        typeof parsed.landlinePhoneTitle === 'string'
+          ? parsed.landlinePhoneTitle
+          : DEFAULT_CONTACT_US_SETTINGS.landlinePhoneTitle,
+      landlinePhone:
+        typeof parsed.landlinePhone === 'string'
+          ? parsed.landlinePhone
+          : DEFAULT_CONTACT_US_SETTINGS.landlinePhone,
+      branchLocations:
+        Array.isArray(parsed.branchLocations) &&
+        parsed.branchLocations.length > 0
+          ? parsed.branchLocations.map((loc: any, idx: number) => ({
+              id:
+                loc?.id ||
+                DEFAULT_CONTACT_US_SETTINGS.branchLocations[idx]?.id ||
+                `branch-${idx + 1}`,
+              branchTitle: String(
+                loc?.branchTitle ??
+                  DEFAULT_CONTACT_US_SETTINGS.branchLocations[idx]
+                    ?.branchTitle ??
+                  `شعبه ${idx + 1} :`
+              ),
+              address: String(
+                loc?.address ??
+                  DEFAULT_CONTACT_US_SETTINGS.branchLocations[idx]?.address ??
+                  ''
+              ),
+              neshanUrl: String(
+                loc?.neshanUrl ??
+                  DEFAULT_CONTACT_US_SETTINGS.branchLocations[idx]?.neshanUrl ??
+                  'https://neshan.org'
+              ),
+            }))
+          : DEFAULT_CONTACT_US_SETTINGS.branchLocations,
+      branchPhones:
+        Array.isArray(parsed.branchPhones) && parsed.branchPhones.length > 0
+          ? parsed.branchPhones.map((ph: any, idx: number) => ({
+              id:
+                ph?.id ||
+                DEFAULT_CONTACT_US_SETTINGS.branchPhones[idx]?.id ||
+                `phone-${idx + 1}`,
+              title: String(
+                ph?.title ??
+                  DEFAULT_CONTACT_US_SETTINGS.branchPhones[idx]?.title ??
+                  `شماره تلفن شعبه ${idx + 1} :`
+              ),
+              phone: String(
+                ph?.phone ??
+                  DEFAULT_CONTACT_US_SETTINGS.branchPhones[idx]?.phone ??
+                  ''
+              ),
+            }))
+          : DEFAULT_CONTACT_US_SETTINGS.branchPhones,
+    };
+  } catch (error) {
+    console.error('Database query failed in getContactUsSettings:', error);
+    return DEFAULT_CONTACT_US_SETTINGS;
+  }
+}
+
+export async function saveContactUsSettings(
+  data: Partial<ContactUsSettingsData>
+): Promise<ContactUsSettingsData> {
+  try {
+    const current = await getContactUsSettings();
+    const merged: ContactUsSettingsData = {
+      supportTitle:
+        data.supportTitle !== undefined
+          ? String(data.supportTitle)
+          : current.supportTitle,
+      supportValue:
+        data.supportValue !== undefined
+          ? String(data.supportValue)
+          : current.supportValue,
+      workingDaysTitle:
+        data.workingDaysTitle !== undefined
+          ? String(data.workingDaysTitle)
+          : current.workingDaysTitle,
+      workingDaysHours:
+        data.workingDaysHours !== undefined
+          ? String(data.workingDaysHours)
+          : current.workingDaysHours,
+      holidaysTitle:
+        data.holidaysTitle !== undefined
+          ? String(data.holidaysTitle)
+          : current.holidaysTitle,
+      holidaysHours:
+        data.holidaysHours !== undefined
+          ? String(data.holidaysHours)
+          : current.holidaysHours,
+      emailTitle:
+        data.emailTitle !== undefined
+          ? String(data.emailTitle)
+          : current.emailTitle,
+      emailAddress:
+        data.emailAddress !== undefined
+          ? String(data.emailAddress)
+          : current.emailAddress,
+      managerPhoneTitle:
+        data.managerPhoneTitle !== undefined
+          ? String(data.managerPhoneTitle)
+          : current.managerPhoneTitle,
+      managerPhone:
+        data.managerPhone !== undefined
+          ? String(data.managerPhone)
+          : current.managerPhone,
+      landlinePhoneTitle:
+        data.landlinePhoneTitle !== undefined
+          ? String(data.landlinePhoneTitle)
+          : current.landlinePhoneTitle,
+      landlinePhone:
+        data.landlinePhone !== undefined
+          ? String(data.landlinePhone)
+          : current.landlinePhone,
+      branchLocations:
+        Array.isArray(data.branchLocations) && data.branchLocations.length > 0
+          ? data.branchLocations.map((loc, idx) => ({
+              id: loc?.id || `branch-${idx + 1}`,
+              branchTitle: String(loc?.branchTitle || '').trim(),
+              address: String(loc?.address || '').trim(),
+              neshanUrl: String(loc?.neshanUrl || 'https://neshan.org').trim(),
+            }))
+          : current.branchLocations,
+      branchPhones:
+        Array.isArray(data.branchPhones) && data.branchPhones.length > 0
+          ? data.branchPhones.map((ph, idx) => ({
+              id: ph?.id || `phone-${idx + 1}`,
+              title: String(ph?.title || '').trim(),
+              phone: String(ph?.phone || '').trim(),
+            }))
+          : current.branchPhones,
+    };
+
+    const existing = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'contact_us'))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(siteSettings)
+        .set({
+          settingValueJson: JSON.stringify(merged),
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.settingKey, 'contact_us'));
+    } else {
+      await db.insert(siteSettings).values({
+        settingKey: 'contact_us',
+        settingValueJson: JSON.stringify(merged),
+      });
+    }
+
+    return merged;
+  } catch (error) {
+    console.error('Database query failed in saveContactUsSettings:', error);
+    throw new Error('خطا در ذخیره تنظیمات صفحه تماس با ما.', { cause: error });
+  }
+}

@@ -2,7 +2,38 @@ import React, { useState, useRef } from 'react';
 import { SectionHeading } from '../components/Ornaments';
 import { AppToast } from '../components/InteractiveModals';
 
+export interface ContactUsBranchLocationItem {
+  id: string;
+  branchTitle: string;
+  address: string;
+  neshanUrl: string;
+}
+
+export interface ContactUsBranchPhoneItem {
+  id: string;
+  title: string;
+  phone: string;
+}
+
+export interface ContactUsSettingsConfig {
+  supportTitle: string;
+  supportValue: string;
+  workingDaysTitle: string;
+  workingDaysHours: string;
+  holidaysTitle: string;
+  holidaysHours: string;
+  emailTitle: string;
+  emailAddress: string;
+  managerPhoneTitle: string;
+  managerPhone: string;
+  landlinePhoneTitle: string;
+  landlinePhone: string;
+  branchLocations: ContactUsBranchLocationItem[];
+  branchPhones: ContactUsBranchPhoneItem[];
+}
+
 interface ContactUsContentSectionProps {
+  contactUsSettings?: ContactUsSettingsConfig;
   onShowToast?: (
     type: AppToast['type'],
     title: string,
@@ -390,9 +421,40 @@ const SALEHI_BRANCH_PHONES = [
   },
 ];
 
+export const INITIAL_CONTACT_US_SETTINGS: ContactUsSettingsConfig = {
+  supportTitle: 'پشتیبانی :',
+  supportValue: 'بخش پاسخگویی تلفنی',
+  workingDaysTitle: 'روز های کاری :',
+  workingDaysHours: '۸ صبح الی ۸ شب',
+  holidaysTitle: 'روز های تعطیل :',
+  holidaysHours: '۸ صبح الی ۶ بعدظهر',
+  emailTitle: 'آدرس ایمیل :',
+  emailAddress: 'info@lostersalehi.ir',
+  managerPhoneTitle: 'شماره مدیریت :',
+  managerPhone: '۰۹۰۱۲۲۲۲۶۳۵',
+  landlinePhoneTitle: 'شماره ثابت :',
+  landlinePhone: '۰۲۱-۳۳۳۳۳۶۳۲',
+  branchLocations: SALEHI_BRANCH_LOCATIONS,
+  branchPhones: SALEHI_BRANCH_PHONES,
+};
+
 export const ContactUsContentSection: React.FC<
   ContactUsContentSectionProps
-> = ({ onShowToast }) => {
+> = ({ contactUsSettings, onShowToast }) => {
+  const settings: ContactUsSettingsConfig = {
+    ...INITIAL_CONTACT_US_SETTINGS,
+    ...(contactUsSettings || {}),
+    branchLocations:
+      contactUsSettings?.branchLocations &&
+      contactUsSettings.branchLocations.length > 0
+        ? contactUsSettings.branchLocations
+        : INITIAL_CONTACT_US_SETTINGS.branchLocations,
+    branchPhones:
+      contactUsSettings?.branchPhones &&
+      contactUsSettings.branchPhones.length > 0
+        ? contactUsSettings.branchPhones
+        : INITIAL_CONTACT_US_SETTINGS.branchPhones,
+  };
   const [subject, setSubject] = useState<string>(
     'مشکل در برقراری ارتباط با شما دارم'
   );
@@ -534,10 +596,10 @@ export const ContactUsContentSection: React.FC<
                 </div>
                 <div className="text-right min-w-0">
                   <span className="block text-[12.5px] text-[#555555]">
-                    پشتیبانی :
+                    {settings.supportTitle}
                   </span>
                   <span className="block text-[13px] sm:text-[13.5px] font-bold text-[#1e1e1e] mt-1">
-                    بخش پاسخگویی تلفنی
+                    {settings.supportValue}
                   </span>
                 </div>
               </div>
@@ -549,10 +611,10 @@ export const ContactUsContentSection: React.FC<
                 </div>
                 <div className="text-right min-w-0">
                   <span className="block text-[12.5px] text-[#555555]">
-                    روز های کاری :
+                    {settings.workingDaysTitle}
                   </span>
                   <span className="block text-[13px] sm:text-[13.5px] font-bold text-[#1e1e1e] mt-1 tabular-nums">
-                    ۸ صبح الی ۸ شب
+                    {settings.workingDaysHours}
                   </span>
                 </div>
               </div>
@@ -564,10 +626,10 @@ export const ContactUsContentSection: React.FC<
                 </div>
                 <div className="text-right min-w-0">
                   <span className="block text-[12.5px] text-[#555555]">
-                    روز های تعطیل :
+                    {settings.holidaysTitle}
                   </span>
                   <span className="block text-[13px] sm:text-[13.5px] font-bold text-[#1e1e1e] mt-1 tabular-nums">
-                    ۸ صبح الی ۶ بعدظهر
+                    {settings.holidaysHours}
                   </span>
                 </div>
               </div>
@@ -593,13 +655,13 @@ export const ContactUsContentSection: React.FC<
                 </div>
                 <div className="text-right min-w-0">
                   <span className="block text-[12.5px] text-[#555555]">
-                    آدرس ایمیل :
+                    {settings.emailTitle}
                   </span>
                   <span
                     dir="ltr"
                     className="block text-[13px] sm:text-[13.5px] font-bold text-[#1e1e1e] mt-1 font-sans text-right"
                   >
-                    info@lostersalehi.ir
+                    {settings.emailAddress}
                   </span>
                 </div>
               </div>
@@ -611,10 +673,10 @@ export const ContactUsContentSection: React.FC<
                 </div>
                 <div className="text-right min-w-0">
                   <span className="block text-[12.5px] text-[#555555]">
-                    شماره مدیریت :
+                    {settings.managerPhoneTitle}
                   </span>
                   <span className="block text-[13px] sm:text-[13.5px] font-bold text-[#1e1e1e] mt-1 tabular-nums">
-                    ۰۹۰۱۲۲۲۲۶۳۵
+                    {settings.managerPhone}
                   </span>
                 </div>
               </div>
@@ -626,10 +688,10 @@ export const ContactUsContentSection: React.FC<
                 </div>
                 <div className="text-right min-w-0">
                   <span className="block text-[12.5px] text-[#555555]">
-                    شماره ثابت :
+                    {settings.landlinePhoneTitle}
                   </span>
                   <span className="block text-[13px] sm:text-[13.5px] font-bold text-[#1e1e1e] mt-1 tabular-nums">
-                    ۰۲۱-۳۳۳۳۳۶۳۲
+                    {settings.landlinePhone}
                   </span>
                 </div>
               </div>
@@ -651,13 +713,15 @@ export const ContactUsContentSection: React.FC<
 
           {/* در موبایل یک کارت یکپارچه با خط جداکننده (عکس نهم) و در دسکتاپ ۳ کارت مجزا (عکس اول) */}
           <div className="rounded-[16px] border border-[#eaeaea] bg-white p-5 divide-y divide-[#efefef] md:rounded-none md:border-none md:bg-transparent md:p-0 md:divide-y-0 md:space-y-4">
-            {SALEHI_BRANCH_LOCATIONS.map((branch, idx) => (
+            {settings.branchLocations.map((branch, idx) => (
               <div
-                key={branch.id}
+                key={branch.id || `branch-${idx}`}
                 className={`${
                   idx > 0 ? 'pt-5 md:pt-0' : ''
                 } ${
-                  idx < SALEHI_BRANCH_LOCATIONS.length - 1 ? 'pb-5 md:pb-0' : ''
+                  idx < settings.branchLocations.length - 1
+                    ? 'pb-5 md:pb-0'
+                    : ''
                 } md:rounded-[16px] md:border md:border-[#eaeaea] md:bg-white md:px-6 md:py-5 md:min-h-[96px] flex flex-col md:flex-row md:items-center md:justify-between gap-4`}
               >
                 <div className="flex items-start md:items-center justify-start gap-3.5 min-w-0">
@@ -674,23 +738,18 @@ export const ContactUsContentSection: React.FC<
                   </div>
                 </div>
 
-                {/* دکمه «لوکیشن با نشان» در موبایل سمت راست (self-start در RTL) و در دسکتاپ سمت چپ کارت */}
-                <button
-                  type="button"
-                  onClick={() =>
-                    onShowToast?.(
-                      'contact-success',
-                      'پیام شما با موفقیت ارسال شد',
-                      'به زودی تیم پاسخگویی با شما تماس خواهند گرفت.'
-                    )
-                  }
+                {/* دکمه «لوکیشن با نشان» با لینک مستقیم مسیریابی نشان */}
+                <a
+                  href={branch.neshanUrl || 'https://neshan.org'}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="self-start md:self-center h-[44px] px-4 rounded-[10px] bg-[#f5f5f5] hover:bg-[#ebebeb] transition-colors flex items-center gap-2.5 shrink-0 cursor-pointer"
                 >
                   <NeshanMapLogo className="w-[22px] h-[22px]" />
                   <span className="text-[12.5px] font-bold text-[#1e1e1e] whitespace-nowrap">
                     لوکیشن با نشان
                   </span>
-                </button>
+                </a>
               </div>
             ))}
           </div>
@@ -707,9 +766,9 @@ export const ContactUsContentSection: React.FC<
 
           {/* در موبایل یک کارت یکپارچه (عکس نهم) و در دسکتاپ ۳ کارت مجزا هم‌تراز با کارت‌های آدرس (عکس اول) */}
           <div className="rounded-[16px] border border-[#eaeaea] bg-white p-5 space-y-5 md:rounded-none md:border-none md:bg-transparent md:p-0 md:space-y-4">
-            {SALEHI_BRANCH_PHONES.map((item) => (
+            {settings.branchPhones.map((item, idx) => (
               <div
-                key={item.id}
+                key={item.id || `phone-${idx}`}
                 className="md:rounded-[16px] md:border md:border-[#eaeaea] md:bg-white md:px-6 md:py-5 md:min-h-[96px] flex items-center justify-start gap-3.5"
               >
                 <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f4f1ea] text-[#a98552] flex items-center justify-center shrink-0">
