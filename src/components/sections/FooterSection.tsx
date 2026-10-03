@@ -23,11 +23,19 @@ export interface FooterLicenseConfig {
   linkUrl?: string;
 }
 
+export interface FooterLinkItem {
+  id: string;
+  label: string;
+  href: string;
+}
+
 export interface FooterSettingsConfig {
   cardBgColor: string;
   bottomCardBgColor?: string;
   descriptionParagraph1: string;
+  descriptionParagraph1Color?: string;
   descriptionParagraph2: string;
+  descriptionParagraph2Color?: string;
   phones: FooterPhoneConfig[];
   linkedinUrl: string;
   whatsappUrl: string;
@@ -35,6 +43,17 @@ export interface FooterSettingsConfig {
   enamadCode: string;
   otherLicenses: FooterLicenseConfig[];
   copyrightText: string;
+  catalogTitle?: string;
+  catalogDescription?: string;
+  catalogCardTitle?: string;
+  catalogPageCount?: string;
+  catalogDownloadUrl?: string;
+  column1Title?: string;
+  column1Links?: FooterLinkItem[];
+  column2Title?: string;
+  column2Links?: FooterLinkItem[];
+  columnTitleColor?: string;
+  columnLinkColor?: string;
 }
 
 export const INITIAL_FOOTER_SETTINGS: FooterSettingsConfig = {
@@ -75,6 +94,31 @@ export const INITIAL_FOOTER_SETTINGS: FooterSettingsConfig = {
     },
   ],
   copyrightText: 'کلیه حقوق این سایت محفوظ و متعلق به لوستر اکبر صالحی است.',
+  catalogTitle: 'فایل کاتالوگ محصولات',
+  catalogDescription:
+    'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد.',
+  catalogCardTitle: 'کاتالوگ محصولات لوستر صالحی',
+  catalogPageCount: '۱۲۶ صفحه',
+  catalogDownloadUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+  column1Title: 'دسترسی سریع تر',
+  column1Links: [
+    { id: 'l1-1', label: 'صفحه اصلی', href: '/' },
+    { id: 'l1-2', label: 'قوانین و مقررات', href: '/rule' },
+    { id: 'l1-3', label: 'درباره ما', href: '/about-us' },
+    { id: 'l1-4', label: 'تماس با ما', href: '/contact-us' },
+    { id: 'l1-5', label: 'شعبه های مرکز', href: '#executed-projects' },
+    { id: 'l1-6', label: 'گواهی ها', href: '#about-services' },
+    { id: 'l1-7', label: 'نمونه کارهای صالحی', href: '/project' },
+  ],
+  column2Title: 'کلکسیون صالحی',
+  column2Links: [
+    { id: 'l2-1', label: 'لوستر های کلاسیک', href: '/product/categories/chandeliers' },
+    { id: 'l2-2', label: 'لوستر های مدرن', href: '/product/categories/chandeliers' },
+    { id: 'l2-3', label: 'آباژور کلاسیک', href: '/product/categories/abalour' },
+    { id: 'l2-4', label: 'آینه، کنسول', href: '/product/categories/mirror-console' },
+    { id: 'l2-5', label: 'مجله های لوستر', href: '#magazine-section' },
+    { id: 'l2-6', label: 'فرایند آبکاری', href: '#magazine-section' },
+  ],
 };
 
 interface FooterSectionProps {
@@ -103,6 +147,14 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
       footerSettings?.otherLicenses && footerSettings.otherLicenses.length > 0
         ? footerSettings.otherLicenses
         : INITIAL_FOOTER_SETTINGS.otherLicenses,
+    column1Links:
+      footerSettings?.column1Links && footerSettings.column1Links.length > 0
+        ? footerSettings.column1Links
+        : INITIAL_FOOTER_SETTINGS.column1Links,
+    column2Links:
+      footerSettings?.column2Links && footerSettings.column2Links.length > 0
+        ? footerSettings.column2Links
+        : INITIAL_FOOTER_SETTINGS.column2Links,
   };
 
   const triggerRouteNavigation = (route: AppRoute, hashAnchor?: string) => {
@@ -110,6 +162,21 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
       onNavigateRoute(route, hashAnchor);
     } else {
       navigateToRoute(route, hashAnchor);
+    }
+  };
+
+  const handleFooterLinkClick = (href: string, e: React.MouseEvent) => {
+    if (href.startsWith('/product/categories/')) {
+      e.preventDefault();
+      const slug = href.replace('/product/categories/', '');
+      navigateToProductCategory(slug, e);
+    } else if (href.startsWith('/')) {
+      e.preventDefault();
+      const route = href.slice(1) || 'home';
+      triggerRouteNavigation(route as AppRoute);
+    } else if (href.startsWith('#')) {
+      e.preventDefault();
+      triggerRouteNavigation('home', href);
     }
   };
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -163,12 +230,18 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
             </div>
 
             {/* متن شعبه VIP (قابل ویرایش از پنل ادمین) */}
-            <p className="text-xs sm:text-[13.5px] leading-7 text-white/95 text-justify mb-6">
+            <p
+              className="text-xs sm:text-[13.5px] leading-7 text-white/95 text-justify mb-6"
+              style={{ color: settings.descriptionParagraph1Color }}
+            >
               {settings.descriptionParagraph1}
             </p>
 
             {/* متن پشتیبانی ۲۴ ساعته تیره (قابل ویرایش از پنل ادمین) */}
-            <p className="text-xs sm:text-[13px] font-bold text-[#231f1c]">
+            <p
+              className="text-xs sm:text-[13px] font-bold text-[#231f1c]"
+              style={{ color: settings.descriptionParagraph2Color }}
+            >
               {settings.descriptionParagraph2}
             </p>
           </div>
@@ -197,18 +270,22 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
             {/* ستون ۱: دسترسی سریع تر */}
             <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[12px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
               {/* هدر دسکتاپ */}
-              <h4 className="hidden md:block text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]">
-                دسترسی سریع تر
+              <h4
+                className="hidden md:block text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]"
+                style={{ color: settings.columnTitleColor || '#222222' }}
+              >
+                {settings.column1Title || 'دسترسی سریع تر'}
               </h4>
               {/* هدر موبایل */}
               <button
                 type="button"
                 onClick={() => toggleSection('quickAccess')}
                 className="flex md:hidden items-center justify-between w-full text-right py-2 text-[14px] font-bold text-[#222222] focus:outline-none"
+                style={{ color: settings.columnTitleColor || '#222222' }}
               >
                 <div className="flex items-center gap-2.5">
                   <span className={`w-2 h-2 rounded-full transition-all shrink-0 ${openSections.quickAccess ? 'bg-[#b39561]' : 'bg-[#d8d8d8]'}`} />
-                  <span>دسترسی سریع تر</span>
+                  <span>{settings.column1Title || 'دسترسی سریع تر'}</span>
                 </div>
                 <ChevronDown
                   className={`w-4 h-4 text-[#555555] transition-transform duration-200 ${
@@ -220,117 +297,23 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
               {/* محتوای ستون (همیشه در دسکتاپ باز، در موبایل آکاردئونی) */}
               <div className={`${openSections.quickAccess ? 'block' : 'hidden'} md:block mt-2 md:mt-0`}>
                 <ul className="relative pr-6 md:pr-0 space-y-4 text-xs text-[#1c1917] before:absolute before:right-[3.5px] before:top-1 before:bottom-3 before:w-[1px] before:bg-[#b39561]/40 md:before:hidden">
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        triggerRouteNavigation('home');
-                      }}
-                      className="hover:text-[#b39561] transition-colors cursor-pointer"
-                    >
-                      صفحه اصلی
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/rule"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        triggerRouteNavigation('rule');
-                      }}
-                      className={`transition-colors cursor-pointer ${
-                        activeRoute === 'rule'
-                          ? 'text-[#b39561]'
-                          : 'hover:text-[#b39561]'
-                      }`}
-                    >
-                      قوانین و مقررات
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/about-us"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        triggerRouteNavigation('about-us');
-                      }}
-                      className={`transition-colors cursor-pointer ${
-                        activeRoute === 'about-us'
-                          ? 'text-[#b39561]'
-                          : 'hover:text-[#b39561]'
-                      }`}
-                    >
-                      درباره ما
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/contact-us"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        triggerRouteNavigation('contact-us');
-                      }}
-                      className={`transition-colors cursor-pointer ${
-                        activeRoute === 'contact-us'
-                          ? 'text-[#b39561]'
-                          : 'hover:text-[#b39561]'
-                      }`}
-                    >
-                      تماس با ما
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="#executed-projects"
-                      onClick={(e) => {
-                        if (activeRoute !== 'home') {
-                          e.preventDefault();
-                          triggerRouteNavigation('home', '#executed-projects');
-                        }
-                      }}
-                      className="hover:text-[#b39561] transition-colors"
-                    >
-                      شعبه های مرکز
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="#about-services"
-                      onClick={(e) => {
-                        if (activeRoute !== 'home') {
-                          e.preventDefault();
-                          triggerRouteNavigation('home', '#about-services');
-                        }
-                      }}
-                      className="hover:text-[#b39561] transition-colors"
-                    >
-                      گواهی ها
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/project"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        triggerRouteNavigation('project');
-                      }}
-                      className={`transition-colors cursor-pointer ${
-                        activeRoute === 'project'
-                          ? 'text-[#b39561]'
-                          : 'hover:text-[#b39561]'
-                      }`}
-                    >
-                      نمونه کارهای صالحی
-                    </a>
-                  </li>
+                  {(settings.column1Links || []).map((link, idx) => (
+                    <li key={link.id || `l1-link-${idx}`} className="relative md:static">
+                      <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
+                      <a
+                        href={link.href}
+                        onClick={(e) => handleFooterLinkClick(link.href, e)}
+                        className={`transition-colors cursor-pointer ${
+                          activeRoute === link.href.replace('/', '')
+                            ? 'text-[#b39561]'
+                            : 'hover:text-[#b39561]'
+                        }`}
+                        style={{ color: settings.columnLinkColor || '#1c1917' }}
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -338,18 +321,22 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
             {/* ستون ۲: کلکسیون صالحی */}
             <div className="flex flex-col bg-white md:bg-transparent p-5 md:p-0 rounded-[12px] shadow-xs md:shadow-none mb-4 md:mb-0 border-b border-transparent md:border-none">
               {/* هدر دسکتاپ */}
-              <h4 className="hidden md:block text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]">
-                کلکسیون صالحی
+              <h4
+                className="hidden md:block text-[13.5px] font-bold text-[#222222] pb-3 mb-4 border-b border-[#e4e2dc]"
+                style={{ color: settings.columnTitleColor || '#222222' }}
+              >
+                {settings.column2Title || 'کلکسیون صالحی'}
               </h4>
               {/* هدر موبایل */}
               <button
                 type="button"
                 onClick={() => toggleSection('collection')}
                 className="flex md:hidden items-center justify-between w-full text-right py-2 text-[14px] font-bold text-[#222222] focus:outline-none"
+                style={{ color: settings.columnTitleColor || '#222222' }}
               >
                 <div className="flex items-center gap-2.5">
                   <span className={`w-2 h-2 rounded-full transition-all shrink-0 ${openSections.collection ? 'bg-[#b39561]' : 'bg-[#d8d8d8]'}`} />
-                  <span>کلکسیون صالحی</span>
+                  <span>{settings.column2Title || 'کلکسیون صالحی'}</span>
                 </div>
                 <ChevronDown
                   className={`w-4 h-4 text-[#555555] transition-transform duration-200 ${
@@ -361,72 +348,19 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
               {/* محتوای ستون (همیشه در دسکتاپ باز، در موبایل آکاردئونی) */}
               <div className={`${openSections.collection ? 'block' : 'hidden'} md:block mt-2 md:mt-0`}>
                 <ul className="relative pr-6 md:pr-0 space-y-4 text-xs text-[#1c1917] before:absolute before:right-[3.5px] before:top-1 before:bottom-3 before:w-[1px] before:bg-[#b39561]/40 md:before:hidden">
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/product/categories/chandeliers"
-                      onClick={(e) => {
-                        navigateToProductCategory('chandeliers', e);
-                      }}
-                      className="hover:text-[#b39561] transition-colors cursor-pointer"
-                    >
-                      لوستر های کلاسیک
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/product/categories/chandeliers"
-                      onClick={(e) => {
-                        navigateToProductCategory('chandeliers', e);
-                      }}
-                      className="hover:text-[#b39561] transition-colors cursor-pointer"
-                    >
-                      لوستر های مدرن
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/product/categories/abalour"
-                      onClick={(e) => {
-                        navigateToProductCategory('abalour', e);
-                      }}
-                      className="hover:text-[#b39561] transition-colors cursor-pointer"
-                    >
-                      آباژور کلاسیک
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="/product/categories/mirror-console"
-                      onClick={(e) => {
-                        navigateToProductCategory('mirror-console', e);
-                      }}
-                      className="hover:text-[#b39561] transition-colors cursor-pointer"
-                    >
-                      آینه، کنسول
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="#magazine-section"
-                      className="hover:text-[#b39561] transition-colors"
-                    >
-                      مجله های لوستر
-                    </a>
-                  </li>
-                  <li className="relative md:static">
-                    <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
-                    <a
-                      href="#magazine-section"
-                      className="hover:text-[#b39561] transition-colors"
-                    >
-                      فرایند آبکاری
-                    </a>
-                  </li>
+                  {(settings.column2Links || []).map((link, idx) => (
+                    <li key={link.id || `l2-link-${idx}`} className="relative md:static">
+                      <span className="absolute right-[-20.5px] top-1/2 -translate-y-1/2 w-[17px] h-[1px] bg-[#b39561]/40 md:hidden" />
+                      <a
+                        href={link.href}
+                        onClick={(e) => handleFooterLinkClick(link.href, e)}
+                        className="hover:text-[#b39561] transition-colors cursor-pointer"
+                        style={{ color: settings.columnLinkColor || '#1c1917' }}
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>

@@ -14,7 +14,11 @@ import {
 import { FinishType } from '../components/Chandelier3DViewer';
 import { HeaderSection } from '../components/sections/HeaderSection';
 import { StoriesSection } from '../components/sections/StoriesSection';
-import { HeroSection } from '../components/sections/HeroSection';
+import {
+  HeroSection,
+  HeroSliderSettingsConfig,
+  INITIAL_HERO_SLIDER_SETTINGS,
+} from '../components/sections/HeroSection';
 import { CategorySection } from '../components/sections/CategorySection';
 import { AboutServicesSection } from '../components/sections/AboutServicesSection';
 import { ProductsCarouselSection } from '../components/sections/ProductsCarouselSection';
@@ -31,7 +35,11 @@ import {
   ContactUsSettingsConfig,
   INITIAL_CONTACT_US_SETTINGS,
 } from '../contact-us';
-import { AboutUsContentSection } from '../about-us';
+import {
+  AboutUsContentSection,
+  AboutUsSettingsConfig,
+  INITIAL_ABOUT_US_SETTINGS,
+} from '../about-us/AboutUsContentSection';
 import { ProjectContentSection } from '../project';
 import { ProductContentSection } from '../product';
 import { AdminPanelSection } from '../admin';
@@ -45,7 +53,7 @@ import {
   navigateToRoute,
   subscribeToRoute,
 } from '../utils/navigation';
-import { apiFetchWithFallback } from '../utils/localBackendFallback';
+import { apiFetchWithFallback, INITIAL_MAIN_SETTINGS, INITIAL_FAQ_SETTINGS } from '../utils/localBackendFallback';
 import {
   ProductStudioModal,
   CustomProduct3DModal,
@@ -244,6 +252,16 @@ export const HomePage: React.FC = () => {
   );
   const [contactUsSettings, setContactUsSettings] =
     useState<ContactUsSettingsConfig>(INITIAL_CONTACT_US_SETTINGS);
+  const [aboutUsSettings, setAboutUsSettings] =
+    useState<AboutUsSettingsConfig>(INITIAL_ABOUT_US_SETTINGS);
+  const [heroSliderSettings, setHeroSliderSettings] =
+    useState<HeroSliderSettingsConfig>(INITIAL_HERO_SLIDER_SETTINGS);
+  const [mainSettings, setMainSettings] = useState<any>(
+    INITIAL_MAIN_SETTINGS
+  );
+  const [faqSettings, setFaqSettings] = useState<any>(
+    INITIAL_FAQ_SETTINGS
+  );
 
   const fetchLiveCatalogFromDb = async () => {
     try {
@@ -261,6 +279,32 @@ export const HomePage: React.FC = () => {
           ...data.contactUsSettings,
         }));
       }
+      if (data.aboutUsSettings) {
+        setAboutUsSettings((prev) => ({
+          ...prev,
+          ...data.aboutUsSettings,
+        }));
+      }
+      if (data.heroSliderSettings) {
+        setHeroSliderSettings((prev) => ({
+          ...prev,
+          ...data.heroSliderSettings,
+        }));
+      }
+      if (data.mainSettings) {
+        setMainSettings((prev: any) => ({
+          ...prev,
+          ...data.mainSettings,
+        }));
+      }
+      if (data.faqSettings) {
+        setFaqSettings((prev: any) => ({
+          ...prev,
+          ...data.faqSettings,
+        }));
+      }
+
+      let currentProducts = SALEHI_COLLECTION_PRODUCTS;
       if (Array.isArray(data.products) && data.products.length > 0) {
         const mappedProducts: ChandelierProduct[] = data.products.map(
           (row: any) => ({
@@ -283,220 +327,224 @@ export const HomePage: React.FC = () => {
             description: row.description || '',
           })
         );
+        currentProducts = mappedProducts;
         setProductsList(mappedProducts);
+      }
 
-        if (Array.isArray(data.categories) && data.categories.length > 0) {
-          const mappedCategories: CategoryItem[] = data.categories.map(
-            (catRow: any, idx: number) => {
-              const fallbackCat =
-                PRODUCT_CATEGORIES.find((c) => c.key === catRow.slug) ||
-                PRODUCT_CATEGORIES[idx] ||
-                PRODUCT_CATEGORIES[0];
-              return {
-                id: `cat-${catRow.id}`,
-                key: catRow.slug,
-                title: catRow.title,
-                count: catRow.countLabel || fallbackCat.count,
-                image: catRow.image || fallbackCat.image,
-              };
-            }
-          );
-          setCategoriesList(mappedCategories);
-        }
+      if (Array.isArray(data.categories) && data.categories.length > 0) {
+        const mappedCategories: CategoryItem[] = data.categories.map(
+          (catRow: any, idx: number) => {
+            const fallbackCat =
+              PRODUCT_CATEGORIES.find(
+                (c) => c.slug === catRow.slug || c.filterKey === catRow.slug
+              ) ||
+              PRODUCT_CATEGORIES[idx] ||
+              PRODUCT_CATEGORIES[0];
+            return {
+              id: `cat-${catRow.id || idx}`,
+              title: catRow.title || fallbackCat.title,
+              countText:
+                catRow.countLabel || catRow.countText || fallbackCat.countText,
+              filterKey: catRow.slug || fallbackCat.filterKey,
+              slug: catRow.slug || fallbackCat.slug,
+            };
+          }
+        );
+        setCategoriesList(mappedCategories);
+      }
 
-        if (Array.isArray(data.projects) && data.projects.length > 0) {
-          const mappedProjects: ExecutedProject[] = data.projects.map(
-            (projRow: any) => {
-              let parsedGallery: string[] = [];
-              if (Array.isArray(projRow.galleryImages)) {
-                parsedGallery = projRow.galleryImages;
-              } else if (typeof projRow.galleryJson === 'string') {
-                try {
-                  parsedGallery = JSON.parse(projRow.galleryJson);
-                } catch {
-                  parsedGallery = [];
-                }
+      if (Array.isArray(data.projects) && data.projects.length > 0) {
+        const mappedProjects: ExecutedProject[] = data.projects.map(
+          (projRow: any) => {
+            let parsedGallery: string[] = [];
+            if (Array.isArray(projRow.galleryImages)) {
+              parsedGallery = projRow.galleryImages;
+            } else if (typeof projRow.galleryJson === 'string') {
+              try {
+                parsedGallery = JSON.parse(projRow.galleryJson);
+              } catch {
+                parsedGallery = [];
               }
-              return {
-                id: projRow.slug ? `proj-${projRow.slug}` : `proj-${projRow.id}`,
-                slug: projRow.slug,
-                sampleCode: projRow.sampleCode || 'نمونه ۱',
-                district: projRow.district || 'فرشته',
-                categoryTab: (projRow.categoryTab as any) || 'gov',
-                title: projRow.title,
-                description: projRow.description,
-                usedChandeliersText: projRow.usedChandeliersText || '',
-                usedProducts: [
-                  {
-                    id: `up-${projRow.id}-1`,
-                    name: mappedProducts[0]?.name || 'لوستر ۱۲ شاخه تک',
-                    price:
-                      mappedProducts[0]?.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان',
-                    productId: mappedProducts[0]?.id || 'prod-3',
-                  },
-                  {
-                    id: `up-${projRow.id}-2`,
-                    name: mappedProducts[1]?.name || 'لوستر شاه ملکه',
-                    price:
-                      mappedProducts[1]?.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان',
-                    productId: mappedProducts[1]?.id || 'prod-4',
-                  },
-                ],
-                mainImage: projRow.mainImage,
-                galleryImages:
-                  parsedGallery.length > 0 ? parsedGallery : [projRow.mainImage],
-              };
             }
-          );
-          setProjectsList(mappedProjects);
-        }
+            return {
+              id: projRow.slug ? `proj-${projRow.slug}` : `proj-${projRow.id}`,
+              slug: projRow.slug,
+              sampleCode: projRow.sampleCode || 'نمونه ۱',
+              district: projRow.district || 'فرشته',
+              categoryTab: (projRow.categoryTab as any) || 'gov',
+              title: projRow.title,
+              description: projRow.description,
+              usedChandeliersText: projRow.usedChandeliersText || '',
+              usedProducts: [
+                {
+                  id: `up-${projRow.id}-1`,
+                  name: currentProducts[0]?.name || 'لوستر ۱۲ شاخه تک',
+                  price:
+                    currentProducts[0]?.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان',
+                  productId: currentProducts[0]?.id || 'prod-3',
+                },
+                {
+                  id: `up-${projRow.id}-2`,
+                  name: currentProducts[1]?.name || 'لوستر شاه ملکه',
+                  price:
+                    currentProducts[1]?.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان',
+                  productId: currentProducts[1]?.id || 'prod-4',
+                },
+              ],
+              mainImage: projRow.mainImage,
+              galleryImages:
+                parsedGallery.length > 0 ? parsedGallery : [projRow.mainImage],
+            };
+          }
+        );
+        setProjectsList(mappedProjects);
+      }
 
-        if (Array.isArray(data.stories) && data.stories.length > 0) {
-          const mappedStories: StoryItem[] = data.stories.map(
-            (stRow: any, idx: number) => {
-              const rawType = stRow.storyType || 'single-product';
-              const normalizedType =
-                rawType === 'image-only' || rawType === 'simple'
-                  ? 'image-only'
-                  : rawType === 'video'
-                  ? 'video'
-                  : 'single-product';
+      if (Array.isArray(data.stories) && data.stories.length > 0) {
+        const mappedStories: StoryItem[] = data.stories.map(
+          (stRow: any, idx: number) => {
+            const rawType = stRow.storyType || 'single-product';
+            const normalizedType =
+              rawType === 'image-only' || rawType === 'simple'
+                ? 'image-only'
+                : rawType === 'video'
+                ? 'video'
+                : 'single-product';
 
-              const linkedProd =
-                mappedProducts.find(
-                  (p) =>
-                    p.id === stRow.linkedProductKey ||
-                    p.productCode === stRow.linkedProductKey
-                ) ||
-                mappedProducts[idx % mappedProducts.length] ||
-                SALEHI_COLLECTION_PRODUCTS[0];
+            const linkedProd =
+              currentProducts.find(
+                (p) =>
+                  p.id === stRow.linkedProductKey ||
+                  p.productCode === stRow.linkedProductKey
+              ) ||
+              currentProducts[idx % currentProducts.length] ||
+              SALEHI_COLLECTION_PRODUCTS[0];
 
-              const thumbImg =
-                stRow.thumbnailImage || stRow.image || linkedProd.image;
-              const mainImg =
-                stRow.mediaUrl || stRow.image || stRow.thumbnailImage || thumbImg;
+            const thumbImg =
+              stRow.thumbnailImage || stRow.image || linkedProd.image;
+            const mainImg =
+              stRow.mediaUrl || stRow.image || stRow.thumbnailImage || thumbImg;
 
-              let parsedSlides: any[] = [];
-              if (typeof stRow.slidesJson === 'string' && stRow.slidesJson.trim()) {
-                try {
-                  const arr = JSON.parse(stRow.slidesJson);
-                  if (Array.isArray(arr) && arr.length > 0) {
-                    parsedSlides = arr.slice(0, 10).map((sl: any, sIdx: number) => {
-                      const slType =
-                        sl.type === 'image-only' || sl.type === 'simple'
-                          ? 'image-only'
-                          : sl.type === 'video'
-                          ? 'video'
-                          : 'single-product';
-                      const slLinkedProd =
-                        mappedProducts.find(
-                          (p) =>
-                            p.id === sl.linkedProductKey ||
-                            p.productCode === sl.linkedProductKey
-                        ) || linkedProd;
-                      return {
-                        id: sl.id || `slide-${stRow.id}-${sIdx}`,
-                        type: slType,
-                        title: sl.title || stRow.title,
-                        subtitle: sl.subtitle || '',
-                        mediaUrl: sl.mediaUrl || mainImg,
-                        videoUrl:
-                          slType === 'video'
-                            ? sl.videoUrl ||
-                              'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4'
-                            : '',
-                        durationSeconds: 10,
-                        products:
-                          slType === 'single-product'
-                            ? [
-                                {
-                                  id: slLinkedProd.id,
-                                  name: slLinkedProd.name,
-                                  price: slLinkedProd.priceFormatted,
-                                  image: slLinkedProd.image,
-                                  productCode: slLinkedProd.productCode,
-                                  modelType: slLinkedProd.modelType,
-                                  finish: slLinkedProd.defaultFinish,
-                                },
-                              ]
-                            : [],
-                      };
-                    });
-                  }
-                } catch {
-                  parsedSlides = [];
+            let parsedSlides: any[] = [];
+            if (typeof stRow.slidesJson === 'string' && stRow.slidesJson.trim()) {
+              try {
+                const arr = JSON.parse(stRow.slidesJson);
+                if (Array.isArray(arr) && arr.length > 0) {
+                  parsedSlides = arr.slice(0, 10).map((sl: any, sIdx: number) => {
+                    const slType =
+                      sl.type === 'image-only' || sl.type === 'simple'
+                        ? 'image-only'
+                        : sl.type === 'video'
+                        ? 'video'
+                        : 'single-product';
+                    const slLinkedProd =
+                      currentProducts.find(
+                        (p) =>
+                          p.id === sl.linkedProductKey ||
+                          p.productCode === sl.linkedProductKey
+                      ) || linkedProd;
+                    return {
+                      id: sl.id || `slide-${stRow.id}-${sIdx}`,
+                      type: slType,
+                      title: sl.title || stRow.title,
+                      subtitle: sl.subtitle || '',
+                      mediaUrl: sl.mediaUrl || mainImg,
+                      videoUrl:
+                        slType === 'video'
+                          ? sl.videoUrl ||
+                            'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4'
+                          : '',
+                      durationSeconds: 10,
+                      products:
+                        slType === 'single-product'
+                          ? [
+                              {
+                                id: slLinkedProd.id,
+                                name: slLinkedProd.name,
+                                price: slLinkedProd.priceFormatted,
+                                image: slLinkedProd.image,
+                                productCode: slLinkedProd.productCode,
+                                modelType: slLinkedProd.modelType,
+                                finish: slLinkedProd.defaultFinish,
+                              },
+                            ]
+                          : [],
+                    };
+                  });
                 }
+              } catch {
+                parsedSlides = [];
               }
-
-              return {
-                id: stRow.storyKey || `story-${stRow.id}`,
-                storyType: normalizedType,
-                title: stRow.title,
-                fullTitle: stRow.fullTitle || stRow.title,
-                subtitle: stRow.subtitle || '',
-                category: (stRow.category as any) || 'chandeliers',
-                categoryLabel: stRow.categoryLabel || 'کلکسیون لوستر',
-                durationSeconds: Number(stRow.durationSeconds) || 10,
-                thumbnailImage: thumbImg,
-                image: mainImg,
-                mediaUrl: mainImg,
-                productImage: linkedProd.image,
-                videoUrl:
-                  normalizedType === 'video'
-                    ? stRow.videoUrl ||
-                      'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4'
-                    : '',
-                linkedProductKey:
-                  normalizedType === 'single-product'
-                    ? stRow.linkedProductKey || linkedProd.id
-                    : '',
-                price: stRow.price || linkedProd.priceFormatted,
-                modelType: (stRow.modelType as any) || linkedProd.modelType,
-                finish: (stRow.finish as any) || linkedProd.defaultFinish,
-                products:
-                  normalizedType === 'single-product'
-                    ? [
-                        {
-                          id: linkedProd.id,
-                          name: linkedProd.name,
-                          price: linkedProd.priceFormatted,
-                          image: linkedProd.image,
-                          productCode: linkedProd.productCode,
-                          modelType: linkedProd.modelType,
-                          finish: linkedProd.defaultFinish,
-                        },
-                      ]
-                    : [],
-                slides: parsedSlides.length > 0 ? parsedSlides : undefined,
-              };
             }
-          );
-          setStoriesList(mappedStories);
-        }
 
-        if (Array.isArray(data.articles) && data.articles.length > 0) {
-          const mappedArticles: MagazineArticle[] = data.articles.map(
-            (artRow: any, idx: number) => ({
-              id: artRow.articleKey || artRow.slug || `mag-${artRow.id}`,
-              title: artRow.title,
-              excerpt: artRow.excerpt,
-              fullContent: Array.isArray(artRow.fullContent)
-                ? artRow.fullContent
-                : artRow.content
-                  ? String(artRow.content)
-                      .split('\n')
-                      .map((s: string) => s.trim())
-                      .filter(Boolean)
-                  : [artRow.excerpt],
-              date: artRow.publishDate || '۱۵ شهریور ۱۴۰۴',
-              readTime: artRow.readTime || '۴ دقیقه مطالعه',
-              category: artRow.category || 'راهنمای دکوراسیون سلطنتی',
-              image: artRow.image,
-              featured: idx === 0 || Boolean(artRow.featured),
-            })
-          );
-          setArticlesList(mappedArticles);
-        }
+            return {
+              id: stRow.storyKey || `story-${stRow.id}`,
+              storyType: normalizedType,
+              title: stRow.title,
+              fullTitle: stRow.fullTitle || stRow.title,
+              subtitle: stRow.subtitle || '',
+              category: (stRow.category as any) || 'chandeliers',
+              categoryLabel: stRow.categoryLabel || 'کلکسیون لوستر',
+              durationSeconds: Number(stRow.durationSeconds) || 10,
+              thumbnailImage: thumbImg,
+              image: mainImg,
+              mediaUrl: mainImg,
+              productImage: linkedProd.image,
+              videoUrl:
+                normalizedType === 'video'
+                  ? stRow.videoUrl ||
+                    'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4'
+                  : '',
+              linkedProductKey:
+                normalizedType === 'single-product'
+                  ? stRow.linkedProductKey || linkedProd.id
+                  : '',
+              price: stRow.price || linkedProd.priceFormatted,
+              modelType: (stRow.modelType as any) || linkedProd.modelType,
+              finish: (stRow.finish as any) || linkedProd.defaultFinish,
+              products:
+                normalizedType === 'single-product'
+                  ? [
+                      {
+                        id: linkedProd.id,
+                        name: linkedProd.name,
+                        price: linkedProd.priceFormatted,
+                        image: linkedProd.image,
+                        productCode: linkedProd.productCode,
+                        modelType: linkedProd.modelType,
+                        finish: linkedProd.defaultFinish,
+                      },
+                    ]
+                  : [],
+              slides: parsedSlides.length > 0 ? parsedSlides : undefined,
+            };
+          }
+        );
+        setStoriesList(mappedStories);
+      }
+
+      if (Array.isArray(data.articles) && data.articles.length > 0) {
+        const mappedArticles: MagazineArticle[] = data.articles.map(
+          (artRow: any, idx: number) => ({
+            id: artRow.articleKey || artRow.slug || `mag-${artRow.id}`,
+            title: artRow.title,
+            excerpt: artRow.excerpt,
+            fullContent: Array.isArray(artRow.fullContent)
+              ? artRow.fullContent
+              : artRow.content
+                ? String(artRow.content)
+                    .split('\n')
+                    .map((s: string) => s.trim())
+                    .filter(Boolean)
+                : [artRow.excerpt],
+            date: artRow.publishDate || '۱۵ شهریور ۱۴۰۴',
+            readTime: artRow.readTime || '۴ دقیقه مطالعه',
+            category: artRow.category || 'راهنمای دکوراسیون سلطنتی',
+            image: artRow.image,
+            featured: idx === 0 || Boolean(artRow.featured),
+          })
+        );
+        setArticlesList(mappedArticles);
       }
     } catch {
       // حفظ داده‌های محلی در صورت عدم پاسخگویی موقت
@@ -689,6 +737,7 @@ export const HomePage: React.FC = () => {
               handleOpenProductModal(productsList[3] || productsList[0])
             }
             onOpenCustomProductModal={() => setIsCustom3DModalOpen(true)}
+            mainSettings={mainSettings}
           />
         </div>
       )}
@@ -711,7 +760,7 @@ export const HomePage: React.FC = () => {
         />
       ) : currentRoute === 'rule' ? (
         /* محتوای میانی صفحه قوانین و مقررات (/rule) */
-        <RuleContentSection />
+        <RuleContentSection faqSettings={faqSettings} />
       ) : currentRoute === 'contact-us' ? (
         /* محتوای میانی صفحه تماس با ما (/contact-us) */
         <ContactUsContentSection
@@ -720,7 +769,12 @@ export const HomePage: React.FC = () => {
         />
       ) : currentRoute === 'about-us' ? (
         /* محتوای میانی صفحه درباره ما (/about-us) */
-        <AboutUsContentSection onShowToast={addAppToast} />
+        <AboutUsContentSection
+          aboutUsSettings={aboutUsSettings}
+          footerSettings={footerSettings}
+          faqSettings={faqSettings}
+          onShowToast={addAppToast}
+        />
       ) : currentRoute === 'project' ? (
         /* محتوای میانی صفحه پروژه‌ها (/project) */
         <ProjectContentSection
@@ -757,7 +811,7 @@ export const HomePage: React.FC = () => {
           />
 
           {/* ۳. بنر اصلی (Hero) با قابلیت نمای سه‌بعدی */}
-          <HeroSection />
+          <HeroSection heroSettings={heroSliderSettings} />
 
           {/* ۴. دسته بندی محصولات */}
           <CategorySection
@@ -771,6 +825,7 @@ export const HomePage: React.FC = () => {
           <AboutServicesSection
             featuredProduct={productsList[3] || productsList[0]}
             onOpenProductModal={(prod) => handleOpenProductModal(prod)}
+            mainSettings={mainSettings}
           />
 
           {/* ۶. محصولات کلکسیون صالحی (با قابلیت سه‌بعدی خودکار و تغییر رنگ روی هر محصول) */}

@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import fs from 'fs';
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
@@ -46,11 +47,21 @@ import {
   saveFooterSettings,
   getContactUsSettings,
   saveContactUsSettings,
+  getAboutUsSettings,
+  saveAboutUsSettings,
+  getHeroSliderSettings,
+  saveHeroSliderSettings,
+  getMainSettings,
+  saveMainSettings,
+  getSmsSettings,
+  saveSmsSettings,
+  getFaqSettings,
+  saveFaqSettings,
 } from './src/db/repository.ts';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json({ limit: '50mb' }));
 
@@ -65,6 +76,11 @@ async function startServer() {
         articlesList,
         footerSettings,
         contactUsSettings,
+        aboutUsSettings,
+        heroSliderSettings,
+        mainSettings,
+        smsSettings,
+        faqSettings,
       ] = await Promise.all([
         getAllCategories(),
         getAllProducts(),
@@ -73,6 +89,11 @@ async function startServer() {
         getAllArticles(),
         getFooterSettings(),
         getContactUsSettings(),
+        getAboutUsSettings(),
+        getHeroSliderSettings(),
+        getMainSettings(),
+        getSmsSettings(),
+        getFaqSettings(),
       ]);
       res.json({
         categories: categoriesList,
@@ -82,6 +103,11 @@ async function startServer() {
         articles: articlesList,
         footerSettings,
         contactUsSettings,
+        aboutUsSettings,
+        heroSliderSettings,
+        mainSettings,
+        smsSettings,
+        faqSettings,
       });
     } catch (error: any) {
       console.error('Failed to load public catalog:', error);
@@ -422,8 +448,10 @@ async function startServer() {
     requireAuth,
     async (req: AuthRequest, res) => {
       try {
-        const id = Number(req.params.id);
-        const result = await deleteProjectRecord(id);
+        const paramId = req.params.id;
+        const numId = Number(paramId);
+        const target = !isNaN(numId) && numId > 0 ? numId : paramId;
+        const result = await deleteProjectRecord(target);
         res.json(result);
       } catch (error: any) {
         console.error('Failed to delete project:', error);
@@ -746,10 +774,192 @@ async function startServer() {
     }
   );
 
-  // سرو فایل‌های استاتیک تصاویر در هر دو محیط توسعه و پروداکشن
-  app.use(
-    '/src/assets',
-    express.static(path.join(process.cwd(), 'src/assets'))
+  app.get('/api/public/settings/about-us', async (_req, res) => {
+    try {
+      const settings = await getAboutUsSettings();
+      res.json(settings);
+    } catch (error: any) {
+      console.error('Failed to fetch public about-us settings:', error);
+      res
+        .status(500)
+        .json({ error: error.message || 'خطا در دریافت تنظیمات درباره ما' });
+    }
+  });
+
+  app.get(
+    '/api/admin/settings/about-us',
+    requireAuth,
+    async (_req: AuthRequest, res) => {
+      try {
+        const settings = await getAboutUsSettings();
+        res.json(settings);
+      } catch (error: any) {
+        console.error('Failed to fetch about-us settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در دریافت تنظیمات درباره ما' });
+      }
+    }
+  );
+
+  app.put(
+    '/api/admin/settings/about-us',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveAboutUsSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save about-us settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات درباره ما' });
+      }
+    }
+  );
+
+  // مدیریت تنظیمات اسلایدر بنر اصلی سایت
+  app.get('/api/public/settings/hero-slider', async (_req, res) => {
+    try {
+      const settings = await getHeroSliderSettings();
+      res.json(settings);
+    } catch (error: any) {
+      console.error('Failed to fetch public hero-slider settings:', error);
+      res
+        .status(500)
+        .json({ error: error.message || 'خطا در دریافت تنظیمات اسلایدر سایت' });
+    }
+  });
+
+  app.get(
+    '/api/admin/settings/hero-slider',
+    requireAuth,
+    async (_req: AuthRequest, res) => {
+      try {
+        const settings = await getHeroSliderSettings();
+        res.json(settings);
+      } catch (error: any) {
+        console.error('Failed to fetch hero-slider settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در دریافت تنظیمات اسلایدر سایت' });
+      }
+    }
+  );
+
+  app.put(
+    '/api/admin/settings/hero-slider',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveHeroSliderSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save hero-slider settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات اسلایدر سایت' });
+      }
+    }
+  );
+
+  // ۱. مدیریت تنظیمات اصلی وب‌سایت
+  app.get(
+    '/api/admin/settings/main',
+    requireAuth,
+    async (_req: AuthRequest, res) => {
+      try {
+        const settings = await getMainSettings();
+        res.json(settings);
+      } catch (error: any) {
+        console.error('Failed to fetch main settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در دریافت تنظیمات اصلی وب‌سایت' });
+      }
+    }
+  );
+
+  app.put(
+    '/api/admin/settings/main',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveMainSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save main settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات اصلی وب‌سایت' });
+      }
+    }
+  );
+
+  // ۲. مدیریت تنظیمات پنل پیامک
+  app.get(
+    '/api/admin/settings/sms',
+    requireAuth,
+    async (_req: AuthRequest, res) => {
+      try {
+        const settings = await getSmsSettings();
+        res.json(settings);
+      } catch (error: any) {
+        console.error('Failed to fetch sms settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در دریافت تنظیمات پنل پیامک' });
+      }
+    }
+  );
+
+  app.put(
+    '/api/admin/settings/sms',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveSmsSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save sms settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات پنل پیامک' });
+      }
+    }
+  );
+
+  // ۳. مدیریت تنظیمات سوالات متداول صفحات
+  app.get(
+    '/api/admin/settings/faq',
+    requireAuth,
+    async (_req: AuthRequest, res) => {
+      try {
+        const settings = await getFaqSettings();
+        res.json(settings);
+      } catch (error: any) {
+        console.error('Failed to fetch faq settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در دریافت تنظیمات سوالات متداول صفحات' });
+      }
+    }
+  );
+
+  app.put(
+    '/api/admin/settings/faq',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveFaqSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save faq settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات سوالات متداول صفحات' });
+      }
+    }
   );
 
   // Vite middleware for development
@@ -759,6 +969,19 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+
+    app.use('*', async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        const indexPath = path.resolve(process.cwd(), 'index.html');
+        let template = fs.readFileSync(indexPath, 'utf-8');
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e: any) {
+        vite.ssrFixStacktrace?.(e);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));

@@ -109,17 +109,19 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {displayCategories.map((category, idx) => {
-            const isActive = selectedCategory === category.filterKey;
+            const catFilterKey = category.filterKey || category.key || 'all';
+            const catSlug = category.slug || category.key || 'chandeliers';
+            const isActive = selectedCategory === catFilterKey;
             const isDotActive = activeCategoryDot === idx;
 
             return (
               <a
                 key={category.id}
-                href={`/product/categories/${category.slug}`}
+                href={`/product/categories/${catSlug}`}
                 onClick={(e) => {
-                  onSelectCategory(category.filterKey);
+                  onSelectCategory(catFilterKey);
                   scrollToCategory(idx);
-                  navigateToProductCategory(category.slug, e);
+                  navigateToProductCategory(catSlug, e);
                 }}
                 className={`group shrink-0 snap-center w-[78vw] max-w-[340px] flex items-center justify-between gap-4 px-5 py-5 rounded-[22px] bg-white border transition-all duration-300 cursor-pointer text-right shadow-[0_6px_25px_rgba(0,0,0,0.03)] ${
                   isActive || isDotActive
@@ -139,7 +141,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     {category.title}
                   </h3>
                   <p className="text-[13px] text-[#777777] font-medium mt-1">
-                    {formatCategoryProductCount(category.slug, products)}
+                    {formatCategoryProductCount(catSlug, products)}
                   </p>
                 </div>
               </a>
@@ -192,14 +194,16 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         {/* شبکه ۴ ستونه کارت‌ها */}
         <div className="relative z-10 w-full max-w-[1800px] mx-auto px-10 md:px-14 lg:px-[62px] xl:px-[68px] grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
           {displayCategories.map((category) => {
-            const isActive = selectedCategory === category.filterKey;
+            const catFilterKey = category.filterKey || category.key || 'all';
+            const catSlug = category.slug || category.key || 'chandeliers';
+            const isActive = selectedCategory === catFilterKey;
             return (
               <a
                 key={category.id}
-                href={`/product/categories/${category.slug}`}
+                href={`/product/categories/${catSlug}`}
                 onClick={(e) => {
-                  onSelectCategory(category.filterKey);
-                  navigateToProductCategory(category.slug, e);
+                  onSelectCategory(catFilterKey);
+                  navigateToProductCategory(catSlug, e);
                 }}
                 className={`group flex items-center justify-between gap-4 px-6 py-6 rounded-[22px] bg-white/90 backdrop-blur-[2px] border transition-all duration-300 cursor-pointer text-right ${
                   isActive
@@ -219,7 +223,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     {category.title}
                   </h3>
                   <p className="text-[13.5px] text-[#777777] font-normal mt-2">
-                    {formatCategoryProductCount(category.slug, products)}
+                    {formatCategoryProductCount(catSlug, products)}
                   </p>
                 </div>
               </a>

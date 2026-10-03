@@ -1,4 +1,4 @@
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, or } from 'drizzle-orm';
 import { db } from './index.ts';
 import { ensureDefaultAdmin } from './users.ts';
 import {
@@ -14,6 +14,7 @@ import {
 } from './schema.ts';
 
 let seedPromise: Promise<void> | null = null;
+let hasSeededProjects = false;
 
 export const ASSET_PATHS = {
   heroBanner: '/src/assets/images/hero_chandelier_banner_1790646227735.jpg',
@@ -602,7 +603,6 @@ const DEFAULT_PROJECT_DESCRIPTION =
   'در طراحی روشنایی و نورپردازی این مجموعه فاخر، از لوسترهای برنزی کلکسیون اکبر صالحی با آبکاری طلای ۲۴ عیار و کریستال‌های شامپاینی استفاده شده است. انتخاب تمامی محصولات روشنایی از یک خانواده واحد، انسجام بصری و شکوه معماری کلاسیک فضا را دوچندان ساخته است.';
 
 const INITIAL_PROJECTS_SEED = [
-  // ۱. ارگان‌های دولتی (gov) - ۹ پروژه کامل مطابق صفحه /project و صفحه اصلی
   {
     slug: 'kiani-shomali',
     categoryTab: 'gov',
@@ -662,470 +662,6 @@ const INITIAL_PROJECTS_SEED = [
     ]),
     locationBadge: 'تهران، تهران',
     dateBadge: '۲۵ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'emami-zar',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۴',
-    district: 'منطقه امامی زار',
-    title: 'پروژه منطقه امامی زار',
-    subtitle: 'مجموعه اداری و تشریفاتی | تهران، پردیس',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'استفاده همزمان از لوسترهای سقفی کلکسیون صالحی و آباژورهای ست کنار سالنی، تقارن نوری کاملی در این مجموعه ایجاد کرده است.',
-    mainImage: ASSET_PATHS.aboutRoyalStaircase,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.aboutRoyalStaircase,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectLobbyHotel,
-    ]),
-    locationBadge: 'تهران، پردیس',
-    dateBadge: '۲۵ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'heydar-khani',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۵',
-    district: 'منطقه حیدر خانی',
-    title: 'پروژه منطقه حیدر خانی',
-    subtitle: 'مجموعه تشریفاتی | خراسان رضوی، مشهد',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'لوسترهای طبقاتی شاه ملکه به همراه دیوارکوب‌های برنزی ست.',
-    mainImage: ASSET_PATHS.storyPortraitAtrium,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.storyPortraitAtrium,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectDuplexVilla,
-    ]),
-    locationBadge: 'خراسان رضوی، مشهد',
-    dateBadge: '۱۸ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'sahel-behesht',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۶',
-    district: 'منطقه ساحل بهشت',
-    title: 'پروژه منطقه ساحل بهشت',
-    subtitle: 'تالار همایش ساحلی | بندرعباس، قشم',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'لوسترهای تمام برنز با پوشش محافظ ضد رطوبت مخصوص مناطق ساحلی.',
-    mainImage: ASSET_PATHS.aboutShowroom,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.aboutShowroom,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-    ]),
-    locationBadge: 'بندرعباس، قشم',
-    dateBadge: '۱۲ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'jannat-abad',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۷',
-    district: 'منطقه جنت آباد',
-    title: 'پروژه منطقه جنت آباد',
-    subtitle: 'مجموعه فرهنگی و تشریفاتی | تهران، تهران',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'لوسترهای ۱۲ شاخه و ۱۶ شاخه کلکسیون صالحی.',
-    mainImage: ASSET_PATHS.aboutModernVilla,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.aboutModernVilla,
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectLobbyHotel,
-    ]),
-    locationBadge: 'تهران، تهران',
-    dateBadge: '۰۵ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'fereshteh',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۸',
-    district: 'منطقه فرشته',
-    title: 'پروژه منطقه فرشته',
-    subtitle: 'عمارت دیپلماتیک فرشته | تهران، تهران',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'ست کامل لوستر کریستالی فرشته‌دار و آباژورهای کنار سالنی.',
-    mainImage: ASSET_PATHS.projectFereshteh,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectDuplexVilla,
-    ]),
-    locationBadge: 'تهران، تهران',
-    dateBadge: '۰۱ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'masoumian',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۹',
-    district: 'منطقه معصومیان',
-    title: 'پروژه منطقه معصومیان',
-    subtitle: 'تالار پذیرایی و همایش | شیراز، شیراز',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'لوسترهای طبقاتی برنز خالص ریخته‌گری با کریستال شامپاینی.',
-    mainImage: ASSET_PATHS.aboutGrandAtelier,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.aboutGrandAtelier,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectRoyalRestaurant,
-    ]),
-    locationBadge: 'شیراز، شیراز',
-    dateBadge: '۲۸ مرداد ماه ۱۴۰۴',
-  },
-
-  // ۲. ارگان‌های تجاری (commercial)
-  {
-    slug: 'royal-mall-elahiyeh',
-    categoryTab: 'commercial',
-    sampleCode: 'نمونه ۱',
-    district: 'برج تجاری الهیه',
-    title: 'پروژه رویال مال الهیه',
-    subtitle: 'لابی ورودی برج تجاری با سقف مرتفع ۶.۵ متری',
-    description:
-      'لابی ورودی برج تجاری الهیه با ارتفاع سقف ۶.۵ متر نیازمند لوستری شاخص و خیره‌کننده بود که در بدو ورود نگاه مراجعین را مجذوب خود سازد. لوستر سه طبقه شاه ملکه با آبکاری سیاه‌قلم و طلایی برای این فضا اختصاصی‌سازی شد.',
-    usedChandeliersText:
-      'در کنار لوستر مرکزی لابی، ۶ عدد دیوارکوب برنزی و ۲ آباژور ایستاده در بخش انتظار VIP نصب گردیده است.',
-    mainImage: ASSET_PATHS.projectLobbyHotel,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.heroBanner,
-      ASSET_PATHS.projectFereshteh,
-    ]),
-    locationBadge: 'تهران، الهیه',
-    dateBadge: '۲۰ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'espinas-hotel',
-    categoryTab: 'commercial',
-    sampleCode: 'نمونه ۲',
-    district: 'هتل رویال سعادت‌آباد',
-    title: 'پروژه هتل ۵ ستاره اسپیناس',
-    subtitle: 'نورپردازی لابی و سالن پذیرش هتل ۵ ستاره',
-    description:
-      'پروژه روشنایی لابی و سالن پذیرش هتل پنج‌ستاره با استفاده از لوسترهای ۱۲ شاخه و ۱۶ شاخه ریخته‌گری برنز خالص اجرا شده و دارای ۱۰ سال ضمانت کتبی ثبات رنگ است.',
-    usedChandeliersText:
-      'تمامی سرپیچ‌ها و سیم‌کشی‌های داخلی این پروژه از قطعات نسوز استاندارد هتلی برای روشن ماندن ۲۴ ساعته انتخاب شده‌اند.',
-    mainImage: ASSET_PATHS.projectRoyalRestaurant,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.heroBanner,
-    ]),
-    locationBadge: 'تهران، سعادت‌آباد',
-    dateBadge: '۱۵ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'palladium-mall',
-    categoryTab: 'commercial',
-    sampleCode: 'نمونه ۳',
-    district: 'مرکز خرید زعفرانیه',
-    title: 'پروژه مرکز خرید پالادیوم',
-    subtitle: 'گالری جواهرات و مرکز تجاری زعفرانیه',
-    description:
-      'در گالری‌های لوکس و مراکز تجاری زعفرانیه، شاخص نمود رنگ و درخشش منشورهای کریستال اهمیت دوچندانی دارد. لوسترهای کریستالی شامپاینی صالحی بازتاب نوری الماس‌گونه در فضای گالری ایجاد کرده‌اند.',
-    usedChandeliersText:
-      'چیدمان خطی سه دستگاه لوستر کریستالی بالای ویترین‌های مرکزی، جلوه جواهرات و دکوراسیون داخلی را دوچندان نموده است.',
-    mainImage: ASSET_PATHS.projectDuplexVilla,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectRoyalRestaurant,
-    ]),
-    locationBadge: 'تهران، زعفرانیه',
-    dateBadge: '۱۰ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'world-trade-tower',
-    categoryTab: 'commercial',
-    sampleCode: 'نمونه ۴',
-    district: 'مجتمع اداری ولنجک',
-    title: 'پروژه برج تجارت جهانی',
-    subtitle: 'سالن کنفرانس و اتاق هیئت‌مدیره',
-    description:
-      'برای اتاق هیئت‌مدیره و سالن کنفرانس برج تجاری، لوسترهای نئوکلاسیک ریستانی با پخش نور متعادل و بدون خیرگی روی میز کنفرانس طراحی و نصب گردید.',
-    usedChandeliersText:
-      'هارمونی رنگ برنز آنتیک لوسترها با دیوارپوش‌های چوب گردو، فضایی باوقار و رسمی برای جلسات مدیریتی فراهم آورده است.',
-    mainImage: ASSET_PATHS.heroBanner,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.heroBanner,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectLobbyHotel,
-    ]),
-    locationBadge: 'آذربایجان شرقی، تبریز',
-    dateBadge: '۰۳ شهریور ماه ۱۴۰۴',
-  },
-
-  // ۳. مساجد ایران (mosques)
-  {
-    slug: 'fakhrabad-mosque',
-    categoryTab: 'mosques',
-    sampleCode: 'نمونه ۱',
-    district: 'مسجد جامع فخرآباد',
-    title: 'پروژه شبستان مسجد جامع فخرآباد',
-    subtitle: 'طراحی و ساخت لوسترهای عظیم شبستان با لاله‌های سبز و طلایی',
-    description:
-      'گالری لوستر اکبر صالحی افتخار طراحی، ساخت و نصب لوسترهای عظیم شبستان مسجد جامع فخرآباد را در کارنامه ۱۸ ساله خود دارد. این لوسترها با ساختار تمام‌برنز تقویت‌شده و لاله‌های اسلامی سبز و طلایی ساخته شده‌اند.',
-    usedChandeliersText:
-      'مهار مهندسی لوسترهای سنگین به سازه اصلی گنبد با زنجیرهای فولادی آبکاری برنز و رعایت کامل اصول ایمنی انجام شده است.',
-    mainImage: ASSET_PATHS.projectMosqueDome,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectMosqueDome,
-      ASSET_PATHS.heroBanner,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectRoyalRestaurant,
-    ]),
-    locationBadge: 'تهران، بهارستان',
-    dateBadge: '۲۲ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'chahardah-masoum-mosque',
-    categoryTab: 'mosques',
-    sampleCode: 'نمونه ۲',
-    district: 'مسجد چهارده معصوم',
-    title: 'پروژه گنبد اصلی مسجد چهارده معصوم',
-    subtitle: 'لوسترهای طبقاتی کریستالی و برنزی متناسب با کاشی‌کاری فیروزه‌ای',
-    description:
-      'در پروژه نورپردازی مسجد چهارده معصوم، لوسترهای طبقاتی کریستالی و برنزی متناسب با کاشی‌کاری‌های فیروزه‌ای و مقرنس‌کاری‌های سقف طراحی گردید تا جلوه معنوی فضا دوچندان شود.',
-    usedChandeliersText:
-      'استفاده از سرپیچ‌های سرامیکی نسوز و لامپ‌های شمعی کم‌مصرف گرم، روشنایی یکنواخت و آرامش‌بخشی را در تمام شبستان فراهم کرده است.',
-    mainImage: ASSET_PATHS.heroBanner,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.heroBanner,
-      ASSET_PATHS.projectMosqueDome,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-    ]),
-    locationBadge: 'تهران، شهرری',
-    dateBadge: '۱۴ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'tajrish-grand-mosque',
-    categoryTab: 'mosques',
-    sampleCode: 'نمونه ۳',
-    district: 'مسجد اعظم تجریش',
-    title: 'پروژه رواق مرکزی مسجد اعظم تجریش',
-    subtitle: 'لوسترهای برنزی قلم‌زنی‌شده با آبکاری طلای ثابت',
-    description:
-      'برای رواق‌های تاریخی و سقف‌های بلند مسجد تجریش، لوسترهای برنزی قلم‌زنی‌شده با آبکاری طلای ثابت و آویزهای کریستال تراش‌خورده توسط استادکاران مجموعه صالحی تولید و نصب گردید.',
-    usedChandeliersText:
-      'تمامی قطعات برنزی این پروژه با لایه محافظ لاک کوره‌ای پوشانده شده‌اند تا در برابر غبار و تغییرات دما کاملاً مقاوم باشند.',
-    mainImage: ASSET_PATHS.projectLobbyHotel,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectMosqueDome,
-      ASSET_PATHS.heroBanner,
-      ASSET_PATHS.projectRoyalRestaurant,
-    ]),
-    locationBadge: 'تهران، تجریش',
-    dateBadge: '۰۸ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'rey-grand-mosalla',
-    categoryTab: 'mosques',
-    sampleCode: 'نمونه ۴',
-    district: 'مصلی بزرگ ری',
-    title: 'پروژه تالار محراب مصلی بزرگ ری',
-    subtitle: 'نصب ۱۴ دستگاه لوستر پرشاخه هماهنگ در شبستان اصلی',
-    description:
-      'نصب بیش از ۱۴ دستگاه لوستر پرشاخه هماهنگ در تالار محراب مصلی ری با استفاده از تجهیزات بالابر هیدرولیکی و تیم تخصصی نصب لوستر صالحی در کمترین زمان ممکن به انجام رسید.',
-    usedChandeliersText:
-      'چیدمان منظم لوسترها در محورهای طولی و عرضی شبستان، توزیع نوری کاملاً مهندسی و بدون سایه ایجاد نموده است.',
-    mainImage: ASSET_PATHS.projectRoyalRestaurant,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectMosqueDome,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.heroBanner,
-    ]),
-    locationBadge: 'تهران، ری',
-    dateBadge: '۰۲ شهریور ماه ۱۴۰۴',
-  },
-
-  // ۴. رستوران‌های بزرگ (restaurants)
-  {
-    slug: 'shandiz-royal-restaurant',
-    categoryTab: 'restaurants',
-    sampleCode: 'نمونه ۱',
-    district: 'رستوران سلطنتی نیاوران',
-    title: 'پروژه رستوران سلطنتی شاندیز',
-    subtitle: 'نورپردازی گرم و مجلل تالار پذیرایی VIP',
-    description:
-      'در تالار و رستوران سلطنتی، نورپردازی گرم و اشتهاآور با درخشش کریستال‌های شامپاینی و شاخه‌های طلایی طراحی شد تا فضایی مجلل و خاطره‌انگیز برای میهمانان رقم بزند.',
-    usedChandeliersText:
-      'در بالای هر میز VIP یک لوستر ۸ شاخه کریستالی و در مرکز سالن لوستر ۲۴ شاخه شاه ملکه نصب شده است.',
-    mainImage: ASSET_PATHS.projectRoyalRestaurant,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectDuplexVilla,
-    ]),
-    locationBadge: 'خراسان رضوی، مشهد',
-    dateBadge: '۱۹ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'aghdasiyeh-royal-lounge',
-    categoryTab: 'restaurants',
-    sampleCode: 'نمونه ۲',
-    district: 'تراس لانژ اقدسیه',
-    title: 'پروژه رویال لانژ اقدسیه',
-    subtitle: 'لوسترهای شیددار مشکی و طلایی با نور ملایم و دیمرپذیر',
-    description:
-      'برای فضای نئوکلاسیک رویال لانژ اقدسیه، لوسترهای شیددار مشکی و طلایی با نور ملایم و دیمرپذیر انتخاب شدند تا در ساعات شب اتمسفری لوکس و آرامش‌بخش ایجاد کنند.',
-    usedChandeliersText:
-      'شیدهای پارچه‌ای دست‌دوز با نوارهای طلایی، نور را به صورت غیرمستقیم و دلنشین بر روی میزهای پذیرایی هدایت می‌کنند.',
-    mainImage: ASSET_PATHS.heroBanner,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.heroBanner,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-    ]),
-    locationBadge: 'تهران، اقدسیه',
-    dateBadge: '۱۱ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'darband-mansion',
-    categoryTab: 'restaurants',
-    sampleCode: 'نمونه ۳',
-    district: 'عمارت سنتی دربند',
-    title: 'پروژه عمارت پذیرایی دربند',
-    subtitle: 'لوسترهای برنز آنتیک و سیاه‌قلم متناسب با گچ‌بری سنتی',
-    description:
-      'در عمارت سنتی و تاریخی دربند، استفاده از لوسترهای برنز آنتیک و سیاه‌قلم با لاله‌های تراش‌خورده، اصالت معماری ایرانی و گچ‌بری‌های دستی سقف را به زیبایی برجسته ساخته است.',
-    usedChandeliersText:
-      'مقاومت بالای آبکاری برنز صالحی در برابر هوای مرطوب کوهستانی دربند، ماندگاری همیشگی این لوسترها را تضمین کرده است.',
-    mainImage: ASSET_PATHS.projectLobbyHotel,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.heroBanner,
-      ASSET_PATHS.projectMosqueDome,
-    ]),
-    locationBadge: 'تهران، دربند',
-    dateBadge: '۰۶ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'ghasr-sefid-hall',
-    categoryTab: 'restaurants',
-    sampleCode: 'نمونه ۴',
-    district: 'بانکت هال شهرک غرب',
-    title: 'پروژه تالار مجلل قصر سفید',
-    subtitle: 'نصب ۸ دستگاه لوستر کریستالی فرشته‌دار در سقف تالار',
-    description:
-      'تالار پذیرایی بزرگ شهرک غرب با سقف کناف و یونولیت، توسط تیم مهندسی نصب گالری صالحی با مهار به تیرآهن اصلی سقف و نصب ۸ دستگاه لوستر کریستالی فرشته‌دار تجهیز گردید.',
-    usedChandeliersText:
-      'درخشش خیره‌کننده کریستال‌ها در زمان عکاسی و فیلم‌برداری مراسم‌ها، جلوه‌ای بی‌نظیر به این تالار بخشیده است.',
-    mainImage: ASSET_PATHS.projectFereshteh,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.projectLobbyHotel,
-    ]),
-    locationBadge: 'تهران، شهرک غرب',
-    dateBadge: '۰۱ شهریور ماه ۱۴۰۴',
-  },
-
-  // ۵. منازل مسکونی (residential)
-  {
-    slug: 'farmaniyeh',
-    categoryTab: 'residential',
-    sampleCode: 'نمونه ۱',
-    district: 'پنت‌هاوس کامرانیه و فرمانیه',
-    title: 'پروژه منطقه فرمانیه',
-    subtitle: 'اجرای لوستر طبقاتی شاه ملکه در وید پنت‌هاوس دوبلکس',
-    description:
-      'در فضای وید پنت‌هاوس دوبلکس فرمانیه و کامرانیه، لوستر طبقاتی شاه ملکه به همراه ست کامل لوستر پذیرایی، لوستر بالای میز ناهارخوری و آباژورهای کنار مبلی از کلکسیون صالحی اجرا شد.',
-    usedChandeliersText:
-      'انتخاب تمامی المان‌های روشنایی از یک کلکسیون واحد، انسجام و شکوه کم‌نظیری به دکوراسیون داخلی منزل بخشیده است.',
-    mainImage: ASSET_PATHS.projectDuplexVilla,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectRoyalRestaurant,
-    ]),
-    locationBadge: 'تهران، فرمانیه',
-    dateBadge: '۲۴ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'lavasanat-classic-mansion',
-    categoryTab: 'residential',
-    sampleCode: 'نمونه ۲',
-    district: 'ویلای کلاسیک لواسان',
-    title: 'پروژه عمارت کلاسیک لواسانات',
-    subtitle: 'ارسال ویژه و نصب تخصصی در عمارت دوبلکس لواسانات',
-    description:
-      'ارسال با بسته‌بندی ضدضربه و نصب تخصصی لوسترهای کلکسیون صالحی در عمارت دوبلکس لواسانات توسط اکیپ ویژه نصب خارج از شهر تهران انجام پذیرفت.',
-    usedChandeliersText:
-      'برای سالن اصلی از لوسترهای کریستالی طلایی و برای اتاق‌های خواب مستر از لوسترهای رسانس گل‌دار سفید استفاده شده است.',
-    mainImage: ASSET_PATHS.projectFereshteh,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.heroBanner,
-    ]),
-    locationBadge: 'تهران، لواسان',
-    dateBadge: '۱۶ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'niavaran-private-villa',
-    categoryTab: 'residential',
-    sampleCode: 'نمونه ۳',
-    district: 'باغ‌ویلا نیاوران',
-    title: 'پروژه باغ‌ویلا اختصاصی نیاوران',
-    subtitle: 'لوسترهای ۱۲ شاخه تک برنزی هماهنگ با مبلمان کلاسیک ایرانی',
-    description:
-      'برای سالن پذیرایی و نشیمن خصوصی باغ‌ویلا نیاوران، لوسترهای ۱۲ شاخه تک برنزی با آبکاری آنتیک دست‌ساز انتخاب شدند که هماهنگی فوق‌العاده‌ای با فرش‌های دستباف و مبلمان کلاسیک ایرانی دارند.',
-    usedChandeliersText:
-      'تمامی لوسترها و کنسول‌های برنزی این پروژه دارای ضمانت‌نامه کتبی ۱۰ ساله گالری اکبر صالحی می‌باشند.',
-    mainImage: ASSET_PATHS.projectLobbyHotel,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.projectRoyalRestaurant,
-    ]),
-    locationBadge: 'تهران، نیاوران',
-    dateBadge: '۰۹ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'zafaraniyeh-garden-tower',
-    categoryTab: 'residential',
-    sampleCode: 'نمونه ۴',
-    district: 'برج باغ زعفرانیه',
-    title: 'پروژه رزیدنس برج باغ زعفرانیه',
-    subtitle: 'ترکیب ۳ دستگاه لوستر کریستالی هم‌راستا و دیوارکوب‌های طلایی',
-    description:
-      'در واحد ۴۲۰ متری برج باغ زعفرانیه، ترکیب گچ‌بری‌های سقف با سه دستگاه لوستر کریستالی هم‌راستا و دیوارکوب‌های برنزی طلایی، فضایی اشرافی و دلنشین را در سالن پذیرایی خلق کرده است.',
-    usedChandeliersText:
-      'نصب دقیق در مرکز قاب‌های گچ‌بری سقف و تنظیم ارتفاع استاندارد زنجیرها توسط کارشناسان نصب صالحی انجام شده است.',
-    mainImage: ASSET_PATHS.projectRoyalRestaurant,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.heroBanner,
-    ]),
-    locationBadge: 'تهران، زعفرانیه',
-    dateBadge: '۰۴ شهریور ماه ۱۴۰۴',
   },
 ];
 
@@ -1642,13 +1178,16 @@ export async function ensureSeeded(): Promise<void> {
           .onConflictDoNothing();
       }
 
-      // ۳. پروژه‌های اجرایی (تکمیل تمامی پروژه‌های ۵ تب در دیتابیس)
-      const existingProjects = await db.select().from(projects);
-      if (existingProjects.length <= 3) {
-        await db
-          .insert(projects)
-          .values(INITIAL_PROJECTS_SEED)
-          .onConflictDoNothing();
+      // ۳. پروژه‌های اجرایی (فقط در صورتی که دیتابیس در راه‌اندازی اولیه کاملاً خالی باشد)
+      if (!hasSeededProjects) {
+        const existingProjects = await db.select().from(projects);
+        if (existingProjects.length === 0) {
+          await db
+            .insert(projects)
+            .values(INITIAL_PROJECTS_SEED)
+            .onConflictDoNothing();
+        }
+        hasSeededProjects = true;
       }
 
       // ۴. استوری‌های بالای صفحه (تکمیل تمامی ۲۰ استوری در دیتابیس و به‌روزرسانی فیلدهای تایپ استوری)
@@ -1930,12 +1469,14 @@ export async function createProjectRecord(data: {
         mainImage: mainImg,
         galleryJson:
           data.galleryJson ||
-          JSON.stringify([
-            mainImg,
-            ASSET_PATHS.projectFereshteh,
-            ASSET_PATHS.projectRoyalRestaurant,
-            ASSET_PATHS.projectDuplexVilla,
-          ]),
+          (Array.isArray((data as any).galleryImages)
+            ? JSON.stringify((data as any).galleryImages)
+            : JSON.stringify([
+                mainImg,
+                ASSET_PATHS.projectFereshteh,
+                ASSET_PATHS.projectRoyalRestaurant,
+                ASSET_PATHS.projectDuplexVilla,
+              ])),
         locationBadge: data.locationBadge || data.district || 'تهران',
         dateBadge: data.dateBadge || '۲۵ شهریور ماه ۱۴۰۴',
       })
@@ -1949,25 +1490,30 @@ export async function createProjectRecord(data: {
 
 export async function updateProjectRecord(
   id: number,
-  data: Partial<{
-    slug: string;
-    categoryTab: string;
-    sampleCode: string;
-    district: string;
-    title: string;
-    subtitle: string;
-    description: string;
-    usedChandeliersText: string;
-    mainImage: string;
-    galleryJson: string;
-    locationBadge: string;
-    dateBadge: string;
-  }>
+  data: any
 ) {
   try {
+    const validData: any = {};
+    if (data.slug !== undefined) validData.slug = data.slug;
+    if (data.categoryTab !== undefined) validData.categoryTab = data.categoryTab;
+    if (data.sampleCode !== undefined) validData.sampleCode = data.sampleCode;
+    if (data.district !== undefined) validData.district = data.district;
+    if (data.title !== undefined) validData.title = data.title;
+    if (data.subtitle !== undefined) validData.subtitle = data.subtitle;
+    if (data.description !== undefined) validData.description = data.description;
+    if (data.usedChandeliersText !== undefined) validData.usedChandeliersText = data.usedChandeliersText;
+    if (data.mainImage !== undefined) validData.mainImage = data.mainImage;
+    if (data.galleryJson !== undefined) {
+      validData.galleryJson = data.galleryJson;
+    } else if (data.galleryImages !== undefined) {
+      validData.galleryJson = JSON.stringify(data.galleryImages);
+    }
+    if (data.locationBadge !== undefined) validData.locationBadge = data.locationBadge;
+    if (data.dateBadge !== undefined) validData.dateBadge = data.dateBadge;
+
     const result = await db
       .update(projects)
-      .set(data)
+      .set(validData)
       .where(eq(projects.id, id))
       .returning();
     return result[0];
@@ -1977,9 +1523,17 @@ export async function updateProjectRecord(
   }
 }
 
-export async function deleteProjectRecord(id: number) {
+export async function deleteProjectRecord(idOrSlug: number | string) {
   try {
-    await db.delete(projects).where(eq(projects.id, id));
+    const num = Number(idOrSlug);
+    if (!isNaN(num) && num > 0) {
+      await db.delete(projects).where(eq(projects.id, num));
+    } else {
+      const cleanSlug = String(idOrSlug).replace(/^proj-/, '');
+      await db.delete(projects).where(
+        or(eq(projects.slug, String(idOrSlug)), eq(projects.slug, cleanSlug))
+      );
+    }
     return { success: true };
   } catch (error) {
     console.error('Database query failed in deleteProjectRecord:', error);
@@ -2459,7 +2013,9 @@ export interface FooterSettingsData {
   cardBgColor: string;
   bottomCardBgColor: string;
   descriptionParagraph1: string;
+  descriptionParagraph1Color: string;
   descriptionParagraph2: string;
+  descriptionParagraph2Color: string;
   phones: FooterPhoneItem[];
   linkedinUrl: string;
   whatsappUrl: string;
@@ -2467,6 +2023,17 @@ export interface FooterSettingsData {
   enamadCode: string;
   otherLicenses: FooterLicenseBadge[];
   copyrightText: string;
+  catalogTitle?: string;
+  catalogDescription?: string;
+  catalogCardTitle?: string;
+  catalogPageCount?: string;
+  catalogDownloadUrl?: string;
+  column1Title?: string;
+  column1Links?: { id: string; label: string; href: string }[];
+  column2Title?: string;
+  column2Links?: { id: string; label: string; href: string }[];
+  columnTitleColor: string;
+  columnLinkColor: string;
 }
 
 export const DEFAULT_FOOTER_SETTINGS: FooterSettingsData = {
@@ -2474,8 +2041,12 @@ export const DEFAULT_FOOTER_SETTINGS: FooterSettingsData = {
   bottomCardBgColor: '#f7f6f2',
   descriptionParagraph1:
     'شعبه VIP مجموعه لوستر صالحی یکی از بخش‌های منحصربه‌فرد این مجموعه است که با هدف ارائه تجربه‌ای ویژه برای شما عزیزان طراحی شده است. در این شعبه، امکان ثبت سفارش تمامی محصولات مجموعه مطابق با سلیقه و نیاز شخصی شما فراهم شده است.',
+  descriptionParagraph1Color: '#ffffff',
   descriptionParagraph2:
     'پشتیبانی ۲۴ ساعته لوستر صالحی در کنار شما همیشه هستیم :)',
+  descriptionParagraph2Color: '#231f1c',
+  columnTitleColor: '#222222',
+  columnLinkColor: '#1c1917',
   phones: [
     {
       id: 'ph-1',
@@ -2533,6 +2104,25 @@ export const DEFAULT_FOOTER_SETTINGS: FooterSettingsData = {
     },
   ],
   copyrightText: 'کلیه حقوق این سایت محفوظ و متعلق به لوستر اکبر صالحی است.',
+  column1Title: 'دسترسی سریع تر',
+  column1Links: [
+    { id: 'l1-1', label: 'صفحه اصلی', href: '/' },
+    { id: 'l1-2', label: 'قوانین و مقررات', href: '/rule' },
+    { id: 'l1-3', label: 'درباره ما', href: '/about-us' },
+    { id: 'l1-4', label: 'تماس با ما', href: '/contact-us' },
+    { id: 'l1-5', label: 'شعبه های مرکز', href: '#executed-projects' },
+    { id: 'l1-6', label: 'گواهی ها', href: '#about-services' },
+    { id: 'l1-7', label: 'نمونه کارهای صالحی', href: '/project' },
+  ],
+  column2Title: 'کلکسیون صالحی',
+  column2Links: [
+    { id: 'l2-1', label: 'لوستر های کلاسیک', href: '/product/categories/chandeliers' },
+    { id: 'l2-2', label: 'لوستر های مدرن', href: '/product/categories/chandeliers' },
+    { id: 'l2-3', label: 'آباژور کلاسیک', href: '/product/categories/abalour' },
+    { id: 'l2-4', label: 'آینه، کنسول', href: '/product/categories/mirror-console' },
+    { id: 'l2-5', label: 'مجله های لوستر', href: '#magazine-section' },
+    { id: 'l2-6', label: 'فرایند آبکاری', href: '#magazine-section' },
+  ],
 };
 
 export async function getFooterSettings(): Promise<FooterSettingsData> {
@@ -2560,10 +2150,18 @@ export async function getFooterSettings(): Promise<FooterSettingsData> {
         typeof parsed.descriptionParagraph1 === 'string'
           ? parsed.descriptionParagraph1
           : DEFAULT_FOOTER_SETTINGS.descriptionParagraph1,
+      descriptionParagraph1Color:
+        typeof parsed.descriptionParagraph1Color === 'string'
+          ? parsed.descriptionParagraph1Color
+          : DEFAULT_FOOTER_SETTINGS.descriptionParagraph1Color,
       descriptionParagraph2:
         typeof parsed.descriptionParagraph2 === 'string'
           ? parsed.descriptionParagraph2
           : DEFAULT_FOOTER_SETTINGS.descriptionParagraph2,
+      descriptionParagraph2Color:
+        typeof parsed.descriptionParagraph2Color === 'string'
+          ? parsed.descriptionParagraph2Color
+          : DEFAULT_FOOTER_SETTINGS.descriptionParagraph2Color,
       phones:
         Array.isArray(parsed.phones) && parsed.phones.length > 0
           ? parsed.phones.map((item: any, idx: number) => {
@@ -2619,6 +2217,50 @@ export async function getFooterSettings(): Promise<FooterSettingsData> {
         typeof parsed.copyrightText === 'string'
           ? parsed.copyrightText
           : DEFAULT_FOOTER_SETTINGS.copyrightText,
+      catalogTitle:
+        typeof parsed.catalogTitle === 'string'
+          ? parsed.catalogTitle
+          : DEFAULT_FOOTER_SETTINGS.catalogTitle,
+      catalogDescription:
+        typeof parsed.catalogDescription === 'string'
+          ? parsed.catalogDescription
+          : DEFAULT_FOOTER_SETTINGS.catalogDescription,
+      catalogCardTitle:
+        typeof parsed.catalogCardTitle === 'string'
+          ? parsed.catalogCardTitle
+          : DEFAULT_FOOTER_SETTINGS.catalogCardTitle,
+      catalogPageCount:
+        typeof parsed.catalogPageCount === 'string'
+          ? parsed.catalogPageCount
+          : DEFAULT_FOOTER_SETTINGS.catalogPageCount,
+      catalogDownloadUrl:
+        typeof parsed.catalogDownloadUrl === 'string'
+          ? parsed.catalogDownloadUrl
+          : DEFAULT_FOOTER_SETTINGS.catalogDownloadUrl,
+      column1Title:
+        typeof parsed.column1Title === 'string'
+          ? parsed.column1Title
+          : DEFAULT_FOOTER_SETTINGS.column1Title,
+      column1Links:
+        Array.isArray(parsed.column1Links)
+          ? parsed.column1Links
+          : DEFAULT_FOOTER_SETTINGS.column1Links,
+      column2Title:
+        typeof parsed.column2Title === 'string'
+          ? parsed.column2Title
+          : DEFAULT_FOOTER_SETTINGS.column2Title,
+      column2Links:
+        Array.isArray(parsed.column2Links)
+          ? parsed.column2Links
+          : DEFAULT_FOOTER_SETTINGS.column2Links,
+      columnTitleColor:
+        typeof parsed.columnTitleColor === 'string'
+          ? parsed.columnTitleColor
+          : DEFAULT_FOOTER_SETTINGS.columnTitleColor,
+      columnLinkColor:
+        typeof parsed.columnLinkColor === 'string'
+          ? parsed.columnLinkColor
+          : DEFAULT_FOOTER_SETTINGS.columnLinkColor,
     };
   } catch (error) {
     console.error('Database query failed in getFooterSettings:', error);
@@ -2640,10 +2282,18 @@ export async function saveFooterSettings(
         data.descriptionParagraph1 !== undefined
           ? String(data.descriptionParagraph1)
           : current.descriptionParagraph1,
+      descriptionParagraph1Color:
+        data.descriptionParagraph1Color !== undefined
+          ? String(data.descriptionParagraph1Color)
+          : current.descriptionParagraph1Color,
       descriptionParagraph2:
         data.descriptionParagraph2 !== undefined
           ? String(data.descriptionParagraph2)
           : current.descriptionParagraph2,
+      descriptionParagraph2Color:
+        data.descriptionParagraph2Color !== undefined
+          ? String(data.descriptionParagraph2Color)
+          : current.descriptionParagraph2Color,
       phones:
         Array.isArray(data.phones) && data.phones.length > 0
           ? data.phones.map((item, idx) => {
@@ -2691,6 +2341,50 @@ export async function saveFooterSettings(
         data.copyrightText !== undefined
           ? String(data.copyrightText)
           : current.copyrightText,
+      catalogTitle:
+        data.catalogTitle !== undefined
+          ? String(data.catalogTitle)
+          : current.catalogTitle,
+      catalogDescription:
+        data.catalogDescription !== undefined
+          ? String(data.catalogDescription)
+          : current.catalogDescription,
+      catalogCardTitle:
+        data.catalogCardTitle !== undefined
+          ? String(data.catalogCardTitle)
+          : current.catalogCardTitle,
+      catalogPageCount:
+        data.catalogPageCount !== undefined
+          ? String(data.catalogPageCount)
+          : current.catalogPageCount,
+      catalogDownloadUrl:
+        data.catalogDownloadUrl !== undefined
+          ? String(data.catalogDownloadUrl)
+          : current.catalogDownloadUrl,
+      column1Title:
+        data.column1Title !== undefined
+          ? String(data.column1Title)
+          : current.column1Title,
+      column1Links:
+        Array.isArray(data.column1Links)
+          ? data.column1Links
+          : current.column1Links,
+      column2Title:
+        data.column2Title !== undefined
+          ? String(data.column2Title)
+          : current.column2Title,
+      column2Links:
+        Array.isArray(data.column2Links)
+          ? data.column2Links
+          : current.column2Links,
+      columnTitleColor:
+        data.columnTitleColor !== undefined
+          ? String(data.columnTitleColor)
+          : current.columnTitleColor,
+      columnLinkColor:
+        data.columnLinkColor !== undefined
+          ? String(data.columnLinkColor)
+          : current.columnLinkColor,
     };
 
     const existing = await db
@@ -2712,6 +2406,34 @@ export async function saveFooterSettings(
         settingKey: 'footer',
         settingValueJson: JSON.stringify(merged),
       });
+    }
+
+    // همگام‌سازی متون کاتالوگ با تنظیمات درباره ما جهت ویرایش از هر دو تب
+    try {
+      const currentAbout = await getAboutUsSettings();
+      const updatedAbout = {
+        ...currentAbout,
+        catalogTitle: merged.catalogTitle ?? currentAbout.catalogTitle,
+        catalogDescription: merged.catalogDescription ?? currentAbout.catalogDescription,
+        catalogCardTitle: merged.catalogCardTitle ?? currentAbout.catalogCardTitle,
+        catalogPageCount: merged.catalogPageCount ?? currentAbout.catalogPageCount,
+        catalogDownloadUrl: merged.catalogDownloadUrl ?? currentAbout.catalogDownloadUrl,
+      };
+      await db
+        .insert(siteSettings)
+        .values({
+          settingKey: 'about_us',
+          settingValueJson: JSON.stringify(updatedAbout),
+        })
+        .onConflictDoUpdate({
+          target: siteSettings.settingKey,
+          set: {
+            settingValueJson: JSON.stringify(updatedAbout),
+            updatedAt: new Date(),
+          },
+        });
+    } catch (e) {
+      console.warn('Could not auto-sync catalog fields to about_us:', e);
     }
 
     return merged;
@@ -3022,5 +2744,757 @@ export async function saveContactUsSettings(
   } catch (error) {
     console.error('Database query failed in saveContactUsSettings:', error);
     throw new Error('خطا در ذخیره تنظیمات صفحه تماس با ما.', { cause: error });
+  }
+}
+
+export interface AboutUsSettingsData {
+  storyTitle: string;
+  storyDescription: string;
+  galleryImages: string[];
+  catalogTitle?: string;
+  catalogDescription?: string;
+  catalogCardTitle?: string;
+  catalogPageCount?: string;
+  catalogDownloadUrl?: string;
+}
+
+export const DEFAULT_ABOUT_US_SETTINGS: AboutUsSettingsData = {
+  storyTitle: 'داستان بی انتهای ما!',
+  storyDescription:
+    'شرکت صنایع لوستر صالحی از سال 1352 تا کنون فعالیت خود را در زمینه ساخت انواع لوستر و دیگر تجهیزات لوکس آغاز نموده و امروزه بیش از 100 محصول متنوع را با بهره گیری از برترین تکنولوژی روز دنیا و مرغوب ترین مواد اولیه مطابق با استانداردهای اروپایی ، تولید نموده تا فخر صنعت لوستر سازی کشور باشد. این شرکت مفتخر است کلیه محصولات خود را به بیش از 10 کشور اروپایی و آسیایی معرفی نموده که بتواند قدمی در جهت شکوفایی نام ایران بردارد. شرکت صنایع لوستر صالحی از سال 1352 تا کنون فعالیت خود را در زمینه ساخت انواع لوستر و دیگر تجهیزات لوکس آغاز نموده و امروزه بیش از 100 محصول متنوع را با بهره گیری از برترین تکنولوژی روز دنیا و مرغوب ترین مواد اولیه مطابق با استانداردهای اروپایی ، تولید نموده تا فخر صنعت لوستر سازی کشور باشد. این شرکت مفتخر است کلیه محصولات خود را به بیش از 10 کشور اروپایی و آسیایی معرفی نموده که بتواند قدمی در جهت شکوفایی نام ایران بردارد. شرکت صنایع لوستر صالحی از سال 1352 تا کنون فعالیت خود را در زمینه ساخت انواع لوستر و دیگر تجهیزات میباشد.',
+  galleryImages: [
+    ASSET_PATHS.aboutShowroom,
+    ASSET_PATHS.aboutGrandAtelier,
+    ASSET_PATHS.projectFereshteh,
+    ASSET_PATHS.aboutRoyalStaircase,
+    ASSET_PATHS.aboutModernVilla,
+    ASSET_PATHS.aboutEmeraldPalace,
+  ],
+  catalogTitle: 'فایل کاتالوگ محصولات',
+  catalogDescription:
+    'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد.',
+  catalogCardTitle: 'کاتالوگ محصولات لوستر صالحی',
+  catalogPageCount: '۱۲۶ صفحه',
+  catalogDownloadUrl: '',
+};
+
+export async function getAboutUsSettings(): Promise<AboutUsSettingsData> {
+  try {
+    const rows = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'about_us'))
+      .limit(1);
+
+    if (rows.length === 0 || !rows[0].settingValueJson) {
+      return DEFAULT_ABOUT_US_SETTINGS;
+    }
+
+    const parsed = JSON.parse(rows[0].settingValueJson);
+    return {
+      storyTitle:
+        typeof parsed.storyTitle === 'string' && parsed.storyTitle.trim()
+          ? parsed.storyTitle
+          : DEFAULT_ABOUT_US_SETTINGS.storyTitle,
+      storyDescription:
+        typeof parsed.storyDescription === 'string' &&
+        parsed.storyDescription.trim()
+          ? parsed.storyDescription
+          : DEFAULT_ABOUT_US_SETTINGS.storyDescription,
+      galleryImages:
+        Array.isArray(parsed.galleryImages) && parsed.galleryImages.length > 0
+          ? parsed.galleryImages.map((img: any) => String(img || '').trim()).filter(Boolean)
+          : DEFAULT_ABOUT_US_SETTINGS.galleryImages,
+      catalogTitle:
+        typeof parsed.catalogTitle === 'string'
+          ? parsed.catalogTitle
+          : DEFAULT_ABOUT_US_SETTINGS.catalogTitle,
+      catalogDescription:
+        typeof parsed.catalogDescription === 'string'
+          ? parsed.catalogDescription
+          : DEFAULT_ABOUT_US_SETTINGS.catalogDescription,
+      catalogCardTitle:
+        typeof parsed.catalogCardTitle === 'string'
+          ? parsed.catalogCardTitle
+          : DEFAULT_ABOUT_US_SETTINGS.catalogCardTitle,
+      catalogPageCount:
+        typeof parsed.catalogPageCount === 'string'
+          ? parsed.catalogPageCount
+          : DEFAULT_ABOUT_US_SETTINGS.catalogPageCount,
+      catalogDownloadUrl:
+        typeof parsed.catalogDownloadUrl === 'string'
+          ? parsed.catalogDownloadUrl
+          : DEFAULT_ABOUT_US_SETTINGS.catalogDownloadUrl,
+    };
+  } catch (error) {
+    console.error('Database query failed in getAboutUsSettings:', error);
+    return DEFAULT_ABOUT_US_SETTINGS;
+  }
+}
+
+export async function saveAboutUsSettings(
+  data: Partial<AboutUsSettingsData>
+): Promise<AboutUsSettingsData> {
+  try {
+    const current = await getAboutUsSettings();
+    const merged: AboutUsSettingsData = {
+      storyTitle:
+        data.storyTitle !== undefined && String(data.storyTitle).trim()
+          ? String(data.storyTitle).trim()
+          : current.storyTitle,
+      storyDescription:
+        data.storyDescription !== undefined && String(data.storyDescription).trim()
+          ? String(data.storyDescription).trim()
+          : current.storyDescription,
+      galleryImages:
+        Array.isArray(data.galleryImages) && data.galleryImages.length > 0
+          ? data.galleryImages.map((img) => String(img || '').trim()).filter(Boolean)
+          : current.galleryImages,
+      catalogTitle:
+        data.catalogTitle !== undefined
+          ? String(data.catalogTitle)
+          : current.catalogTitle,
+      catalogDescription:
+        data.catalogDescription !== undefined
+          ? String(data.catalogDescription)
+          : current.catalogDescription,
+      catalogCardTitle:
+        data.catalogCardTitle !== undefined
+          ? String(data.catalogCardTitle)
+          : current.catalogCardTitle,
+      catalogPageCount:
+        data.catalogPageCount !== undefined
+          ? String(data.catalogPageCount)
+          : current.catalogPageCount,
+      catalogDownloadUrl:
+        data.catalogDownloadUrl !== undefined
+          ? String(data.catalogDownloadUrl)
+          : current.catalogDownloadUrl,
+    };
+
+    const existing = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'about_us'))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(siteSettings)
+        .set({
+          settingValueJson: JSON.stringify(merged),
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.settingKey, 'about_us'));
+    } else {
+      await db.insert(siteSettings).values({
+        settingKey: 'about_us',
+        settingValueJson: JSON.stringify(merged),
+      });
+    }
+
+    // همگام‌سازی متون کاتالوگ با تنظیمات فوتر جهت ویرایش از هر دو تب
+    try {
+      const currentFooter = await getFooterSettings();
+      const updatedFooter = {
+        ...currentFooter,
+        catalogTitle: merged.catalogTitle ?? currentFooter.catalogTitle,
+        catalogDescription: merged.catalogDescription ?? currentFooter.catalogDescription,
+        catalogCardTitle: merged.catalogCardTitle ?? currentFooter.catalogCardTitle,
+        catalogPageCount: merged.catalogPageCount ?? currentFooter.catalogPageCount,
+        catalogDownloadUrl: merged.catalogDownloadUrl ?? currentFooter.catalogDownloadUrl,
+      };
+      await db
+        .insert(siteSettings)
+        .values({
+          settingKey: 'footer',
+          settingValueJson: JSON.stringify(updatedFooter),
+        })
+        .onConflictDoUpdate({
+          target: siteSettings.settingKey,
+          set: {
+            settingValueJson: JSON.stringify(updatedFooter),
+            updatedAt: new Date(),
+          },
+        });
+    } catch (e) {
+      console.warn('Could not auto-sync catalog fields to footer:', e);
+    }
+
+    return merged;
+  } catch (error) {
+    console.error('Database query failed in saveAboutUsSettings:', error);
+    throw new Error('خطا در ذخیره تنظیمات صفحه درباره ما.', { cause: error });
+  }
+}
+
+export interface HeroSlideData {
+  id: string;
+  imageUrl: string;
+  titleLine1?: string;
+  titleLine2?: string;
+  description?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+}
+
+export interface HeroSliderSettingsData {
+  titleLine1?: string;
+  titleLine2?: string;
+  description?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+  slides: HeroSlideData[];
+}
+
+export const DEFAULT_HERO_SLIDER_SETTINGS: HeroSliderSettingsData = {
+  slides: [
+    {
+      id: 'hero-1',
+      imageUrl: ASSET_PATHS.projectRoyalRestaurant,
+      titleLine1: 'با شکوهی ماندگار فضای',
+      titleLine2: 'زندگی‌تان را ارتقا دهید...',
+      description:
+        'مجموعه‌ای برگزیده از لوسترهای لوکس برای سبک زندگی مدرن را کشف کنید.',
+      buttonText: 'محصولات کلکسیون',
+      buttonUrl: '#collection-salehi',
+    },
+    {
+      id: 'hero-2',
+      imageUrl: ASSET_PATHS.projectFereshteh,
+      titleLine1: 'اصالت هنر ایرانی در عمارت فرشته',
+      titleLine2: 'طراحی اختصاصی و سفارشی',
+      description: 'لوسترهای دست‌ساز برنزی و کریستال‌های مرغوب اتریشی.',
+      buttonText: 'پروژه‌های اجرایی',
+      buttonUrl: '#projects-salehi',
+    },
+    {
+      id: 'hero-3',
+      imageUrl: ASSET_PATHS.heroBanner,
+      titleLine1: 'درخشش کریستال‌های ۱۰۰٪ اصیل',
+      titleLine2: 'ضمانت کتبی ثبات رنگ و کیفیت',
+      description:
+        'تولید شده در کارگاه مرکزی لوستر صالحی با نیم قرن سابقه درخشان.',
+      buttonText: 'دانلود کاتالوگ محصولات',
+      buttonUrl: '#catalog-pdf',
+    },
+    {
+      id: 'hero-4',
+      imageUrl: ASSET_PATHS.projectLobbyHotel,
+      titleLine1: 'شکوه و جلوه ماندگار لابی',
+      titleLine2: 'برای هتل‌ها و مجتمع‌های فاخر',
+      description: 'مشاوره و ساخت انحصاری لوسترهای غول‌پیکر لابی و دوبلکس.',
+      buttonText: 'مشاوره و پشتیبانی',
+      buttonUrl: 'tel:09120759419',
+    },
+    {
+      id: 'hero-5',
+      imageUrl: ASSET_PATHS.projectDuplexVilla,
+      titleLine1: 'کالکشن جدید لوستر و روشنایی',
+      titleLine2: 'ویژه‌ی ویلاها و منازل لوکس',
+      description: 'تنوع بی‌نظیر در مدل‌های سقفی، دیواری و آویز کلاسیک و مدرن.',
+      buttonText: 'خرید اینترنتی',
+      buttonUrl: '#collection-salehi',
+    },
+  ],
+};
+
+export async function getHeroSliderSettings(): Promise<HeroSliderSettingsData> {
+  try {
+    const rows = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'hero_slider'))
+      .limit(1);
+
+    if (rows.length === 0 || !rows[0].settingValueJson) {
+      return DEFAULT_HERO_SLIDER_SETTINGS;
+    }
+
+    const parsed = JSON.parse(rows[0].settingValueJson);
+    return {
+      titleLine1: typeof parsed.titleLine1 === 'string' ? parsed.titleLine1 : '',
+      titleLine2: typeof parsed.titleLine2 === 'string' ? parsed.titleLine2 : '',
+      description: typeof parsed.description === 'string' ? parsed.description : '',
+      buttonText: typeof parsed.buttonText === 'string' ? parsed.buttonText : '',
+      buttonUrl: typeof parsed.buttonUrl === 'string' ? parsed.buttonUrl : '',
+      slides:
+        Array.isArray(parsed.slides) && parsed.slides.length > 0
+          ? parsed.slides
+              .map((s: any, idx: number) => ({
+                id: String(s?.id || `hero-${idx + 1}`),
+                imageUrl: String(s?.imageUrl || '').trim(),
+                titleLine1: typeof s?.titleLine1 === 'string' ? s.titleLine1 : '',
+                titleLine2: typeof s?.titleLine2 === 'string' ? s.titleLine2 : '',
+                description: typeof s?.description === 'string' ? s.description : '',
+                buttonText: typeof s?.buttonText === 'string' ? s.buttonText : '',
+                buttonUrl: typeof s?.buttonUrl === 'string' ? s.buttonUrl : '',
+              }))
+              .filter((s: { imageUrl: string }) => Boolean(s.imageUrl))
+          : DEFAULT_HERO_SLIDER_SETTINGS.slides,
+    };
+  } catch (error) {
+    console.error('Database query failed in getHeroSliderSettings:', error);
+    return DEFAULT_HERO_SLIDER_SETTINGS;
+  }
+}
+
+export async function saveHeroSliderSettings(
+  data: Partial<HeroSliderSettingsData>
+): Promise<HeroSliderSettingsData> {
+  try {
+    const current = await getHeroSliderSettings();
+    const merged: HeroSliderSettingsData = {
+      titleLine1:
+        data.titleLine1 !== undefined ? String(data.titleLine1) : current.titleLine1,
+      titleLine2:
+        data.titleLine2 !== undefined ? String(data.titleLine2) : current.titleLine2,
+      description:
+        data.description !== undefined ? String(data.description) : current.description,
+      buttonText:
+        data.buttonText !== undefined ? String(data.buttonText) : current.buttonText,
+      buttonUrl:
+        data.buttonUrl !== undefined ? String(data.buttonUrl) : current.buttonUrl,
+      slides:
+        Array.isArray(data.slides) && data.slides.length > 0
+          ? data.slides
+              .map((s: any, idx: number) => ({
+                id: String(s?.id || `hero-${idx + 1}`),
+                imageUrl: String(s?.imageUrl || '').trim(),
+                titleLine1: typeof s?.titleLine1 === 'string' ? s.titleLine1 : '',
+                titleLine2: typeof s?.titleLine2 === 'string' ? s.titleLine2 : '',
+                description: typeof s?.description === 'string' ? s.description : '',
+                buttonText: typeof s?.buttonText === 'string' ? s.buttonText : '',
+                buttonUrl: typeof s?.buttonUrl === 'string' ? s.buttonUrl : '',
+              }))
+              .filter((s: any) => Boolean(s.imageUrl))
+          : current.slides,
+    };
+
+    const existing = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'hero_slider'))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(siteSettings)
+        .set({
+          settingValueJson: JSON.stringify(merged),
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.settingKey, 'hero_slider'));
+    } else {
+      await db.insert(siteSettings).values({
+        settingKey: 'hero_slider',
+        settingValueJson: JSON.stringify(merged),
+      });
+    }
+
+    return merged;
+  } catch (error) {
+    console.error('Database query failed in saveHeroSliderSettings:', error);
+    throw new Error('خطا در ذخیره تنظیمات اسلایدر بنر اصلی.', { cause: error });
+  }
+}
+
+// ==================== تنظیمات اصلی وب‌سایت ====================
+export interface HeaderSubmenuItem {
+  id: string;
+  label: string;
+  href: string;
+}
+
+export interface HeaderMenuItem {
+  id: string;
+  label: string;
+  href: string;
+  submenuItems?: HeaderSubmenuItem[];
+}
+
+export interface MainSettingsData {
+  hideLanguageSelector: boolean;
+  siteTitle?: string;
+  siteSubtitle?: string;
+  supportPhone?: string;
+  instagramUrl?: string;
+  telegramUrl?: string;
+  headerMenus: HeaderMenuItem[];
+  servicesTitle?: string;
+  servicesSubtitle?: string;
+  service1Title?: string;
+  service1Description?: string;
+  service2Title?: string;
+  service2Description?: string;
+  servicesMainImage?: string;
+}
+
+export const DEFAULT_MAIN_SETTINGS: MainSettingsData = {
+  hideLanguageSelector: false,
+  siteTitle: 'گالری لوستر اکبر صالحی',
+  siteSubtitle: 'بزرگترین تولیدکننده لوسترهای برنزی و کریستال در تهران',
+  supportPhone: '09120759419',
+  instagramUrl: 'https://instagram.com/lostersalehi',
+  telegramUrl: 'https://t.me/lostersalehi',
+  servicesTitle: 'درباره خدمات لوستر',
+  servicesSubtitle: 'درباره خدمات',
+  service1Title: 'عملکرد پیاده سازی',
+  service1Description: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به متر 12 . محدوده نصب خدمات تهران، کرج، لواسانات را برای شما مشتریان عزیز انجام میدهد. لوستر صالحی با بیش از 18 سال سابقه کاری در صنعت لوستر ایران دارای رزومه کاری فرودگاه امام خمینی ، مسجد فخر آباد مسجد چهارده معصوم و انواع مساجد سینما آستارای تجریش و غیره آماده ارائه خدمات برای شما مشتریان عزیز می باشد.',
+  service2Title: 'خدمات بسته بندی، نصب لوستر',
+  service2Description: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب میباشد. آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز میباشد،',
+  servicesMainImage: '/src/assets/images/chandelier_shah_malakeh_1790646240589.jpg',
+  headerMenus: [
+    {
+      id: 'menu-products',
+      label: 'محصولات',
+      href: '',
+      submenuItems: [
+        { id: 'sub-chandeliers', label: 'کلکسیون لوستر ها', href: '/product/categories/chandeliers' },
+        { id: 'sub-single-branch', label: 'کلکسیون تک شاخه ها', href: '/product/categories/single-branch' },
+        { id: 'sub-kenar-saloni', label: 'کلکسیون کنار سالونی', href: '/product/categories/kenar-saloni' },
+        { id: 'sub-abalour', label: 'کلکسیون آباژور', href: '/product/categories/abalour' },
+        { id: 'sub-mirror-console', label: 'کلکسیون آینه و کنسول', href: '/product/categories/mirror-console' },
+        { id: 'sub-shamdooni', label: 'کلکسیون شمعدونی', href: '/product/categories/shamdooni' },
+        { id: 'sub-table', label: 'کلکسیون میز', href: '/product/categories/table' },
+      ],
+    },
+    {
+      id: 'menu-projects',
+      label: 'پروژه ها',
+      href: '/project',
+    },
+    {
+      id: 'menu-blog',
+      label: 'بلاگ',
+      href: '#magazine-section',
+    },
+    {
+      id: 'menu-contact',
+      label: 'تماس با ما',
+      href: '/contact-us',
+    },
+    {
+      id: 'menu-about',
+      label: 'درباره ما',
+      href: '/about-us',
+    },
+    {
+      id: 'menu-more',
+      label: 'موارد دیگر',
+      href: '',
+      submenuItems: [
+        { id: 'more-admin', label: 'پنل مدیریت (Admin)', href: '/admin' },
+        { id: 'more-rules', label: 'قوانین و مقررات', href: '/rule' },
+        { id: 'more-bestsellers', label: 'پرفروش‌ترین محصولات', href: '/product/categories/chandeliers' },
+        { id: 'more-custom', label: 'سفارش اختصاصی لوستر', href: '#custom-chandelier' },
+        { id: 'more-categories', label: 'دسته‌بندی کلکسیون‌ها', href: '/product/categories/chandeliers' },
+        { id: 'more-testimonials', label: 'نظرات مشتریان', href: '#customer-reviews' },
+        { id: 'more-faq', label: 'سوالات متداول', href: '#faq-section' },
+      ],
+    },
+  ],
+};
+
+export async function getMainSettings(): Promise<MainSettingsData> {
+  try {
+    const rows = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'main_settings'))
+      .limit(1);
+
+    if (rows.length === 0 || !rows[0].settingValueJson) {
+      return DEFAULT_MAIN_SETTINGS;
+    }
+
+    const parsed = JSON.parse(rows[0].settingValueJson);
+    return {
+      hideLanguageSelector: Boolean(parsed.hideLanguageSelector),
+      siteTitle: typeof parsed.siteTitle === 'string' ? parsed.siteTitle : DEFAULT_MAIN_SETTINGS.siteTitle,
+      siteSubtitle: typeof parsed.siteSubtitle === 'string' ? parsed.siteSubtitle : DEFAULT_MAIN_SETTINGS.siteSubtitle,
+      supportPhone: typeof parsed.supportPhone === 'string' ? parsed.supportPhone : DEFAULT_MAIN_SETTINGS.supportPhone,
+      instagramUrl: typeof parsed.instagramUrl === 'string' ? parsed.instagramUrl : DEFAULT_MAIN_SETTINGS.instagramUrl,
+      telegramUrl: typeof parsed.telegramUrl === 'string' ? parsed.telegramUrl : DEFAULT_MAIN_SETTINGS.telegramUrl,
+      servicesTitle: typeof parsed.servicesTitle === 'string' ? parsed.servicesTitle : DEFAULT_MAIN_SETTINGS.servicesTitle,
+      servicesSubtitle: typeof parsed.servicesSubtitle === 'string' ? parsed.servicesSubtitle : DEFAULT_MAIN_SETTINGS.servicesSubtitle,
+      service1Title: typeof parsed.service1Title === 'string' ? parsed.service1Title : DEFAULT_MAIN_SETTINGS.service1Title,
+      service1Description: typeof parsed.service1Description === 'string' ? parsed.service1Description : DEFAULT_MAIN_SETTINGS.service1Description,
+      service2Title: typeof parsed.service2Title === 'string' ? parsed.service2Title : DEFAULT_MAIN_SETTINGS.service2Title,
+      service2Description: typeof parsed.service2Description === 'string' ? parsed.service2Description : DEFAULT_MAIN_SETTINGS.service2Description,
+      servicesMainImage: typeof parsed.servicesMainImage === 'string' ? parsed.servicesMainImage : DEFAULT_MAIN_SETTINGS.servicesMainImage,
+      headerMenus: Array.isArray(parsed.headerMenus) ? parsed.headerMenus : DEFAULT_MAIN_SETTINGS.headerMenus,
+    };
+  } catch (error) {
+    console.error('Database query failed in getMainSettings:', error);
+    return DEFAULT_MAIN_SETTINGS;
+  }
+}
+
+export async function saveMainSettings(
+  data: Partial<MainSettingsData>
+): Promise<MainSettingsData> {
+  try {
+    const current = await getMainSettings();
+    const merged: MainSettingsData = {
+      hideLanguageSelector: data.hideLanguageSelector !== undefined ? Boolean(data.hideLanguageSelector) : current.hideLanguageSelector,
+      siteTitle: data.siteTitle !== undefined ? String(data.siteTitle) : current.siteTitle,
+      siteSubtitle: data.siteSubtitle !== undefined ? String(data.siteSubtitle) : current.siteSubtitle,
+      supportPhone: data.supportPhone !== undefined ? String(data.supportPhone) : current.supportPhone,
+      instagramUrl: data.instagramUrl !== undefined ? String(data.instagramUrl) : current.instagramUrl,
+      telegramUrl: data.telegramUrl !== undefined ? String(data.telegramUrl) : current.telegramUrl,
+      servicesTitle: data.servicesTitle !== undefined ? String(data.servicesTitle) : current.servicesTitle,
+      servicesSubtitle: data.servicesSubtitle !== undefined ? String(data.servicesSubtitle) : current.servicesSubtitle,
+      service1Title: data.service1Title !== undefined ? String(data.service1Title) : current.service1Title,
+      service1Description: data.service1Description !== undefined ? String(data.service1Description) : current.service1Description,
+      service2Title: data.service2Title !== undefined ? String(data.service2Title) : current.service2Title,
+      service2Description: data.service2Description !== undefined ? String(data.service2Description) : current.service2Description,
+      servicesMainImage: data.servicesMainImage !== undefined ? String(data.servicesMainImage) : current.servicesMainImage,
+      headerMenus: Array.isArray(data.headerMenus) ? data.headerMenus : current.headerMenus,
+    };
+
+    const existing = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'main_settings'))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(siteSettings)
+        .set({
+          settingValueJson: JSON.stringify(merged),
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.settingKey, 'main_settings'));
+    } else {
+      await db.insert(siteSettings).values({
+        settingKey: 'main_settings',
+        settingValueJson: JSON.stringify(merged),
+      });
+    }
+
+    return merged;
+  } catch (error) {
+    console.error('Database query failed in saveMainSettings:', error);
+    throw new Error('خطا در ذخیره تنظیمات اصلی وب‌سایت.', { cause: error });
+  }
+}
+
+// ==================== تنظیمات پنل پیامک ====================
+export interface SmsSettingsData {
+  apiKey: string;
+  senderLine: string;
+  adminPhone: string;
+  enableNewOrderSmsAdmin: boolean;
+  enableNewOrderSmsCustomer: boolean;
+  enableNewContactMessageSms: boolean;
+  welcomeSmsTemplate: string;
+  newOrderSmsTemplateAdmin: string;
+  newOrderSmsTemplateCustomer: string;
+}
+
+export const DEFAULT_SMS_SETTINGS: SmsSettingsData = {
+  apiKey: 'YOUR_SMS_API_KEY_HERE',
+  senderLine: '10008585',
+  adminPhone: '09120759419',
+  enableNewOrderSmsAdmin: true,
+  enableNewOrderSmsCustomer: true,
+  enableNewContactMessageSms: true,
+  welcomeSmsTemplate: 'سلام %name% عزیز، به گالری لوستر صالحی خوش آمدید.',
+  newOrderSmsTemplateAdmin: 'ادمین گرامی، سفارش جدید شماره %orderId% با مبلغ %amount% ثبت شد.',
+  newOrderSmsTemplateCustomer: 'سلام %name% عزیز، سفارش شماره %orderId% با موفقیت ثبت شد و در حال پردازش است.',
+};
+
+export async function getSmsSettings(): Promise<SmsSettingsData> {
+  try {
+    const rows = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'sms_settings'))
+      .limit(1);
+
+    if (rows.length === 0 || !rows[0].settingValueJson) {
+      return DEFAULT_SMS_SETTINGS;
+    }
+
+    const parsed = JSON.parse(rows[0].settingValueJson);
+    return {
+      apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : DEFAULT_SMS_SETTINGS.apiKey,
+      senderLine: typeof parsed.senderLine === 'string' ? parsed.senderLine : DEFAULT_SMS_SETTINGS.senderLine,
+      adminPhone: typeof parsed.adminPhone === 'string' ? parsed.adminPhone : DEFAULT_SMS_SETTINGS.adminPhone,
+      enableNewOrderSmsAdmin: parsed.enableNewOrderSmsAdmin !== undefined ? Boolean(parsed.enableNewOrderSmsAdmin) : DEFAULT_SMS_SETTINGS.enableNewOrderSmsAdmin,
+      enableNewOrderSmsCustomer: parsed.enableNewOrderSmsCustomer !== undefined ? Boolean(parsed.enableNewOrderSmsCustomer) : DEFAULT_SMS_SETTINGS.enableNewOrderSmsCustomer,
+      enableNewContactMessageSms: parsed.enableNewContactMessageSms !== undefined ? Boolean(parsed.enableNewContactMessageSms) : DEFAULT_SMS_SETTINGS.enableNewContactMessageSms,
+      welcomeSmsTemplate: typeof parsed.welcomeSmsTemplate === 'string' ? parsed.welcomeSmsTemplate : DEFAULT_SMS_SETTINGS.welcomeSmsTemplate,
+      newOrderSmsTemplateAdmin: typeof parsed.newOrderSmsTemplateAdmin === 'string' ? parsed.newOrderSmsTemplateAdmin : DEFAULT_SMS_SETTINGS.newOrderSmsTemplateAdmin,
+      newOrderSmsTemplateCustomer: typeof parsed.newOrderSmsTemplateCustomer === 'string' ? parsed.newOrderSmsTemplateCustomer : DEFAULT_SMS_SETTINGS.newOrderSmsTemplateCustomer,
+    };
+  } catch (error) {
+    console.error('Database query failed in getSmsSettings:', error);
+    return DEFAULT_SMS_SETTINGS;
+  }
+}
+
+export async function saveSmsSettings(
+  data: Partial<SmsSettingsData>
+): Promise<SmsSettingsData> {
+  try {
+    const current = await getSmsSettings();
+    const merged: SmsSettingsData = {
+      apiKey: data.apiKey !== undefined ? String(data.apiKey) : current.apiKey,
+      senderLine: data.senderLine !== undefined ? String(data.senderLine) : current.senderLine,
+      adminPhone: data.adminPhone !== undefined ? String(data.adminPhone) : current.adminPhone,
+      enableNewOrderSmsAdmin: data.enableNewOrderSmsAdmin !== undefined ? Boolean(data.enableNewOrderSmsAdmin) : current.enableNewOrderSmsAdmin,
+      enableNewOrderSmsCustomer: data.enableNewOrderSmsCustomer !== undefined ? Boolean(data.enableNewOrderSmsCustomer) : current.enableNewOrderSmsCustomer,
+      enableNewContactMessageSms: data.enableNewContactMessageSms !== undefined ? Boolean(data.enableNewContactMessageSms) : current.enableNewContactMessageSms,
+      welcomeSmsTemplate: data.welcomeSmsTemplate !== undefined ? String(data.welcomeSmsTemplate) : current.welcomeSmsTemplate,
+      newOrderSmsTemplateAdmin: data.newOrderSmsTemplateAdmin !== undefined ? String(data.newOrderSmsTemplateAdmin) : current.newOrderSmsTemplateAdmin,
+      newOrderSmsTemplateCustomer: data.newOrderSmsTemplateCustomer !== undefined ? String(data.newOrderSmsTemplateCustomer) : current.newOrderSmsTemplateCustomer,
+    };
+
+    const existing = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'sms_settings'))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(siteSettings)
+        .set({
+          settingValueJson: JSON.stringify(merged),
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.settingKey, 'sms_settings'));
+    } else {
+      await db.insert(siteSettings).values({
+        settingKey: 'sms_settings',
+        settingValueJson: JSON.stringify(merged),
+      });
+    }
+
+    return merged;
+  } catch (error) {
+    console.error('Database query failed in saveSmsSettings:', error);
+    throw new Error('خطا در ذخیره تنظیمات پنل پیامک.', { cause: error });
+  }
+}
+
+// ==================== تنظیمات سوالات متداول صفحات ====================
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export interface FaqSettingsData {
+  faqs: {
+    about: FaqItem[];
+    rules: FaqItem[];
+  };
+}
+
+export const DEFAULT_FAQ_SETTINGS: FaqSettingsData = {
+  faqs: {
+    about: [
+      {
+        id: 'faq-about-1',
+        question: 'پشتیبانی لوستر صالحی به چه صورت است ؟',
+        answer: 'تمامی محصولات لوستر صالحی دارای پشتیبانی و خدمات پس از فروش مادام‌العمر هستند. شما می‌توانید در هر ساعت از شبانه‌روز با تیم پشتیبانی ما تماس بگیرید.',
+      },
+      {
+        id: 'faq-about-2',
+        question: 'همکاری در فروش چه شرایطی لازم است ؟',
+        answer: 'برای همکاری در فروش، داشتن فروشگاه فیزیکی یا آنلاین معتبر و ارائه مدارک شناسایی الزامی است. پس از بررسی درخواست توسط واحد بازرگانی، قرارداد همکاری منعقد می‌گردد.',
+      },
+      {
+        id: 'faq-about-3',
+        question: 'مواد اولیه لوستر از کجا تامین میشود؟',
+        answer: 'مواد اولیه محصولات ما شامل برنز درجه یک و کریستال‌های باکیفیت از بهترین منابع داخلی و خارجی تامین می‌شوند تا دوام و زیبایی محصول تضمین شود.',
+      },
+      {
+        id: 'faq-about-4',
+        question: 'پیاده سازی عملکرد آبکاری لوستر صالحی به چه صورتی است ؟',
+        answer: 'آبکاری محصولات با استفاده از تکنولوژی‌های نوین و طلا یا کروم با عیار بالا انجام می‌شود که ثبات رنگ ۱۰ ساله کتبی را برای مشتریان عزیز به همراه دارد.',
+      },
+    ],
+    rules: [
+      {
+        id: 'faq-rules-1',
+        question: 'شرایط تعویض یا مرجوعی کالا چیست؟',
+        answer: 'در صورت وجود هرگونه نقص فنی یا مغایرت با سفارش، کالا تا ۷ روز پس از تحویل قابل تعویض یا مرجوعی می‌باشد، مشروط بر اینکه محصول در شرایط اولیه خود باقی مانده باشد.',
+      },
+      {
+        id: 'faq-rules-2',
+        question: 'زمان تحویل سفارشات چقدر است؟',
+        answer: 'سفارشات آماده ارسال ظرف ۲۴ تا ۴۸ ساعت و سفارشات اختصاصی با توجه به پیچیدگی طراحی، بین ۱۰ تا ۲۰ روز کاری زمان می‌برند.',
+      },
+    ],
+  },
+};
+
+export async function getFaqSettings(): Promise<FaqSettingsData> {
+  try {
+    const rows = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'faq_settings'))
+      .limit(1);
+
+    if (rows.length === 0 || !rows[0].settingValueJson) {
+      return DEFAULT_FAQ_SETTINGS;
+    }
+
+    const parsed = JSON.parse(rows[0].settingValueJson);
+    return {
+      faqs: {
+        about: Array.isArray(parsed.faqs?.about) ? parsed.faqs.about : DEFAULT_FAQ_SETTINGS.faqs.about,
+        rules: Array.isArray(parsed.faqs?.rules) ? parsed.faqs.rules : DEFAULT_FAQ_SETTINGS.faqs.rules,
+      },
+    };
+  } catch (error) {
+    console.error('Database query failed in getFaqSettings:', error);
+    return DEFAULT_FAQ_SETTINGS;
+  }
+}
+
+export async function saveFaqSettings(
+  data: Partial<FaqSettingsData>
+): Promise<FaqSettingsData> {
+  try {
+    const current = await getFaqSettings();
+    const merged: FaqSettingsData = {
+      faqs: {
+        about: Array.isArray(data.faqs?.about) ? data.faqs.about : current.faqs.about,
+        rules: Array.isArray(data.faqs?.rules) ? data.faqs.rules : current.faqs.rules,
+      },
+    };
+
+    const existing = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'faq_settings'))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(siteSettings)
+        .set({
+          settingValueJson: JSON.stringify(merged),
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.settingKey, 'faq_settings'));
+    } else {
+      await db.insert(siteSettings).values({
+        settingKey: 'faq_settings',
+        settingValueJson: JSON.stringify(merged),
+      });
+    }
+
+    return merged;
+  } catch (error) {
+    console.error('Database query failed in saveFaqSettings:', error);
+    throw new Error('خطا در ذخیره تنظیمات سوالات متداول صفحات.', { cause: error });
   }
 }

@@ -6,6 +6,7 @@ import { TransparentProductImage } from '../TransparentProductImage';
 interface AboutServicesSectionProps {
   featuredProduct?: ChandelierProduct;
   onOpenProductModal?: (product: ChandelierProduct) => void;
+  mainSettings?: any;
 }
 
 /**
@@ -13,14 +14,20 @@ interface AboutServicesSectionProps {
  * - در موبایل: ابتدا قاب قوسی به همراه وکتورهای پترن برگ Vector2rtl.png و Vector2ltr.png در دو طرف نمایش داده می‌شود، و سپس متون عملکرد پیاده‌سازی زیر آن قرار می‌گیرند (دقیقاً مطابق Screenshot 2026-09-30 at 03.25.25.png)
  * - در دسکتاپ: چیدمان دو ستونه لوکس
  */
-export const AboutServicesSection: React.FC<AboutServicesSectionProps> = () => {
+export const AboutServicesSection: React.FC<AboutServicesSectionProps> = ({
+  mainSettings,
+}) => {
   return (
     <section
       id="about-services"
       className="w-full max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 py-8 sm:py-12 overflow-hidden"
     >
       {/* تیتر اصلی بخش */}
-      <SectionHeading title="درباره خدمات لوستر" mobileTitle="درباره خدمات" className="mb-6 sm:mb-12" />
+      <SectionHeading
+        title={mainSettings?.servicesTitle || 'درباره خدمات لوستر'}
+        mobileTitle={mainSettings?.servicesSubtitle || 'درباره خدمات'}
+        className="mb-6 sm:mb-12"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* ۱. قاب قوسی لوستر طبقاتی با پترن‌های Vector2rtl.png در راست و Vector2ltr.png در چپ (در موبایل اول می‌آید order-1) */}
@@ -37,7 +44,10 @@ export const AboutServicesSection: React.FC<AboutServicesSectionProps> = () => {
               {/* تصویر لوستر متمایز و تمام‌پر */}
               <div className="w-full h-[250px] xs:h-[280px] sm:h-[290px] flex items-start justify-center overflow-hidden rounded-t-[125px] xs:rounded-t-[145px] sm:rounded-t-[155px] rounded-b-xl">
                 <TransparentProductImage
-                  src={GENERATED_IMAGES.shahMalakeh}
+                  src={
+                    mainSettings?.servicesMainImage ||
+                    GENERATED_IMAGES.shahMalakeh
+                  }
                   alt="Akbar Salehi Collection"
                   className="max-h-[240px] xs:max-h-[270px] sm:max-h-[280px] w-auto object-contain"
                 />
@@ -83,17 +93,12 @@ export const AboutServicesSection: React.FC<AboutServicesSectionProps> = () => {
           <div>
             <div className="border-r-[3px] border-[#b59766] pr-3 mb-3">
               <h3 className="text-[15px] sm:text-[16.5px] font-bold text-[#222222]">
-                عملکرد پیاده سازی
+                {mainSettings?.service1Title || 'عملکرد پیاده سازی'}
               </h3>
             </div>
             <p className="text-[12px] sm:text-[13.5px] leading-7 sm:leading-8 text-[#222222] text-justify font-normal">
-              گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری،
-              آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب
-              لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به
-              متر 12 . محدوده نصب خدمات تهران، کرج، لواسانات را برای شما مشتریان عزیز انجام
-              میدهد. لوستر صالحی با بیش از 18 سال سابقه کاری در صنعت لوستر ایران دارای
-              رزومه کاری فرودگاه امام خمینی ، مسجد فخر آباد مسجد چهارده معصوم و انواع مساجد
-              سینما آستارای تجریش و غیره آماده ارائه خدمات برای شما مشتریان عزیز می باشد.
+              {mainSettings?.service1Description ||
+                'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به متر 12 . محدوده نصب خدمات تهران، کرج، لواسانات را برای شما مشتریان عزیز انجام میدهد. لوستر صالحی با بیش از 18 سال سابقه کاری در صنعت لوستر ایران دارای رزومه کاری فرودگاه امام خمینی ، مسجد فخر آباد مسجد چهارده معصوم و انواع مساجد سینما آستارای تجریش و غیره آماده ارائه خدمات برای شما مشتریان عزیز می باشد.'}
             </p>
           </div>
 
@@ -101,14 +106,12 @@ export const AboutServicesSection: React.FC<AboutServicesSectionProps> = () => {
           <div>
             <div className="border-r-[3px] border-[#b59766] pr-3 mb-3">
               <h3 className="text-[15px] sm:text-[16.5px] font-bold text-[#222222]">
-                خدمات بسته بندی، نصب لوستر
+                {mainSettings?.service2Title || 'خدمات بسته بندی، نصب لوستر'}
               </h3>
             </div>
             <p className="text-[12px] sm:text-[13.5px] leading-7 sm:leading-8 text-[#222222] text-justify font-normal">
-              گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری،
-              آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب
-              لوستر طبقاتی و نصب کلاب میباشد. آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در
-              سقف های یونولیت مجهز میباشد،
+              {mainSettings?.service2Description ||
+                'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب میباشد. آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز میباشد،'}
             </p>
           </div>
         </div>

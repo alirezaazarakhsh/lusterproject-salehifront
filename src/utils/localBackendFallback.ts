@@ -13,6 +13,14 @@ import {
   ContactUsSettingsConfig,
   INITIAL_CONTACT_US_SETTINGS,
 } from '../contact-us';
+import {
+  AboutUsSettingsConfig,
+  INITIAL_ABOUT_US_SETTINGS,
+} from '../about-us/AboutUsContentSection';
+import {
+  HeroSliderSettingsConfig,
+  INITIAL_HERO_SLIDER_SETTINGS,
+} from '../components/sections/HeroSection';
 
 const LOCAL_DB_STORAGE_KEY = 'salehi_cms_fallback_db_v1';
 
@@ -61,7 +69,129 @@ interface LocalDbSchema {
   orders: any[];
   footerSettings: FooterSettingsConfig;
   contactUsSettings: ContactUsSettingsConfig;
+  aboutUsSettings: AboutUsSettingsConfig;
+  heroSliderSettings: HeroSliderSettingsConfig;
+  mainSettings: any;
+  smsSettings: any;
+  faqSettings: any;
 }
+
+export const INITIAL_MAIN_SETTINGS = {
+  hideLanguageSelector: false,
+  siteTitle: 'گالری لوستر اکبر صالحی',
+  siteSubtitle: 'بزرگترین تولیدکننده لوسترهای برنزی و کریستال در تهران',
+  supportPhone: '09120759419',
+  instagramUrl: 'https://instagram.com/lostersalehi',
+  telegramUrl: 'https://t.me/lostersalehi',
+  servicesTitle: 'درباره خدمات لوستر',
+  servicesSubtitle: 'درباره خدمات',
+  service1Title: 'عملکرد پیاده سازی',
+  service1Description: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به متر 12 . محدوده نصب خدمات تهران، کرج، لواسانات را برای شما مشتریان عزیز انجام میدهد. لوستر صالحی با بیش از 18 سال سابقه کاری در صنعت لوستر ایران دارای رزومه کاری فرودگاه امام خمینی ، مسجد فخر آباد مسجد چهارده معصوم و انواع مساجد سینما آستارای تجریش و غیره آماده ارائه خدمات برای شما مشتریان عزیز می باشد.',
+  service2Title: 'خدمات بسته بندی، نصب لوستر',
+  service2Description: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب میباشد. آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز میباشد،',
+  servicesMainImage: '/src/assets/images/chandelier_shah_malakeh_1790646240589.jpg',
+  headerMenus: [
+    {
+      id: 'menu-products',
+      label: 'محصولات',
+      href: '',
+      submenuItems: [
+        { id: 'sub-chandeliers', label: 'کلکسیون لوستر ها', href: '/product/categories/chandeliers' },
+        { id: 'sub-single-branch', label: 'کلکسیون تک شاخه ها', href: '/product/categories/single-branch' },
+        { id: 'sub-kenar-saloni', label: 'کلکسیون کنار سالونی', href: '/product/categories/kenar-saloni' },
+        { id: 'sub-abalour', label: 'کلکسیون آباژور', href: '/product/categories/abalour' },
+        { id: 'sub-mirror-console', label: 'کلکسیون آینه و کنسول', href: '/product/categories/mirror-console' },
+        { id: 'sub-shamdooni', label: 'کلکسیون شمعدونی', href: '/product/categories/shamdooni' },
+        { id: 'sub-table', label: 'کلکسیون میز', href: '/product/categories/table' },
+      ],
+    },
+    {
+      id: 'menu-projects',
+      label: 'پروژه ها',
+      href: '/project',
+    },
+    {
+      id: 'menu-blog',
+      label: 'بلاگ',
+      href: '#magazine-section',
+    },
+    {
+      id: 'menu-contact',
+      label: 'تماس با ما',
+      href: '/contact-us',
+    },
+    {
+      id: 'menu-about',
+      label: 'درباره ما',
+      href: '/about-us',
+    },
+    {
+      id: 'menu-more',
+      label: 'موارد دیگر',
+      href: '',
+      submenuItems: [
+        { id: 'more-admin', label: 'پنل مدیریت (Admin)', href: '/admin' },
+        { id: 'more-rules', label: 'قوانین و مقررات', href: '/rule' },
+        { id: 'more-bestsellers', label: 'پرفروش‌ترین محصولات', href: '/product/categories/chandeliers' },
+        { id: 'more-custom', label: 'سفارش اختصاصی لوستر', href: '#custom-chandelier' },
+        { id: 'more-categories', label: 'دسته‌بندی کلکسیون‌ها', href: '/product/categories/chandeliers' },
+        { id: 'more-testimonials', label: 'نظرات مشتریان', href: '#customer-reviews' },
+        { id: 'more-faq', label: 'سوالات متداول', href: '#faq-section' },
+      ],
+    },
+  ],
+};
+
+export const INITIAL_SMS_SETTINGS = {
+  apiKey: 'YOUR_SMS_API_KEY_HERE',
+  senderLine: '10008585',
+  adminPhone: '09120759419',
+  enableNewOrderSmsAdmin: true,
+  enableNewOrderSmsCustomer: true,
+  enableNewContactMessageSms: true,
+  welcomeSmsTemplate: 'سلام %name% عزیز، به گالری لوستر صالحی خوش آمدید.',
+  newOrderSmsTemplateAdmin: 'ادمین گرامی، سفارش جدید شماره %orderId% با مبلغ %amount% ثبت شد.',
+  newOrderSmsTemplateCustomer: 'سلام %name% عزیز، سفارش شماره %orderId% با موفقیت ثبت شد و در حال پردازش است.',
+};
+
+export const INITIAL_FAQ_SETTINGS = {
+  faqs: {
+    about: [
+      {
+        id: 'faq-about-1',
+        question: 'پشتیبانی لوستر صالحی به چه صورت است ؟',
+        answer: 'تمامی محصولات لوستر صالحی دارای پشتیبانی و خدمات پس از فروش مادام‌العمر هستند. شما می‌توانید در هر ساعت از شبانه‌روز با تیم پشتیبانی ما تماس بگیرید.',
+      },
+      {
+        id: 'faq-about-2',
+        question: 'همکاری در فروش چه شرایطی لازم است ؟',
+        answer: 'برای همکاری در فروش، داشتن فروشگاه فیزیکی یا آنلاین معتبر و ارائه مدارک شناسایی الزامی است. پس از بررسی درخواست توسط واحد بازرگانی، قرارداد همکاری منعقد می‌گردد.',
+      },
+      {
+        id: 'faq-about-3',
+        question: 'مواد اولیه لوستر از کجا تامین میشود؟',
+        answer: 'مواد اولیه محصولات ما شامل برنز درجه یک و کریستال‌های باکیفیت از بهترین منابع داخلی و خارجی تامین می‌شوند تا دوام و زیبایی محصول تضمین شود.',
+      },
+      {
+        id: 'faq-about-4',
+        question: 'پیاده سازی عملکرد آبکاری لوستر صالحی به چه صورتی است ؟',
+        answer: 'آبکاری محصولات با استفاده از تکنولوژی‌های نوین و طلا یا کروم با عیار بالا انجام می‌شود که ثبات رنگ ۱۰ ساله کتبی را برای مشتریان عزیز به همراه دارد.',
+      },
+    ],
+    rules: [
+      {
+        id: 'faq-rules-1',
+        question: 'شرایط تعویض یا مرجوعی کالا چیست؟',
+        answer: 'در صورت وجود هرگونه نقص فنی یا مغایرت با سفارش، کالا تا ۷ روز پس از تحویل قابل تعویض یا مرجوعی می‌باشد، مشروط بر اینکه محصول در شرایط اولیه خود باقی مانده باشد.',
+      },
+      {
+        id: 'faq-rules-2',
+        question: 'زمان تحویل سفارشات چقدر است؟',
+        answer: 'سفارشات آماده ارسال ظرف ۲۴ تا ۴۸ ساعت و سفارشات اختصاصی با توجه به پیچیدگی طراحی، بین ۱۰ تا ۲۰ روز کاری زمان می‌برند.',
+      },
+    ],
+  },
+};
 
 function createInitialLocalDb(): LocalDbSchema {
   const defaultAdmin = {
@@ -107,10 +237,10 @@ function createInitialLocalDb(): LocalDbSchema {
 
   const seededCategories = PRODUCT_CATEGORIES.map((c, idx) => ({
     id: idx + 1,
-    slug: c.key,
+    slug: c.slug,
     title: c.title,
-    countLabel: c.count,
-    image: c.image,
+    countLabel: c.countText,
+    image: (c as any).image || '',
     sortOrder: idx + 1,
   }));
 
@@ -121,7 +251,7 @@ function createInitialLocalDb(): LocalDbSchema {
     sampleCode: pr.sampleCode,
     district: pr.district,
     title: pr.title,
-    subtitle: pr.subtitle || `${pr.district} | ${pr.locationBadge || 'تهران'}`,
+    subtitle: `${pr.district} | تهران`,
     description: pr.description,
     usedChandeliersText: pr.usedChandeliersText,
     mainImage: pr.mainImage,
@@ -131,8 +261,8 @@ function createInitialLocalDb(): LocalDbSchema {
     galleryJson: JSON.stringify(
       Array.isArray(pr.galleryImages) ? pr.galleryImages : [pr.mainImage]
     ),
-    locationBadge: pr.locationBadge || 'تهران، الهیه',
-    dateBadge: pr.dateBadge || '۲۵ شهریور ماه ۱۴۰۴',
+    locationBadge: 'تهران، الهیه',
+    dateBadge: '۲۵ شهریور ماه ۱۴۰۴',
   }));
 
   const seededStories = STORY_ITEMS.map((st, idx) => ({
@@ -182,10 +312,10 @@ function createInitialLocalDb(): LocalDbSchema {
       : ar.excerpt,
     fullContent: Array.isArray(ar.fullContent) ? ar.fullContent : [ar.excerpt],
     publishDate: ar.date || '۱۸ مهر ۱۴۰۴',
-    readTime: ar.readTime || '۵ دقیقه مطالعه',
-    category: ar.category || 'راهنمای دکوراسیون سلطنتی',
+    readTime: '۵ دقیقه مطالعه',
+    category: 'راهنمای دکوراسیون سلطنتی',
     image: ar.image,
-    featured: Boolean(ar.featured),
+    featured: false,
   }));
 
   return {
@@ -225,6 +355,11 @@ function createInitialLocalDb(): LocalDbSchema {
     ],
     footerSettings: INITIAL_FOOTER_SETTINGS,
     contactUsSettings: INITIAL_CONTACT_US_SETTINGS,
+    aboutUsSettings: INITIAL_ABOUT_US_SETTINGS,
+    heroSliderSettings: INITIAL_HERO_SLIDER_SETTINGS,
+    mainSettings: INITIAL_MAIN_SETTINGS,
+    smsSettings: INITIAL_SMS_SETTINGS,
+    faqSettings: INITIAL_FAQ_SETTINGS,
   };
 }
 
@@ -256,10 +391,9 @@ function loadLocalDb(): LocalDbSchema {
           Array.isArray(parsed.categories) && parsed.categories.length > 0
             ? parsed.categories
             : initial.categories,
-        projects:
-          Array.isArray(parsed.projects) && parsed.projects.length > 0
-            ? parsed.projects
-            : initial.projects,
+        projects: Array.isArray(parsed.projects)
+          ? parsed.projects
+          : initial.projects,
         stories:
           Array.isArray(parsed.stories) && parsed.stories.length > 0
             ? parsed.stories
@@ -279,6 +413,26 @@ function loadLocalDb(): LocalDbSchema {
         contactUsSettings: {
           ...INITIAL_CONTACT_US_SETTINGS,
           ...(parsed.contactUsSettings || {}),
+        },
+        aboutUsSettings: {
+          ...INITIAL_ABOUT_US_SETTINGS,
+          ...(parsed.aboutUsSettings || {}),
+        },
+        heroSliderSettings: {
+          ...INITIAL_HERO_SLIDER_SETTINGS,
+          ...(parsed.heroSliderSettings || {}),
+        },
+        mainSettings: {
+          ...INITIAL_MAIN_SETTINGS,
+          ...(parsed.mainSettings || {}),
+        },
+        smsSettings: {
+          ...INITIAL_SMS_SETTINGS,
+          ...(parsed.smsSettings || {}),
+        },
+        faqSettings: {
+          ...INITIAL_FAQ_SETTINGS,
+          ...(parsed.faqSettings || {}),
         },
       };
     }
@@ -413,6 +567,11 @@ export async function handleLocalApiRequest(
       articles: dbState.articles,
       footerSettings: dbState.footerSettings,
       contactUsSettings: dbState.contactUsSettings,
+      aboutUsSettings: dbState.aboutUsSettings,
+      heroSliderSettings: dbState.heroSliderSettings,
+      mainSettings: dbState.mainSettings,
+      smsSettings: dbState.smsSettings,
+      faqSettings: dbState.faqSettings,
     };
   }
 
@@ -640,6 +799,7 @@ export async function handleLocalApiRequest(
         ...body,
         id: nextId,
         slug: body.slug || `proj-${nextId}`,
+        chandeliersList: Array.isArray(body.chandeliersList) ? body.chandeliersList : [],
       };
       dbState.projects.unshift(created);
       saveLocalDb(dbState);
@@ -647,19 +807,40 @@ export async function handleLocalApiRequest(
     }
   }
   if (cleanUrl.startsWith('/api/admin/projects/')) {
-    const id = Number(cleanUrl.split('/').pop());
+    const rawParam = cleanUrl.split('/').pop() || '';
+    const numId = Number(rawParam);
+    const isNum = !isNaN(numId) && rawParam.trim() !== '';
+    const cleanParam = rawParam.replace(/^proj-/, '').toLowerCase();
+
     if (method === 'PUT') {
-      const idx = dbState.projects.findIndex((p) => Number(p.id) === id);
+      const idx = dbState.projects.findIndex((p) => {
+        if (isNum && Number(p.id) === numId) return true;
+        if (String(p.id).toLowerCase() === rawParam.toLowerCase() || String(p.id).toLowerCase() === cleanParam) return true;
+        if (p.slug && (p.slug.toLowerCase() === rawParam.toLowerCase() || p.slug.toLowerCase() === cleanParam)) return true;
+        return false;
+      });
       if (idx !== -1) {
-        dbState.projects[idx] = { ...dbState.projects[idx], ...body, id };
+        dbState.projects[idx] = {
+          ...dbState.projects[idx],
+          ...body,
+          chandeliersList:
+            body.chandeliersList !== undefined
+              ? body.chandeliersList
+              : dbState.projects[idx].chandeliersList,
+        };
         saveLocalDb(dbState);
         return dbState.projects[idx];
       }
     }
     if (method === 'DELETE') {
-      dbState.projects = dbState.projects.filter((p) => Number(p.id) !== id);
+      dbState.projects = dbState.projects.filter((p) => {
+        if (isNum && Number(p.id) === numId) return false;
+        if (String(p.id).toLowerCase() === rawParam.toLowerCase() || String(p.id).toLowerCase() === cleanParam) return false;
+        if (p.slug && (p.slug.toLowerCase() === rawParam.toLowerCase() || p.slug.toLowerCase() === cleanParam)) return false;
+        return true;
+      });
       saveLocalDb(dbState);
-      return { success: true, id };
+      return { success: true, id: rawParam };
     }
   }
 
@@ -799,6 +980,22 @@ export async function handleLocalApiRequest(
         ...dbState.footerSettings,
         ...body,
       };
+      if (
+        body.catalogTitle !== undefined ||
+        body.catalogDescription !== undefined ||
+        body.catalogCardTitle !== undefined ||
+        body.catalogPageCount !== undefined ||
+        body.catalogDownloadUrl !== undefined
+      ) {
+        dbState.aboutUsSettings = {
+          ...dbState.aboutUsSettings,
+          catalogTitle: body.catalogTitle ?? dbState.aboutUsSettings.catalogTitle,
+          catalogDescription: body.catalogDescription ?? dbState.aboutUsSettings.catalogDescription,
+          catalogCardTitle: body.catalogCardTitle ?? dbState.aboutUsSettings.catalogCardTitle,
+          catalogPageCount: body.catalogPageCount ?? dbState.aboutUsSettings.catalogPageCount,
+          catalogDownloadUrl: body.catalogDownloadUrl ?? dbState.aboutUsSettings.catalogDownloadUrl,
+        };
+      }
       saveLocalDb(dbState);
       return dbState.footerSettings;
     }
@@ -817,6 +1014,119 @@ export async function handleLocalApiRequest(
       };
       saveLocalDb(dbState);
       return dbState.contactUsSettings;
+    }
+  }
+
+  // ۱۷. تنظیمات صفحه درباره ما
+  if (
+    cleanUrl === '/api/admin/settings/about-us' ||
+    cleanUrl === '/api/public/settings/about-us'
+  ) {
+    if (method === 'GET') {
+      return dbState.aboutUsSettings;
+    }
+    if (method === 'PUT') {
+      dbState.aboutUsSettings = {
+        ...INITIAL_ABOUT_US_SETTINGS,
+        ...dbState.aboutUsSettings,
+        ...body,
+        galleryImages:
+          Array.isArray(body.galleryImages) && body.galleryImages.length > 0
+            ? body.galleryImages
+            : dbState.aboutUsSettings.galleryImages,
+      };
+      if (
+        body.catalogTitle !== undefined ||
+        body.catalogDescription !== undefined ||
+        body.catalogCardTitle !== undefined ||
+        body.catalogPageCount !== undefined ||
+        body.catalogDownloadUrl !== undefined
+      ) {
+        dbState.footerSettings = {
+          ...dbState.footerSettings,
+          catalogTitle: body.catalogTitle ?? dbState.footerSettings.catalogTitle,
+          catalogDescription: body.catalogDescription ?? dbState.footerSettings.catalogDescription,
+          catalogCardTitle: body.catalogCardTitle ?? dbState.footerSettings.catalogCardTitle,
+          catalogPageCount: body.catalogPageCount ?? dbState.footerSettings.catalogPageCount,
+          catalogDownloadUrl: body.catalogDownloadUrl ?? dbState.footerSettings.catalogDownloadUrl,
+        };
+      }
+      saveLocalDb(dbState);
+      return dbState.aboutUsSettings;
+    }
+  }
+
+  // ۱۸. تنظیمات اسلایدر بنر اصلی سایت
+  if (
+    cleanUrl === '/api/admin/settings/hero-slider' ||
+    cleanUrl === '/api/public/settings/hero-slider'
+  ) {
+    if (method === 'GET') {
+      return dbState.heroSliderSettings;
+    }
+    if (method === 'PUT') {
+      dbState.heroSliderSettings = {
+        ...INITIAL_HERO_SLIDER_SETTINGS,
+        ...dbState.heroSliderSettings,
+        ...body,
+        slides:
+          Array.isArray(body.slides) && body.slides.length > 0
+            ? body.slides
+            : dbState.heroSliderSettings.slides,
+      };
+      saveLocalDb(dbState);
+      return dbState.heroSliderSettings;
+    }
+  }
+
+  // ۱۹. تنظیمات اصلی وب‌سایت
+  if (
+    cleanUrl === '/api/admin/settings/main' ||
+    cleanUrl === '/api/public/settings/main'
+  ) {
+    if (method === 'GET') {
+      return dbState.mainSettings;
+    }
+    if (method === 'PUT') {
+      dbState.mainSettings = {
+        ...INITIAL_MAIN_SETTINGS,
+        ...dbState.mainSettings,
+        ...body,
+      };
+      saveLocalDb(dbState);
+      return dbState.mainSettings;
+    }
+  }
+
+  // ۲۰. تنظیمات پنل پیامک
+  if (cleanUrl === '/api/admin/settings/sms') {
+    if (method === 'GET') {
+      return dbState.smsSettings;
+    }
+    if (method === 'PUT') {
+      dbState.smsSettings = {
+        ...INITIAL_SMS_SETTINGS,
+        ...dbState.smsSettings,
+        ...body,
+      };
+      saveLocalDb(dbState);
+      return dbState.smsSettings;
+    }
+  }
+
+  // ۲۱. تنظیمات سوالات متداول صفحات
+  if (cleanUrl === '/api/admin/settings/faq') {
+    if (method === 'GET') {
+      return dbState.faqSettings;
+    }
+    if (method === 'PUT') {
+      dbState.faqSettings = {
+        ...INITIAL_FAQ_SETTINGS,
+        ...dbState.faqSettings,
+        ...body,
+      };
+      saveLocalDb(dbState);
+      return dbState.faqSettings;
     }
   }
 
@@ -846,6 +1156,12 @@ export async function apiFetchWithFallback(
         if (data.footerSettings) local.footerSettings = data.footerSettings;
         if (data.contactUsSettings)
           local.contactUsSettings = data.contactUsSettings;
+        if (data.aboutUsSettings) local.aboutUsSettings = data.aboutUsSettings;
+        if (data.heroSliderSettings)
+          local.heroSliderSettings = data.heroSliderSettings;
+        if (data.mainSettings) local.mainSettings = data.mainSettings;
+        if (data.smsSettings) local.smsSettings = data.smsSettings;
+        if (data.faqSettings) local.faqSettings = data.faqSettings;
         saveLocalDb(local);
       }
       return data;

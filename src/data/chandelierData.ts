@@ -815,6 +815,7 @@ export const SALEHI_COLLECTION_PRODUCTS: ChandelierProduct[] = [
 
 export interface ExecutedProject {
   id: string;
+  slug?: string;
   sampleCode: string;
   district: string;
   categoryTab: string;

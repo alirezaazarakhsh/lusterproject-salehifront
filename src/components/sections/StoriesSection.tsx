@@ -95,14 +95,16 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
     <section className="w-full max-w-[1800px] mx-auto px-3 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-4 sm:pb-5">
       <div className="relative flex items-center justify-between w-full gap-2">
         {/* دکمه فلش سمت راست دسکتاپ (بدون بک‌گراند گرد - فقط آیکون خالی) */}
-        <button
-          type="button"
-          onClick={() => handleScroll('right')}
-          aria-label="اسکرول به راست"
-          className="hidden md:flex items-center justify-center text-[#333333] hover:text-[#b08c57] shrink-0 transition-colors cursor-pointer z-10 p-1.5"
-        >
-          <ChevronRight className="w-5 h-5 text-[#333333] hover:text-[#b08c57] transition-colors" />
-        </button>
+        {stories.length > 10 && (
+          <button
+            type="button"
+            onClick={() => handleScroll('right')}
+            aria-label="اسکرول به راست"
+            className="hidden md:flex items-center justify-center text-[#333333] hover:text-[#b08c57] shrink-0 transition-colors cursor-pointer z-10 p-1.5"
+          >
+            <ChevronRight className="w-5 h-5 text-[#333333] hover:text-[#b08c57] transition-colors" />
+          </button>
+        )}
 
         {/* ردیف کروسل استوری‌های دایره‌ای با قابلیت لمسی/سوایپ و درگ روی تمامی دستگاه‌ها */}
         <div
@@ -182,14 +184,16 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
         </div>
 
         {/* دکمه فلش سمت چپ دسکتاپ (بدون بک‌گراند گرد - فقط آیکون خالی) */}
-        <button
-          type="button"
-          onClick={() => handleScroll('left')}
-          aria-label="اسکرول به چپ"
-          className="hidden md:flex items-center justify-center text-[#333333] hover:text-[#b08c57] shrink-0 transition-colors cursor-pointer z-10 p-1.5"
-        >
-          <ChevronLeft className="w-5 h-5 text-[#333333] hover:text-[#b08c57] transition-colors" />
-        </button>
+        {stories.length > 10 && (
+          <button
+            type="button"
+            onClick={() => handleScroll('left')}
+            aria-label="اسکرول به چپ"
+            className="hidden md:flex items-center justify-center text-[#333333] hover:text-[#b08c57] shrink-0 transition-colors cursor-pointer z-10 p-1.5"
+          >
+            <ChevronLeft className="w-5 h-5 text-[#333333] hover:text-[#b08c57] transition-colors" />
+          </button>
+        )}
       </div>
     </section>
   );

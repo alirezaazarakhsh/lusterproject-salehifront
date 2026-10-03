@@ -2,26 +2,103 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { HeroTitleOrnament } from '../Ornaments';
 import { GENERATED_IMAGES } from '../../data/chandelierData';
 
+export interface HeroSlideConfig {
+  id: string;
+  imageUrl: string;
+  titleLine1?: string;
+  titleLine2?: string;
+  description?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+}
+
+export interface HeroSliderSettingsConfig {
+  titleLine1?: string;
+  titleLine2?: string;
+  description?: string;
+  buttonText?: string;
+  buttonUrl?: string;
+  slides: HeroSlideConfig[];
+}
+
+export const INITIAL_HERO_SLIDER_SETTINGS: HeroSliderSettingsConfig = {
+  slides: [
+    {
+      id: 'hero-1',
+      imageUrl: GENERATED_IMAGES.projectRoyalRestaurant,
+      titleLine1: 'با شکوهی ماندگار فضای',
+      titleLine2: 'زندگی‌تان را ارتقا دهید...',
+      description:
+        'مجموعه‌ای برگزیده از لوسترهای لوکس برای سبک زندگی مدرن را کشف کنید.',
+      buttonText: 'محصولات کلکسیون',
+      buttonUrl: '#collection-salehi',
+    },
+    {
+      id: 'hero-2',
+      imageUrl: GENERATED_IMAGES.projectFereshteh,
+      titleLine1: 'اصالت هنر ایرانی در عمارت فرشته',
+      titleLine2: 'طراحی اختصاصی و سفارشی',
+      description: 'لوسترهای دست‌ساز برنزی و کریستال‌های مرغوب اتریشی.',
+      buttonText: 'پروژه‌های اجرایی',
+      buttonUrl: '#projects-salehi',
+    },
+    {
+      id: 'hero-3',
+      imageUrl: GENERATED_IMAGES.heroBanner,
+      titleLine1: 'درخشش کریستال‌های ۱۰۰٪ اصیل',
+      titleLine2: 'ضمانت کتبی ثبات رنگ و کیفیت',
+      description:
+        'تولید شده در کارگاه مرکزی لوستر صالحی با نیم قرن سابقه درخشان.',
+      buttonText: 'دانلود کاتالوگ محصولات',
+      buttonUrl: '#catalog-pdf',
+    },
+    {
+      id: 'hero-4',
+      imageUrl: GENERATED_IMAGES.projectLobbyHotel,
+      titleLine1: 'شکوه و جلوه ماندگار لابی',
+      titleLine2: 'برای هتل‌ها و مجتمع‌های فاخر',
+      description: 'مشاوره و ساخت انحصاری لوسترهای غول‌پیکر لابی و دوبلکس.',
+      buttonText: 'مشاوره و پشتیبانی',
+      buttonUrl: 'tel:09120759419',
+    },
+    {
+      id: 'hero-5',
+      imageUrl: GENERATED_IMAGES.projectDuplexVilla,
+      titleLine1: 'کالکشن جدید لوستر و روشنایی',
+      titleLine2: 'ویژه‌ی ویلاها و منازل لوکس',
+      description: 'تنوع بی‌نظیر در مدل‌های سقفی، دیواری و آویز کلاسیک و مدرن.',
+      buttonText: 'خرید اینترنتی',
+      buttonUrl: '#collection-salehi',
+    },
+  ],
+};
+
+interface HeroSectionProps {
+  heroSettings?: HeroSliderSettingsConfig;
+}
+
 /**
  * بخش بنر اصلی (Hero Slider)
  * - در موبایل و تبلت (چه عمودی/portrait چه افقی/landscape): اسلایدر افقی لایه‌ای با کارت‌های کناری (Peek Slider) + نقطه‌های افقی ۵گانه با حرکت نرم
  * - در دسکتاپ بزرگ: بنر عریض ماندگار با انیمیشن نرم Crossfade و نقطه‌های عمودی در سمت چپ
  */
-export const HeroSection: React.FC = () => {
+export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
+  const settings: HeroSliderSettingsConfig = {
+    ...INITIAL_HERO_SLIDER_SETTINGS,
+    ...(heroSettings || {}),
+    slides:
+      heroSettings?.slides && heroSettings.slides.length > 0
+        ? heroSettings.slides
+        : INITIAL_HERO_SLIDER_SETTINGS.slides,
+  };
+
+  const heroImages = settings.slides.map((s) => s.imageUrl);
   const [activeDot, setActiveDot] = useState(2);
   const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isProgrammaticScrollRef = useRef(false);
   const programmaticTimerRef = useRef<number | null>(null);
   const dragStartXRef = useRef<number | null>(null);
-
-  const heroImages = [
-    GENERATED_IMAGES.projectRoyalRestaurant,
-    GENERATED_IMAGES.projectFereshteh,
-    GENERATED_IMAGES.heroBanner,
-    GENERATED_IMAGES.projectLobbyHotel,
-    GENERATED_IMAGES.projectDuplexVilla,
-  ];
 
   // اسکرول نرم و دقیق به اسلاید انتخابی در موبایل/تبلت با محاسبه اختلاف مرکز (سازگار با RTL)
   const scrollToSlide = useCallback((index: number, smooth = true) => {
@@ -166,11 +243,19 @@ export const HeroSection: React.FC = () => {
           className="flex gap-3.5 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth px-[8vw] sm:px-[12vw] py-2 touch-pan-x [&::-webkit-scrollbar]:hidden"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {heroImages.map((imgUrl, idx) => {
+          {settings.slides.map((slide, idx) => {
             const isCurrent = activeDot === idx;
+            const imgUrl = slide.imageUrl;
+            const titleLine1 = slide.titleLine1?.trim();
+            const titleLine2 = slide.titleLine2?.trim();
+            const description = slide.description?.trim();
+            const buttonText = slide.buttonText?.trim();
+            const buttonUrl = slide.buttonUrl?.trim();
+            const hasTitle = Boolean(titleLine1 || titleLine2);
+
             return (
               <div
-                key={`mobile-hero-${idx}`}
+                key={`mobile-hero-${slide.id || idx}`}
                 onClick={() => scrollToSlide(idx, true)}
                 className={`relative w-[84vw] max-w-[640px] shrink-0 snap-center rounded-[24px] sm:rounded-[30px] overflow-hidden h-[270px] xs:h-[300px] sm:h-[350px] bg-[#121110] shadow-[0_12px_36px_rgba(0,0,0,0.18)] flex flex-col justify-between transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
                   isCurrent
@@ -181,7 +266,7 @@ export const HeroSection: React.FC = () => {
                 {/* تصویر پس‌زمینه اسلاید با زوم نرم هنگام فعال شدن */}
                 <img
                   src={imgUrl}
-                  alt="با شکوهی ماندگار فضای زندگی‌تان را ارتقا دهید"
+                  alt={titleLine1 || titleLine2 || 'اسلایدر اصلی لوستر صالحی'}
                   referrerPolicy="no-referrer"
                   className={`absolute inset-0 w-full h-full object-cover object-center transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                     isCurrent ? 'scale-100' : 'scale-110'
@@ -191,63 +276,70 @@ export const HeroSection: React.FC = () => {
                 {/* گرادینت تیره روی تصویر برای خوانایی کامل متن */}
                 <div className="absolute inset-0 bg-gradient-to-l from-black/85 via-black/65 to-black/30" />
 
-                {/* محتوای متن و دکمه اسلاید */}
+                {/* محتوای متن و دکمه اسلاید (در صورت وجود) */}
                 <div
-                  className={`relative z-10 p-4 xs:p-5 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-4 pb-10 pr-5 xs:pr-6 sm:pr-8 pl-3 max-w-[90%] transition-all duration-700 ease-out ${
+                  className={`relative z-10 p-4 xs:p-5 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-4 pb-6 pr-5 xs:pr-6 sm:pr-8 pl-3 max-w-[90%] transition-all duration-700 ease-out ${
                     isCurrent
                       ? 'opacity-100 translate-y-0'
                       : 'opacity-80 translate-y-1'
                   }`}
                 >
-                  <div className="flex items-center justify-start gap-1.5 xs:gap-2 mb-2">
-                    <HeroTitleOrnament flip className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
-                    <h1 className="text-right">
-                      <span className="block text-sm xs:text-base sm:text-lg font-black text-white leading-tight tracking-tight whitespace-nowrap">
-                        با شکوهی ماندگار فضای
-                      </span>
-                      <span className="block text-[11px] xs:text-[12.5px] sm:text-[14px] font-bold text-white/95 mt-0.5 leading-tight whitespace-nowrap">
-                        زندگی‌تان را ارتقا دهید...
-                      </span>
-                    </h1>
-                    <HeroTitleOrnament className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
-                  </div>
+                  {hasTitle && (
+                    <div className="flex items-center justify-start gap-1.5 xs:gap-2 mb-2">
+                      <HeroTitleOrnament flip className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
+                      <h1 className="text-right">
+                        {titleLine1 && (
+                          <span className="block text-sm xs:text-base sm:text-lg font-black text-white leading-tight tracking-tight whitespace-nowrap">
+                            {titleLine1}
+                          </span>
+                        )}
+                        {titleLine2 && (
+                          <span className="block text-[11px] xs:text-[12.5px] sm:text-[14px] font-bold text-white/95 mt-0.5 leading-tight whitespace-nowrap">
+                            {titleLine2}
+                          </span>
+                        )}
+                      </h1>
+                      <HeroTitleOrnament className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
+                    </div>
+                  )}
 
-                  <p className="text-[10px] xs:text-[11px] sm:text-[12.5px] text-[#e5e5e5] font-normal leading-relaxed mt-1 text-right max-w-[95%]">
-                    مجموعه‌ای برگزیده از لوسترهای لوکس برای سبک زندگی مدرن را کشف کنید.
-                  </p>
+                  {description && (
+                    <p className="text-[10px] xs:text-[11px] sm:text-[12.5px] text-[#e5e5e5] font-normal leading-relaxed mt-1 text-right max-w-[95%]">
+                      {description}
+                    </p>
+                  )}
 
-                  <div className="mt-3 sm:mt-4 text-right">
-                    <a
-                      href="#collection-salehi"
-                      className="inline-flex items-center justify-center px-3.5 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 rounded-[10px] sm:rounded-[12px] bg-white hover:bg-[#f5f5f5] text-[#1e1e1e] text-[10.5px] xs:text-[11.5px] sm:text-xs font-bold shadow-md transition-colors whitespace-nowrap"
-                    >
-                      محصولات کلکسیون
-                    </a>
-                  </div>
-                </div>
-
-                {/* نقطه‌های افقی ۵گانه */}
-                <div className="absolute bottom-3 inset-x-0 z-20 flex items-center justify-center gap-2 pointer-events-auto">
-                  {heroImages.map((_, dotIndex) => (
-                    <button
-                      key={`dot-m-${dotIndex}`}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        scrollToSlide(dotIndex, true);
-                      }}
-                      aria-label={`اسلاید ${dotIndex + 1}`}
-                      className={`rounded-full transition-all duration-500 ease-out cursor-pointer ${
-                        activeDot === dotIndex
-                          ? 'w-3 h-3 bg-white shadow-xs scale-105'
-                          : 'w-2 h-2 bg-white/45 hover:bg-white/80'
-                      }`}
-                    />
-                  ))}
+                  {buttonText && (
+                    <div className="mt-3 sm:mt-4 text-right">
+                      <a
+                        href={buttonUrl || '#collection-salehi'}
+                        className="inline-flex items-center justify-center px-3.5 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 rounded-[10px] sm:rounded-[12px] bg-white hover:bg-[#f5f5f5] text-[#1e1e1e] text-[10.5px] xs:text-[11.5px] sm:text-xs font-bold shadow-md transition-colors whitespace-nowrap"
+                      >
+                        {buttonText}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
+        </div>
+
+        {/* نقطه‌های افقی ناوبری موبایل (تنها یک بار در انتهای باکس اسلایدر) */}
+        <div className="flex items-center justify-center gap-2 mt-2.5">
+          {settings.slides.map((_, dotIndex) => (
+            <button
+              key={`dot-m-${dotIndex}`}
+              type="button"
+              onClick={() => scrollToSlide(dotIndex, true)}
+              aria-label={`اسلاید ${dotIndex + 1}`}
+              className={`rounded-full transition-all duration-500 ease-out cursor-pointer ${
+                activeDot === dotIndex
+                  ? 'w-3 h-3 bg-[#b59766] shadow-xs scale-105'
+                  : 'w-2 h-2 bg-[#d8d0c3] hover:bg-[#b59766]'
+              }`}
+            />
+          ))}
         </div>
       </div>
 
@@ -259,13 +351,13 @@ export const HeroSection: React.FC = () => {
       >
         {/* تصاویر پس‌زمینه اسلایدر با انیمیشن نرم Crossfade و زوم/لایه سینمایی */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {heroImages.map((imgUrl, idx) => {
+          {settings.slides.map((slide, idx) => {
             const isSelected = activeDot === idx;
             return (
               <img
-                key={`desktop-hero-slide-${idx}`}
-                src={imgUrl}
-                alt="با شکوهی ماندگار فضای زندگی‌تان را ارتقا دهید"
+                key={`desktop-hero-slide-${slide.id || idx}`}
+                src={slide.imageUrl}
+                alt={slide.titleLine1 || slide.titleLine2 || 'لوستر صالحی'}
                 referrerPolicy="no-referrer"
                 className={`absolute inset-0 w-full h-full object-cover object-left transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] ${
                   isSelected
@@ -282,40 +374,66 @@ export const HeroSection: React.FC = () => {
         {/* گرادینت تیره سمت راست برای کنتراست کامل متن سفید راست‌چین */}
         <div className="absolute inset-0 z-[2] bg-gradient-to-l from-black via-black/80 to-transparent pointer-events-none" />
 
-        {/* بلوک محتوای کاملاً راست‌چین با سایز فونت استاندارد و فوق‌العاده شکیل‌تر دسکتاپ */}
-        <div className="relative z-10 w-full lg:w-[62%] pr-8 lg:pr-14 pl-6 py-12 flex flex-col items-start justify-center text-right">
-          <div className="flex items-center justify-start gap-3">
-            <HeroTitleOrnament flip className="hidden sm:block" />
+        {/* بلوک محتوای کاملاً راست‌چین با سایز فونت استاندارد دسکتاپ */}
+        {(() => {
+          const currentSlide = settings.slides[activeDot] || settings.slides[0];
+          const t1 = currentSlide?.titleLine1?.trim();
+          const t2 = currentSlide?.titleLine2?.trim();
+          const desc = currentSlide?.description?.trim();
+          const bText = currentSlide?.buttonText?.trim();
+          const bUrl = currentSlide?.buttonUrl?.trim();
+          const hasTitle = Boolean(t1 || t2);
 
-            <h1 className="text-right">
-              <span className="block text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-black text-white leading-[1.28] tracking-tight whitespace-nowrap">
-                با شکوهی ماندگار فضای
-              </span>
-              <span className="block text-xl lg:text-[23px] xl:text-[26px] font-extrabold text-white leading-[1.35] mt-1.5 text-right whitespace-nowrap">
-                زندگی‌تان را ارتقا دهید...
-              </span>
-            </h1>
+          if (!hasTitle && !desc && !bText) {
+            return null; // اگر هیچ متنی و دکمه‌ای نیست، کاملاً هیدن می‌شود
+          }
 
-            <HeroTitleOrnament className="hidden sm:block" />
-          </div>
+          return (
+            <div className="relative z-10 w-full lg:w-[62%] pr-8 lg:pr-14 pl-6 py-12 flex flex-col items-start justify-center text-right transition-all duration-500">
+              {hasTitle && (
+                <div className="flex items-center justify-start gap-3">
+                  <HeroTitleOrnament flip className="hidden sm:block" />
 
-          <p className="text-xs sm:text-sm lg:text-[14.5px] text-[#d4d4d4] font-normal leading-7 mt-5 text-right max-w-[85%]">
-            مجموعه ای برگزیده از لوستر های لوکس برای سبک زندگی مدرن را کشف کنید.
-          </p>
+                  <h1 className="text-right">
+                    {t1 && (
+                      <span className="block text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-black text-white leading-[1.28] tracking-tight whitespace-nowrap">
+                        {t1}
+                      </span>
+                    )}
+                    {t2 && (
+                      <span className="block text-xl lg:text-[23px] xl:text-[26px] font-extrabold text-white leading-[1.35] mt-1.5 text-right whitespace-nowrap">
+                        {t2}
+                      </span>
+                    )}
+                  </h1>
 
-          <div className="mt-6 self-start">
-            <a
-              href="#collection-salehi"
-              className="inline-flex items-center justify-center px-6 py-2.5 rounded-[10px] bg-white hover:bg-[#f2f2f2] text-[#222222] text-xs sm:text-[13px] font-semibold shadow-md transition-colors whitespace-nowrap"
-            >
-              محصولات کلکسیون
-            </a>
-          </div>
-        </div>
+                  <HeroTitleOrnament className="hidden sm:block" />
+                </div>
+              )}
+
+              {desc && (
+                <p className="text-xs sm:text-sm lg:text-[14.5px] text-[#d4d4d4] font-normal leading-7 mt-5 text-right max-w-[85%]">
+                  {desc}
+                </p>
+              )}
+
+              {bText && (
+                <div className="mt-6 self-start">
+                  <a
+                    href={bUrl || '#collection-salehi'}
+                    className="inline-flex items-center justify-center px-6 py-2.5 rounded-[10px] bg-white hover:bg-[#f2f2f2] text-[#222222] text-xs sm:text-[13px] font-semibold shadow-md transition-colors whitespace-nowrap"
+                  >
+                    {bText}
+                  </a>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* نقطه‌های عمودی اسلایدر در لبه چپ بنر (دسکتاپ) */}
         <div className="absolute left-5 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2.5">
-          {heroImages.map((_, dotIndex) => {
+          {settings.slides.map((_, dotIndex) => {
             const isSelected = activeDot === dotIndex;
             return (
               <button

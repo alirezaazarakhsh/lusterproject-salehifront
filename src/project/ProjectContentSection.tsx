@@ -32,6 +32,12 @@ export interface ProjectPageItem {
   projectDate?: string;
   initialLikes?: number;
   galleryImages?: string[];
+  chandeliersList?: Array<{
+    name: string;
+    code: string;
+    image: string;
+    desc: string;
+  }>;
 }
 
 interface ProjectCategoryTab {
@@ -672,10 +678,82 @@ export const buildProjectsForTabAndPage = (
   });
 };
 
-const findProjectBySlug = (rawSlug: string | null): ProjectPageItem | null => {
+const findProjectBySlug = (
+  rawSlug: string | null,
+  customProjects?: ExecutedProject[]
+): ProjectPageItem | null => {
   if (!rawSlug) return null;
   const decoded = decodeURIComponent(rawSlug).trim().toLowerCase();
   if (!decoded) return null;
+
+  // ۱. بررسی پروژه‌های ثبت‌شده در دیتابیس سایت با اسلاگ اختصاصی یا شناسه
+  if (customProjects && customProjects.length > 0) {
+    const foundDb = customProjects.find((p) => {
+      const s = (p.slug || '').toLowerCase();
+      const pid = String(p.id).toLowerCase();
+      const pCleanId = pid.replace(/^proj-/, '');
+      const t = (p.title || '').toLowerCase().replace(/\s+/g, '-');
+      return (
+        s === decoded ||
+        pid === decoded ||
+        pCleanId === decoded ||
+        t === decoded
+      );
+    });
+
+    if (foundDb) {
+      let parsedChs: any[] = [];
+      if (Array.isArray((foundDb as any).chandeliersList) && (foundDb as any).chandeliersList.length > 0) {
+        parsedChs = (foundDb as any).chandeliersList;
+      } else if (foundDb.usedChandeliersText) {
+        const tagMatch = foundDb.usedChandeliersText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
+        if (tagMatch) {
+          try {
+            parsedChs = JSON.parse(tagMatch[1]);
+          } catch {}
+        } else {
+          const jsonMatch = foundDb.usedChandeliersText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+          if (jsonMatch) {
+            try {
+              parsedChs = JSON.parse(jsonMatch[0]);
+            } catch {}
+          }
+        }
+      }
+
+      const mainImg =
+        foundDb.mainImage ||
+        foundDb.galleryImages?.[0] ||
+        GENERATED_IMAGES.projectRoyalRestaurant;
+      const gallery =
+        foundDb.galleryImages && foundDb.galleryImages.length > 0
+          ? foundDb.galleryImages
+          : [
+              mainImg,
+              GENERATED_IMAGES.projectLobbyHotel,
+              GENERATED_IMAGES.projectFereshteh,
+              GENERATED_IMAGES.heroBanner,
+            ];
+
+      return {
+        id: foundDb.id,
+        slug: foundDb.slug || `project-${foundDb.id}`,
+        title: foundDb.title,
+        location: foundDb.district || 'تهران، ایران',
+        categoryTab: (foundDb.categoryTab as any) || 'residential',
+        categoryLabel:
+          PROJECT_CATEGORY_TABS.find((t) => t.id === foundDb.categoryTab)
+            ?.label || 'پروژه‌های اجرایی',
+        image: mainImg,
+        description: foundDb.description || DESKTOP_PROJECT_LONG_DESCRIPTION,
+        galleryImages: gallery,
+        projectDate: '۲۵ شهریور ماه ۱۴۰۴',
+        ownerName: 'جناب مهندس علیرضا آذرخش',
+        initialLikes: 7193,
+        chandeliersList: parsedChs,
+      };
+    }
+  }
 
   const tabs: Array<'gov' | 'commercial' | 'mosques' | 'restaurants' | 'residential'> = [
     'gov',
@@ -875,7 +953,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
   // وضعیت صفحه داخلی پروژه (Single Project Page) همراه با همگام‌سازی اسلاگ آدرس (/project/slug)
   const [activeSingleProject, setActiveSingleProject] =
     useState<ProjectPageItem | null>(() =>
-      findProjectBySlug(getCurrentProjectSlug())
+      findProjectBySlug(getCurrentProjectSlug(), projects)
     );
   const [activeGalleryIdx, setActiveGalleryIdx] = useState<number>(0);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
@@ -887,6 +965,17 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
   const [activeTooltipRowId, setActiveTooltipRowId] = useState<string | null>(
     null
   );
+
+  // همگام‌سازی پروژه‌های دیتابیس در صورت تغییر یا رفرش با اسلاگ فعال در URL
+  useEffect(() => {
+    const slugInUrl = getCurrentProjectSlug();
+    if (slugInUrl && projects && projects.length > 0) {
+      const found = findProjectBySlug(slugInUrl, projects);
+      if (found) {
+        setActiveSingleProject(found);
+      }
+    }
+  }, [projects]);
 
   // وضعیت لایت‌باکس تمام‌صفحه عکس و ویدیو (مطابق عکس ۶، ۷ و ۱۴)
   const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
@@ -903,7 +992,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
         setActiveSingleProject(null);
         setIsLightboxOpen(false);
       } else {
-        setActiveSingleProject(findProjectBySlug(slugInUrl));
+        setActiveSingleProject(findProjectBySlug(slugInUrl, projects));
       }
     };
 
@@ -914,7 +1003,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
         setIsLightboxOpen(false);
       } else {
         setActiveGalleryIdx(0);
-        setActiveSingleProject(findProjectBySlug(nextSlug));
+        setActiveSingleProject(findProjectBySlug(nextSlug, projects));
       }
     };
 
@@ -924,7 +1013,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
       window.removeEventListener('app-route-change', handleResetToGrid);
       window.removeEventListener('app-project-slug-change', handleSlugChange);
     };
-  }, []);
+  }, [projects]);
 
   // انیمیشن نوار پیشرفت ویدیو در زمان پخش در لایت‌باکس
   useEffect(() => {
@@ -935,7 +1024,6 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     return () => window.clearInterval(timer);
   }, [isLightboxOpen, isVideoPlaying]);
 
-  const totalPages = 6;
   const activeTabInfo =
     PROJECT_CATEGORY_TABS.find((t) => t.id === activeTab) ||
     PROJECT_CATEGORY_TABS[0];
@@ -945,38 +1033,60 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
   );
 
   const mappedDbProjects: ProjectPageItem[] = dbProjectsForTab.map(
-    (dbProj, idx) => ({
-      id: dbProj.id,
-      slug:
-        (dbProj as any).slug ||
-        dbProj.id.replace(/^proj-/, '') ||
-        `project-${idx + 1}`,
-      title: dbProj.title,
-      description: dbProj.description,
-      image: dbProj.mainImage || dbProj.galleryImages?.[0] || null,
-      galleryImages:
-        dbProj.galleryImages && dbProj.galleryImages.length > 0
-          ? dbProj.galleryImages
-          : [dbProj.mainImage],
-      categoryTab: activeTab,
-      categoryLabel: activeTabInfo.label,
-      location: dbProj.district || 'تهران، پردیس',
-      projectDate: '۲۵ شهریور ماه ۱۴۰۴',
-      ownerName: 'جناب مهندس علیرضا آذرخش',
-      initialLikes: 7193 + idx * 42,
-    })
+    (dbProj, idx) => {
+      let parsedChs: any[] = [];
+      if (Array.isArray((dbProj as any).chandeliersList) && (dbProj as any).chandeliersList.length > 0) {
+        parsedChs = (dbProj as any).chandeliersList;
+      } else if (dbProj.usedChandeliersText) {
+        const tagMatch = dbProj.usedChandeliersText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
+        if (tagMatch) {
+          try {
+            parsedChs = JSON.parse(tagMatch[1]);
+          } catch {}
+        } else {
+          const jsonMatch = dbProj.usedChandeliersText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+          if (jsonMatch) {
+            try {
+              parsedChs = JSON.parse(jsonMatch[0]);
+            } catch {}
+          }
+        }
+      }
+
+      return {
+        id: dbProj.id,
+        slug:
+          (dbProj as any).slug ||
+          dbProj.id.replace(/^proj-/, '') ||
+          `project-${idx + 1}`,
+        title: dbProj.title,
+        description: dbProj.description,
+        image: dbProj.mainImage || dbProj.galleryImages?.[0] || undefined,
+        galleryImages:
+          dbProj.galleryImages && dbProj.galleryImages.length > 0
+            ? dbProj.galleryImages
+            : [dbProj.mainImage],
+        categoryTab: activeTab,
+        categoryLabel: activeTabInfo.label,
+        location: dbProj.district || 'تهران، پردیس',
+        projectDate: '۲۵ شهریور ماه ۱۴۰۴',
+        ownerName: 'جناب مهندس علیرضا آذرخش',
+        initialLikes: 7193 + idx * 42,
+        chandeliersList: parsedChs,
+      };
+    }
   );
 
-  const fallbackPageProjects = buildProjectsForTabAndPage(
-    activeTab,
-    currentPage
-  );
-  const currentProjects =
+  const allTabProjects =
     mappedDbProjects.length > 0
-      ? currentPage === 1
-        ? mappedDbProjects
-        : fallbackPageProjects
-      : fallbackPageProjects;
+      ? mappedDbProjects
+      : [1, 2, 3, 4, 5, 6].flatMap((p) => buildProjectsForTabAndPage(activeTab, p));
+
+  const totalPages = Math.max(1, Math.ceil(allTabProjects.length / 5));
+  const currentProjects = allTabProjects.slice(
+    (currentPage - 1) * 5,
+    currentPage * 5
+  );
   const isTabEmpty = currentProjects.length === 0;
 
   const handleBackToProjectsList = () => {
@@ -1026,6 +1136,25 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     const currentlyLiked = Boolean(likedMap[project.id]);
     const nextLiked = !currentlyLiked;
     setLikedMap((prev) => ({ ...prev, [project.id]: nextLiked }));
+
+    try {
+      const statsRaw = localStorage.getItem('app_project_likes_stats');
+      const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
+      const key = project.slug || project.id;
+      const baseLikes = 24 + ((project.id.length * 7) % 65);
+      const prevCount = stats[key] ?? baseLikes;
+      const updatedCount = nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1);
+      stats[key] = updatedCount;
+      if (project.id) stats[project.id] = updatedCount;
+      if (project.slug) stats[project.slug] = updatedCount;
+      localStorage.setItem('app_project_likes_stats', JSON.stringify(stats));
+      window.dispatchEvent(
+        new CustomEvent('app-project-liked', {
+          detail: { projectId: project.id, slug: project.slug, count: updatedCount },
+        })
+      );
+    } catch {}
+
     if (onShowToast) {
       if (nextLiked) {
         onShowToast(
@@ -1530,21 +1659,44 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
           </div>
         </div>
 
-        {/* خط جداکننده افقی */}
-        <div className="border-t border-[#ececec] my-8 sm:my-11" />
+        {/* ==================== ۳. بخش «لوستر های استفاده شده در این پروژه» (در صورت عدم انتخاب لوستر، این ویجت کلاً هیدن می‌شود) ==================== */}
+        {Boolean(
+          activeSingleProject?.chandeliersList &&
+          activeSingleProject.chandeliersList.length > 0
+        ) && (
+          <>
+            {/* خط جداکننده افقی */}
+            <div className="border-t border-[#ececec] my-8 sm:my-11" />
 
-        {/* ==================== ۳. بخش «لوستر های استفاده شده در این پروژه» (عکس ۲، ۳، ۸ و ۹) ==================== */}
-        <div>
-          <div className="flex items-center justify-between gap-3 mb-6">
-            <h2 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#1a1a1a] text-right">
-              لوستر های استفاده شده در این پروژه
-            </h2>
-          </div>
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <h2 className="text-[16.5px] sm:text-[19px] font-extrabold text-[#1a1a1a] text-right">
+                  لوستر های استفاده شده در این پروژه
+                </h2>
+              </div>
 
-          {/* لیست افقی تمام‌عرض در دسکتاپ (عکس ۲ و ۳) */}
-          <div className="hidden md:flex flex-col gap-4">
-            {PROJECT_USED_PRODUCTS_LIST.slice(0, 3).map((row) => {
-              const isRowOutOfStock = outOfStockMode || Boolean(row.isOutOfStock);
+              {/* لیست افقی تمام‌عرض در دسکتاپ (عکس ۲ و ۳) */}
+              <div className="hidden md:flex flex-col gap-4">
+                {(activeSingleProject?.chandeliersList || []).map((ch, idx) => ({
+                    id: `used-ch-desktop-${idx}`,
+                    name: ch.name || 'لوستر سفارشی صالحی',
+                    subtitle: ch.desc || 'کلکسیون اختصاصی گالری لوستر اکبر صالحی',
+                    desktopPriceLabel: 'قیمت محصول :',
+                    desktopPriceText: 'استعلام قیمت از گالری',
+                    mobilePriceText: 'استعلام قیمت',
+                    codeText: `به شماره انبار ${ch.code || '۱۲۸۹'}`,
+                    mobileCodeText: ch.code || '۱۲۸۹',
+                    image: ch.image || GENERATED_IMAGES.crystaliCherub,
+                    linkedProduct: {
+                      ...SALEHI_COLLECTION_PRODUCTS[0],
+                      id: `ch-prod-desktop-${idx}`,
+                      name: ch.name || 'لوستر سفارشی صالحی',
+                      image: ch.image || GENERATED_IMAGES.crystaliCherub,
+                      productCode: ch.code || '۱۲۸۹',
+                    },
+                    initialAddedCount: 0,
+                  })).map((row) => {
+              const isRowOutOfStock = outOfStockMode || Boolean((row as any).isOutOfStock);
               const qtyAdded = addedCounts[row.id] || 0;
               const isGoldenAdded = !isRowOutOfStock && qtyAdded > 0;
               const isBtnLoading = loadingDetailBtnId === row.id;
@@ -1683,8 +1835,26 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
             className="flex md:hidden gap-3.5 overflow-x-auto snap-x snap-mandatory pb-3 pt-2 touch-pan-x [&::-webkit-scrollbar]:hidden"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {PROJECT_USED_PRODUCTS_LIST.map((row) => {
-              const isRowOutOfStock = outOfStockMode || Boolean(row.isOutOfStock);
+            {(activeSingleProject?.chandeliersList || []).map((ch, idx) => ({
+                    id: `used-ch-mob-${idx}`,
+                    name: ch.name || 'لوستر سفارشی صالحی',
+                    subtitle: ch.desc || 'کلکسیون اختصاصی گالری لوستر اکبر صالحی',
+                    desktopPriceLabel: 'قیمت محصول :',
+                    desktopPriceText: 'استعلام قیمت از گالری',
+                    mobilePriceText: 'استعلام قیمت',
+                    codeText: `به شماره انبار ${ch.code || '۱۲۸۹'}`,
+                    mobileCodeText: ch.code || '۱۲۸۹',
+                    image: ch.image || GENERATED_IMAGES.crystaliCherub,
+                    linkedProduct: {
+                      ...SALEHI_COLLECTION_PRODUCTS[0],
+                      id: `ch-prod-mob-${idx}`,
+                      name: ch.name || 'لوستر سفارشی صالحی',
+                      image: ch.image || GENERATED_IMAGES.crystaliCherub,
+                      productCode: ch.code || '۱۲۸۹',
+                    },
+                    initialAddedCount: 0,
+                  })).map((row) => {
+              const isRowOutOfStock = outOfStockMode || Boolean((row as any).isOutOfStock);
               const qtyAdded = addedCounts[row.id] || 0;
               const isGoldenAdded = !isRowOutOfStock && qtyAdded > 0;
               const showPinkTooltip =
@@ -1786,6 +1956,8 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
             })}
           </div>
         </div>
+      </>
+    )}
 
         {/* ==================== ۴. لایت‌باکس تمام‌صفحه عکس و ویدیو پروژه (با دکمه‌های چپ و راست بیرون از عکس و تغییر نرم اسلایدها) ==================== */}
         {isLightboxOpen && (

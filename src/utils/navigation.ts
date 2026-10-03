@@ -347,6 +347,13 @@ export const navigateToProductCategory = (
 };
 
 export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
+  if (route === 'project' && hashAnchor) {
+    const cleanSlug = hashAnchor.replace(/^[#/]*(?:project|projects)\/?/i, '');
+    if (cleanSlug) {
+      return navigateToProjectSlug(cleanSlug);
+    }
+  }
+
   let resolvedRoute: AppRoute = route;
   const normalizedHash = hashAnchor ? hashAnchor.toLowerCase().trim() : '';
 

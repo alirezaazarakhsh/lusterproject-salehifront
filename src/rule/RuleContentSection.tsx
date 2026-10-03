@@ -51,29 +51,39 @@ const RULE_FAQ_ITEMS: RuleFaqItem[] = [
   },
 ];
 
+interface RuleContentSectionProps {
+  faqSettings?: any;
+}
+
 /**
  * بخش محتوای میانی صفحه قوانین و مقررات (/rule)
  * دقیقاً مطابق طرح دسکتاپ و موبایل و حالت باز شدن آکاردئون (Screenshot 2026-09-30 at 23.50.37.png)
  */
-export const RuleContentSection: React.FC = () => {
-  const [openFaqId, setOpenFaqId] = useState<number | null>(null);
+export const RuleContentSection = ({ faqSettings = { faqs: { about: [], rules: [] } } }: RuleContentSectionProps) => {
+  const [openFaqId, setOpenFaqId] = useState<number | string | null>(null);
   const [showMoreMobileFaq, setShowMoreMobileFaq] = useState(false);
 
-  const toggleFaq = (id: number) => {
+  const effectiveRuleFaqs = faqSettings?.faqs?.rules || [];
+
+  const toggleFaq = (id: number | string) => {
     setOpenFaqId((prev) => (prev === id ? null : id));
   };
 
-  const rightColumnFaqs = RULE_FAQ_ITEMS.slice(0, 4);
-  const leftColumnFaqs = RULE_FAQ_ITEMS.slice(4, 8);
+  const rightColumnFaqs = effectiveRuleFaqs.slice(0, Math.ceil(effectiveRuleFaqs.length / 2));
+  const leftColumnFaqs = effectiveRuleFaqs.slice(Math.ceil(effectiveRuleFaqs.length / 2));
   const mobileVisibleFaqs = showMoreMobileFaq
-    ? RULE_FAQ_ITEMS
-    : RULE_FAQ_ITEMS.slice(0, 4);
+    ? effectiveRuleFaqs
+    : effectiveRuleFaqs.slice(0, 4);
 
-  const renderFaqAccordionRow = (item: RuleFaqItem) => {
+  const toPersianDigits = (val: string | number): string =>
+    String(val).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+
+  const renderFaqAccordionRow = (item: any, idx: number) => {
     const isOpen = openFaqId === item.id;
+    const itemNumFa = toPersianDigits(idx + 1);
     return (
       <div
-        key={item.id}
+        key={item.id || idx}
         className="border-b border-[#eaeaea] py-4.5 sm:py-5 transition-all"
       >
         <div className="flex items-stretch gap-3.5 sm:gap-4">
@@ -88,7 +98,7 @@ export const RuleContentSection: React.FC = () => {
                   : 'border border-[#e5e5e5] bg-white text-[#1e1e1e] shadow-[0_1px_2px_rgba(0,0,0,0.02)]'
               }`}
             >
-              {item.numFa}
+              {itemNumFa}
             </button>
 
             {isOpen && (
@@ -126,20 +136,7 @@ export const RuleContentSection: React.FC = () => {
             {isOpen && (
               <div className="pt-2.5 pb-1 text-[13.5px] sm:text-[14.5px] lg:text-[15px] leading-[2.2] text-[#666666] text-justify space-y-4">
                 <p style={{ textAlignLast: 'right' }}>
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با
-                  استفاده از طراحان گرافیک است. لورم ایپسوم لورم ایپسوم متن
-                  ساختگی با تولید سادگی نامفهوم از صنعت چاپ است لورم ایپسوم متن
-                  ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده میباشد.
-                </p>
-                <p style={{ textAlignLast: 'right' }}>
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با
-                  استفاده از{' '}
-                  <span className="text-[#b08c57] font-medium">
-                    اطلاعات بیشتر
-                  </span>{' '}
-                  است.
+                  {item.answer}
                 </p>
               </div>
             )}
@@ -264,26 +261,30 @@ export const RuleContentSection: React.FC = () => {
       </section>
 
       {/* ==================== ۳. لیست سوالات متداول شماره‌دار در پایین صفحه ==================== */}
-      <section className="mt-10 sm:mt-14">
-        {/* حالت دسکتاپ: دو ستونه (ستون راست ۱ تا ۴، ستون چپ ۵ تا ۸) */}
-        <div className="hidden md:grid md:grid-cols-2 md:gap-x-12 lg:gap-x-16">
-          <div>{rightColumnFaqs.map(renderFaqAccordionRow)}</div>
-          <div>{leftColumnFaqs.map(renderFaqAccordionRow)}</div>
-        </div>
+      {effectiveRuleFaqs.length > 0 && (
+        <section className="mt-10 sm:mt-14">
+          {/* حالت دسکتاپ: دو ستونه (ستون راست ۱ تا ۴، ستون چپ ۵ تا ۸) */}
+          <div className="hidden md:grid md:grid-cols-2 md:gap-x-12 lg:gap-x-16">
+            <div>{rightColumnFaqs.map((item: any, idx: number) => renderFaqAccordionRow(item, idx))}</div>
+            <div>{leftColumnFaqs.map((item: any, idx: number) => renderFaqAccordionRow(item, idx + rightColumnFaqs.length))}</div>
+          </div>
 
-        {/* حالت موبایل: تک ستونه (۱ تا ۴ به صورت پیش‌فرض + دکمه «نمایش سوالات بیشتر») */}
-        <div className="block md:hidden">
-          <div>{mobileVisibleFaqs.map(renderFaqAccordionRow)}</div>
+          {/* حالت موبایل: تک ستونه (۱ تا ۴ به صورت پیش‌فرض + دکمه «نمایش سوالات بیشتر») */}
+          <div className="block md:hidden">
+            <div>{mobileVisibleFaqs.map((item: any, idx: number) => renderFaqAccordionRow(item, idx))}</div>
 
-          <button
-            type="button"
-            onClick={() => setShowMoreMobileFaq((prev) => !prev)}
-            className="mt-7 mx-auto block text-[14.5px] font-medium text-[#8e8e8e] hover:text-[#1e1e1e] transition-colors cursor-pointer"
-          >
-            {showMoreMobileFaq ? 'بستن سوالات بیشتر' : 'نمایش سوالات بیشتر'}
-          </button>
-        </div>
-      </section>
+            {effectiveRuleFaqs.length > 4 && (
+              <button
+                type="button"
+                onClick={() => setShowMoreMobileFaq((prev) => !prev)}
+                className="mt-7 mx-auto block text-[14.5px] font-medium text-[#8e8e8e] hover:text-[#1e1e1e] transition-colors cursor-pointer"
+              >
+                {showMoreMobileFaq ? 'بستن سوالات بیشتر' : 'نمایش سوالات بیشتر'}
+              </button>
+            )}
+          </div>
+        </section>
+      )}
     </main>
   );
 };

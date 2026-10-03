@@ -7,6 +7,18 @@ export default defineConfig(() => {
   return {
     appType: 'spa' as const,
     plugins: [react(), tailwindcss()],
+    esbuild: {
+      sourcemap: false,
+    },
+    css: {
+      devSourcemap: false,
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        minify: true,
+        sourcemap: false,
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

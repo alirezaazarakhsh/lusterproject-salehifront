@@ -27,8 +27,19 @@ import {
   Settings,
   Save,
   Upload,
+  ArrowUp,
+  ArrowDown,
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  Image,
+  Search,
+  Heart,
+  ExternalLink,
 } from 'lucide-react';
-import { navigateToRoute } from '../utils/navigation';
+import { navigateToRoute, navigateToProjectSlug } from '../utils/navigation';
 import { GENERATED_IMAGES } from '../data/chandelierData';
 import {
   FooterSettingsConfig,
@@ -39,8 +50,19 @@ import {
   INITIAL_CONTACT_US_SETTINGS,
 } from '../contact-us';
 import {
+  AboutUsSettingsConfig,
+  INITIAL_ABOUT_US_SETTINGS,
+} from '../about-us/AboutUsContentSection';
+import {
+  HeroSliderSettingsConfig,
+  INITIAL_HERO_SLIDER_SETTINGS,
+} from '../components/sections/HeroSection';
+import {
   apiFetchWithFallback,
   normalizeAdminPhoneClient,
+  INITIAL_MAIN_SETTINGS,
+  INITIAL_SMS_SETTINGS,
+  INITIAL_FAQ_SETTINGS,
 } from '../utils/localBackendFallback';
 
 interface AdminPanelSectionProps {
@@ -62,8 +84,8 @@ type AdminTab =
 type WebsiteSettingsSubTab =
   | 'main'
   | 'sms'
-  | 'general_settings'
   | 'faq'
+  | 'hero_slider'
   | 'about'
   | 'contact'
   | 'footer';
@@ -132,9 +154,9 @@ const ALL_ADMIN_PERMISSION_ITEMS: { id: AdminTab; label: string; desc: string }[
 const WEBSITE_SETTINGS_SUBTABS: { id: WebsiteSettingsSubTab; label: string }[] = [
   { id: 'main', label: 'تب تنظیمات اصلی' },
   { id: 'sms', label: 'تب تنظیمات پنل پیامک' },
-  { id: 'general_settings', label: 'تب تنظیمات' },
   { id: 'faq', label: 'تب تنظیمات سوالات متداول صفحات' },
-  { id: 'about', label: 'تب تنظیم صفحه درباره ما' },
+  { id: 'hero_slider', label: 'تب تنظیم اسلایدر سایت' },
+  { id: 'about', label: 'تب تنظیم صفحه در باره ما' },
   { id: 'contact', label: 'تب تنظیم صفحه تماس با ما' },
   { id: 'footer', label: 'تب تنظیم فوتر سایت' },
 ];
@@ -146,11 +168,11 @@ const PRESET_PRODUCT_IMAGES = [
   { label: 'لوستر طبقاتی شاه ملکه', url: GENERATED_IMAGES.shahMalakeh },
   { label: 'لوستر ریستانی آنتیک', url: GENERATED_IMAGES.ristani },
   { label: 'لوستر کریستالی طلایی', url: GENERATED_IMAGES.crystaliGold },
-  { label: 'آینه و کنسول سلطنتی', url: GENERATED_IMAGES.catMirror },
-  { label: 'شمعدانی لاله عباسی', url: GENERATED_IMAGES.catShamdooni },
-  { label: 'لاله و استکانی کریستال', url: GENERATED_IMAGES.catLaleh },
-  { label: 'ساعت دیواری سلطنتی', url: GENERATED_IMAGES.catClock },
-  { label: 'دیوارکوب کلاسیک', url: GENERATED_IMAGES.catWallSconce },
+  { label: 'آینه و کنسول سلطنتی', url: GENERATED_IMAGES.ristani },
+  { label: 'شمعدانی لاله عباسی', url: GENERATED_IMAGES.resansRoses },
+  { label: 'لاله و استکانی کریستال', url: GENERATED_IMAGES.crystaliGold },
+  { label: 'ساعت دیواری سلطنتی', url: GENERATED_IMAGES.shakheh12 },
+  { label: 'دیوارکوب کلاسیک', url: GENERATED_IMAGES.crystaliCherub },
 ];
 
 const PRESET_PROJECT_IMAGES = [
@@ -158,6 +180,31 @@ const PRESET_PROJECT_IMAGES = [
   { label: 'پروژه لابی هتل اسپیناس', url: GENERATED_IMAGES.projectLobbyHotel },
   { label: 'پروژه ویلای دوبلکس لواسان', url: GENERATED_IMAGES.projectDuplexVilla },
   { label: 'پروژه رستوران رویال زعفرانیه', url: GENERATED_IMAGES.projectRoyalRestaurant },
+];
+
+const PRESET_ABOUT_GALLERY_IMAGES = [
+  {
+    label: 'شوروم تالاری لوستر صالحی',
+    url: 'https://images.unsplash.com/photo-1543198126-a8ad8e47fb22?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    label: 'آتلیه و کارگاه طراحی مرکزی',
+    url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80',
+  },
+  {
+    label: 'عمارت فرشته و لوسترهای سلطنتی',
+    url: GENERATED_IMAGES.projectFereshteh,
+  },
+  {
+    label: 'راه‌پله دوبلکس و لوستر آبشاری',
+    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop&q=80',
+  },
+  { label: 'ویلای مدرن لواسان', url: GENERATED_IMAGES.projectDuplexVilla },
+  { label: 'تالار کاخ زمردی', url: GENERATED_IMAGES.projectRoyalRestaurant },
+  { label: 'لابی هتل مجلل', url: GENERATED_IMAGES.projectLobbyHotel },
+  { label: 'لوستر طبقاتی شاه ملکه', url: GENERATED_IMAGES.shahMalakeh },
+  { label: 'لوستر کریستالی طرح فرشته', url: GENERATED_IMAGES.crystaliCherub },
+  { label: 'لوستر رسانس رز سرامیکی', url: GENERATED_IMAGES.resansRoses },
 ];
 
 const PRESET_STORY_MAIN_IMAGES = [
@@ -215,8 +262,8 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   });
 
   // فرم ورود با شماره موبایل و رمز عبور
-  const [loginPhone, setLoginPhone] = useState<string>('09120759419');
-  const [loginPassword, setLoginPassword] = useState<string>('sasha9419');
+  const [loginPhone, setLoginPhone] = useState<string>('');
+  const [loginPassword, setLoginPassword] = useState<string>('');
   const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
   const [isSubmittingLogin, setIsSubmittingLogin] = useState<boolean>(false);
   const [authChecking, setAuthChecking] = useState<boolean>(true);
@@ -321,13 +368,14 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     title: '',
     slug: '',
     countLabel: '۱۲ محصول',
-    image: GENERATED_IMAGES.catChandelier,
+    image: GENERATED_IMAGES.shahMalakeh,
   });
 
   // ۴. فرم پروژه اجرایی
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
   const [projectForm, setProjectForm] = useState({
     title: '',
+    slug: '',
     categoryTab: 'residential',
     district: 'تهران، الهیه',
     sampleCode: 'نمونه ۱',
@@ -335,7 +383,39 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     usedChandeliersText:
       'استفاده از لوسترهای سفارشی کلکسیون صالحی متناسب با ارتفاع سقف و معماری کلاسیک فضا.',
     mainImage: GENERATED_IMAGES.projectFereshteh,
+    chandeliersList: [] as Array<{
+      name: string;
+      code: string;
+      image: string;
+      desc: string;
+    }>,
   });
+
+  // صفحه‌بندی پروژه‌ها و آمار لایک‌ها در پنل ادمین
+  const [adminProjectsPage, setAdminProjectsPage] = useState<number>(1);
+  const [projectLikesMap, setProjectLikesMap] = useState<Record<string, number>>(() => {
+    try {
+      const raw = localStorage.getItem('app_project_likes_stats');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // وضعیت فیلد سرچ محصولات برای لوسترها
+  const [chandelierSearchQueries, setChandelierSearchQueries] = useState<Record<number, string>>({});
+  const [activeChandelierSearchIdx, setActiveChandelierSearchIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleLikesUpdated = () => {
+      try {
+        const raw = localStorage.getItem('app_project_likes_stats');
+        if (raw) setProjectLikesMap(JSON.parse(raw));
+      } catch {}
+    };
+    window.addEventListener('app-project-liked', handleLikesUpdated);
+    return () => window.removeEventListener('app-project-liked', handleLikesUpdated);
+  }, []);
 
   // ۵. فرم استوری بالای سایت (دسته‌بندی استوری با امکان افزودن تا ۱۰ استوری با تایپ‌های مختلف در هر دسته‌بندی)
   const [editingStoryId, setEditingStoryId] = useState<number | null>(null);
@@ -485,6 +565,67 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const moveMenuUp = (idx: number) => {
+    if (idx === 0) return;
+    const nextMenus = [...(mainSettingsForm.headerMenus || [])];
+    const temp = nextMenus[idx];
+    nextMenus[idx] = nextMenus[idx - 1];
+    nextMenus[idx - 1] = temp;
+    setMainSettingsForm({ ...mainSettingsForm, headerMenus: nextMenus });
+  };
+
+  const moveMenuDown = (idx: number) => {
+    if (idx === (mainSettingsForm.headerMenus || []).length - 1) return;
+    const nextMenus = [...(mainSettingsForm.headerMenus || [])];
+    const temp = nextMenus[idx];
+    nextMenus[idx] = nextMenus[idx + 1];
+    nextMenus[idx + 1] = temp;
+    setMainSettingsForm({ ...mainSettingsForm, headerMenus: nextMenus });
+  };
+
+  const deleteMenu = (idx: number) => {
+    const nextMenus = (mainSettingsForm.headerMenus || []).filter((_: any, i: number) => i !== idx);
+    setMainSettingsForm({ ...mainSettingsForm, headerMenus: nextMenus });
+  };
+
+  const addMainMenu = () => {
+    const newItem = {
+      id: `menu-custom-${Date.now()}`,
+      label: 'منوی جدید',
+      href: '#',
+      submenuItems: []
+    };
+    setMainSettingsForm({
+      ...mainSettingsForm,
+      headerMenus: [...(mainSettingsForm.headerMenus || []), newItem]
+    });
+  };
+
+  const addSubmenuItem = (menuIdx: number) => {
+    const nextMenus = [...(mainSettingsForm.headerMenus || [])];
+    const subItems = nextMenus[menuIdx].submenuItems ? [...nextMenus[menuIdx].submenuItems] : [];
+    subItems.push({
+      id: `sub-custom-${Date.now()}`,
+      label: 'زیرمنوی جدید',
+      href: '#'
+    });
+    nextMenus[menuIdx] = {
+      ...nextMenus[menuIdx],
+      submenuItems: subItems
+    };
+    setMainSettingsForm({ ...mainSettingsForm, headerMenus: nextMenus });
+  };
+
+  const deleteSubmenuItem = (menuIdx: number, subIdx: number) => {
+    const nextMenus = [...(mainSettingsForm.headerMenus || [])];
+    const subItems = nextMenus[menuIdx].submenuItems.filter((_: any, i: number) => i !== subIdx);
+    nextMenus[menuIdx] = {
+      ...nextMenus[menuIdx],
+      submenuItems: subItems
+    };
+    setMainSettingsForm({ ...mainSettingsForm, headerMenus: nextMenus });
+  };
+
   // ۶. فرم مقاله مجله
   const [editingArticleId, setEditingArticleId] = useState<number | null>(null);
   const [articleForm, setArticleForm] = useState({
@@ -518,6 +659,30 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     useState<ContactUsSettingsConfig>(INITIAL_CONTACT_US_SETTINGS);
   const [isSavingContactUsSettings, setIsSavingContactUsSettings] =
     useState<boolean>(false);
+
+  // تنظیمات صفحه درباره ما (تب تنظیم صفحه درباره ما)
+  const [aboutUsSettingsForm, setAboutUsSettingsForm] =
+    useState<AboutUsSettingsConfig>(INITIAL_ABOUT_US_SETTINGS);
+  const [isSavingAboutUsSettings, setIsSavingAboutUsSettings] =
+    useState<boolean>(false);
+
+  // تنظیمات اسلایدر بنر اصلی سایت (تب تنظیم اسلایدر سایت)
+  const [heroSliderSettingsForm, setHeroSliderSettingsForm] =
+    useState<HeroSliderSettingsConfig>(INITIAL_HERO_SLIDER_SETTINGS);
+  const [isSavingHeroSliderSettings, setIsSavingHeroSliderSettings] =
+    useState<boolean>(false);
+
+  // تنظیمات اصلی سایت
+  const [mainSettingsForm, setMainSettingsForm] = useState<any>(INITIAL_MAIN_SETTINGS);
+  const [isSavingMainSettings, setIsSavingMainSettings] = useState<boolean>(false);
+
+  // تنظیمات پنل پیامک
+  const [smsSettingsForm, setSmsSettingsForm] = useState<any>(INITIAL_SMS_SETTINGS);
+  const [isSavingSmsSettings, setIsSavingSmsSettings] = useState<boolean>(false);
+
+  // تنظیمات سوالات متداول صفحات
+  const [faqSettingsForm, setFaqSettingsForm] = useState<any>(INITIAL_FAQ_SETTINGS);
+  const [isSavingFaqSettings, setIsSavingFaqSettings] = useState<boolean>(false);
 
   // ۸. فرم سفارش مشتریان
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
@@ -565,6 +730,11 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         ordersRes,
         footerSettingsRes,
         contactUsSettingsRes,
+        aboutUsSettingsRes,
+        heroSliderSettingsRes,
+        mainSettingsRes,
+        smsSettingsRes,
+        faqSettingsRes,
       ] = await Promise.all([
         authFetch('/api/admin/dashboard'),
         authFetch('/api/admin/users'),
@@ -580,6 +750,21 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         ),
         authFetch('/api/admin/settings/contact-us').catch(
           () => INITIAL_CONTACT_US_SETTINGS
+        ),
+        authFetch('/api/admin/settings/about-us').catch(
+          () => INITIAL_ABOUT_US_SETTINGS
+        ),
+        authFetch('/api/admin/settings/hero-slider').catch(
+          () => INITIAL_HERO_SLIDER_SETTINGS
+        ),
+        authFetch('/api/admin/settings/main').catch(
+          () => INITIAL_MAIN_SETTINGS
+        ),
+        authFetch('/api/admin/settings/sms').catch(
+          () => INITIAL_SMS_SETTINGS
+        ),
+        authFetch('/api/admin/settings/faq').catch(
+          () => INITIAL_FAQ_SETTINGS
         ),
       ]);
 
@@ -622,6 +807,46 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
             contactUsSettingsRes.branchPhones.length > 0
               ? contactUsSettingsRes.branchPhones
               : INITIAL_CONTACT_US_SETTINGS.branchPhones,
+        });
+      }
+      if (aboutUsSettingsRes) {
+        setAboutUsSettingsForm({
+          ...INITIAL_ABOUT_US_SETTINGS,
+          ...aboutUsSettingsRes,
+          galleryImages:
+            Array.isArray(aboutUsSettingsRes.galleryImages) &&
+            aboutUsSettingsRes.galleryImages.length > 0
+              ? aboutUsSettingsRes.galleryImages
+              : INITIAL_ABOUT_US_SETTINGS.galleryImages,
+        });
+      }
+      if (heroSliderSettingsRes) {
+        setHeroSliderSettingsForm({
+          ...INITIAL_HERO_SLIDER_SETTINGS,
+          ...heroSliderSettingsRes,
+          slides:
+            Array.isArray(heroSliderSettingsRes.slides) &&
+            heroSliderSettingsRes.slides.length > 0
+              ? heroSliderSettingsRes.slides
+              : INITIAL_HERO_SLIDER_SETTINGS.slides,
+        });
+      }
+      if (mainSettingsRes) {
+        setMainSettingsForm({
+          ...INITIAL_MAIN_SETTINGS,
+          ...mainSettingsRes,
+        });
+      }
+      if (smsSettingsRes) {
+        setSmsSettingsForm({
+          ...INITIAL_SMS_SETTINGS,
+          ...smsSettingsRes,
+        });
+      }
+      if (faqSettingsRes) {
+        setFaqSettingsForm({
+          ...INITIAL_FAQ_SETTINGS,
+          ...faqSettingsRes,
         });
       }
     } catch (err: any) {
@@ -1058,7 +1283,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         title: '',
         slug: '',
         countLabel: '۱۲ محصول',
-        image: GENERATED_IMAGES.catChandelier,
+        image: GENERATED_IMAGES.shahMalakeh,
       });
       await loadAllAdminData();
       onCatalogUpdated?.();
@@ -1086,8 +1311,26 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       return;
     }
     try {
+      const cleanDescText = projectForm.usedChandeliersText
+        .replace(/<!--CHANDELIERS_DATA-->[\s\S]*?<!--\/CHANDELIERS_DATA-->/g, '')
+        .replace(/(\n|^)\s*\[\s*\{[\s\S]*\}\s*\]\s*$/g, '')
+        .trim();
+
+      const finalUsedText =
+        projectForm.chandeliersList && projectForm.chandeliersList.length > 0
+          ? `${cleanDescText}\n<!--CHANDELIERS_DATA-->${JSON.stringify(projectForm.chandeliersList)}<!--/CHANDELIERS_DATA-->\n${JSON.stringify(projectForm.chandeliersList)}`
+          : cleanDescText;
+
+      const finalSlug = projectForm.slug.trim()
+        ? projectForm.slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-')
+        : projectForm.title.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u0600-\u06FF_-]/g, '') ||
+          `project-${Date.now()}`;
+
       const payload = {
         ...projectForm,
+        slug: finalSlug,
+        usedChandeliersText: finalUsedText,
+        chandeliersList: projectForm.chandeliersList,
         galleryImages: [
           projectForm.mainImage,
           GENERATED_IMAGES.projectLobbyHotel,
@@ -1113,6 +1356,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       setEditingProjectId(null);
       setProjectForm({
         title: '',
+        slug: '',
         categoryTab: 'residential',
         district: 'تهران، الهیه',
         sampleCode: 'نمونه ۱',
@@ -1120,6 +1364,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         usedChandeliersText:
           'استفاده از لوسترهای سفارشی کلکسیون صالحی متناسب با ارتفاع سقف و معماری کلاسیک فضا.',
         mainImage: GENERATED_IMAGES.projectFereshteh,
+        chandeliersList: [],
       });
       await loadAllAdminData();
       onCatalogUpdated?.();
@@ -1555,10 +1800,10 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
               </div>
               <div>
                 <span className="block text-base font-black text-white tracking-tight">
-                  گالری و کارخانه لوستر اکبر صالحی
+                  سیستم cms لوستر صالحی
                 </span>
                 <span className="block text-xs text-[#cbb894] mt-0.5">
-                  سامانه یکپارچه مدیریت محتوا و دیتابیس PostgreSQL
+                  سامانه یکپارچه مدیریت محتوا
                 </span>
               </div>
             </div>
@@ -1575,45 +1820,9 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
           {/* متن میانی و آمار اتصال دیتابیس */}
           <div className="relative z-10 max-w-xl space-y-6 my-auto">
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-[#dfc18d]">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>متصل به هسته مرکزی PostgreSQL و Express API</span>
-            </div>
             <h2 className="text-3xl xl:text-4xl font-black text-white leading-[1.45]">
               مدیریت مستقیم کلکسیون‌ها، پروژه‌های اجرایی و سفارشات مشتریان
             </h2>
-            <p className="text-sm text-white/75 leading-7 text-justify">
-              از طریق این درگاه اختصاصی می‌توانید تمامی محصولات، دسته‌بندی‌ها،
-              پروژه‌های اجرایی، استوری‌های تعاملی، مقالات مجله و مدیران سیستم را
-              به‌صورت آنی در دیتابیس ویرایش، حذف یا اضافه نمایید.
-            </p>
-
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/15">
-              <div>
-                <span className="block text-2xl font-black text-[#dfc18d] tabular-nums">
-                  ۸ بخش
-                </span>
-                <span className="block text-xs text-white/70 mt-1">
-                  مدیریت کامل جداول سایت
-                </span>
-              </div>
-              <div>
-                <span className="block text-2xl font-black text-[#dfc18d] tabular-nums">
-                  ۱۰۰٪ زنده
-                </span>
-                <span className="block text-xs text-white/70 mt-1">
-                  بروزرسانی آنی در فروشگاه
-                </span>
-              </div>
-              <div>
-                <span className="block text-2xl font-black text-[#dfc18d] tabular-nums">
-                  PostgreSQL
-                </span>
-                <span className="block text-xs text-white/70 mt-1">
-                  ذخیره‌سازی دائمی و ایمن
-                </span>
-              </div>
-            </div>
           </div>
 
           {/* پانویس پنل بصری */}
@@ -1656,7 +1865,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     required
                     value={loginPhone}
                     onChange={(e) => setLoginPhone(e.target.value)}
-                    placeholder="09120759419"
+                    placeholder="شماره موبایل"
                     className="w-full h-12 rounded-xl border border-[#dcd5c7] bg-white pl-4 pr-11 text-left text-sm font-bold tabular-nums text-[#181818] focus:outline-none focus:border-[#b59766] transition-colors"
                   />
                   <Phone className="w-4 h-4 text-[#8c734b] absolute right-4 top-1/2 -translate-y-1/2" />
@@ -1674,7 +1883,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="رمز عبور"
                     className="w-full h-12 rounded-xl border border-[#dcd5c7] bg-white pl-11 pr-11 text-left text-sm font-bold text-[#181818] focus:outline-none focus:border-[#b59766] transition-colors"
                   />
                   <Lock className="w-4 h-4 text-[#8c734b] absolute right-4 top-1/2 -translate-y-1/2" />
@@ -1693,26 +1902,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                 </div>
               </div>
 
-              {/* باکس جایگذاری سریع اطلاعات ادمین پیش‌فرض */}
-              <div className="p-4 rounded-xl bg-[#f6f1e7] border border-[#e5dac6] flex items-center justify-between gap-3">
-                <div className="text-xs text-[#4d3d24] space-y-1">
-                  <p className="font-bold">اکانت ادمین پیش‌فرض:</p>
-                  <p dir="ltr" className="text-xs font-bold tabular-nums text-right">
-                    09120759419 &nbsp;·&nbsp; sasha9419
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLoginPhone('09120759419');
-                    setLoginPassword('sasha9419');
-                  }}
-                  className="px-3.5 py-2 rounded-lg bg-[#191919] hover:bg-[#b59766] text-white text-[11px] font-bold transition-colors cursor-pointer shrink-0 whitespace-nowrap"
-                >
-                  پر کردن خودکار
-                </button>
-              </div>
-
               <button
                 type="submit"
                 disabled={isSubmittingLogin}
@@ -1722,7 +1911,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                 <span>
                   {isSubmittingLogin
                     ? 'در حال احراز هویت و ورود...'
-                    : 'ورود به میز کار مدیریت'}
+                    : 'ورود امن به میز کار مدیریت'}
                 </span>
               </button>
             </form>
@@ -2294,7 +2483,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                         placeholder={
                           editingAdminId
                             ? 'رمز جدید (خالی = بدون تغییر)'
-                            : 'مثلاً: sasha9419'
+                            : 'رمز عبور ادمین'
                         }
                         className="w-full h-11 rounded-xl border border-[#e0e0e0] pl-9 pr-3.5 text-left text-xs font-bold focus:outline-none focus:border-[#b59766]"
                       />
@@ -2533,11 +2722,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                               <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-[#fbf4e6] text-[#9b7639] border border-[#ead6b3] font-bold">
                                 دسترسی به {admPerms.length.toLocaleString('fa-IR')} بخش
                               </span>
-                              {adm.phone === '09120759419' && (
-                                <span className="text-[10.5px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold">
-                                  ادمین اصلی سیستم
-                                </span>
-                              )}
                             </div>
 
                             <div className="flex flex-wrap items-center gap-4 text-xs text-[#555]">
@@ -2547,7 +2731,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                   dir="ltr"
                                   className="tabular-nums font-bold text-[#111]"
                                 >
-                                  {adm.phone}
+                                  {adm.phone.replace(/(\d{4})\d+(\d{3})/, '$1****$2')}
                                 </strong>
                               </span>
                               <span className="flex items-center gap-1.5">
@@ -2556,27 +2740,8 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                   dir="ltr"
                                   className="tabular-nums font-bold text-[#111]"
                                 >
-                                  {isPasswordShown
-                                    ? adm.password || '••••••••'
-                                    : '••••••••'}
+                                  ••••••••
                                 </strong>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setVisiblePasswordIds((prev) => ({
-                                      ...prev,
-                                      [adm.id]: !prev[adm.id],
-                                    }))
-                                  }
-                                  className="text-[#888] hover:text-[#222] cursor-pointer"
-                                  title="نمایش/مخفی کردن رمز"
-                                >
-                                  {isPasswordShown ? (
-                                    <EyeOff className="w-3.5 h-3.5" />
-                                  ) : (
-                                    <Eye className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
                               </span>
                             </div>
 
@@ -2754,26 +2919,63 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
                       تصویر محصول
                     </label>
-                    <select
-                      value={productForm.image}
-                      onChange={(e) =>
-                        setProductForm({
-                          ...productForm,
-                          image: e.target.value,
-                        })
-                      }
-                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white focus:outline-none focus:border-[#b59766]"
-                    >
-                      {PRESET_PRODUCT_IMAGES.map((img, idx) => (
-                        <option key={idx} value={img.url}>
-                          {img.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={productForm.image}
+                          onChange={(e) =>
+                            setProductForm({
+                              ...productForm,
+                              image: e.target.value,
+                            })
+                          }
+                          className="flex-1 h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white focus:outline-none focus:border-[#b59766]"
+                        >
+                          <option value="">-- انتخاب از تصاویر آماده --</option>
+                          {PRESET_PRODUCT_IMAGES.map((img, idx) => (
+                            <option key={idx} value={img.url}>
+                              {img.label}
+                            </option>
+                          ))}
+                        </select>
+                        <label className="h-11 px-4 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shrink-0 shadow-xs">
+                          <Upload className="w-4 h-4" />
+                          <span>آپلود عکس</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) =>
+                              handleFileUploadToDataUrl(
+                                e.target.files?.[0],
+                                (dataUrl) =>
+                                  setProductForm((prev) => ({
+                                    ...prev,
+                                    image: dataUrl,
+                                  }))
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        dir="ltr"
+                        value={productForm.image}
+                        onChange={(e) =>
+                          setProductForm({
+                            ...productForm,
+                            image: e.target.value,
+                          })
+                        }
+                        placeholder="یا آدرس مستقیم تصویر (URL)..."
+                        className="w-full h-10 rounded-xl border border-[#e0e0e0] px-3.5 text-[11px] text-left tabular-nums focus:outline-none focus:border-[#b59766]"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -2933,7 +3135,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                           title: '',
                           slug: '',
                           countLabel: '۱۲ محصول',
-                          image: GENERATED_IMAGES.catChandelier,
+                          image: GENERATED_IMAGES.shahMalakeh,
                         });
                       }}
                       className="text-xs font-bold text-[#ea1d2c] cursor-pointer"
@@ -2979,22 +3181,47 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     placeholder="برچسب تعداد (مثلاً: ۱۸ محصول)"
                     className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
                   />
-                  <select
-                    value={categoryForm.image}
-                    onChange={(e) =>
-                      setCategoryForm({
-                        ...categoryForm,
-                        image: e.target.value,
-                      })
-                    }
-                    className="h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
-                  >
-                    {PRESET_PRODUCT_IMAGES.map((img, idx) => (
-                      <option key={idx} value={img.url}>
-                        {img.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={categoryForm.image}
+                          onChange={(e) =>
+                            setCategoryForm({
+                              ...categoryForm,
+                              image: e.target.value,
+                            })
+                          }
+                          className="flex-1 h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white focus:outline-none focus:border-[#b59766]"
+                        >
+                          <option value="">-- انتخاب تصویر آماده --</option>
+                          {PRESET_PRODUCT_IMAGES.map((img, idx) => (
+                            <option key={idx} value={img.url}>
+                              {img.label}
+                            </option>
+                          ))}
+                        </select>
+                        <label className="h-11 px-4 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shrink-0 shadow-xs">
+                          <Upload className="w-3.5 h-3.5" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) =>
+                              handleFileUploadToDataUrl(
+                                e.target.files?.[0],
+                                (dataUrl) =>
+                                  setCategoryForm((prev) => ({
+                                    ...prev,
+                                    image: dataUrl,
+                                  }))
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <button
@@ -3043,7 +3270,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                             title: cat.title || '',
                             slug: cat.slug || '',
                             countLabel: cat.countLabel || '۱۲ محصول',
-                            image: cat.image || GENERATED_IMAGES.catChandelier,
+                            image: cat.image || GENERATED_IMAGES.shahMalakeh,
                           });
                         }}
                         className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
@@ -3071,13 +3298,13 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
             <div className="space-y-6">
               <form
                 onSubmit={handleSaveProject}
-                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4"
+                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-5"
               >
                 <div className="flex items-center justify-between border-b border-[#efefef] pb-3">
                   <h2 className="text-base font-black text-[#1e1e1e]">
                     {editingProjectId
-                      ? 'ویرایش پروژه اجرایی در دیتابیس'
-                      : 'ثبت پروژه اجرایی جدید'}
+                      ? 'ویرایش پروژه اجرایی در وب سایت'
+                      : 'ثبت پروژه اجرایی در وب سایت'}
                   </h2>
                   {editingProjectId && (
                     <button
@@ -3090,146 +3317,738 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <input
-                    type="text"
-                    required
-                    value={projectForm.title}
-                    onChange={(e) =>
-                      setProjectForm({ ...projectForm, title: e.target.value })
-                    }
-                    placeholder="عنوان پروژه (مثلاً: پروژه تالار نیاوران)"
-                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
-                  />
-                  <input
-                    type="text"
-                    value={projectForm.district}
-                    onChange={(e) =>
-                      setProjectForm({
-                        ...projectForm,
-                        district: e.target.value,
-                      })
-                    }
-                    placeholder="محله / شهر (مثلاً: فرشته)"
-                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
-                  />
-                  <select
-                    value={projectForm.categoryTab}
-                    onChange={(e) =>
-                      setProjectForm({
-                        ...projectForm,
-                        categoryTab: e.target.value,
-                      })
-                    }
-                    className="h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
-                  >
-                    <option value="gov">ارگان‌های دولتی</option>
-                    <option value="commercial">ارگان‌های تجاری</option>
-                    <option value="mosques">مساجد و حسینیه‌ها</option>
-                    <option value="restaurants">کافه و رستوران‌ها</option>
-                    <option value="residential">منازل مسکونی</option>
-                  </select>
-                  <select
-                    value={projectForm.mainImage}
-                    onChange={(e) =>
-                      setProjectForm({
-                        ...projectForm,
-                        mainImage: e.target.value,
-                      })
-                    }
-                    className="h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
-                  >
-                    {PRESET_PROJECT_IMAGES.map((img, i) => (
-                      <option key={i} value={img.url}>
-                        {img.label}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      عنوان پروژه:
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={projectForm.title}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProjectForm((prev) => ({
+                          ...prev,
+                          title: val,
+                          slug:
+                            !prev.slug || prev.slug.startsWith('project-')
+                              ? val
+                                  .trim()
+                                  .toLowerCase()
+                                  .replace(/\s+/g, '-')
+                                  .replace(/[^a-z0-9\u0600-\u06FF_-]/g, '')
+                              : prev.slug,
+                        }));
+                      }}
+                      placeholder="مثلاً: پروژه تالار نیاوران"
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      منطقه / شهر / مکان:
+                    </label>
+                    <input
+                      type="text"
+                      value={projectForm.district}
+                      onChange={(e) =>
+                        setProjectForm({
+                          ...projectForm,
+                          district: e.target.value,
+                        })
+                      }
+                      placeholder="مثلاً: فرشته، تهران"
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      دسته‌بندی اجرایی:
+                    </label>
+                    <select
+                      value={projectForm.categoryTab}
+                      onChange={(e) =>
+                        setProjectForm({
+                          ...projectForm,
+                          categoryTab: e.target.value,
+                        })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
+                    >
+                      <option value="gov">ارگان‌های دولتی</option>
+                      <option value="commercial">ارگان‌های تجاری</option>
+                      <option value="mosques">مساجد و حسینیه‌ها</option>
+                      <option value="restaurants">کافه و رستوران‌ها</option>
+                      <option value="residential">منازل مسکونی</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      اسلاگ پروژه (شناسه URL):
+                    </label>
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={projectForm.slug}
+                      onChange={(e) =>
+                        setProjectForm({
+                          ...projectForm,
+                          slug: e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9_-]/g, '-'),
+                        })
+                      }
+                      placeholder="niavaran-hall"
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold text-left font-mono"
+                    />
+                    <p className="text-[10px] text-[#888] truncate dir-ltr">
+                      /project/{projectForm.slug || 'slug'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      تصویر اصلی پروژه:
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        dir="ltr"
+                        value={projectForm.mainImage}
+                        onChange={(e) =>
+                          setProjectForm({
+                            ...projectForm,
+                            mainImage: e.target.value,
+                          })
+                        }
+                        placeholder="https://... یا آپلود تصویر"
+                        className="flex-1 h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold text-left"
+                      />
+                      <label className="h-11 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-xs" title="آپلود تصویر از حافظه">
+                        <Upload className="w-4 h-4" />
+                        <span className="hidden sm:inline">آپلود</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) =>
+                            handleFileUploadToDataUrl(
+                              e.target.files?.[0],
+                              (dataUrl) =>
+                                setProjectForm((prev) => ({
+                                  ...prev,
+                                  mainImage: dataUrl,
+                                }))
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    {/* پیش‌نمایش زنده عکس پروژه انتخابی */}
+                    {projectForm.mainImage ? (
+                      <div className="mt-2 relative rounded-xl overflow-hidden border border-[#d5c6ab] bg-[#faf8f4] p-1.5 flex items-center gap-2.5">
+                        <img
+                          src={projectForm.mainImage}
+                          alt="پیش‌نمایش تصویر پروژه"
+                          className="w-16 h-12 rounded-lg object-cover border border-[#e2d8c3] shrink-0 bg-white"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[10px] font-bold text-[#10b981] flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            <span>پیش‌نمایش تصویر پروژه</span>
+                          </span>
+                          <p className="text-[9px] text-[#777] truncate mt-0.5 dir-ltr font-mono">
+                            {projectForm.mainImage.startsWith('data:') ? 'عکس آپلود شده' : projectForm.mainImage}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setProjectForm((prev) => ({ ...prev, mainImage: '' }))}
+                          className="text-[#ea1d2c] hover:bg-[#fde8ea] p-1 rounded-lg cursor-pointer transition-colors"
+                          title="پاک کردن عکس"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-[#999] italic mt-1">
+                        عکسی برای پروژه انتخاب نشده است (یک آدرس وارد یا فایلی آپلود کنید).
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                <textarea
-                  rows={3}
-                  value={projectForm.description}
-                  onChange={(e) =>
-                    setProjectForm({
-                      ...projectForm,
-                      description: e.target.value,
-                    })
-                  }
-                  placeholder="توضیحات کامل اجرای پروژه..."
-                  className="w-full rounded-xl border border-[#e0e0e0] p-3.5 text-xs font-semibold"
-                />
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#333]">
+                    توضیحات کامل اجرای پروژه:
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={projectForm.description}
+                    onChange={(e) =>
+                      setProjectForm({
+                        ...projectForm,
+                        description: e.target.value,
+                      })
+                    }
+                    placeholder="توضیحات کامل اجرای پروژه و نورپردازی..."
+                    className="w-full rounded-xl border border-[#e0e0e0] p-3.5 text-xs font-semibold"
+                  />
+                </div>
+
+                {/* بخش افزودن تعداد بی نهایت لوسترهای به کار رفته در این پروژه */}
+                <div className="p-4 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#ece4d4] pb-2.5">
+                    <div>
+                      <h3 className="text-xs font-black text-[#181818]">
+                        لوسترهای به‌کاررفته در این پروژه (تعداد بی‌نهایت)
+                      </h3>
+                      <p className="text-[11px] text-[#777] mt-0.5">
+                        از طریق سرچبار زیر می‌توانید محصولات سایت را جستجو و پیش‌نمایش آن را به این پروژه متصل نمایید.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProjectForm({
+                          ...projectForm,
+                          chandeliersList: [
+                            ...(projectForm.chandeliersList || []),
+                            {
+                              name: 'لوستر برنزی سفارشی',
+                              code: '۱۲۸۹',
+                              image: GENERATED_IMAGES.crystaliCherub,
+                              desc: 'نصب شده در سالن اصلی',
+                            },
+                          ],
+                        })
+                      }
+                      className="h-9 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>افزودن لوستر به پروژه</span>
+                    </button>
+                  </div>
+
+                  {projectForm.chandeliersList && projectForm.chandeliersList.length > 0 ? (
+                    <div className="space-y-4">
+                      {projectForm.chandeliersList.map((chItem, chIdx) => {
+                        const currentQuery =
+                          chandelierSearchQueries[chIdx] !== undefined
+                            ? chandelierSearchQueries[chIdx]
+                            : '';
+                        const isSearchOpen = activeChandelierSearchIdx === chIdx;
+
+                        const matchingProducts = productsList.filter((p: any) => {
+                          if (!currentQuery.trim()) return true;
+                          const q = currentQuery.trim().toLowerCase();
+                          return (
+                            (p.name || '').toLowerCase().includes(q) ||
+                            (p.productCode || '').toLowerCase().includes(q) ||
+                            (p.subtitle || '').toLowerCase().includes(q)
+                          );
+                        });
+
+                        return (
+                          <div
+                            key={`proj-ch-${chIdx}`}
+                            className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-3.5 shadow-2xs"
+                          >
+                            {/* ۱. سرچ‌بار محصول با دیزاین عالی و پیش‌نمایش زنده */}
+                            <div className="space-y-2">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <label className="text-[11px] font-black text-[#a68452] flex items-center gap-1.5">
+                                  <Search className="w-3.5 h-3.5" />
+                                  <span>
+                                    جستجو و انتخاب لوستر شماره {(chIdx + 1).toLocaleString('fa-IR')} از محصولات سایت:
+                                  </span>
+                                </label>
+                                <span className="text-[10px] text-[#888]">
+                                  تایپ نام یا کد کالا برای جستجوی فوری
+                                </span>
+                              </div>
+
+                              <div className="relative">
+                                <div className="relative flex items-center">
+                                  <Search className="w-4 h-4 text-[#a68452] absolute right-3 pointer-events-none" />
+                                  <input
+                                    type="text"
+                                    value={currentQuery}
+                                    onFocus={() => setActiveChandelierSearchIdx(chIdx)}
+                                    onChange={(e) => {
+                                      setChandelierSearchQueries((prev) => ({
+                                        ...prev,
+                                        [chIdx]: e.target.value,
+                                      }));
+                                      setActiveChandelierSearchIdx(chIdx);
+                                    }}
+                                    placeholder="جستجوی نام، مدل یا کد لوستر در محصولات سایت..."
+                                    className="w-full h-10 pr-9 pl-8 rounded-xl border border-[#d5c6ab] text-xs font-semibold bg-[#faf8f4] text-[#1e1e1e] placeholder:text-[#999] focus:outline-none focus:border-[#b59766] focus:bg-white transition-all"
+                                  />
+                                  {currentQuery && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setChandelierSearchQueries((prev) => ({
+                                          ...prev,
+                                          [chIdx]: '',
+                                        }));
+                                      }}
+                                      className="absolute left-2.5 text-[#999] hover:text-[#333] p-1 cursor-pointer"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* لیست دراپ‌داون محصولات پیدا شده */}
+                                {isSearchOpen && (
+                                  <div className="absolute top-full mt-1.5 right-0 left-0 max-h-64 overflow-y-auto bg-white rounded-xl shadow-xl border border-[#e7dfd1] z-50 p-1.5 space-y-1">
+                                    <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-[#f0ece3] text-[10px] text-[#777]">
+                                      <span>نتایج جستجو ({matchingProducts.length.toLocaleString('fa-IR')} محصول)</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveChandelierSearchIdx(null)}
+                                        className="text-[#ea1d2c] font-bold cursor-pointer"
+                                      >
+                                        بستن منو
+                                      </button>
+                                    </div>
+                                    {matchingProducts.length === 0 ? (
+                                      <p className="text-xs text-[#888] p-4 text-center">
+                                        محصولی با این مشخصات یافت نشد.
+                                      </p>
+                                    ) : (
+                                      matchingProducts.slice(0, 15).map((prod: any, pIdx: number) => (
+                                        <div
+                                          key={pIdx}
+                                          onClick={() => {
+                                            const next = [...projectForm.chandeliersList];
+                                            next[chIdx] = {
+                                              name: prod.name,
+                                              code: prod.productCode,
+                                              image: prod.image,
+                                              desc: prod.subtitle || prod.description || '',
+                                            };
+                                            setProjectForm({ ...projectForm, chandeliersList: next });
+                                            setChandelierSearchQueries((prev) => ({
+                                              ...prev,
+                                              [chIdx]: prod.name,
+                                            }));
+                                            setActiveChandelierSearchIdx(null);
+                                          }}
+                                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#faf7f2] cursor-pointer transition-colors border border-transparent hover:border-[#ebdcc5]"
+                                        >
+                                          <img
+                                            src={prod.image}
+                                            alt={prod.name}
+                                            className="w-11 h-11 rounded-lg object-contain bg-[#f9f9f9] border border-[#eee] shrink-0"
+                                          />
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-1">
+                                              <h4 className="text-xs font-bold text-[#1e1e1e] truncate">{prod.name}</h4>
+                                              <span className="text-[10px] font-bold text-[#a68452] bg-[#fbf8f2] px-1.5 py-0.5 rounded border border-[#edd9be] shrink-0">
+                                                کد: {prod.productCode}
+                                              </span>
+                                            </div>
+                                            <p className="text-[10px] text-[#777] truncate mt-0.5">
+                                              {prod.priceFormatted || prod.subtitle}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* ۲. کارت پیش‌نمایش محصول متصل‌شده (عکس و مشخصات لوستر انتخابی) */}
+                            {chItem.name && (
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-gradient-to-r from-[#faf7f0] to-[#f4eee2] border border-[#e5d8c3]">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="relative w-14 h-14 rounded-lg bg-white p-1 border border-[#deb887]/50 shrink-0 shadow-2xs flex items-center justify-center">
+                                    <img
+                                      src={chItem.image || GENERATED_IMAGES.crystaliCherub}
+                                      alt={chItem.name}
+                                      className="w-full h-full object-contain"
+                                    />
+                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#10b981] text-white flex items-center justify-center text-[9px] font-bold">
+                                      ✓
+                                    </span>
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <span className="text-[10px] font-black text-[#a68452] bg-[#ebdcc5]/60 px-2 py-0.5 rounded-md">
+                                        کد کالا: {chItem.code || '۱۲۸۹'}
+                                      </span>
+                                      <span className="text-[10px] text-[#10b981] font-bold">
+                                        ● پیش‌نمایش متصل به پروژه
+                                      </span>
+                                    </div>
+                                    <h4 className="text-xs font-black text-[#1a1814] truncate mt-1">
+                                      {chItem.name}
+                                    </h4>
+                                    {chItem.desc && (
+                                      <p className="text-[11px] text-[#666] truncate mt-0.5">
+                                        {chItem.desc}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveChandelierSearchIdx(chIdx)}
+                                  className="self-end sm:self-auto text-[11px] font-bold text-[#a68452] hover:text-[#1e1e1e] bg-white px-3 py-1.5 rounded-lg border border-[#d5c6ab] cursor-pointer shrink-0 transition-colors shadow-2xs"
+                                >
+                                  تغییر یا انتخاب مجدد
+                                </button>
+                              </div>
+                            )}
+
+                            {/* ۳. فیلدهای جزئیات و دکمه حذف */}
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center pt-1 border-t border-[#f2ede4]">
+                              <div className="sm:col-span-3 space-y-1">
+                                <label className="text-[10px] font-bold text-[#555]">نام لوستر در پروژه:</label>
+                                <input
+                                  type="text"
+                                  value={chItem.name}
+                                  onChange={(e) => {
+                                    const next = [...projectForm.chandeliersList];
+                                    next[chIdx].name = e.target.value;
+                                    setProjectForm({ ...projectForm, chandeliersList: next });
+                                  }}
+                                  placeholder="نام لوستر"
+                                  className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-2 space-y-1">
+                                <label className="text-[10px] font-bold text-[#555]">کد محصول:</label>
+                                <input
+                                  type="text"
+                                  value={chItem.code}
+                                  onChange={(e) => {
+                                    const next = [...projectForm.chandeliersList];
+                                    next[chIdx].code = e.target.value;
+                                    setProjectForm({ ...projectForm, chandeliersList: next });
+                                  }}
+                                  placeholder="کد"
+                                  className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-5 space-y-1">
+                                <label className="text-[10px] font-bold text-[#555]">تصویر و آدرس عکس:</label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    dir="ltr"
+                                    value={chItem.image}
+                                    onChange={(e) => {
+                                      const next = [...projectForm.chandeliersList];
+                                      next[chIdx].image = e.target.value;
+                                      setProjectForm({ ...projectForm, chandeliersList: next });
+                                    }}
+                                    placeholder="URL تصویر..."
+                                    className="flex-1 h-9 rounded-lg border border-[#e0e0e0] px-2 text-[11px] text-left"
+                                  />
+                                  <label className="h-9 px-2.5 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer shrink-0">
+                                    <Upload className="w-3 h-3" />
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={(e) =>
+                                        handleFileUploadToDataUrl(
+                                          e.target.files?.[0],
+                                          (dataUrl) => {
+                                            const next = [...projectForm.chandeliersList];
+                                            next[chIdx].image = dataUrl;
+                                            setProjectForm({ ...projectForm, chandeliersList: next });
+                                          }
+                                        )
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+
+                              <div className="sm:col-span-2 flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = projectForm.chandeliersList.filter((_, i) => i !== chIdx);
+                                    setProjectForm({ ...projectForm, chandeliersList: next });
+                                  }}
+                                  className="h-9 px-3 rounded-lg bg-[#fde8ea] text-[#ea1d2c] hover:bg-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>حذف</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-[#777] italic">
+                      هنوز لوستری به این پروژه اضافه نشده است. روی دکمه «افزودن لوستر به پروژه» کلیک کنید یا از سرچ‌بار محصول جستجو نمایید.
+                    </p>
+                  )}
+                </div>
+
                 <button
                   type="submit"
-                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer"
+                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-xs"
                 >
                   <Plus className="w-4 h-4" />
                   <span>
                     {editingProjectId
-                      ? 'ذخیره تغییرات پروژه'
-                      : 'ثبت پروژه در دیتابیس'}
+                      ? 'ویرایش پروژه اجرایی در وب سایت'
+                      : 'ثبت پروژه در وب سایت'}
                   </span>
                 </button>
               </form>
 
-              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-3">
-                <h3 className="text-sm font-black text-[#1e1e1e] mb-3">
-                  پروژه‌های اجرایی در دیتابیس ({projectsList.length.toLocaleString('fa-IR')})
-                </h3>
-                {projectsList.map((proj) => (
-                  <div
-                    key={proj.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3.5 rounded-xl border border-[#efefef]"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <img
-                        src={proj.mainImage}
-                        alt={proj.title}
-                        className="w-14 h-14 rounded-xl object-cover shrink-0"
-                      />
+              {/* ۳. دیو لیست پروژه‌ها همراه با صفحه‌بندی ۵ تایی از جدیدترین‌ها و آمار لایک کاربران */}
+              {(() => {
+                const sortedAdminProjects = [...projectsList].sort(
+                  (a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)
+                );
+                const ADMIN_PROJECTS_PER_PAGE = 5;
+                const totalAdminProjectPages = Math.max(
+                  1,
+                  Math.ceil(sortedAdminProjects.length / ADMIN_PROJECTS_PER_PAGE)
+                );
+                const currentAdminProjects = sortedAdminProjects.slice(
+                  (adminProjectsPage - 1) * ADMIN_PROJECTS_PER_PAGE,
+                  adminProjectsPage * ADMIN_PROJECTS_PER_PAGE
+                );
+
+                return (
+                  <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#efefef] pb-3">
                       <div>
-                        <h4 className="text-sm font-bold text-[#1e1e1e]">
-                          {proj.title}
-                        </h4>
-                        <p className="text-xs text-[#666] mt-0.5">
-                          دسته: {proj.categoryTab} • منطقه: {proj.district} •{' '}
-                          {proj.sampleCode}
+                        <h3 className="text-sm font-black text-[#1e1e1e]">
+                          پروژه‌های اجرایی در دیتابیس ({projectsList.length.toLocaleString('fa-IR')} پروژه)
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          نمایش ۵ پروژه در هر صفحه به‌ترتیب از جدیدترین‌ها (صفحه {adminProjectsPage.toLocaleString('fa-IR')} از {totalAdminProjectPages.toLocaleString('fa-IR')})
                         </p>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#b59766] bg-[#fbf8f2] px-3 py-1.5 rounded-lg border border-[#edd9be]">
+                          هر صفحه: ۵ پروژه
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingProjectId(proj.id);
-                          setProjectForm({
-                            title: proj.title || '',
-                            categoryTab: proj.categoryTab || 'residential',
-                            district: proj.district || '',
-                            sampleCode: proj.sampleCode || 'نمونه ۱',
-                            description: proj.description || '',
-                            usedChandeliersText: proj.usedChandeliersText || '',
-                            mainImage:
-                              proj.mainImage || GENERATED_IMAGES.projectFereshteh,
-                          });
-                        }}
-                        className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>ویرایش</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteProject(proj.id)}
-                        className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>حذف</span>
-                      </button>
-                    </div>
+
+                    {currentAdminProjects.length === 0 ? (
+                      <p className="text-xs text-[#777] py-6 text-center">پروژه‌ای برای نمایش وجود ندارد.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {currentAdminProjects.map((proj) => {
+                          const likesCount =
+                            projectLikesMap[proj.slug] ??
+                            projectLikesMap[proj.id] ??
+                            (24 + ((Number(proj.id) * 7) % 65));
+
+                          return (
+                            <div
+                              key={proj.id}
+                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-[#efefef] bg-white hover:border-[#d9cbba] transition-colors"
+                            >
+                              <div className="flex items-center gap-3.5 min-w-0">
+                                <img
+                                  src={proj.mainImage || GENERATED_IMAGES.projectRoyalRestaurant}
+                                  alt={proj.title}
+                                  className="w-16 h-16 rounded-xl object-cover shrink-0 border border-[#eee]"
+                                />
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                                    <h4 className="text-sm font-bold text-[#1e1e1e] truncate">
+                                      {proj.title}
+                                    </h4>
+                                    {proj.slug && (
+                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#f0f0f0] text-[#555] dir-ltr">
+                                        /{proj.slug}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-[#666] truncate">
+                                    دسته: {proj.categoryTab} • منطقه: {proj.district} • {proj.sampleCode}
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    {/* آمار لایک‌های کاربران */}
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#fff1f2] border border-[#fecdd3] text-[#e11d48] text-[11px] font-black">
+                                      <Heart className="w-3.5 h-3.5 fill-[#e11d48]" />
+                                      <span>{likesCount.toLocaleString('fa-IR')} لایک کاربر</span>
+                                    </div>
+                                    <span className="text-[10px] text-[#888] bg-[#f9f9f9] px-2 py-1 rounded-md border border-[#eee]">
+                                      شناسه پروژه: #{proj.id}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                                {/* دکمه مشاهده و اتصال مستقیم به /project */}
+                                <a
+                                  href={`#project/${proj.slug || proj.id}`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    navigateToProjectSlug(proj.slug || proj.id);
+                                  }}
+                                  className="h-9 px-3 rounded-lg bg-[#faf7f2] hover:bg-[#b59766] text-[#8f6e3c] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border border-[#edd9be]"
+                                  title="مشاهده مستقیم پروژه در سایت"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  <span>مشاهده در سایت</span>
+                                </a>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingProjectId(proj.id);
+                                    let parsedChs: any[] = [];
+
+                                    // ۱. بررسی آرایه مستقیم در آبجکت پروژه
+                                    if (Array.isArray(proj.chandeliersList) && proj.chandeliersList.length > 0) {
+                                      parsedChs = proj.chandeliersList;
+                                    } else if (proj.usedChandeliersText) {
+                                      // ۲. بررسی تگ داده‌های لوستر
+                                      const tagMatch = proj.usedChandeliersText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
+                                      if (tagMatch) {
+                                        try {
+                                          const arr = JSON.parse(tagMatch[1]);
+                                          if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
+                                        } catch {}
+                                      }
+
+                                      // ۳. بررسی جی‌سان انتهای متن یا در کل متن
+                                      if (parsedChs.length === 0) {
+                                        const jsonMatch = proj.usedChandeliersText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+                                        if (jsonMatch) {
+                                          try {
+                                            const arr = JSON.parse(jsonMatch[0]);
+                                            if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
+                                          } catch {}
+                                        }
+                                      }
+                                    }
+
+                                    // ۴. در صورتی که لوستری نبود اما پروژه نمونه دارای usedProducts بود
+                                    if (parsedChs.length === 0 && Array.isArray((proj as any).usedProducts) && (proj as any).usedProducts.length > 0) {
+                                      parsedChs = (proj as any).usedProducts.map((up: any) => ({
+                                        name: up.name || 'لوستر سفارشی صالحی',
+                                        code: up.productId ? String(up.productId).replace(/^prod-/, '') : '۱۲۸۹',
+                                        image: up.image || GENERATED_IMAGES.crystaliGold,
+                                        desc: up.price || 'کلکسیون اختصاصی گالری صالحی',
+                                      }));
+                                    }
+
+                                    const cleanText = (proj.usedChandeliersText || '')
+                                      .replace(/<!--CHANDELIERS_DATA-->[\s\S]*?<!--\/CHANDELIERS_DATA-->/g, '')
+                                      .replace(/(\n|^)\s*\[\s*\{[\s\S]*\}\s*\]\s*$/g, '')
+                                      .trim();
+
+                                    setProjectForm({
+                                      title: proj.title || '',
+                                      slug: proj.slug || '',
+                                      categoryTab: proj.categoryTab || 'residential',
+                                      district: proj.district || '',
+                                      sampleCode: proj.sampleCode || 'نمونه ۱',
+                                      description: proj.description || '',
+                                      usedChandeliersText: cleanText,
+                                      mainImage:
+                                        proj.mainImage || GENERATED_IMAGES.projectFereshteh,
+                                      chandeliersList: parsedChs,
+                                    });
+                                    window.scrollTo({ top: 350, behavior: 'smooth' });
+                                  }}
+                                  className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>ویرایش</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteProject(proj.id)}
+                                  className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>حذف</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* کنترل‌های صفحه‌بندی ۵ تایی پروژه‌ها */}
+                    {totalAdminProjectPages > 1 && (
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#efefef]">
+                        <span className="text-xs text-[#666]">
+                          صفحه {adminProjectsPage.toLocaleString('fa-IR')} از {totalAdminProjectPages.toLocaleString('fa-IR')} ({sortedAdminProjects.length.toLocaleString('fa-IR')} پروژه کل)
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={adminProjectsPage <= 1}
+                            onClick={() => setAdminProjectsPage((p) => Math.max(1, p - 1))}
+                            className={`h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                              adminProjectsPage <= 1
+                                ? 'bg-[#f0f0f0] text-[#aaa] cursor-not-allowed'
+                                : 'bg-white border border-[#d5c6ab] text-[#333] hover:bg-[#b59766] hover:text-white'
+                            }`}
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                            <span>صفحه قبل</span>
+                          </button>
+
+                          {Array.from({ length: totalAdminProjectPages }, (_, i) => i + 1).map((pgNum) => (
+                            <button
+                              key={pgNum}
+                              type="button"
+                              onClick={() => setAdminProjectsPage(pgNum)}
+                              className={`w-8 h-8 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                                adminProjectsPage === pgNum
+                                  ? 'bg-[#b59766] text-white shadow-xs'
+                                  : 'bg-white border border-[#e0e0e0] text-[#555] hover:bg-[#f5f5f5]'
+                              }`}
+                            >
+                              {pgNum.toLocaleString('fa-IR')}
+                            </button>
+                          ))}
+
+                          <button
+                            type="button"
+                            disabled={adminProjectsPage >= totalAdminProjectPages}
+                            onClick={() => setAdminProjectsPage((p) => Math.min(totalAdminProjectPages, p + 1))}
+                            className={`h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                              adminProjectsPage >= totalAdminProjectPages
+                                ? 'bg-[#f0f0f0] text-[#aaa] cursor-not-allowed'
+                                : 'bg-white border border-[#d5c6ab] text-[#333] hover:bg-[#b59766] hover:text-white'
+                            }`}
+                          >
+                            <span>صفحه بعد</span>
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           )}
 
@@ -4515,19 +5334,47 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     placeholder="دسته‌بندی مقاله (مثلاً: راهنمای خرید)"
                     className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
                   />
-                  <select
-                    value={articleForm.image}
-                    onChange={(e) =>
-                      setArticleForm({ ...articleForm, image: e.target.value })
-                    }
-                    className="h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white"
-                  >
-                    {PRESET_PROJECT_IMAGES.map((img, i) => (
-                      <option key={i} value={img.url}>
-                        {img.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-1.5 flex flex-col justify-end">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={articleForm.image}
+                          onChange={(e) =>
+                            setArticleForm({
+                              ...articleForm,
+                              image: e.target.value,
+                            })
+                          }
+                          className="flex-1 h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white focus:outline-none focus:border-[#b59766]"
+                        >
+                          <option value="">-- انتخاب تصویر آماده --</option>
+                          {PRESET_PROJECT_IMAGES.map((img, i) => (
+                            <option key={i} value={img.url}>
+                              {img.label}
+                            </option>
+                          ))}
+                        </select>
+                        <label className="h-11 px-4 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shrink-0 shadow-xs">
+                          <Upload className="w-3.5 h-3.5" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) =>
+                              handleFileUploadToDataUrl(
+                                e.target.files?.[0],
+                                (dataUrl) =>
+                                  setArticleForm((prev) => ({
+                                    ...prev,
+                                    image: dataUrl,
+                                  }))
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <input
@@ -4968,9 +5815,12 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
           {/* ۱۰. منوی تنظیمات وب سایت (با ۷ تب مجزا و خالی آماده تکمیل) */}
           {activeTab === 'settings' && (
             <div className="space-y-6">
-              {/* نوار تب‌های تنظیمات وب سایت */}
-              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-4">
-                <div className="flex flex-wrap items-center gap-2">
+              {/* نوار تب‌های تنظیمات وب سایت (اسکرول افقی به عرض بدون شکستن خط) */}
+              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-3.5 sm:p-4 overflow-hidden">
+                <div
+                  className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pb-1 touch-pan-x [&::-webkit-scrollbar]:hidden"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
                   {WEBSITE_SETTINGS_SUBTABS.map((subTab) => {
                     const isSubActive = activeWebsiteSettingsTab === subTab.id;
                     return (
@@ -4978,9 +5828,9 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                         key={subTab.id}
                         type="button"
                         onClick={() => setActiveWebsiteSettingsTab(subTab.id)}
-                        className={`h-10 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`shrink-0 whitespace-nowrap h-10 px-4 sm:px-5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           isSubActive
-                            ? 'bg-[#1a1814] text-[#d4b27c] shadow-xs'
+                            ? 'bg-[#1a1814] text-[#d4b27c] shadow-xs ring-1 ring-[#d4b27c]/20'
                             : 'bg-[#f6f3ec] text-[#444] hover:bg-[#ece5d8]'
                         }`}
                       >
@@ -5093,132 +5943,204 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       {/* رنگ دیو اصلی فوتر (باکس سمت راست) */}
-                      <div className="space-y-2.5 bg-white p-4 rounded-xl border border-[#e7dfd1]">
-                        <label className="block text-xs font-bold text-[#333]">
-                          رنگ دیو اصلی فوتر (باکس VIP سمت راست):
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="color"
-                            value={footerSettingsForm.cardBgColor || '#b39561'}
-                            onChange={(e) =>
-                              setFooterSettingsForm({
-                                ...footerSettingsForm,
-                                cardBgColor: e.target.value,
-                              })
-                            }
-                            className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
-                          />
-                          <input
-                            type="text"
-                            dir="ltr"
-                            value={footerSettingsForm.cardBgColor || '#b39561'}
-                            onChange={(e) =>
-                              setFooterSettingsForm({
-                                ...footerSettingsForm,
-                                cardBgColor: e.target.value,
-                              })
-                            }
-                            placeholder="#b39561"
-                            className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
-                          />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 pt-1">
-                          <span className="text-[11px] text-[#777]">
-                            رنگ‌های پیشنهادی:
-                          </span>
-                          {[
-                            { label: 'طلایی اصلی', color: '#b39561' },
-                            { label: 'قهوه‌ای کلاسیک', color: '#665643' },
-                            { label: 'مشکی ذغالی', color: '#231f1c' },
-                            { label: 'سبز زمردی', color: '#1f4238' },
-                            { label: 'سرمه‌ای سلطنتی', color: '#1e2d42' },
-                            { label: 'زرشکی سلطنتی', color: '#5c2228' },
-                          ].map((preset) => (
-                            <button
-                              key={preset.color}
-                              type="button"
-                              onClick={() =>
+                      <div className="space-y-4 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <div className="space-y-2.5">
+                          <label className="block text-xs font-bold text-[#333]">
+                            رنگ دیو اصلی فوتر (باکس VIP سمت راست):
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={footerSettingsForm.cardBgColor || '#b39561'}
+                              onChange={(e) =>
                                 setFooterSettingsForm({
                                   ...footerSettingsForm,
-                                  cardBgColor: preset.color,
+                                  cardBgColor: e.target.value,
                                 })
                               }
-                              className="h-7 px-2.5 rounded-lg border border-[#dcd4c6] bg-white hover:border-[#181818] text-[10.5px] font-bold flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <span
-                                className="w-3.5 h-3.5 rounded-full border border-black/15"
-                                style={{ backgroundColor: preset.color }}
-                              />
-                              <span>{preset.label}</span>
-                            </button>
-                          ))}
+                              className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={footerSettingsForm.cardBgColor || '#b39561'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  cardBgColor: e.target.value,
+                                })
+                              }
+                              placeholder="#b39561"
+                              className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <label className="block text-xs font-bold text-[#333]">
+                            رنگ متن در باکس اصلی (پشتیبانی/توضیحات):
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={footerSettingsForm.descriptionParagraph1Color || '#ffffff'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  descriptionParagraph1Color: e.target.value,
+                                })
+                              }
+                              className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={footerSettingsForm.descriptionParagraph1Color || '#ffffff'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  descriptionParagraph1Color: e.target.value,
+                                })
+                              }
+                              placeholder="#ffffff"
+                              className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
+                            />
+                          </div>
                         </div>
                       </div>
 
                       {/* رنگ دیو سمت چپ فوتر (بخش لینک‌ها و شماره‌ها) */}
-                      <div className="space-y-2.5 bg-white p-4 rounded-xl border border-[#e7dfd1]">
-                        <label className="block text-xs font-bold text-[#333]">
-                          رنگ پس‌زمینه دیو سمت چپ فوتر (بخش لینک‌ها و شماره‌ها):
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="color"
-                            value={
-                              footerSettingsForm.bottomCardBgColor || '#f7f6f2'
-                            }
-                            onChange={(e) =>
-                              setFooterSettingsForm({
-                                ...footerSettingsForm,
-                                bottomCardBgColor: e.target.value,
-                              })
-                            }
-                            className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
-                          />
-                          <input
-                            type="text"
-                            dir="ltr"
-                            value={
-                              footerSettingsForm.bottomCardBgColor || '#f7f6f2'
-                            }
-                            onChange={(e) =>
-                              setFooterSettingsForm({
-                                ...footerSettingsForm,
-                                bottomCardBgColor: e.target.value,
-                              })
-                            }
-                            placeholder="#f7f6f2"
-                            className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
-                          />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 pt-1">
-                          <span className="text-[11px] text-[#777]">
-                            رنگ‌های پیشنهادی:
-                          </span>
-                          {[
-                            { label: 'کرم روشن اصلی', color: '#f7f6f2' },
-                            { label: 'سفید خالص', color: '#ffffff' },
-                            { label: 'شامپاینی ملایم', color: '#f3ede2' },
-                            { label: 'طوسی روشن', color: '#f1f1ef' },
-                          ].map((preset) => (
-                            <button
-                              key={preset.color}
-                              type="button"
-                              onClick={() =>
+                      <div className="space-y-4 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <div className="space-y-2.5">
+                          <label className="block text-xs font-bold text-[#333]">
+                            رنگ پس‌زمینه دیو سمت چپ فوتر (بخش لینک‌ها):
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={
+                                footerSettingsForm.bottomCardBgColor || '#f7f6f2'
+                              }
+                              onChange={(e) =>
                                 setFooterSettingsForm({
                                   ...footerSettingsForm,
-                                  bottomCardBgColor: preset.color,
+                                  bottomCardBgColor: e.target.value,
                                 })
                               }
-                              className="h-7 px-2.5 rounded-lg border border-[#dcd4c6] bg-white hover:border-[#181818] text-[10.5px] font-bold flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <span
-                                className="w-3.5 h-3.5 rounded-full border border-black/15"
-                                style={{ backgroundColor: preset.color }}
-                              />
-                              <span>{preset.label}</span>
-                            </button>
-                          ))}
+                              className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={
+                                footerSettingsForm.bottomCardBgColor || '#f7f6f2'
+                              }
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  bottomCardBgColor: e.target.value,
+                                })
+                              }
+                              placeholder="#f7f6f2"
+                              className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <label className="block text-xs font-bold text-[#333]">
+                            رنگ متن در باکس دوم (توضیحات/پشتیبانی):
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={footerSettingsForm.descriptionParagraph2Color || '#231f1c'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  descriptionParagraph2Color: e.target.value,
+                                })
+                              }
+                              className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={footerSettingsForm.descriptionParagraph2Color || '#231f1c'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  descriptionParagraph2Color: e.target.value,
+                                })
+                              }
+                              placeholder="#231f1c"
+                              className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <label className="block text-xs font-bold text-[#333]">
+                            رنگ عناوین ستون‌ها:
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={footerSettingsForm.columnTitleColor || '#222222'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  columnTitleColor: e.target.value,
+                                })
+                              }
+                              className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={footerSettingsForm.columnTitleColor || '#222222'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  columnTitleColor: e.target.value,
+                                })
+                              }
+                              placeholder="#222222"
+                              className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <label className="block text-xs font-bold text-[#333]">
+                            رنگ لینک‌های فوتر:
+                          </label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              value={footerSettingsForm.columnLinkColor || '#1c1917'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  columnLinkColor: e.target.value,
+                                })
+                              }
+                              className="w-12 h-11 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white shrink-0"
+                            />
+                            <input
+                              type="text"
+                              dir="ltr"
+                              value={footerSettingsForm.columnLinkColor || '#1c1917'}
+                              onChange={(e) =>
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  columnLinkColor: e.target.value,
+                                })
+                              }
+                              placeholder="#1c1917"
+                              className="h-11 flex-1 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-bold text-left"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -5676,6 +6598,321 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                       className="w-full h-11 rounded-xl border border-[#e0e0e0] bg-white px-3.5 text-xs font-bold"
                     />
                   </div>
+
+                  {/* ۷. مدیریت عناوین و لینک‌های ستون‌های فوتر */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-5">
+                    <div className="flex items-center justify-between border-b border-[#ece4d4] pb-2.5">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          ۷. مدیریت عناوین و لینک‌های ستون‌های فوتر
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          عناوین ستون‌های اول و دوم فوتر و لیست لینک‌های هر کدام را ویرایش و چیدمان کنید.
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold text-[#b59766] bg-[#f2ecde] px-2.5 py-1 rounded-lg">
+                        ستون‌های لینک فوتر
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* ستون اول */}
+                      <div className="space-y-4 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-[#333]">
+                            عنوان ستون اول (دسترسی سریع تر):
+                          </label>
+                          <input
+                            type="text"
+                            value={footerSettingsForm.column1Title || ''}
+                            onChange={(e) =>
+                              setFooterSettingsForm({
+                                ...footerSettingsForm,
+                                column1Title: e.target.value,
+                              })
+                            }
+                            placeholder="دسترسی سریع تر"
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold"
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold text-[#b59766]">
+                              لینک‌های ستون اول:
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentLinks = footerSettingsForm.column1Links || [];
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  column1Links: [
+                                    ...currentLinks,
+                                    {
+                                      id: `col1-${Date.now()}`,
+                                      label: 'لینک جدید',
+                                      href: '/',
+                                    },
+                                  ],
+                                });
+                              }}
+                              className="h-8 px-2.5 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>افزودن لینک</span>
+                            </button>
+                          </div>
+
+                          <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                            {(footerSettingsForm.column1Links || []).map((link, idx) => (
+                              <div
+                                key={link.id || `l1-edit-${idx}`}
+                                className="flex flex-col sm:flex-row gap-2 bg-[#fcfbf9] p-3 rounded-lg border border-[#e7dfd1] items-stretch sm:items-center justify-between"
+                              >
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+                                  <input
+                                    type="text"
+                                    value={link.label || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(footerSettingsForm.column1Links || [])];
+                                      updated[idx] = { ...updated[idx], label: e.target.value };
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column1Links: updated,
+                                      });
+                                    }}
+                                    placeholder="عنوان لینک"
+                                    className="h-8 rounded-md border border-[#e0e0e0] bg-white px-2 text-[11.5px] font-semibold"
+                                  />
+                                  <input
+                                    type="text"
+                                    dir="ltr"
+                                    value={link.href || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(footerSettingsForm.column1Links || [])];
+                                      updated[idx] = { ...updated[idx], href: e.target.value };
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column1Links: updated,
+                                      });
+                                    }}
+                                    placeholder="آدرس (مثلاً: /about-us یا #)"
+                                    className="h-8 rounded-md border border-[#e0e0e0] bg-white px-2 text-[11.5px] text-left font-mono"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-end gap-1.5 shrink-0 mt-2 sm:mt-0 sm:mr-3">
+                                  <button
+                                    type="button"
+                                    disabled={idx === 0}
+                                    onClick={() => {
+                                      if (idx === 0) return;
+                                      const updated = [...(footerSettingsForm.column1Links || [])];
+                                      const temp = updated[idx];
+                                      updated[idx] = updated[idx - 1];
+                                      updated[idx - 1] = temp;
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column1Links: updated,
+                                      });
+                                    }}
+                                    className="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-40"
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={idx === (footerSettingsForm.column1Links || []).length - 1}
+                                    onClick={() => {
+                                      if (idx === (footerSettingsForm.column1Links || []).length - 1) return;
+                                      const updated = [...(footerSettingsForm.column1Links || [])];
+                                      const temp = updated[idx];
+                                      updated[idx] = updated[idx + 1];
+                                      updated[idx + 1] = temp;
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column1Links: updated,
+                                      });
+                                    }}
+                                    className="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-40"
+                                  >
+                                    ↓
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = (footerSettingsForm.column1Links || []).filter((_, i) => i !== idx);
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column1Links: updated,
+                                      });
+                                    }}
+                                    className="w-7 h-7 rounded bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ستون دوم */}
+                      <div className="space-y-4 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-[#333]">
+                            عنوان ستون دوم (کلکسیون صالحی):
+                          </label>
+                          <input
+                            type="text"
+                            value={footerSettingsForm.column2Title || ''}
+                            onChange={(e) =>
+                              setFooterSettingsForm({
+                                ...footerSettingsForm,
+                                column2Title: e.target.value,
+                              })
+                            }
+                            placeholder="کلکسیون صالحی"
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold"
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold text-[#b59766]">
+                              لینک‌های ستون دوم:
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentLinks = footerSettingsForm.column2Links || [];
+                                setFooterSettingsForm({
+                                  ...footerSettingsForm,
+                                  column2Links: [
+                                    ...currentLinks,
+                                    {
+                                      id: `col2-${Date.now()}`,
+                                      label: 'لینک جدید',
+                                      href: '/',
+                                    },
+                                  ],
+                                });
+                              }}
+                              className="h-8 px-2.5 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>افزودن لینک</span>
+                            </button>
+                          </div>
+
+                          <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                            {(footerSettingsForm.column2Links || []).map((link, idx) => (
+                              <div
+                                key={link.id || `l2-edit-${idx}`}
+                                className="flex flex-col sm:flex-row gap-2 bg-[#fcfbf9] p-3 rounded-lg border border-[#e7dfd1] items-stretch sm:items-center justify-between"
+                              >
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+                                  <input
+                                    type="text"
+                                    value={link.label || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(footerSettingsForm.column2Links || [])];
+                                      updated[idx] = { ...updated[idx], label: e.target.value };
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column2Links: updated,
+                                      });
+                                    }}
+                                    placeholder="عنوان لینک"
+                                    className="h-8 rounded-md border border-[#e0e0e0] bg-white px-2 text-[11.5px] font-semibold"
+                                  />
+                                  <input
+                                    type="text"
+                                    dir="ltr"
+                                    value={link.href || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(footerSettingsForm.column2Links || [])];
+                                      updated[idx] = { ...updated[idx], href: e.target.value };
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column2Links: updated,
+                                      });
+                                    }}
+                                    placeholder="آدرس (مثلاً: /product/categories/...)"
+                                    className="h-8 rounded-md border border-[#e0e0e0] bg-white px-2 text-[11.5px] text-left font-mono"
+                                  />
+                                </div>
+                                <div className="flex items-center justify-end gap-1.5 shrink-0 mt-2 sm:mt-0 sm:mr-3">
+                                  <button
+                                    type="button"
+                                    disabled={idx === 0}
+                                    onClick={() => {
+                                      if (idx === 0) return;
+                                      const updated = [...(footerSettingsForm.column2Links || [])];
+                                      const temp = updated[idx];
+                                      updated[idx] = updated[idx - 1];
+                                      updated[idx - 1] = temp;
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column2Links: updated,
+                                      });
+                                    }}
+                                    className="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-40"
+                                  >
+                                    ↑
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={idx === (footerSettingsForm.column2Links || []).length - 1}
+                                    onClick={() => {
+                                      if (idx === (footerSettingsForm.column2Links || []).length - 1) return;
+                                      const updated = [...(footerSettingsForm.column2Links || [])];
+                                      const temp = updated[idx];
+                                      updated[idx] = updated[idx + 1];
+                                      updated[idx + 1] = temp;
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column2Links: updated,
+                                      });
+                                    }}
+                                    className="w-7 h-7 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center cursor-pointer transition-colors disabled:opacity-40"
+                                  >
+                                    ↓
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = (footerSettingsForm.column2Links || []).filter((_, i) => i !== idx);
+                                      setFooterSettingsForm({
+                                        ...footerSettingsForm,
+                                        column2Links: updated,
+                                      });
+                                    }}
+                                    className="w-7 h-7 rounded bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+
+
+
+
+
+
+
+
+
+
+
 
                   {/* دکمه ذخیره پایانی */}
                   <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
@@ -6334,8 +7571,1963 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     </button>
                   </div>
                 </form>
+              ) : activeWebsiteSettingsTab === 'hero_slider' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingHeroSliderSettings(true);
+                    try {
+                      const saved = await authFetch(
+                        '/api/admin/settings/hero-slider',
+                        {
+                          method: 'PUT',
+                          body: JSON.stringify(heroSliderSettingsForm),
+                        }
+                      );
+                      setHeroSliderSettingsForm({
+                        ...INITIAL_HERO_SLIDER_SETTINGS,
+                        ...saved,
+                        slides:
+                          Array.isArray(saved?.slides) &&
+                          saved.slides.length > 0
+                            ? saved.slides
+                            : heroSliderSettingsForm.slides,
+                      });
+                      onCatalogUpdated?.();
+                      showNotice(
+                        'success',
+                        'تنظیمات اسلایدر بنر اصلی سایت با موفقیت در وب‌سایت ذخیره شد.'
+                      );
+                    } catch (err: any) {
+                      showNotice(
+                        'error',
+                        err?.message || 'خطا در ذخیره تنظیمات اسلایدر سایت'
+                      );
+                    } finally {
+                      setIsSavingHeroSliderSettings(false);
+                    }
+                  }}
+                  className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                        تنظیمات اسلایدر و بنر اصلی سایت (`Hero Slider`)
+                      </h2>
+                      <p className="text-xs text-[#666] mt-1">
+                        ویرایش عناوین اصلی، متن توضیحات، دکمه اقدام و مدیریت تصاویر اسلایدر صفحه اول
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        disabled={isSavingHeroSliderSettings}
+                        onClick={async () => {
+                          setHeroSliderSettingsForm(INITIAL_HERO_SLIDER_SETTINGS);
+                          setIsSavingHeroSliderSettings(true);
+                          try {
+                            const saved = await authFetch(
+                              '/api/admin/settings/hero-slider',
+                              {
+                                method: 'PUT',
+                                body: JSON.stringify(INITIAL_HERO_SLIDER_SETTINGS),
+                              }
+                            );
+                            setHeroSliderSettingsForm({
+                              ...INITIAL_HERO_SLIDER_SETTINGS,
+                              ...saved,
+                            });
+                            onCatalogUpdated?.();
+                            showNotice(
+                              'success',
+                              'تنظیمات اسلایدر سایت به مقادیر پیش‌فرض بازگردانی شد.'
+                            );
+                          } catch {
+                            showNotice(
+                              'success',
+                              'فرم به مقادیر پیش‌فرض بازگردانی شد.'
+                            );
+                          } finally {
+                            setIsSavingHeroSliderSettings(false);
+                          }
+                        }}
+                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors disabled:opacity-60"
+                      >
+                        بازگردانی به مقادیر پیش‌فرض
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingHeroSliderSettings}
+                        className="h-10 px-5 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-60"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>
+                          {isSavingHeroSliderSettings
+                            ? 'در حال ذخیره...'
+                            : 'ذخیره تنظیمات اسلایدر'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* مدیریت کامل اسلایدهای بنر اصلی سایت (عکس، متن و لینک مجزا برای هر اسلاید) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ece4d4] pb-2.5">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          مدیریت اسلایدهای بنر اصلی سایت (`Hero Slider`)
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          برای هر اسلاید به صورت مجزا عکس، عنوان خط اول، عنوان خط دوم، توضیحات، متن دکمه و لینک دلخواه وارد کنید (عکس ضروری است و متون/لینک اختیاری می‌باشند).
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHeroSliderSettingsForm({
+                            ...heroSliderSettingsForm,
+                            slides: [
+                              ...heroSliderSettingsForm.slides,
+                              {
+                                id: `hero-${Date.now()}`,
+                                imageUrl: GENERATED_IMAGES.projectRoyalRestaurant,
+                                titleLine1: 'عنوان خط اول جدید',
+                                titleLine2: 'عنوان خط دوم جدید',
+                                description: 'توضیحات مربوط به این اسلاید خاص...',
+                                buttonText: 'مشاهده محصولات',
+                                buttonUrl: '#collection-salehi',
+                              },
+                            ],
+                          });
+                        }}
+                        className="h-9 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>افزودن اسلاید جدید به اسلایدر</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                      {heroSliderSettingsForm.slides.map((slideItem, sIdx) => (
+                        <div
+                          key={slideItem.id || `hero-slide-${sIdx}`}
+                          className="bg-white p-4 sm:p-5 rounded-2xl border border-[#e7dfd1] space-y-4 flex flex-col justify-between shadow-xs"
+                        >
+                          <div className="space-y-3.5">
+                            <div className="flex items-center justify-between border-b border-[#f0ece3] pb-2.5">
+                              <span className="text-xs font-black text-[#181818] bg-[#f5efe4] text-[#b59766] px-2.5 py-1 rounded-lg">
+                                اسلاید شماره {(sIdx + 1).toLocaleString('fa-IR')}
+                              </span>
+                              {heroSliderSettingsForm.slides.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setHeroSliderSettingsForm({
+                                      ...heroSliderSettingsForm,
+                                      slides: heroSliderSettingsForm.slides.filter(
+                                        (_, i) => i !== sIdx
+                                      ),
+                                    });
+                                  }}
+                                  title="حذف این اسلاید"
+                                  className="text-xs font-bold text-[#ea1d2c] hover:underline flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>حذف اسلاید</span>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* پیش‌نمایش و انتخاب تصویر اسلاید (ضروری) */}
+                            <div className="space-y-2">
+                              <label className="block text-xs font-black text-[#333]">
+                                عکس اسلاید (ضروری):
+                              </label>
+
+                              <div className="relative w-full aspect-[16/9] rounded-xl border border-[#e0dacd] bg-[#faf8f4] overflow-hidden flex items-center justify-center">
+                                {slideItem.imageUrl ? (
+                                  <img
+                                    src={slideItem.imageUrl}
+                                    alt={`اسلاید ${sIdx + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-xs font-bold text-[#ea1d2c]">
+                                    ⚠️ انتخاب عکس برای اسلاید ضروری است
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <label className="h-9 px-3 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
+                                  <Upload className="w-3.5 h-3.5" />
+                                  <span>آپلود عکس از سیستم</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) =>
+                                      handleFileUploadToDataUrl(
+                                        e.target.files?.[0],
+                                        (dataUrl) => {
+                                          const updated = [
+                                            ...heroSliderSettingsForm.slides,
+                                          ];
+                                          updated[sIdx] = {
+                                            ...updated[sIdx],
+                                            imageUrl: dataUrl,
+                                          };
+                                          setHeroSliderSettingsForm({
+                                            ...heroSliderSettingsForm,
+                                            slides: updated,
+                                          });
+                                        }
+                                      )
+                                    }
+                                  />
+                                </label>
+
+                                <select
+                                  value={slideItem.imageUrl}
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      const updated = [
+                                        ...heroSliderSettingsForm.slides,
+                                      ];
+                                      updated[sIdx] = {
+                                        ...updated[sIdx],
+                                        imageUrl: e.target.value,
+                                      };
+                                      setHeroSliderSettingsForm({
+                                        ...heroSliderSettingsForm,
+                                        slides: updated,
+                                      });
+                                    }
+                                  }}
+                                  className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2 text-[11px] font-semibold bg-white"
+                                >
+                                  <option value="">-- انتخاب از نمونه کارها --</option>
+                                  {PRESET_PROJECT_IMAGES.map((preset, pIdx) => (
+                                    <option
+                                      key={`preset-hero-${pIdx}`}
+                                      value={preset.url}
+                                    >
+                                      {preset.label}
+                                    </option>
+                                  ))}
+                                  {PRESET_PRODUCT_IMAGES.map((preset, pIdx) => (
+                                    <option
+                                      key={`preset-prod-hero-${pIdx}`}
+                                      value={preset.url}
+                                    >
+                                      {preset.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <input
+                                type="text"
+                                dir="ltr"
+                                value={slideItem.imageUrl}
+                                onChange={(e) => {
+                                  const updated = [
+                                    ...heroSliderSettingsForm.slides,
+                                  ];
+                                  updated[sIdx] = {
+                                    ...updated[sIdx],
+                                    imageUrl: e.target.value,
+                                  };
+                                  setHeroSliderSettingsForm({
+                                    ...heroSliderSettingsForm,
+                                    slides: updated,
+                                  });
+                                }}
+                                placeholder="یا آدرس مستقیم عکس (URL)..."
+                                className="w-full h-8 rounded-lg border border-[#e0e0e0] px-2 text-[11px] text-left tabular-nums"
+                              />
+                            </div>
+
+                            {/* فیلدهای متنی اسلاید (اختیاری) */}
+                            <div className="pt-2 border-t border-[#f2ede4] space-y-3">
+                              <span className="block text-[11.5px] font-black text-[#856b3e]">
+                                متون و لینک این اسلاید (اختیاری - در صورت عدم تمایل خالی بگذارید):
+                              </span>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div className="space-y-1">
+                                  <label className="block text-[11px] font-bold text-[#555]">
+                                    عنوان خط اول:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={slideItem.titleLine1 || ''}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...heroSliderSettingsForm.slides,
+                                      ];
+                                      updated[sIdx] = {
+                                        ...updated[sIdx],
+                                        titleLine1: e.target.value,
+                                      };
+                                      setHeroSliderSettingsForm({
+                                        ...heroSliderSettingsForm,
+                                        slides: updated,
+                                      });
+                                    }}
+                                    placeholder="مثلاً: با شکوهی ماندگار فضای"
+                                    className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="block text-[11px] font-bold text-[#555]">
+                                    عنوان خط دوم:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={slideItem.titleLine2 || ''}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...heroSliderSettingsForm.slides,
+                                      ];
+                                      updated[sIdx] = {
+                                        ...updated[sIdx],
+                                        titleLine2: e.target.value,
+                                      };
+                                      setHeroSliderSettingsForm({
+                                        ...heroSliderSettingsForm,
+                                        slides: updated,
+                                      });
+                                    }}
+                                    placeholder="مثلاً: زندگی‌تان را ارتقا دهید..."
+                                    className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="block text-[11px] font-bold text-[#555]">
+                                  متن توضیحات این اسلاید:
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={slideItem.description || ''}
+                                  onChange={(e) => {
+                                    const updated = [
+                                      ...heroSliderSettingsForm.slides,
+                                    ];
+                                    updated[sIdx] = {
+                                      ...updated[sIdx],
+                                      description: e.target.value,
+                                    };
+                                    setHeroSliderSettingsForm({
+                                      ...heroSliderSettingsForm,
+                                      slides: updated,
+                                    });
+                                  }}
+                                  placeholder="توضیحات کوتاه اختصاصی برای این اسلاید..."
+                                  className="w-full rounded-lg border border-[#e0e0e0] p-2 text-xs font-normal leading-relaxed"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div className="space-y-1">
+                                  <label className="block text-[11px] font-bold text-[#555]">
+                                    متن روی دکمه:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={slideItem.buttonText || ''}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...heroSliderSettingsForm.slides,
+                                      ];
+                                      updated[sIdx] = {
+                                        ...updated[sIdx],
+                                        buttonText: e.target.value,
+                                      };
+                                      setHeroSliderSettingsForm({
+                                        ...heroSliderSettingsForm,
+                                        slides: updated,
+                                      });
+                                    }}
+                                    placeholder="مثلاً: مشاهده کالکشن"
+                                    className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="block text-[11px] font-bold text-[#555]">
+                                    لینک / آدرس دکمه:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    dir="ltr"
+                                    value={slideItem.buttonUrl || ''}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...heroSliderSettingsForm.slides,
+                                      ];
+                                      updated[sIdx] = {
+                                        ...updated[sIdx],
+                                        buttonUrl: e.target.value,
+                                      };
+                                      setHeroSliderSettingsForm({
+                                        ...heroSliderSettingsForm,
+                                        slides: updated,
+                                      });
+                                    }}
+                                    placeholder="#collection-salehi یا /about-us"
+                                    className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold text-left"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* دکمه ذخیره پایانی */}
+                  <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
+                    <button
+                      type="submit"
+                      disabled={isSavingHeroSliderSettings}
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-60"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>
+                        {isSavingHeroSliderSettings
+                          ? 'در حال ذخیره و بروزرسانی...'
+                          : 'ثبت و اعمال تغییرات در اسلایدر اصلی سایت'}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              ) : activeWebsiteSettingsTab === 'about' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingAboutUsSettings(true);
+                    try {
+                      const saved = await authFetch(
+                        '/api/admin/settings/about-us',
+                        {
+                          method: 'PUT',
+                          body: JSON.stringify(aboutUsSettingsForm),
+                        }
+                      );
+                      setAboutUsSettingsForm({
+                        ...INITIAL_ABOUT_US_SETTINGS,
+                        ...saved,
+                        galleryImages:
+                          Array.isArray(saved?.galleryImages) &&
+                          saved.galleryImages.length > 0
+                            ? saved.galleryImages
+                            : aboutUsSettingsForm.galleryImages,
+                      });
+                      if (
+                        aboutUsSettingsForm.catalogTitle ||
+                        aboutUsSettingsForm.catalogDescription
+                      ) {
+                        const updatedFooter = {
+                          ...footerSettingsForm,
+                          catalogTitle: aboutUsSettingsForm.catalogTitle,
+                          catalogDescription: aboutUsSettingsForm.catalogDescription,
+                          catalogCardTitle: aboutUsSettingsForm.catalogCardTitle,
+                          catalogPageCount: aboutUsSettingsForm.catalogPageCount,
+                          catalogDownloadUrl: aboutUsSettingsForm.catalogDownloadUrl,
+                        };
+                        setFooterSettingsForm(updatedFooter);
+                        await authFetch('/api/admin/settings/footer', {
+                          method: 'PUT',
+                          body: JSON.stringify(updatedFooter),
+                        }).catch(() => {});
+                      }
+                      onCatalogUpdated?.();
+                      showNotice(
+                        'success',
+                        'تنظیمات صفحه درباره ما و گالری تصاویر با موفقیت در وب‌سایت ذخیره و اعمال شد.'
+                      );
+                    } catch (err: any) {
+                      showNotice(
+                        'error',
+                        err?.message || 'خطا در ذخیره تنظیمات صفحه درباره ما'
+                      );
+                    } finally {
+                      setIsSavingAboutUsSettings(false);
+                    }
+                  }}
+                  className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                        تنظیمات صفحه درباره ما (`/about-us`)
+                      </h2>
+                      <p className="text-xs text-[#666] mt-1">
+                        ویرایش عنوان، متن داستان بی انتهای ما و مدیریت تصاویر اسلایدر/گالری صفحه درباره ما
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        disabled={isSavingAboutUsSettings}
+                        onClick={async () => {
+                          setAboutUsSettingsForm(INITIAL_ABOUT_US_SETTINGS);
+                          setIsSavingAboutUsSettings(true);
+                          try {
+                            const saved = await authFetch(
+                              '/api/admin/settings/about-us',
+                              {
+                                method: 'PUT',
+                                body: JSON.stringify(INITIAL_ABOUT_US_SETTINGS),
+                              }
+                            );
+                            setAboutUsSettingsForm({
+                              ...INITIAL_ABOUT_US_SETTINGS,
+                              ...saved,
+                            });
+                            onCatalogUpdated?.();
+                            showNotice(
+                              'success',
+                              'تنظیمات درباره ما به مقادیر اولیه بازگردانی شد.'
+                            );
+                          } catch {
+                            showNotice(
+                              'success',
+                              'فرم به مقادیر اولیه بازگردانی شد.'
+                            );
+                          } finally {
+                            setIsSavingAboutUsSettings(false);
+                          }
+                        }}
+                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors disabled:opacity-60"
+                      >
+                        بازگردانی به مقادیر پیش‌فرض
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingAboutUsSettings}
+                        className="h-10 px-5 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-60"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>
+                          {isSavingAboutUsSettings
+                            ? 'در حال ذخیره...'
+                            : 'ذخیره تنظیمات درباره ما'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ۱. عنوان و متن داستان بی انتهای ما (متناظر با انتخابگر کاربر) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <div className="flex items-center justify-between border-b border-[#ece4d4] pb-2.5">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          ۱. عنوان و متن داستان بی انتهای ما (درباره لوستر صالحی)
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          این متن در ستون راست بخش اول صفحه درباره ما نمایش داده می‌شود
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold text-[#b59766] bg-[#f2ecde] px-2.5 py-1 rounded-lg">
+                        متن اصلی درباره ما
+                      </span>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-[#333]">
+                          عنوان بخش داستان:
+                        </label>
+                        <input
+                          type="text"
+                          value={aboutUsSettingsForm.storyTitle}
+                          onChange={(e) =>
+                            setAboutUsSettingsForm({
+                              ...aboutUsSettingsForm,
+                              storyTitle: e.target.value,
+                            })
+                          }
+                          placeholder="داستان بی انتهای ما!"
+                          className="w-full h-11 rounded-xl border border-[#e0e0e0] bg-white px-3.5 text-xs font-bold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-[#333]">
+                            متن کامل داستان و تاریخچه برند (پاراگراف اصلی درباره ما):
+                          </label>
+                          <span className="text-[11px] text-[#888] tabular-nums">
+                            {aboutUsSettingsForm.storyDescription.length.toLocaleString('fa-IR')} کاراکتر
+                          </span>
+                        </div>
+                        <textarea
+                          rows={8}
+                          value={aboutUsSettingsForm.storyDescription}
+                          onChange={(e) =>
+                            setAboutUsSettingsForm({
+                              ...aboutUsSettingsForm,
+                              storyDescription: e.target.value,
+                            })
+                          }
+                          placeholder="متن کامل درباره ما و تاریخچه تولید لوستر صالحی..."
+                          className="w-full rounded-xl border border-[#e0e0e0] bg-white p-3.5 text-xs font-semibold leading-7"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۲. گالری و اسلایدر تصاویر درباره ما (شامل تصویر پنجم و سایر تصاویر) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ece4d4] pb-2.5">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          ۲. اسلایدر و گالری تصاویر درباره ما (تصاویر اسلاید شو)
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          تصاویر اسلایدر کنار متن داستان را اضافه، حذف یا ویرایش کنید (تصویر پنجم و تمامی تصاویر)
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAboutUsSettingsForm({
+                            ...aboutUsSettingsForm,
+                            galleryImages: [
+                              ...aboutUsSettingsForm.galleryImages,
+                              GENERATED_IMAGES.projectFereshteh,
+                            ],
+                          });
+                        }}
+                        className="h-9 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>افزودن تصویر جدید به گالری</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {aboutUsSettingsForm.galleryImages.map((imgUrl, imgIdx) => (
+                        <div
+                          key={`about-gallery-item-${imgIdx}`}
+                          className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-3 flex flex-col justify-between"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-[#181818]">
+                                تصویر {(imgIdx + 1).toLocaleString('fa-IR')} {imgIdx === 4 ? '(تصویر پنجم)' : ''}
+                              </span>
+                              {aboutUsSettingsForm.galleryImages.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAboutUsSettingsForm({
+                                      ...aboutUsSettingsForm,
+                                      galleryImages:
+                                        aboutUsSettingsForm.galleryImages.filter(
+                                          (_, idx) => idx !== imgIdx
+                                        ),
+                                    });
+                                  }}
+                                  className="text-[11px] font-bold text-[#ea1d2c] hover:underline cursor-pointer"
+                                >
+                                  حذف عکس
+                                </button>
+                              )}
+                            </div>
+
+                            {/* پیش‌نمایش عکس */}
+                            <div className="w-full aspect-[16/10] rounded-xl border border-[#e0dacd] bg-[#faf8f4] overflow-hidden relative group">
+                              <img
+                                src={imgUrl}
+                                alt={`اسلاید ${(imgIdx + 1).toLocaleString('fa-IR')}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+
+                            {/* انتخاب از تصاویر پیشنهادی */}
+                            <div className="space-y-1">
+                              <label className="block text-[11px] font-bold text-[#666]">
+                                انتخاب از تصاویر آماده کالکشن:
+                              </label>
+                              <select
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    const next = [
+                                      ...aboutUsSettingsForm.galleryImages,
+                                    ];
+                                    next[imgIdx] = e.target.value;
+                                    setAboutUsSettingsForm({
+                                      ...aboutUsSettingsForm,
+                                      galleryImages: next,
+                                    });
+                                  }
+                                }}
+                                defaultValue=""
+                                className="w-full h-9 rounded-lg border border-[#e0e0e0] bg-white px-2.5 text-[11px] font-semibold text-[#333]"
+                              >
+                                <option value="" disabled>
+                                  انتخاب عکس از گالری لوستر صالحی...
+                                </option>
+                                {PRESET_ABOUT_GALLERY_IMAGES.map((preset, pIdx) => (
+                                  <option key={`preset-about-${pIdx}`} value={preset.url}>
+                                    {preset.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* دکمه آپلود تصویر جدید */}
+                            <div className="space-y-1.5">
+                              <label className="h-9 px-3 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors">
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>آپلود عکس از سیستم</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) =>
+                                    handleFileUploadToDataUrl(
+                                      e.target.files?.[0],
+                                      (dataUrl) => {
+                                        const next = [
+                                          ...aboutUsSettingsForm.galleryImages,
+                                        ];
+                                        next[imgIdx] = dataUrl;
+                                        setAboutUsSettingsForm({
+                                          ...aboutUsSettingsForm,
+                                          galleryImages: next,
+                                        });
+                                      }
+                                    )
+                                  }
+                                />
+                              </label>
+                              <input
+                                type="text"
+                                dir="ltr"
+                                value={imgUrl}
+                                onChange={(e) => {
+                                  const next = [
+                                    ...aboutUsSettingsForm.galleryImages,
+                                  ];
+                                  next[imgIdx] = e.target.value;
+                                  setAboutUsSettingsForm({
+                                    ...aboutUsSettingsForm,
+                                    galleryImages: next,
+                                  });
+                                }}
+                                placeholder="یا آدرس تصویر (URL)..."
+                                className="w-full h-8 rounded-lg border border-[#e0e0e0] px-2 text-[11px] text-left tabular-nums"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ۳. تنظیمات فایل کاتالوگ محصولات (عنوان، توضیحات، کارت و لینک دانلود PDF) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <div className="flex items-center justify-between border-b border-[#ece4d4] pb-2.5">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          ۳. تنظیمات و متون بخش کاتالوگ محصولات (دانلود PDF)
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          ویرایش عنوان بخش کاتالوگ، توضیحات، عنوان کارت، تعداد صفحات و لینک مستقیم دانلود کاتالوگ
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-bold text-[#b59766] bg-[#f2ecde] px-2.5 py-1 rounded-lg">
+                        کاتالوگ PDF
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* عنوان بخش کاتالوگ (CSS Selector 1) */}
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          عنوان اصلی بخش کاتالوگ:
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={
+                              aboutUsSettingsForm.catalogTitle ||
+                              'فایل کاتالوگ محصولات'
+                            }
+                            onChange={(e) =>
+                              setAboutUsSettingsForm({
+                                ...aboutUsSettingsForm,
+                                catalogTitle: e.target.value,
+                              })
+                            }
+                            placeholder="فایل کاتالوگ محصولات"
+                            className="flex-1 h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold"
+                          />
+                          <input
+                            type="color"
+                            value={aboutUsSettingsForm.catalogTitleColor || '#181818'}
+                            onChange={(e) =>
+                              setAboutUsSettingsForm({
+                                ...aboutUsSettingsForm,
+                                catalogTitleColor: e.target.value,
+                              })
+                            }
+                            className="w-10 h-10 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* عنوان کارت کاتالوگ (CSS Selector 3) */}
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          عنوان روی کارت کاتالوگ:
+                        </label>
+                        <input
+                          type="text"
+                          value={
+                            aboutUsSettingsForm.catalogCardTitle ||
+                            'کاتالوگ محصولات لوستر صالحی'
+                          }
+                          onChange={(e) =>
+                            setAboutUsSettingsForm({
+                              ...aboutUsSettingsForm,
+                              catalogCardTitle: e.target.value,
+                            })
+                          }
+                          placeholder="کاتالوگ محصولات لوستر صالحی"
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold"
+                        />
+                      </div>
+
+                      {/* تعداد صفحات / مشخصات کارت (CSS Selector 4) */}
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          تعداد صفحات / مشخصات کارت:
+                        </label>
+                        <input
+                          type="text"
+                          value={
+                            aboutUsSettingsForm.catalogPageCount ||
+                            '۱۲۶ صفحه'
+                          }
+                          onChange={(e) =>
+                            setAboutUsSettingsForm({
+                              ...aboutUsSettingsForm,
+                              catalogPageCount: e.target.value,
+                            })
+                          }
+                          placeholder="۱۲۶ صفحه"
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold tabular-nums"
+                        />
+                      </div>
+
+                      {/* لینک مستقیم دانلود کاتالوگ PDF (CSS Selector 5) با قابلیت آپلود فایل PDF */}
+                      <div className="space-y-2.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <label className="block text-xs font-bold text-[#333]">
+                            لینک / فایل دانلود مستقیم PDF کاتالوگ:
+                          </label>
+                          {aboutUsSettingsForm.catalogDownloadUrl ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10.5px] font-bold text-[#1f6334] bg-[#e8f5e9] px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <Check className="w-3 h-3 text-[#2e7d32]" />
+                                <span>فایل PDF آماده دانلود است</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setAboutUsSettingsForm({
+                                    ...aboutUsSettingsForm,
+                                    catalogDownloadUrl: '',
+                                  })
+                                }
+                                className="text-[10.5px] font-bold text-[#ea1d2c] hover:underline cursor-pointer"
+                              >
+                                حذف فایل
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                          <label className="h-10 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-xs">
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>آپلود فایل PDF کاتالوگ</span>
+                            <input
+                              type="file"
+                              accept="application/pdf,.pdf,image/*"
+                              className="hidden"
+                              onChange={(e) =>
+                                handleFileUploadToDataUrl(
+                                  e.target.files?.[0],
+                                  (dataUrl) => {
+                                    setAboutUsSettingsForm({
+                                      ...aboutUsSettingsForm,
+                                      catalogDownloadUrl: dataUrl,
+                                    });
+                                    showNotice(
+                                      'success',
+                                      'فایل PDF کاتالوگ با موفقیت آپلود شد.'
+                                    );
+                                  }
+                                )
+                              }
+                            />
+                          </label>
+
+                          <input
+                            type="text"
+                            dir="ltr"
+                            value={aboutUsSettingsForm.catalogDownloadUrl || ''}
+                            onChange={(e) =>
+                              setAboutUsSettingsForm({
+                                ...aboutUsSettingsForm,
+                                catalogDownloadUrl: e.target.value,
+                              })
+                            }
+                            placeholder="یا آدرس مستقیم (https://.../catalog.pdf)"
+                            className="h-10 flex-1 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold text-left"
+                          />
+                        </div>
+                      </div>
+
+                      {/* متن توضیحات کامل بخش کاتالوگ (CSS Selector 2) */}
+                      <div className="md:col-span-2 space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          متن کامل توضیحات بخش کاتالوگ:
+                        </label>
+                        <div className="flex gap-2">
+                          <textarea
+                            rows={4}
+                            value={
+                              aboutUsSettingsForm.catalogDescription || ''
+                            }
+                            onChange={(e) =>
+                              setAboutUsSettingsForm({
+                                ...aboutUsSettingsForm,
+                                catalogDescription: e.target.value,
+                              })
+                            }
+                            placeholder="توضیحات مربوط به دانلود و مشاهده کاتالوگ محصولات..."
+                            className="flex-1 rounded-xl border border-[#e0e0e0] p-3 text-xs font-semibold leading-6"
+                          />
+                          <input
+                            type="color"
+                            value={aboutUsSettingsForm.catalogDescriptionColor || '#777777'}
+                            onChange={(e) =>
+                              setAboutUsSettingsForm({
+                                ...aboutUsSettingsForm,
+                                catalogDescriptionColor: e.target.value,
+                              })
+                            }
+                            className="w-10 h-10 rounded-lg border border-[#d8d0c3] cursor-pointer p-0.5 bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* دکمه ذخیره پایانی */}
+                  <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
+                    <button
+                      type="submit"
+                      disabled={isSavingAboutUsSettings}
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-60"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>
+                        {isSavingAboutUsSettings
+                          ? 'در حال ذخیره و بروزرسانی...'
+                          : 'ثبت و اعمال تغییرات در صفحه درباره ما'}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              ) : activeWebsiteSettingsTab === 'main' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingMainSettings(true);
+                    try {
+                      const saved = await authFetch(
+                        '/api/admin/settings/main',
+                        {
+                          method: 'PUT',
+                          body: JSON.stringify(mainSettingsForm),
+                        }
+                      );
+                      setMainSettingsForm({
+                        ...INITIAL_MAIN_SETTINGS,
+                        ...saved,
+                      });
+                      onCatalogUpdated?.();
+                      showNotice(
+                        'success',
+                        'تنظیمات اصلی و منوهای سایت با موفقیت ذخیره و اعمال شد.'
+                      );
+                    } catch (err: any) {
+                      showNotice(
+                        'error',
+                        err?.message || 'خطا در ذخیره تنظیمات اصلی سایت'
+                      );
+                    } finally {
+                      setIsSavingMainSettings(false);
+                    }
+                  }}
+                  className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                        تنظیمات اصلی وب‌سایت و چیدمان منوها
+                      </h2>
+                      <p className="text-xs text-[#666] mt-1">
+                        مدیریت عنوان و شعار سایت، لینک‌های تماس و شبکه‌های اجتماعی، مخفی‌سازی زبان سایت و مدیریت منوها و زیرمنوها
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        disabled={isSavingMainSettings}
+                        onClick={() => {
+                          setMainSettingsForm(INITIAL_MAIN_SETTINGS);
+                          showNotice('success', 'فرم به مقادیر پیش‌فرض بازگردانی شد. برای ذخیره نهایی کلیک کنید.');
+                        }}
+                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        بازگردانی به مقادیر پیش‌فرض
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingMainSettings}
+                        className="h-10 px-5 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>
+                          {isSavingMainSettings
+                            ? 'در حال ذخیره...'
+                            : 'ذخیره تنظیمات اصلی'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ۱. مشخصات عمومی و شبکه‌های اجتماعی */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۱. عنوان، توضیحات، شماره تماس و شبکه‌های اجتماعی
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          عنوان اصلی وب‌سایت:
+                        </label>
+                        <input
+                          type="text"
+                          value={mainSettingsForm.siteTitle || ''}
+                          onChange={(e) =>
+                            setMainSettingsForm({
+                              ...mainSettingsForm,
+                              siteTitle: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          شعار و زیرعنوان وب‌سایت:
+                        </label>
+                        <input
+                          type="text"
+                          value={mainSettingsForm.siteSubtitle || ''}
+                          onChange={(e) =>
+                            setMainSettingsForm({
+                              ...mainSettingsForm,
+                              siteSubtitle: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          تلفن پشتیبانی و مشاوره خرید:
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={mainSettingsForm.supportPhone || ''}
+                          onChange={(e) =>
+                            setMainSettingsForm({
+                              ...mainSettingsForm,
+                              supportPhone: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold text-left tabular-nums"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          لینک اینستاگرام گالری:
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={mainSettingsForm.instagramUrl || ''}
+                          onChange={(e) =>
+                            setMainSettingsForm({
+                              ...mainSettingsForm,
+                              instagramUrl: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold text-left"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          لینک کانال تلگرام:
+                        </label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={mainSettingsForm.telegramUrl || ''}
+                          onChange={(e) =>
+                            setMainSettingsForm({
+                              ...mainSettingsForm,
+                              telegramUrl: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold text-left"
+                        />
+                      </div>
+
+                      {/* هیدن کردن زبان سایت (مورد ۵ کاربر) */}
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1] flex flex-col justify-center">
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(mainSettingsForm.hideLanguageSelector)}
+                            onChange={(e) =>
+                              setMainSettingsForm({
+                                ...mainSettingsForm,
+                                hideLanguageSelector: e.target.checked,
+                              })
+                            }
+                            className="w-4 h-4 rounded border-gray-300 text-[#b59766] focus:ring-[#b59766]"
+                          />
+                          <div>
+                            <span className="block text-xs font-bold text-[#181818]">
+                              مخفی‌سازی انتخاب زبان سایت
+                            </span>
+                            <span className="block text-[10px] text-[#777] mt-0.5">
+                              دکمه انتخاب زبان (FA/EN) در بالای هدر پنهان شود
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۳. تنظیمات بخش درباره خدمات (مورد درخواست کاربر) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۳. مدیریت محتوای بخش «درباره خدمات لوستر» (About Services)
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          عنوان اصلی بخش (دسکتاپ):
+                        </label>
+                        <input
+                          type="text"
+                          value={mainSettingsForm.servicesTitle || ''}
+                          onChange={(e) =>
+                            setMainSettingsForm({
+                              ...mainSettingsForm,
+                              servicesTitle: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                        />
+                      </div>
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          عنوان اصلی بخش (موبایل):
+                        </label>
+                        <input
+                          type="text"
+                          value={mainSettingsForm.servicesSubtitle || ''}
+                          onChange={(e) =>
+                            setMainSettingsForm({
+                              ...mainSettingsForm,
+                              servicesSubtitle: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-xl bg-white border border-[#e7dfd1] space-y-3">
+                        <div className="flex items-center justify-between border-b border-[#f0f0f0] pb-2">
+                          <span className="text-xs font-black text-[#181818]">خدمت شماره ۱ (راست)</span>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[#777]">عنوان خدمت:</label>
+                            <input
+                              type="text"
+                              value={mainSettingsForm.service1Title || ''}
+                              onChange={(e) =>
+                                setMainSettingsForm({
+                                  ...mainSettingsForm,
+                                  service1Title: e.target.value,
+                                })
+                              }
+                              className="w-full h-9 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[#777]">توضیحات کامل خدمت:</label>
+                            <textarea
+                              rows={3}
+                              value={mainSettingsForm.service1Description || ''}
+                              onChange={(e) =>
+                                setMainSettingsForm({
+                                  ...mainSettingsForm,
+                                  service1Description: e.target.value,
+                                })
+                              }
+                              className="w-full rounded-lg border border-[#e0e0e0] p-2.5 text-xs font-medium leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-white border border-[#e7dfd1] space-y-3">
+                        <div className="flex items-center justify-between border-b border-[#f0f0f0] pb-2">
+                          <span className="text-xs font-black text-[#181818]">خدمت شماره ۲ (چپ)</span>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[#777]">عنوان خدمت:</label>
+                            <input
+                              type="text"
+                              value={mainSettingsForm.service2Title || ''}
+                              onChange={(e) =>
+                                setMainSettingsForm({
+                                  ...mainSettingsForm,
+                                  service2Title: e.target.value,
+                                })
+                              }
+                              className="w-full h-9 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[#777]">توضیحات کامل خدمت:</label>
+                            <textarea
+                              rows={3}
+                              value={mainSettingsForm.service2Description || ''}
+                              onChange={(e) =>
+                                setMainSettingsForm({
+                                  ...mainSettingsForm,
+                                  service2Description: e.target.value,
+                                })
+                              }
+                              className="w-full rounded-lg border border-[#e0e0e0] p-2.5 text-xs font-medium leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-[#333]">
+                            آدرس / آپلود تصویر شاخص لوستر (داخل قاب قوسی):
+                          </label>
+                          <label className="h-8 px-3 rounded-lg bg-[#1a1814] hover:bg-[#b59766] text-white text-[10px] font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm">
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>آپلود عکس</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) =>
+                                handleFileUploadToDataUrl(
+                                  e.target.files?.[0],
+                                  (dataUrl) =>
+                                    setMainSettingsForm({
+                                      ...mainSettingsForm,
+                                      servicesMainImage: dataUrl,
+                                    })
+                                )
+                              }
+                            />
+                          </label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-lg border border-[#ddd] bg-[#f9f9f9] overflow-hidden flex items-center justify-center shrink-0">
+                            {mainSettingsForm.servicesMainImage ? (
+                              <img
+                                src={mainSettingsForm.servicesMainImage}
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <Image className="w-6 h-6 text-[#ccc]" />
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            dir="ltr"
+                            value={mainSettingsForm.servicesMainImage || ''}
+                            onChange={(e) =>
+                              setMainSettingsForm({
+                                ...mainSettingsForm,
+                                servicesMainImage: e.target.value,
+                              })
+                            }
+                            placeholder="/src/assets/images/..."
+                            className="flex-1 h-10 rounded-lg border border-[#e0e0e0] px-3 text-[11px] font-mono focus:outline-none focus:border-[#b59766]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۲. منوی هدر سایت (قابلیت تغییر چیدمان، حذف و افزودن و زیر منو) */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#ece4d4] pb-2.5">
+                      <div>
+                        <h3 className="text-sm font-black text-[#181818]">
+                          ۲. مدیریت و ساختار منوهای ناوبری هدر سایت
+                        </h3>
+                        <p className="text-[11px] text-[#777] mt-0.5">
+                          منوهای بالای سایت را ویرایش کنید، ترتیب آن‌ها را بالا پایین کنید، منوی جدید اضافه کنید یا زیرمنو قرار دهید
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addMainMenu}
+                        className="h-9 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>افزودن منوی اصلی جدید</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {(mainSettingsForm.headerMenus || []).map((menuItem: any, mIdx: number) => (
+                        <div
+                          key={menuItem.id || `menu-itm-${mIdx}`}
+                          className="bg-white p-4 rounded-xl border border-[#e7dfd1] space-y-3.5"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#f0ece3] pb-2">
+                            <span className="text-xs font-black text-[#b59766]">
+                              منوی اصلی {(mIdx + 1).toLocaleString('fa-IR')}: {menuItem.label || '(بدون عنوان)'}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={mIdx === 0}
+                                onClick={() => moveMenuUp(mIdx)}
+                                className="w-7 h-7 rounded bg-[#f7f6f2] hover:bg-[#eceae1] text-[#444] disabled:opacity-30 flex items-center justify-center cursor-pointer"
+                                title="انتقال به بالا"
+                              >
+                                <ChevronUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={mIdx === (mainSettingsForm.headerMenus || []).length - 1}
+                                onClick={() => moveMenuDown(mIdx)}
+                                className="w-7 h-7 rounded bg-[#f7f6f2] hover:bg-[#eceae1] text-[#444] disabled:opacity-30 flex items-center justify-center cursor-pointer"
+                                title="انتقال به پایین"
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteMenu(mIdx)}
+                                className="w-7 h-7 rounded bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer"
+                                title="حذف این منو"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="space-y-1">
+                              <label className="block text-[11px] font-bold text-[#555]">
+                                عنوان منو:
+                              </label>
+                              <input
+                                type="text"
+                                value={menuItem.label || ''}
+                                onChange={(e) => {
+                                  const updated = [...mainSettingsForm.headerMenus];
+                                  updated[mIdx].label = e.target.value;
+                                  setMainSettingsForm({ ...mainSettingsForm, headerMenus: updated });
+                                }}
+                                className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="block text-[11px] font-bold text-[#555]">
+                                آدرس لینک (در صورت داشتن زیرمنو خالی بگذارید):
+                              </label>
+                              <input
+                                type="text"
+                                dir="ltr"
+                                value={menuItem.href || ''}
+                                onChange={(e) => {
+                                  const updated = [...mainSettingsForm.headerMenus];
+                                  updated[mIdx].href = e.target.value;
+                                  setMainSettingsForm({ ...mainSettingsForm, headerMenus: updated });
+                                }}
+                                className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold text-left"
+                              />
+                            </div>
+                          </div>
+
+                          {/* زیر منو ها */}
+                          <div className="bg-[#fcfbf9] p-3 rounded-lg border border-[#eee6d7] space-y-3">
+                            <div className="flex items-center justify-between border-b border-[#ece2cf] pb-1.5">
+                              <span className="text-[10.5px] font-black text-[#555] flex items-center gap-1">
+                                <Layers className="w-3.5 h-3.5" />
+                                <span>زیرمنوهای این آیتم (امکان افزودن زیرمنو)</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => addSubmenuItem(mIdx)}
+                                className="text-[10.5px] font-bold text-[#b59766] hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>افزودن زیرمنو</span>
+                              </button>
+                            </div>
+
+                            {menuItem.submenuItems && menuItem.submenuItems.length > 0 ? (
+                              <div className="space-y-2.5">
+                                {menuItem.submenuItems.map((subItem: any, sIdx: number) => (
+                                  <div
+                                    key={subItem.id || `sub-${mIdx}-${sIdx}`}
+                                    className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-white p-2 rounded-lg border border-[#e4decb]"
+                                  >
+                                    <div className="sm:col-span-5">
+                                      <input
+                                        type="text"
+                                        value={subItem.label || ''}
+                                        onChange={(e) => {
+                                          const updated = [...mainSettingsForm.headerMenus];
+                                          updated[mIdx].submenuItems[sIdx].label = e.target.value;
+                                          setMainSettingsForm({ ...mainSettingsForm, headerMenus: updated });
+                                        }}
+                                        placeholder="عنوان زیرمنو"
+                                        className="w-full h-8 rounded border border-[#e0e0e0] px-2 text-[11px] font-medium"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-6">
+                                      <input
+                                        type="text"
+                                        dir="ltr"
+                                        value={subItem.href || ''}
+                                        onChange={(e) => {
+                                          const updated = [...mainSettingsForm.headerMenus];
+                                          updated[mIdx].submenuItems[sIdx].href = e.target.value;
+                                          setMainSettingsForm({ ...mainSettingsForm, headerMenus: updated });
+                                        }}
+                                        placeholder="/product/categories/..."
+                                        className="w-full h-8 rounded border border-[#e0e0e0] px-2 text-[11px] text-left"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-1 flex justify-end">
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteSubmenuItem(mIdx, sIdx)}
+                                        className="w-7 h-7 rounded bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center cursor-pointer hover:bg-[#ea1d2c] hover:text-white transition-colors"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-[10px] text-[#777] italic">
+                                این منو فاقد زیرمنو است (مستقیماً به آدرس مشخص‌شده لینک می‌شود).
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* دکمه ذخیره پایانی */}
+                  <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
+                    <button
+                      type="submit"
+                      disabled={isSavingMainSettings}
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-60"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>
+                        {isSavingMainSettings
+                          ? 'در حال ذخیره و بروزرسانی...'
+                          : 'ثبت و اعمال تغییرات منوها و تنظیمات اصلی'}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              ) : activeWebsiteSettingsTab === 'sms' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingSmsSettings(true);
+                    try {
+                      const saved = await authFetch(
+                        '/api/admin/settings/sms',
+                        {
+                          method: 'PUT',
+                          body: JSON.stringify(smsSettingsForm),
+                        }
+                      );
+                      setSmsSettingsForm({
+                        ...INITIAL_SMS_SETTINGS,
+                        ...saved,
+                      });
+                      showNotice(
+                        'success',
+                        'تنظیمات پنل پیامک با موفقیت ذخیره و به‌روزرسانی شد.'
+                      );
+                    } catch (err: any) {
+                      showNotice(
+                        'error',
+                        err?.message || 'خطا در ذخیره تنظیمات پیامک'
+                      );
+                    } finally {
+                      setIsSavingSmsSettings(false);
+                    }
+                  }}
+                  className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                        تنظیمات پنل و سامانه پیامک (`SMS Portal`)
+                      </h2>
+                      <p className="text-xs text-[#666] mt-1">
+                        پیکربندی کلید وب‌سرویس، شماره‌های فرستنده، مدیریت اعلان‌های خودکار ثبت سفارش به ادمین و مشتری
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        disabled={isSavingSmsSettings}
+                        onClick={() => {
+                          setSmsSettingsForm(INITIAL_SMS_SETTINGS);
+                          showNotice('success', 'فرم به مقادیر پیش‌فرض بازگردانی شد. برای ذخیره نهایی کلیک کنید.');
+                        }}
+                        className="h-10 px-4 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold cursor-pointer transition-colors"
+                      >
+                        بازگردانی به پیش‌فرض پیامک
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingSmsSettings}
+                        className="h-10 px-5 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>
+                          {isSavingSmsSettings
+                            ? 'در حال ذخیره...'
+                            : 'ذخیره تنظیمات پیامک'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ۱. اطلاعات پنل پیامک */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۱. اطلاعات اتصال و وب‌سرویس پیامک
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          کلید API سامانه پیامکی:
+                        </label>
+                        <input
+                          type="password"
+                          value={smsSettingsForm.apiKey || ''}
+                          onChange={(e) =>
+                            setSmsSettingsForm({
+                              ...smsSettingsForm,
+                              apiKey: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-mono"
+                          dir="ltr"
+                          placeholder="API Key..."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          خط اختصاصی فرستنده (Sender Line):
+                        </label>
+                        <input
+                          type="text"
+                          value={smsSettingsForm.senderLine || ''}
+                          onChange={(e) =>
+                            setSmsSettingsForm({
+                              ...smsSettingsForm,
+                              senderLine: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold tabular-nums"
+                          dir="ltr"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          شماره موبایل ادمین (دریافت اعلان‌ها):
+                        </label>
+                        <input
+                          type="text"
+                          value={smsSettingsForm.adminPhone || ''}
+                          onChange={(e) =>
+                            setSmsSettingsForm({
+                              ...smsSettingsForm,
+                              adminPhone: e.target.value,
+                            })
+                          }
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-bold tabular-nums"
+                          dir="ltr"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۲. وضعیت اطلاع‌رسانی‌ها */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۲. فعال‌سازی اعلان‌های خودکار پیامکی
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1] flex items-center">
+                        <label className="flex items-center gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(smsSettingsForm.enableNewOrderSmsAdmin)}
+                            onChange={(e) =>
+                              setSmsSettingsForm({
+                                ...smsSettingsForm,
+                                enableNewOrderSmsAdmin: e.target.checked,
+                              })
+                            }
+                            className="w-4 h-4 rounded border-gray-300 text-[#b59766] focus:ring-[#b59766]"
+                          />
+                          <span className="text-xs font-bold text-[#181818]">
+                            ارسال پیامک سفارش جدید به ادمین
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1] flex items-center">
+                        <label className="flex items-center gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(smsSettingsForm.enableNewOrderSmsCustomer)}
+                            onChange={(e) =>
+                              setSmsSettingsForm({
+                                ...smsSettingsForm,
+                                enableNewOrderSmsCustomer: e.target.checked,
+                              })
+                            }
+                            className="w-4 h-4 rounded border-gray-300 text-[#b59766] focus:ring-[#b59766]"
+                          />
+                          <span className="text-xs font-bold text-[#181818]">
+                            ارسال پیامک تایید سفارش به مشتری
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-3.5 rounded-xl border border-[#e7dfd1] flex items-center">
+                        <label className="flex items-center gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(smsSettingsForm.enableNewContactMessageSms)}
+                            onChange={(e) =>
+                              setSmsSettingsForm({
+                                ...smsSettingsForm,
+                                enableNewContactMessageSms: e.target.checked,
+                              })
+                            }
+                            className="w-4 h-4 rounded border-gray-300 text-[#b59766] focus:ring-[#b59766]"
+                          />
+                          <span className="text-xs font-bold text-[#181818]">
+                            ارسال پیامک هشدار پیام تماس با ما به ادمین
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۳. قالب‌های متنی */}
+                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                    <h3 className="text-sm font-black text-[#181818]">
+                      ۳. متن و الگوهای پیامکی (Templates)
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="space-y-1.5 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          متن پیامک خوش‌آمدگویی اعضای جدید:
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={smsSettingsForm.welcomeSmsTemplate || ''}
+                          onChange={(e) =>
+                            setSmsSettingsForm({
+                              ...smsSettingsForm,
+                              welcomeSmsTemplate: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-lg border border-[#e0e0e0] p-2.5 text-xs font-medium leading-relaxed"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          متن پیامک ثبت سفارش جدید (مخصوص ادمین):
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={smsSettingsForm.newOrderSmsTemplateAdmin || ''}
+                          onChange={(e) =>
+                            setSmsSettingsForm({
+                              ...smsSettingsForm,
+                              newOrderSmsTemplateAdmin: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-lg border border-[#e0e0e0] p-2.5 text-xs font-medium leading-relaxed"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-white p-4 rounded-xl border border-[#e7dfd1]">
+                        <label className="block text-xs font-bold text-[#333]">
+                          متن پیامک تایید و پرداخت فاکتور (مخصوص مشتری):
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={smsSettingsForm.newOrderSmsTemplateCustomer || ''}
+                          onChange={(e) =>
+                            setSmsSettingsForm({
+                              ...smsSettingsForm,
+                              newOrderSmsTemplateCustomer: e.target.value,
+                            })
+                          }
+                          className="w-full rounded-lg border border-[#e0e0e0] p-2.5 text-xs font-medium leading-relaxed"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* دکمه ذخیره پایانی */}
+                  <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
+                    <button
+                      type="submit"
+                      disabled={isSavingSmsSettings}
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-60"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>
+                        {isSavingSmsSettings
+                          ? 'در حال ذخیره و بروزرسانی...'
+                          : 'ثبت و اعمال تغییرات سامانه پیامک'}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+               ) : activeWebsiteSettingsTab === 'faq' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingFaqSettings(true);
+                    try {
+                      const saved = await authFetch(
+                        '/api/admin/settings/faq',
+                        {
+                          method: 'PUT',
+                          body: JSON.stringify(faqSettingsForm),
+                        }
+                      );
+                      setFaqSettingsForm({
+                        ...INITIAL_FAQ_SETTINGS,
+                        ...saved,
+                      });
+                      onCatalogUpdated?.();
+                      showNotice(
+                        'success',
+                        'سوالات متداول صفحات با موفقیت ذخیره و در سایت اعمال شد.'
+                      );
+                    } catch (err: any) {
+                      showNotice(
+                        'error',
+                        err?.message || 'خطا در ذخیره سوالات متداول'
+                      );
+                    } finally {
+                      setIsSavingFaqSettings(false);
+                    }
+                  }}
+                  className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                        تنظیمات و مدیریت سوالات متداول صفحات (`FAQs`)
+                      </h2>
+                      <p className="text-xs text-[#666] mt-1">
+                        مدیریت پرسش‌ها و پاسخ‌های پرتکرار مشتریان (حداقل ۱۰ سوال برای هر بخش)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    {[
+                      { id: 'about', label: 'صفحه درباره ما' },
+                      { id: 'rules', label: 'صفحه قوانین و مقررات' },
+                    ].map((section) => (
+                      <div key={section.id} className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                        <div className="flex items-center justify-between border-b border-[#ece2cf] pb-2">
+                          <h3 className="text-sm font-black text-[#181818]">
+                            سوالات متداول {section.label}
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentFaqs = faqSettingsForm.faqs?.[section.id] || [];
+                              const newItem = {
+                                id: `faq-${section.id}-${Date.now()}`,
+                                question: 'عنوان سوال جدید؟',
+                                answer: 'متن پاسخ سوال جدید...',
+                              };
+                              setFaqSettingsForm({
+                                ...faqSettingsForm,
+                                faqs: {
+                                  ...(faqSettingsForm.faqs || { about: [], rules: [] }),
+                                  [section.id]: [...currentFaqs, newItem],
+                                },
+                              });
+                            }}
+                            className="h-9 px-4 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>افزودن سوال جدید</span>
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {(faqSettingsForm.faqs?.[section.id] || []).map((faqItem: any, fIdx: number) => (
+                            <div key={faqItem.id} className="p-4 rounded-xl bg-white border border-[#e7dfd1] space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black text-[#181818]">سوال {(fIdx + 1).toLocaleString('fa-IR')}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = (faqSettingsForm.faqs?.[section.id] || []).filter((_: any, i: number) => i !== fIdx);
+                                    setFaqSettingsForm({
+                                      ...faqSettingsForm,
+                                      faqs: {
+                                        ...(faqSettingsForm.faqs || { about: [], rules: [] }),
+                                        [section.id]: next,
+                                      },
+                                    });
+                                  }}
+                                  className="text-xs font-bold text-[#ea1d2c] hover:underline"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <input
+                                type="text"
+                                value={faqItem.question || ''}
+                                onChange={(e) => {
+                                  const next = [...faqSettingsForm.faqs[section.id]];
+                                  next[fIdx] = { ...faqItem, question: e.target.value };
+                                  setFaqSettingsForm({
+                                    ...faqSettingsForm,
+                                    faqs: { ...faqSettingsForm.faqs, [section.id]: next },
+                                  });
+                                }}
+                                className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                                placeholder="پرسش..."
+                              />
+                              <textarea
+                                rows={2}
+                                value={faqItem.answer || ''}
+                                onChange={(e) => {
+                                  const next = [...faqSettingsForm.faqs[section.id]];
+                                  next[fIdx] = { ...faqItem, answer: e.target.value };
+                                  setFaqSettingsForm({
+                                    ...faqSettingsForm,
+                                    faqs: { ...faqSettingsForm.faqs, [section.id]: next },
+                                  });
+                                }}
+                                className="w-full rounded-lg border border-[#e0e0e0] p-2 text-xs font-medium"
+                                placeholder="پاسخ..."
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* دکمه ذخیره پایانی */}
+                  <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
+                    <button
+                      type="submit"
+                      disabled={isSavingFaqSettings}
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-60"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{isSavingFaqSettings ? 'در حال ذخیره...' : 'ثبت و اعمال تغییرات'}</span>
+                    </button>
+                  </div>
+                </form>
               ) : (
-                <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-8 min-h-[360px]" />
+                <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-8 min-h-[360px] flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-[#faf8f4] text-[#b59766] flex items-center justify-center border border-[#ece4d4]">
+                    <Settings className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-[#181818]">
+                      {WEBSITE_SETTINGS_SUBTABS.find(
+                        (t) => t.id === activeWebsiteSettingsTab
+                      )?.label || 'تنظیمات وب‌سایت'}
+                    </h3>
+                    <p className="text-xs text-[#777] mt-1 max-w-md mx-auto leading-6">
+                      تنظیمات این بخش با مقادیر پیش‌فرض فعال است. برای مدیریت صفحات «درباره ما»، «تماس با ما» یا «فوتر»، لطفاً از تب‌های بالا استفاده کنید.
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           )}

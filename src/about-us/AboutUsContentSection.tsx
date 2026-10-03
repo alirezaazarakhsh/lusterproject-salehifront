@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, Download, CheckCircle2 } from 'lucide-react';
 import { SectionHeading } from '../components/Ornaments';
 import { AppToast } from '../components/InteractiveModals';
 import { GENERATED_IMAGES } from '../data/chandelierData';
@@ -9,7 +9,47 @@ import aboutGalleryRoyalStaircaseImg from '../assets/images/about_gallery_royal_
 import aboutGalleryModernVillaImg from '../assets/images/about_gallery_modern_villa_1790844817623.jpg';
 import aboutGalleryEmeraldPalaceImg from '../assets/images/about_gallery_emerald_palace_1790844830735.jpg';
 
+import { FooterSettingsConfig } from '../components/sections/FooterSection';
+
+export interface AboutUsSettingsConfig {
+  storyTitle: string;
+  storyDescription: string;
+  galleryImages: string[];
+  catalogTitle?: string;
+  catalogTitleColor?: string;
+  catalogDescription?: string;
+  catalogDescriptionColor?: string;
+  catalogCardTitle?: string;
+  catalogPageCount?: string;
+  catalogDownloadUrl?: string;
+}
+
+export const INITIAL_ABOUT_US_SETTINGS: AboutUsSettingsConfig = {
+  storyTitle: 'داستان بی انتهای ما!',
+  storyDescription:
+    'شرکت صنایع لوستر صالحی از سال 1352 تا کنون فعالیت خود را در زمینه ساخت انواع لوستر و دیگر تجهیزات لوکس آغاز نموده و امروزه بیش از 100 محصول متنوع را با بهره گیری از برترین تکنولوژی روز دنیا و مرغوب ترین مواد اولیه مطابق با استانداردهای اروپایی ، تولید نموده تا فخر صنعت لوستر سازی کشور باشد. این شرکت مفتخر است کلیه محصولات خود را به بیش از 10 کشور اروپایی و آسیایی معرفی نموده که بتواند قدمی در جهت شکوفایی نام ایران بردارد. شرکت صنایع لوستر صالحی از سال 1352 تا کنون فعالیت خود را در زمینه ساخت انواع لوستر و دیگر تجهیزات لوکس آغاز نموده و امروزه بیش از 100 محصول متنوع را با بهره گیری از برترین تکنولوژی روز دنیا و مرغوب ترین مواد اولیه مطابق با استانداردهای اروپایی ، تولید نموده تا فخر صنعت لوستر سازی کشور باشد. این شرکت مفتخر است کلیه محصولات خود را به بیش از 10 کشور اروپایی و آسیایی معرفی نموده که بتواند قدمی در جهت شکوفایی نام ایران بردارد. شرکت صنایع لوستر صالحی از سال 1352 تا کنون فعالیت خود را در زمینه ساخت انواع لوستر و دیگر تجهیزات میباشد.',
+  galleryImages: [
+    aboutGalleryShowroomImg,
+    aboutGalleryGrandAtelierImg,
+    GENERATED_IMAGES.projectFereshteh,
+    aboutGalleryRoyalStaircaseImg,
+    aboutGalleryModernVillaImg,
+    aboutGalleryEmeraldPalaceImg,
+  ],
+  catalogTitle: 'فایل کاتالوگ محصولات',
+  catalogTitleColor: '#181818',
+  catalogDescription:
+    'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.',
+  catalogDescriptionColor: '#777777',
+  catalogCardTitle: 'کاتالوگ محصولات لوستر صالحی',
+  catalogPageCount: '۱۲۶ صفحه',
+  catalogDownloadUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+};
+
 interface AboutUsContentSectionProps {
+  aboutUsSettings?: AboutUsSettingsConfig;
+  footerSettings?: FooterSettingsConfig;
+  faqSettings?: any;
   onShowToast?: (
     type: AppToast['type'],
     title: string,
@@ -352,32 +392,6 @@ const WHY_BUY_FEATURES: WhyBuyFeatureItem[] = [
   },
 ];
 
-interface FaqItemData {
-  id: number;
-  question: string;
-  mobileQuestion?: string;
-}
-
-const ABOUT_FAQ_ITEMS: FaqItemData[] = [
-  {
-    id: 1,
-    question: 'پشتیبانی لوستر صالحی به چه صورت است ؟',
-  },
-  {
-    id: 2,
-    question: 'همکاری در فروش چه شرایطی لازم است ؟',
-  },
-  {
-    id: 3,
-    question: 'مواد اولیه لوستر از کجا تامین میشود؟',
-  },
-  {
-    id: 4,
-    question: 'پیاده سازی عملکرد آبکاری لوستر صالحی به چه صورتی است ؟',
-    mobileQuestion: 'پیاده سازی عملکرد آبکاری لوستر صالحی به چه ...',
-  },
-];
-
 const GALLERY_SLIDES = [
   aboutGalleryShowroomImg,
   aboutGalleryGrandAtelierImg,
@@ -387,12 +401,59 @@ const GALLERY_SLIDES = [
   aboutGalleryEmeraldPalaceImg,
 ];
 
-export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
-  onShowToast,
-}) => {
+export const AboutUsContentSection = (props: AboutUsContentSectionProps) => {
+  const {
+    aboutUsSettings,
+    footerSettings,
+    faqSettings = { faqs: { about: [], rules: [] } },
+    onShowToast,
+  } = props;
+  const effectiveStoryTitle =
+    aboutUsSettings?.storyTitle || INITIAL_ABOUT_US_SETTINGS.storyTitle;
+  const effectiveCatalogTitle =
+    aboutUsSettings?.catalogTitle ||
+    footerSettings?.catalogTitle ||
+    INITIAL_ABOUT_US_SETTINGS.catalogTitle;
+  const effectiveCatalogDescription =
+    aboutUsSettings?.catalogDescription ||
+    footerSettings?.catalogDescription ||
+    INITIAL_ABOUT_US_SETTINGS.catalogDescription;
+  const effectiveCatalogCardTitle =
+    aboutUsSettings?.catalogCardTitle ||
+    footerSettings?.catalogCardTitle ||
+    INITIAL_ABOUT_US_SETTINGS.catalogCardTitle;
+  const effectiveCatalogPageCount =
+    aboutUsSettings?.catalogPageCount ||
+    footerSettings?.catalogPageCount ||
+    INITIAL_ABOUT_US_SETTINGS.catalogPageCount;
+  const effectiveCatalogDownloadUrl =
+    aboutUsSettings?.catalogDownloadUrl ||
+    footerSettings?.catalogDownloadUrl ||
+    INITIAL_ABOUT_US_SETTINGS.catalogDownloadUrl;
+  const effectiveStoryDescription =
+    aboutUsSettings?.storyDescription ||
+    INITIAL_ABOUT_US_SETTINGS.storyDescription;
+  const effectiveGallerySlides =
+    aboutUsSettings?.galleryImages && aboutUsSettings.galleryImages.length > 0
+      ? aboutUsSettings.galleryImages
+      : GALLERY_SLIDES;
+
+  const effectiveAboutFaqs = faqSettings?.faqs?.about || [];
+
   // اسلایدر عکس بخش اول (درباره لوستر صالحی)
-  const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(2);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [isGalleryPaused, setIsGalleryPaused] = useState<boolean>(false);
+
+  // چرخش اتوماتیک و نرم کروسل تصاویر بخش اول
+  useEffect(() => {
+    if (isGalleryPaused || effectiveGallerySlides.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setCurrentSlideIndex((prev) =>
+        prev >= effectiveGallerySlides.length - 1 ? 0 : prev + 1
+      );
+    }, 3800);
+    return () => window.clearInterval(timer);
+  }, [isGalleryPaused, currentSlideIndex, effectiveGallerySlides.length]);
 
   // کارت در حال هاور در بخش «چرا باید از لوستر صالحی خرید کنیم ؟!» (فقط هنگام هاور روشن شود و ثابت نماند)
   const [activeDesktopFeatureId, setActiveDesktopFeatureId] =
@@ -401,17 +462,6 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
   const [mobileFeatureIndex, setMobileFeatureIndex] = useState<number>(1);
   const [isMobileFeaturePaused, setIsMobileFeaturePaused] =
     useState<boolean>(false);
-
-  // چرخش اتوماتیک و نرم کروسل تصاویر بخش اول
-  useEffect(() => {
-    if (isGalleryPaused) return;
-    const timer = window.setInterval(() => {
-      setCurrentSlideIndex((prev) =>
-        prev === GALLERY_SLIDES.length - 1 ? 0 : prev + 1
-      );
-    }, 3800);
-    return () => window.clearInterval(timer);
-  }, [isGalleryPaused, currentSlideIndex]);
 
   // چرخش اتوماتیک و نرم کروسل کارت‌های ویژگی در نمای موبایل
   useEffect(() => {
@@ -423,12 +473,13 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
   }, [isMobileFeaturePaused, mobileFeatureIndex]);
 
   // وضعیت باز بودن سوالات متداول (در حالت عادی پیش‌فرض بسته باشند)
-  const [openRightFaqId, setOpenRightFaqId] = useState<number | null>(null);
-  const [openLeftFaqId, setOpenLeftFaqId] = useState<number | null>(null);
+  const [openRightFaqId, setOpenRightFaqId] = useState<number | string | null>(null);
+  const [openLeftFaqId, setOpenLeftFaqId] = useState<number | string | null>(null);
 
   // وضعیت دانلود کاتالوگ
   const [isDownloadingCatalog, setIsDownloadingCatalog] =
     useState<boolean>(false);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const downloadAttemptRef = useRef<number>(0);
 
   const handlePrevSlide = () => {
@@ -459,39 +510,59 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
   const handleDownloadCatalog = () => {
     if (isDownloadingCatalog) return;
     setIsDownloadingCatalog(true);
+    setDownloadProgress(0);
 
-    window.setTimeout(() => {
-      setIsDownloadingCatalog(false);
-      downloadAttemptRef.current += 1;
+    const downloadUrl = (effectiveCatalogDownloadUrl && effectiveCatalogDownloadUrl.trim()) 
+      || 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
 
-      if (downloadAttemptRef.current % 2 === 1) {
-        // وضعیت ۱: دانلود موفق فایل PDF (عکس ۱۲ موبایل و توست پایینی عکس ۱۳ دسکتاپ)
-        onShowToast?.(
-          'catalog-download-success',
-          'دانلود فایلPDF',
-          'فایل کاتالوگ محصول با موفقیت در حال دانلود است.'
-        );
-      } else {
-        // وضعیت ۲: خطای دانلود فایل کاتالوگ (عکس ۱۱ موبایل و توست بالایی عکس ۱۳ دسکتاپ)
-        onShowToast?.(
-          'catalog-download-error',
-          'خطایی دانلود رخ داد!',
-          'فایل کاتالوگ دانلود نشد، مجدد تلاش نمایید.'
-        );
+    let currentProg = 0;
+    const intervalId = window.setInterval(() => {
+      // شبیه‌سازی سرعت متغیر بارگذاری برای مودال گرافیکی
+      const increment = Math.floor(Math.random() * 8) + 4;
+      currentProg = Math.min(100, currentProg + increment);
+      setDownloadProgress(currentProg);
+
+      if (currentProg >= 100) {
+        window.clearInterval(intervalId);
+        
+        // شروع دانلود واقعی فایل دقیقا پس از پر شدن ۱۰۰ درصدی نوار پیشرفت مودال
+        try {
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = 'Salehi-Chandelier-Catalog.pdf';
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (e) {
+          console.error('Error initiating catalog download:', e);
+        }
+
+        // یک تاخیر کوتاه برای نمایش حالت تکمیل شده ۱۰۰٪ و سپس بستن مودال
+        window.setTimeout(() => {
+          setIsDownloadingCatalog(false);
+          setDownloadProgress(0);
+          onShowToast?.(
+            'catalog-download-success',
+            'دانلود فایل PDF',
+            'فایل کاتالوگ محصولات با موفقیت دریافت شد.'
+          );
+        }, 1000);
       }
-    }, 550);
+    }, 95);
   };
 
   const renderFaqAccordionColumn = (
-    openId: number | null,
-    setOpenId: React.Dispatch<React.SetStateAction<number | null>>,
+    faqs: any[],
+    openId: number | string | null,
+    setOpenId: React.Dispatch<React.SetStateAction<number | string | null>>,
     keyPrefix: string
   ) => (
     <div className="divide-y divide-[#ebebeb] border-b border-[#ebebeb]">
-      {ABOUT_FAQ_ITEMS.map((item) => {
+      {faqs.map((item, idx) => {
         const isOpen = openId === item.id;
         return (
-          <div key={`${keyPrefix}-${item.id}`} className="py-4">
+          <div key={`${keyPrefix}-${item.id || idx}`} className="py-4">
             <button
               type="button"
               onClick={() =>
@@ -507,13 +578,10 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
                       : 'border-[#eaeaea] bg-white text-[#2b2b2b] group-hover:border-[#c5a877]'
                   }`}
                 >
-                  {toPersianDigits(item.id)}
+                  {toPersianDigits(idx + 1)}
                 </span>
                 <span className="text-[13px] sm:text-[14px] font-bold text-[#1e1e1e] leading-snug">
-                  <span className="sm:hidden">
-                    {item.mobileQuestion || item.question}
-                  </span>
-                  <span className="hidden sm:inline">{item.question}</span>
+                  <span>{item.question}</span>
                 </span>
               </div>
 
@@ -530,23 +598,7 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
                   className="text-[12px] sm:text-[12.5px] leading-[2.15] text-[#666666] text-justify"
                   style={{ textAlignLast: 'right' }}
                 >
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با
-                  استفاده از طراحان گرافیک است. لورم ایپسوم لورم ایپسوم متن
-                  ساختگی با تولید سادگی نامفهوم از صنعت چاپ است لورم ایپسوم متن
-                  ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده میباشد.
-                </p>
-                <p
-                  className="text-[12px] sm:text-[12.5px] leading-[2.15] text-[#666666] text-justify"
-                  style={{ textAlignLast: 'right' }}
-                >
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با
-                  استفاده از{' '}
-                  <span className="text-[#a98552] font-semibold cursor-pointer hover:underline">
-                    اطلاعات بیشتر
-                  </span>{' '}
-                  است.
+                  {item.answer}
                 </p>
               </div>
             )}
@@ -569,27 +621,13 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
           {/* ستون راست در دسکتاپ / بالا در موبایل: متن داستان بی انتهای ما */}
           <div className="lg:col-span-7 text-right">
             <h3 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1e1e1e] mb-4">
-              داستان بی انتهای ما!
+              {effectiveStoryTitle}
             </h3>
             <p
-              className="text-[13px] sm:text-[14px] lg:text-[14.5px] leading-[2.3] text-[#4a4a4a] text-justify"
+              className="text-[13px] sm:text-[14px] lg:text-[14.5px] leading-[2.3] text-[#4a4a4a] text-justify whitespace-pre-line"
               style={{ textAlignLast: 'right' }}
             >
-              شرکت صنایع لوستر صالحی از سال 1352 تا کنون فعالیت خود را در زمینه
-              ساخت انواع لوستر و دیگر تجهیزات لوکس آغاز نموده و امروزه بیش از 100
-              محصول متنوع را با بهره گیری از برترین تکنولوژی روز دنیا و مرغوب
-              ترین مواد اولیه مطابق با استانداردهای اروپایی ، تولید نموده تا فخر
-              صنعت لوستر سازی کشور باشد. این شرکت مفتخر است کلیه محصولات خود را
-              به بیش از 10 کشور اروپایی و آسیایی معرفی نموده که بتواند قدمی در
-              جهت شکوفایی نام ایران بردارد. شرکت صنایع لوستر صالحی از سال 1352
-              تا کنون فعالیت خود را در زمینه ساخت انواع لوستر و دیگر تجهیزات لوکس
-              آغاز نموده و امروزه بیش از 100 محصول متنوع را با بهره گیری از
-              برترین تکنولوژی روز دنیا و مرغوب ترین مواد اولیه مطابق با
-              استانداردهای اروپایی ، تولید نموده تا فخر صنعت لوستر سازی کشور
-              باشد. این شرکت مفتخر است کلیه محصولات خود را به بیش از 10 کشور
-              اروپایی و آسیایی معرفی نموده که بتواند قدمی در جهت شکوفایی نام
-              ایران بردارد. شرکت صنایع لوستر صالحی از سال 1352 تا کنون فعالیت خود
-              را در زمینه ساخت انواع لوستر و دیگر تجهیزات میباشد.
+              {effectiveStoryDescription}
             </p>
           </div>
 
@@ -602,7 +640,7 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
               onTouchEnd={() => setIsGalleryPaused(false)}
               className="relative w-full aspect-[16/10] rounded-[18px] sm:rounded-[20px] overflow-hidden shadow-sm bg-[#ebe7df] group"
             >
-              {GALLERY_SLIDES.map((slideSrc, idx) => {
+              {effectiveGallerySlides.map((slideSrc, idx) => {
                 const isCurrent = idx === currentSlideIndex;
                 return (
                   <img
@@ -623,42 +661,48 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
               })}
 
               {/* دکمه‌های چپ و راست اسلایدر در دسکتاپ مطابق عکس نهم */}
-              <button
-                type="button"
-                onClick={handlePrevSlide}
-                aria-label="تصویر قبلی"
-                className="hidden sm:flex absolute right-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-[8px] bg-white/90 hover:bg-white text-[#2b2b2b] items-center justify-center shadow-xs transition-all cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleNextSlide}
-                aria-label="تصویر بعدی"
-                className="hidden sm:flex absolute left-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-[8px] bg-white/90 hover:bg-white text-[#2b2b2b] items-center justify-center shadow-xs transition-all cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+              {effectiveGallerySlides.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevSlide}
+                    aria-label="تصویر قبلی"
+                    className="hidden sm:flex absolute right-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-[8px] bg-white/90 hover:bg-white text-[#2b2b2b] items-center justify-center shadow-xs transition-all cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextSlide}
+                    aria-label="تصویر بعدی"
+                    className="hidden sm:flex absolute left-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-[8px] bg-white/90 hover:bg-white text-[#2b2b2b] items-center justify-center shadow-xs transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                </>
+              )}
 
               {/* نقطه‌های صفحه‌بندی پایین تصویر */}
-              <div className="absolute bottom-3.5 inset-x-0 z-20 flex items-center justify-center gap-1.5">
-                {GALLERY_SLIDES.map((_, idx) => {
-                  const isActive = idx === currentSlideIndex;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setCurrentSlideIndex(idx)}
-                      aria-label={`اسلاید ${idx + 1}`}
-                      className={`rounded-full transition-all duration-500 cursor-pointer ${
-                        isActive
-                          ? 'w-2.5 h-2.5 bg-white shadow-xs'
-                          : 'w-1.5 h-1.5 bg-white/65 hover:bg-white/90'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
+              {effectiveGallerySlides.length > 1 && (
+                <div className="absolute bottom-3.5 inset-x-0 z-20 flex items-center justify-center gap-1.5">
+                  {effectiveGallerySlides.map((_, idx) => {
+                    const isActive = idx === currentSlideIndex;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setCurrentSlideIndex(idx)}
+                        aria-label={`اسلاید ${idx + 1}`}
+                        className={`rounded-full transition-all duration-500 cursor-pointer ${
+                          isActive
+                            ? 'w-6 h-1.5 bg-[#b59766] shadow-xs'
+                            : 'w-2 h-1.5 bg-white/70 hover:bg-white'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -810,68 +854,72 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
       </section>
 
       {/* ==================== ۳. بخش «پرسش و پاسخ سوالات مهم» ==================== */}
-      <section className="mt-14 sm:mt-20">
-        <h3 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1e1e1e] text-right mb-5 sm:mb-6">
-          پرسش و پاسخ سوالات مهم
-        </h3>
+      {effectiveAboutFaqs.length > 0 && (
+        <section className="mt-14 sm:mt-20">
+          <h3 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1e1e1e] text-right mb-5 sm:mb-6">
+            پرسش و پاسخ سوالات مهم
+          </h3>
 
-        {/* در دسکتاپ ۲ ستون موازی (عکس نهم) و در موبایل ۱ ستون (عکس دهم) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10">
-          <div>
-            {renderFaqAccordionColumn(
-              openRightFaqId,
-              setOpenRightFaqId,
-              'right-faq'
-            )}
+          {/* در دسکتاپ ۲ ستون موازی (عکس نهم) و در موبایل ۱ ستون (عکس دهم) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10">
+            <div>
+              {renderFaqAccordionColumn(
+                effectiveAboutFaqs.slice(0, Math.ceil(effectiveAboutFaqs.length / 2)),
+                openRightFaqId,
+                setOpenRightFaqId,
+                'right-faq'
+              )}
+            </div>
+            <div className="hidden lg:block">
+              {renderFaqAccordionColumn(
+                effectiveAboutFaqs.slice(Math.ceil(effectiveAboutFaqs.length / 2)),
+                openLeftFaqId,
+                setOpenLeftFaqId,
+                'left-faq'
+              )}
+            </div>
           </div>
-          <div className="hidden lg:block">
-            {renderFaqAccordionColumn(
-              openLeftFaqId,
-              setOpenLeftFaqId,
-              'left-faq'
-            )}
-          </div>
-        </div>
 
-        {/* دکمه «نمایش سوالات بیشتر» در پایین لیست موبایل مطابق عکس دهم */}
-        <div className="lg:hidden mt-5 flex justify-center">
-          <button
-            type="button"
-            onClick={() =>
-              setOpenRightFaqId((prev) =>
-                prev === null ? 1 : (prev % ABOUT_FAQ_ITEMS.length) + 1
-              )
-            }
-            className="text-[12.5px] font-semibold text-[#8a8a8a] hover:text-[#2b2b2b] transition-colors cursor-pointer"
-          >
-            نمایش سوالات بیشتر
-          </button>
-        </div>
-      </section>
+          {/* دکمه «نمایش سوالات بیشتر» در پایین لیست موبایل مطابق عکس دهم */}
+          {effectiveAboutFaqs.length > 4 && (
+            <div className="lg:hidden mt-5 flex justify-center">
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenRightFaqId((prev) => {
+                    const currentIdx = effectiveAboutFaqs.findIndex((f: any) => f.id === prev);
+                    const nextIdx = (currentIdx + 1) % effectiveAboutFaqs.length;
+                    return effectiveAboutFaqs[nextIdx].id;
+                  })
+                }
+                className="text-[12.5px] font-semibold text-[#8a8a8a] hover:text-[#2b2b2b] transition-colors cursor-pointer"
+              >
+                نمایش سوالات بیشتر
+              </button>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ==================== ۴. بخش «فایل کاتالوگ محصولات» و کارت دانلود PDF ==================== */}
       <section className="mt-14 sm:mt-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 lg:gap-10 items-center">
           {/* سمت راست در دسکتاپ / بالا در موبایل: عنوان و توضیحات کاتالوگ */}
           <div className="lg:col-span-8 xl:col-span-9 text-right">
-            <h3 className="text-[16px] sm:text-[18.5px] font-extrabold text-[#1e1e1e] mb-4">
-              فایل کاتالوگ محصولات
+            <h3
+              className="text-[16px] sm:text-[18.5px] font-extrabold mb-4"
+              style={{ color: aboutUsSettings?.catalogTitleColor || '#1e1e1e' }}
+            >
+              {effectiveCatalogTitle}
             </h3>
             <p
-              className="text-[13px] sm:text-[14px] leading-[2.3] text-[#4a4a4a] text-justify"
-              style={{ textAlignLast: 'right' }}
+              className="text-[13px] sm:text-[14px] leading-[2.3] text-justify whitespace-pre-line"
+              style={{
+                textAlignLast: 'right',
+                color: aboutUsSettings?.catalogDescriptionColor || '#4a4a4a',
+              }}
             >
-              لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با
-              استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در
-              ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز،
-              و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای
-              زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و
-              متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان
-              رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد
-              کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه
-              راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل
-              حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود
-              طراحی اساسا مورد استفاده قرار گیرد.
+              {effectiveCatalogDescription}
             </p>
           </div>
 
@@ -895,10 +943,10 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
               {/* عنوان و تعداد صفحات کاتالوگ */}
               <div className="text-right mb-5">
                 <h4 className="text-[14px] sm:text-[14.5px] font-extrabold text-[#1e1e1e]">
-                  کاتالوگ محصولات لوستر صالحی
+                  {effectiveCatalogCardTitle}
                 </h4>
                 <span className="block text-[12.5px] font-semibold text-[#555555] mt-1.5 tabular-nums">
-                  ۱۲۶ صفحه
+                  {effectiveCatalogPageCount}
                 </span>
               </div>
 
@@ -925,6 +973,60 @@ export const AboutUsContentSection: React.FC<AboutUsContentSectionProps> = ({
           </div>
         </div>
       </section>
+
+      {/* مودال گرافیکی پیشرفت دانلود کاتالوگ PDF مطابق درخواست کاربر */}
+      {isDownloadingCatalog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-white rounded-[28px] border border-[#e5dec9] shadow-2xl p-7 text-center space-y-6">
+            <div className="relative w-20 h-20 mx-auto">
+              <div className="absolute inset-0 rounded-full border-4 border-[#f5f1ea]" />
+              <div 
+                className="absolute inset-0 rounded-full border-4 border-[#b59766] transition-all duration-300 ease-out"
+                style={{ 
+                  clipPath: `inset(0 0 0 0)`, 
+                  strokeDasharray: '251.2', 
+                  strokeDashoffset: (251.2 - (251.2 * downloadProgress) / 100) 
+                }} 
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                {downloadProgress < 100 ? (
+                  <FileText className="w-8 h-8 text-[#b59766] animate-pulse" />
+                ) : (
+                  <CheckCircle2 className="w-8 h-8 text-[#b59766]" />
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-[#1e1e1e]">
+                {downloadProgress < 100 ? 'در حال آماده‌سازی کاتالوگ...' : 'آماده دانلود شد!'}
+              </h3>
+              <p className="text-xs text-[#777] font-medium">
+                لطفاً تا پایان پردازش و شروع دانلود فایل PDF منتظر بمانید.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#b59766] tabular-nums">
+                <span>پیشرفت عملیات:</span>
+                <span>{downloadProgress.toLocaleString('fa-IR')}%</span>
+              </div>
+              <div className="w-full h-2.5 rounded-full bg-[#f5f1ea] overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-l from-[#b59766] to-[#d2bea0] transition-all duration-300 ease-out rounded-full shadow-sm"
+                  style={{ width: `${downloadProgress}%` }}
+                />
+              </div>
+            </div>
+
+            {downloadProgress === 100 && (
+              <p className="text-[11px] font-bold text-[#b59766] animate-bounce pt-2">
+                فایل در حال دریافت می‌باشد...
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 };

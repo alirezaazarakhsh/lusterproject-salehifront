@@ -1501,6 +1501,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const updateTimerRef = useRef<number | null>(null);
 
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = items.reduce(
+    (sum, item) => sum + (item.product.priceNumeric || 0) * item.quantity,
+    0
+  );
   const hasMultiQtyItem = items.some((item) => item.quantity > 1);
 
   const triggerPriceUpdateAnimation = () => {
