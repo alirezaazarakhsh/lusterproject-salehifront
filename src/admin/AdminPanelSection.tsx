@@ -60,6 +60,7 @@ import {
 import {
   apiFetchWithFallback,
   normalizeAdminPhoneClient,
+  isUsingFallbackMode,
   INITIAL_MAIN_SETTINGS,
   INITIAL_SMS_SETTINGS,
   INITIAL_FAQ_SETTINGS,
@@ -271,6 +272,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [feedbackBanner, setFeedbackBanner] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -886,6 +888,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         ),
       ]);
 
+      setIsDemoMode(isUsingFallbackMode());
       setSummary(summaryRes);
       setAdminsList(adminsRes);
       setProductsList(productsRes);
@@ -2224,6 +2227,17 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                 <span className="inline-block text-[10.5px] text-emerald-400 font-bold mt-1">
                   ● ادمین آنلاین در پنل
                 </span>
+                {isDemoMode ? (
+                  <div className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#fff4e5]/10 border border-[#ffe0b2]/20 text-[#ff9800]">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#ff9800] animate-pulse" />
+                    <span className="text-[9px] font-bold">وضعیت دمو (آفلاین)</span>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span className="text-[9px] font-bold">متصل به پایگاه داده</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

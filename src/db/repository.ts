@@ -1114,35 +1114,67 @@ export async function ensureSeeded(): Promise<void> {
     try {
       await ensureDefaultAdmin();
 
-      // ۱. دسته‌بندی‌ها
-      const existingCategories = await db.select().from(categories);
-      if (existingCategories.length < INITIAL_CATEGORIES_SEED.length) {
-        await db
-          .insert(categories)
-          .values(INITIAL_CATEGORIES_SEED)
-          .onConflictDoNothing();
+      // ۱. دسته‌بندی‌ها (فقط یک‌بار سید می‌شوند)
+      const categorySeedFlag = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'has_seeded_categories_v1'))
+        .limit(1);
+
+      if (categorySeedFlag.length === 0) {
+        const existingCategories = await db.select().from(categories);
+        if (existingCategories.length === 0) {
+          await db
+            .insert(categories)
+            .values(INITIAL_CATEGORIES_SEED)
+            .onConflictDoNothing();
+        }
+        await db.insert(siteSettings).values({
+          settingKey: 'has_seeded_categories_v1',
+          settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+        }).onConflictDoNothing();
       }
 
-      // ۲. محصولات (تکمیل تمامی محصولات سایت در دیتابیس)
-      const existingProducts = await db.select().from(products);
-      if (existingProducts.length <= 4) {
-        await db
-          .insert(products)
-          .values(INITIAL_PRODUCTS_SEED)
-          .onConflictDoNothing();
+      // ۲. محصولات (فقط یک‌بار سید می‌شوند)
+      const productSeedFlag = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'has_seeded_products_v1'))
+        .limit(1);
+
+      if (productSeedFlag.length === 0) {
+        const existingProducts = await db.select().from(products);
+        if (existingProducts.length === 0) {
+          await db
+            .insert(products)
+            .values(INITIAL_PRODUCTS_SEED)
+            .onConflictDoNothing();
+        }
+        await db.insert(siteSettings).values({
+          settingKey: 'has_seeded_products_v1',
+          settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+        }).onConflictDoNothing();
       }
 
-      // ۳. پروژه‌های اجرایی (فقط در صورتی که دیتابیس کاملاً خالی باشد، سید اولیه انجام می‌شود)
-      if (!hasSeededProjects) {
-        const existingProjects = await db.select().from(projects).limit(1);
+      // ۳. پروژه‌های اجرایی (فقط یک‌بار برای همیشه سید می‌شوند)
+      const projectSeedFlag = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'has_seeded_projects_v2'))
+        .limit(1);
+
+      if (projectSeedFlag.length === 0) {
+        const existingProjects = await db.select().from(projects);
         if (existingProjects.length === 0) {
-          console.log('Seeding projects because table is empty...');
           await db
             .insert(projects)
             .values(INITIAL_PROJECTS_SEED)
             .onConflictDoNothing();
         }
-        hasSeededProjects = true;
+        await db.insert(siteSettings).values({
+          settingKey: 'has_seeded_projects_v2',
+          settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+        }).onConflictDoNothing();
       }
 
       // ۴. استوری‌های بالای صفحه (تکمیل تمامی ۲۰ استوری در دیتابیس و به‌روزرسانی فیلدهای تایپ استوری)
@@ -1172,13 +1204,25 @@ export async function ensureSeeded(): Promise<void> {
         }
       }
 
-      // ۵. مقالات مجله لوستر (تکمیل ۴ مقاله در دیتابیس)
-      const existingArticles = await db.select().from(articles);
-      if (existingArticles.length <= 2) {
-        await db
-          .insert(articles)
-          .values(INITIAL_ARTICLES_SEED)
-          .onConflictDoNothing();
+      // ۵. مقالات مجله لوستر (فقط یک‌بار سید می‌شوند)
+      const articleSeedFlag = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'has_seeded_articles_v1'))
+        .limit(1);
+
+      if (articleSeedFlag.length === 0) {
+        const existingArticles = await db.select().from(articles);
+        if (existingArticles.length === 0) {
+          await db
+            .insert(articles)
+            .values(INITIAL_ARTICLES_SEED)
+            .onConflictDoNothing();
+        }
+        await db.insert(siteSettings).values({
+          settingKey: 'has_seeded_articles_v1',
+          settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+        }).onConflictDoNothing();
       }
 
       // ۶. پیام‌های تماس با ما اولیه

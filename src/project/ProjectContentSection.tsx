@@ -1210,43 +1210,18 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
       chandeliersList: p.chandeliersList,
     }));
 
-  // ترکیب هوشمند پروژه‌های دیتابیس با پروژه‌های کامل کاتالوگ (بدون تکرار اسلاگ)
-  const combinedProjects: ProjectPageItem[] = [...mappedDbProjects];
-  initialSeedProjectsForTab.forEach((seedP) => {
-    if (
-      !combinedProjects.some(
-        (cp) => cp.slug === seedP.slug || String(cp.id) === String(seedP.id)
-      )
-    ) {
-      combinedProjects.push(seedP);
-    }
-  });
+  // ترکیب هوشمند پروژه‌های دیتابیس با پروژه‌های کامل کاتالوگ (فقط در صورتی که دیتابیس کاملاً خالی باشد از سید استفاده می‌شود)
+  const combinedProjects: ProjectPageItem[] = mappedDbProjects.length > 0 
+    ? mappedDbProjects 
+    : initialSeedProjectsForTab;
 
-  const rawTabProjects =
-    combinedProjects.length > 0 ? combinedProjects : initialSeedProjectsForTab;
+  const rawTabProjects = combinedProjects;
 
   // تعداد پروژه‌ها در هر صفحه: ۶ عدد (۲ ردیف کامل ۳ تایی متناسب با چیدمان ۳ ستونه دسکتاپ)
   const PROJECTS_PER_PAGE = 6;
 
-  // تکمیل خودکار موارد ناقص تا تمام ردیف‌های شبکه ۳ تایی دسکتاپ کاملاً پر باشند
+  // حذف تکمیل خودکار (Padding) که باعث تکرار آیتم‌ها می‌شد
   const allTabProjects = [...rawTabProjects];
-  if (allTabProjects.length > 0 && allTabProjects.length % PROJECTS_PER_PAGE !== 0) {
-    const remainder = allTabProjects.length % PROJECTS_PER_PAGE;
-    if (remainder < PROJECTS_PER_PAGE) {
-      const needed = PROJECTS_PER_PAGE - remainder;
-      for (let i = 0; i < needed; i++) {
-        const sourceItem =
-          rawTabProjects[i % rawTabProjects.length] || rawTabProjects[0];
-        if (sourceItem) {
-          allTabProjects.push({
-            ...sourceItem,
-            id: `${sourceItem.id}-pad-${i + 1}`,
-            slug: `${sourceItem.slug}-ref-${i + 1}`,
-          });
-        }
-      }
-    }
-  }
 
   const totalPages = Math.max(
     1,

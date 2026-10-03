@@ -1199,6 +1199,13 @@ export async function handleLocalApiRequest(
  * ۲. اگر روی هاست استاتیک/پروداکشن (مانند Vercel) پاسخ غیر JSON (مثلاً index.html یا 404/405/502) برگشت،
  *    به‌صورت خودکار و بدون خطا از موتور دیتابیس محلی پاسخ می‌دهد.
  */
+// وضعیت فعلی اتصال به سرور (جهت نمایش در پنل ادمین)
+let isCurrentlyUsingFallback = false;
+
+export function isUsingFallbackMode(): boolean {
+  return isCurrentlyUsingFallback;
+}
+
 export async function apiFetchWithFallback(
   url: string,
   options: RequestInit = {}
@@ -1209,6 +1216,7 @@ export async function apiFetchWithFallback(
     const isJson = contentType.includes('application/json');
 
     if (res.ok && isJson) {
+      isCurrentlyUsingFallback = false;
       const data = await res.json();
       // همگام‌سازی تنظیمات با کش محلی در صورت دریافت از سرور
       if (url === '/api/public/catalog' && data) {
@@ -1230,7 +1238,8 @@ export async function apiFetchWithFallback(
     // اگر پاسخ سرور JSON واقعی خطای احراز هویت بود ولی مربوط به اکانت پیش‌فرض نبود
     if (isJson && res.status >= 400 && res.status < 500 && res.status !== 404 && res.status !== 405) {
       const errJson = await res.json().catch(() => ({}));
-      // اگر در صفحه ورود، کاربر شماره و رمز پیش‌فرض ساشا را وارد کرده باشد، همیشه اجازه ورود بده
+      
+      // فقط برای ورود ادمین پیش‌فرض ساشا اجازه عبور محلی بده (در صورت قطعی سرور)
       if (url === '/api/admin/login') {
         const body = parseBody(options);
         const normPhone = normalizeAdminPhoneClient(body.phone || '');
@@ -1239,30 +1248,31 @@ export async function apiFetchWithFallback(
           normPhone === DEFAULT_SUPER_ADMIN_PHONE &&
           pass === DEFAULT_SUPER_ADMIN_PASS
         ) {
+          console.warn('Admin login server error. Falling back to local auth for super admin.');
+          isCurrentlyUsingFallback = true;
           return handleLocalApiRequest(url, options);
         }
       }
-      // اگر توکن محلی (adm....local) بود، از موتور محلی پاسخ بده
-      const authHeader =
-        options.headers instanceof Headers
-          ? options.headers.get('Authorization')
-          : (options.headers as any)?.Authorization;
-      if (authHeader && String(authHeader).endsWith('.local')) {
-        return handleLocalApiRequest(url, options);
-      }
+
       throw new Error(errJson.error || `خطای درخواست (${res.status})`);
     }
 
-    // در صورت برگشت HTML (ری‌رایت Vercel) یا 404 / 405 / 500 از موتور محلی استفاده کن
-    return await handleLocalApiRequest(url, options);
-  } catch (err: any) {
-    if (
-      err?.message === 'شماره موبایل یا رمز عبور اشتباه است.' ||
-      err?.message === 'شماره موبایل و رمز عبور الزامی است.' ||
-      err?.message?.includes('تنها ادمین')
-    ) {
-      throw err;
+    // در محیط واقعی، خطاهای ۴۰۴ یا ۵۰۰ نباید به موتور محلی هدایت شوند چون باعث تضاد داده‌ای می‌شود.
+    // فقط در صورتی که درخواست GET باشد و پاسخ نامعتبر باشد، از موتور محلی به عنوان کش لودینگ استفاده می‌کنیم.
+    if (options.method === 'GET' || !options.method) {
+       console.warn(`GET ${url} failed with status ${res.status}. Falling back to local storage.`);
+       isCurrentlyUsingFallback = true;
+       return await handleLocalApiRequest(url, options);
     }
-    return await handleLocalApiRequest(url, options);
+
+    throw new Error(`خطای سرور (${res.status})`);
+  } catch (err: any) {
+    // اگر خطای شبکه بود و درخواست GET بود، از کش محلی استفاده کن
+    if ((!options.method || options.method === 'GET') && err instanceof TypeError) {
+       console.warn(`Network error fetching ${url}. Falling back to local storage.`);
+       isCurrentlyUsingFallback = true;
+       return await handleLocalApiRequest(url, options);
+    }
+    throw err;
   }
 }
