@@ -383,25 +383,18 @@ function loadLocalDb(): LocalDbSchema {
       return {
         users: usersList,
         products:
-          Array.isArray(parsed.products) && parsed.products.length > 0
+          Array.isArray(parsed.products)
             ? parsed.products
             : initial.products,
         categories:
           Array.isArray(parsed.categories) && parsed.categories.length > 0
             ? parsed.categories
             : initial.categories,
-        projects:
-          Array.isArray(parsed.projects) && parsed.projects.length >= initial.projects.length
-            ? parsed.projects
-            : [
-                ...(parsed.projects || []).filter(
-                  (p: any) =>
-                    String(p.id).startsWith('custom-') || Number(p.id) > 20
-                ),
-                ...initial.projects,
-              ],
+        projects: Array.isArray(parsed.projects)
+          ? parsed.projects
+          : initial.projects,
         stories:
-          Array.isArray(parsed.stories) && parsed.stories.length > 0
+          Array.isArray(parsed.stories)
             ? parsed.stories
             : initial.stories,
         articles:

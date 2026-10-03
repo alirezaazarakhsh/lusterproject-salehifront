@@ -4,12 +4,10 @@ import { SectionHeading, CategoryStarSeal } from '../Ornaments';
 import { navigateToRoute, navigateToProjectSlug } from '../../utils/navigation';
 import {
   PROJECT_TABS,
-  EXECUTED_PROJECTS,
   SALEHI_COLLECTION_PRODUCTS,
   ChandelierProduct,
   ExecutedProject,
 } from '../../data/chandelierData';
-import { buildProjectsForTabAndPage } from '../../project/ProjectContentSection';
 
 interface ProjectsSectionProps {
   projects?: ExecutedProject[];
@@ -97,54 +95,20 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
       return numB - numA;
     })
     .slice(0, 4);
-  const fallbackTabProjects = EXECUTED_PROJECTS.filter(
-    (p) => p.categoryTab === activeTab
-  ).slice(0, 4);
-  const latestPageProjects = buildProjectsForTabAndPage(activeTab, 1).slice(0, 4);
+  const tabProjects = dbTabProjects.map((dbProj, idx) => ({
+    ...dbProj,
+    sampleCode: SAMPLE_LABELS[idx] || dbProj.sampleCode || `نمونه ${idx + 1}`,
+    slug:
+      (dbProj as any).slug ||
+      dbProj.id.replace(/^proj-/, '') ||
+      'kiani-shomali',
+  }));
 
-  const tabProjects = (
-    dbTabProjects.length > 0
-      ? dbTabProjects.map((dbProj, idx) => ({
-          ...dbProj,
-          sampleCode: SAMPLE_LABELS[idx] || dbProj.sampleCode || `نمونه ${idx + 1}`,
-          slug:
-            (dbProj as any).slug ||
-            dbProj.id.replace(/^proj-/, '') ||
-            'kiani-shomali',
-        }))
-      : latestPageProjects.map((pageProj, idx) => {
-          const fallbackProj =
-            fallbackTabProjects[idx] ||
-            fallbackTabProjects[0] ||
-            EXECUTED_PROJECTS[0];
-          const cleanDistrict = pageProj.title.replace(/^پروژه\s+/, '').trim();
-          const galleryList =
-            pageProj.galleryImages && pageProj.galleryImages.length >= 4
-              ? pageProj.galleryImages.slice(0, 4)
-              : fallbackProj.galleryImages;
-
-          return {
-            ...fallbackProj,
-            id: pageProj.id,
-            slug: pageProj.slug,
-            sampleCode: SAMPLE_LABELS[idx] || `نمونه ${idx + 1}`,
-            district: cleanDistrict || pageProj.location,
-            categoryTab: activeTab,
-            title: pageProj.title,
-            mainImage: pageProj.image || galleryList[0] || fallbackProj.mainImage,
-            galleryImages: galleryList,
-          };
-        })
-  ).slice(0, 4);
-
-  const currentProject =
-    tabProjects[selectedSampleIdx] || tabProjects[0] || {
-      ...EXECUTED_PROJECTS[0],
-      slug: 'kiani-shomali',
-    };
+  const currentProject = tabProjects[selectedSampleIdx] || tabProjects[0];
 
   // چرخش خودکار و نرم تصاویر گالری پروژه
   useEffect(() => {
+    if (!currentProject) return;
     const totalSlides = currentProject.galleryImages.length;
     if (totalSlides <= 1) return;
 
@@ -157,7 +121,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
     activeTab,
     selectedSampleIdx,
     activeGalleryIdx,
-    currentProject.galleryImages.length,
+    currentProject?.galleryImages.length,
   ]);
 
   const handleSelectTab = (tabId: string) => {
@@ -216,12 +180,14 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   };
 
   const handleNextImage = () => {
+    if (!currentProject) return;
     setActiveGalleryIdx(
       (prev) => (prev + 1) % currentProject.galleryImages.length
     );
   };
 
   const handlePrevImage = () => {
+    if (!currentProject) return;
     setActiveGalleryIdx(
       (prev) =>
         (prev - 1 + currentProject.galleryImages.length) %
@@ -280,6 +246,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
       </div>
 
       {/* محتوای پروژه اجرایی: در موبایل کاروسل نمونه‌ها + نقطه‌چین ۵گانه قرار دارد */}
+      {currentProject ? (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* ستون اول (سمت راست در دسکتاپ / کاروسل افقی با کارت‌های نمونه ۱ تا ۴ در موبایل) */}
         <div className="lg:col-span-2">
@@ -542,6 +509,11 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
           )}
         </div>
       </div>
+      ) : (
+        <p className="py-12 text-center text-sm text-[#777777]">
+          در این دسته‌بندی هنوز پروژه‌ای ثبت نشده است.
+        </p>
+      )}
     </section>
   );
 };

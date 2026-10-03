@@ -13,7 +13,6 @@ import {
   ChandelierProduct,
   ExecutedProject,
 } from '../data/chandelierData';
-import { ALL_INITIAL_PROJECTS, SeedProjectItem } from '../data/allDatabaseProjectsSeed';
 import aboutGalleryShowroomImg from '../assets/images/about_gallery_showroom_1790844789780.jpg';
 import aboutGalleryEmeraldPalaceImg from '../assets/images/about_gallery_emerald_palace_1790844830735.jpg';
 import aboutGalleryGrandAtelierImg from '../assets/images/about_gallery_grand_atelier_1790845407976.jpg';
@@ -840,37 +839,7 @@ const findProjectBySlug = (
     }
   }
 
-  const tabs: Array<'gov' | 'commercial' | 'mosques' | 'restaurants' | 'residential'> = [
-    'gov',
-    'commercial',
-    'mosques',
-    'restaurants',
-    'residential',
-  ];
-
-  for (const tab of tabs) {
-    for (let page = 1; page <= 6; page++) {
-      const items = buildProjectsForTabAndPage(tab, page);
-      const found = items.find(
-        (p) =>
-          p.slug.toLowerCase() === decoded ||
-          p.id.toLowerCase() === decoded ||
-          p.title.replace(/\s+/g, '-') === decoded
-      );
-      if (found) return found;
-    }
-  }
-
-  return {
-    id: `custom-${decoded}`,
-    slug: decoded,
-    title: 'پروژه منطقه فرمانیه',
-    location: 'تهران، پردیس',
-    categoryTab: 'gov',
-    categoryLabel: 'منازل مسکونی',
-    image: GENERATED_IMAGES.projectRoyalRestaurant,
-    description: DESKTOP_PROJECT_LONG_DESCRIPTION,
-  };
+  return null;
 };
 
 const toPersianDigits = (num: number): string =>
@@ -1191,31 +1160,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     }
   );
 
-  // تبدیل پروژه‌های دیتابیس
-  const initialSeedProjectsForTab: ProjectPageItem[] = ALL_INITIAL_PROJECTS
-    .filter((p: SeedProjectItem) => p.categoryTab === activeTab)
-    .map((p: SeedProjectItem, idx: number) => ({
-      id: `seed-${activeTab}-${idx + 1}`,
-      slug: p.slug,
-      title: p.title,
-      description: p.description,
-      image: p.mainImage,
-      galleryImages: p.galleryImages,
-      categoryTab: activeTab,
-      categoryLabel: activeTabInfo.label,
-      location: p.district || p.locationBadge || '',
-      projectDate: p.dateBadge || '',
-      ownerName: '',
-      initialLikes: 0,
-      chandeliersList: p.chandeliersList,
-    }));
-
-  // ترکیب هوشمند پروژه‌های دیتابیس با پروژه‌های کامل کاتالوگ (فقط در صورتی که دیتابیس کاملاً خالی باشد از سید استفاده می‌شود)
-  const combinedProjects: ProjectPageItem[] = mappedDbProjects.length > 0 
-    ? mappedDbProjects 
-    : initialSeedProjectsForTab;
-
-  const rawTabProjects = combinedProjects;
+  const rawTabProjects = mappedDbProjects;
 
   // تعداد پروژه‌ها در هر صفحه: ۶ عدد (۲ ردیف کامل ۳ تایی متناسب با چیدمان ۳ ستونه دسکتاپ)
   const PROJECTS_PER_PAGE = 6;

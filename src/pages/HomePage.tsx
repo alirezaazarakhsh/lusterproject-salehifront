@@ -346,7 +346,7 @@ export const HomePage: React.FC = () => {
       }
 
       let currentProducts = SALEHI_COLLECTION_PRODUCTS;
-      if (Array.isArray(data.products) && data.products.length > 0) {
+      if (Array.isArray(data.products)) {
         const mappedProducts: ChandelierProduct[] = data.products.map(
           (row: any) => ({
             id: row.productKey || `db-prod-${row.id}`,
@@ -368,7 +368,8 @@ export const HomePage: React.FC = () => {
             description: row.description || '',
           })
         );
-        currentProducts = mappedProducts;
+        currentProducts =
+          mappedProducts.length > 0 ? mappedProducts : SALEHI_COLLECTION_PRODUCTS;
         setProductsList(mappedProducts);
       }
 
@@ -394,7 +395,7 @@ export const HomePage: React.FC = () => {
         setCategoriesList(mappedCategories);
       }
 
-      if (Array.isArray(data.projects) && data.projects.length > 0) {
+      if (Array.isArray(data.projects)) {
         const mappedProjects: ExecutedProject[] = data.projects.map(
           (projRow: any, idx: number) => {
             let parsedGallery: string[] = [];
@@ -459,7 +460,7 @@ export const HomePage: React.FC = () => {
         setProjectsList(mappedProjects);
       }
 
-      if (Array.isArray(data.stories) && data.stories.length > 0) {
+      if (Array.isArray(data.stories)) {
         const mappedStories: StoryItem[] = data.stories.map(
           (stRow: any, idx: number) => {
             const rawType = stRow.storyType || 'single-product';

@@ -28,7 +28,6 @@ import {
 import {
   ChandelierProduct,
   StoryItem,
-  STORY_ITEMS,
   STORY_CATEGORIES,
   StoryCategoryType,
   StorySlideType,
@@ -534,7 +533,7 @@ const SideCardPlaceholderIcon: React.FC = () => (
  */
 export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   story,
-  stories = STORY_ITEMS,
+  stories = [],
   allProducts = SALEHI_COLLECTION_PRODUCTS,
   onClose,
   onSelectStory,
@@ -565,7 +564,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
   const [isVideoMuted, setIsVideoMuted] = useState<boolean>(true);
 
-  const activeList = stories.length > 0 ? stories : STORY_ITEMS;
+  const activeList = stories.length > 0 ? stories : story ? [story] : [];
 
   const currentIndex = story
     ? activeList.findIndex((item) => item.id === story.id)

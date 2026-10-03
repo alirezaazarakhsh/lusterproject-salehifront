@@ -1112,6 +1112,20 @@ export async function ensureSeeded(): Promise<void> {
   }
   seedPromise = (async () => {
     try {
+      const existingSeedMarkers = await db
+        .select({ settingKey: siteSettings.settingKey })
+        .from(siteSettings)
+        .where(
+          or(
+            eq(siteSettings.settingKey, 'has_seeded_categories_v1'),
+            eq(siteSettings.settingKey, 'has_seeded_products_v1'),
+            eq(siteSettings.settingKey, 'has_seeded_projects_v2'),
+            eq(siteSettings.settingKey, 'has_seeded_articles_v1')
+          )
+        )
+        .limit(1);
+      const isExistingInstallation = existingSeedMarkers.length > 0;
+
       await ensureDefaultAdmin();
 
       // ۱. دسته‌بندی‌ها (فقط یک‌بار سید می‌شوند)
@@ -1177,31 +1191,47 @@ export async function ensureSeeded(): Promise<void> {
         }).onConflictDoNothing();
       }
 
-      // ۴. استوری‌های بالای صفحه (تکمیل تمامی ۲۰ استوری در دیتابیس و به‌روزرسانی فیلدهای تایپ استوری)
-      const existingStories = await db.select().from(stories);
-      if (existingStories.length === 0) {
-        await db
-          .insert(stories)
-          .values(INITIAL_STORIES_SEED)
-          .onConflictDoNothing();
-      } else {
-        for (const seedSt of INITIAL_STORIES_SEED) {
-          const matchRow = existingStories.find(
-            (r) => r.storyKey === seedSt.storyKey
-          );
-          if (matchRow && !matchRow.thumbnailImage) {
-            await db
-              .update(stories)
-              .set({
-                storyType: seedSt.storyType,
-                thumbnailImage: seedSt.thumbnailImage,
-                mediaUrl: seedSt.mediaUrl,
-                videoUrl: seedSt.videoUrl,
-                linkedProductKey: seedSt.linkedProductKey,
-              })
-              .where(eq(stories.id, matchRow.id));
+      // ۴. استوری‌ها فقط یک‌بار seed شوند تا حذف همه استوری‌ها آن‌ها را برنگرداند.
+      const storySeedFlag = await db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'has_seeded_stories_v1'))
+        .limit(1);
+
+      if (storySeedFlag.length === 0) {
+        const existingStories = await db.select().from(stories);
+        if (existingStories.length === 0 && !isExistingInstallation) {
+          await db
+            .insert(stories)
+            .values(INITIAL_STORIES_SEED)
+            .onConflictDoNothing();
+        } else {
+          for (const seedSt of INITIAL_STORIES_SEED) {
+            const matchRow = existingStories.find(
+              (r) => r.storyKey === seedSt.storyKey
+            );
+            if (matchRow && !matchRow.thumbnailImage) {
+              await db
+                .update(stories)
+                .set({
+                  storyType: seedSt.storyType,
+                  thumbnailImage: seedSt.thumbnailImage,
+                  mediaUrl: seedSt.mediaUrl,
+                  videoUrl: seedSt.videoUrl,
+                  linkedProductKey: seedSt.linkedProductKey,
+                })
+                .where(eq(stories.id, matchRow.id));
+            }
           }
         }
+
+        await db
+          .insert(siteSettings)
+          .values({
+            settingKey: 'has_seeded_stories_v1',
+            settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+          })
+          .onConflictDoNothing();
       }
 
       // ۵. مقالات مجله لوستر (فقط یک‌بار سید می‌شوند)
