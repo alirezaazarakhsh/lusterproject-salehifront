@@ -2030,7 +2030,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
 
               {/* لیست افقی تمام‌عرض در دسکتاپ (عکس ۲ و ۳) */}
               <div className="hidden md:flex flex-col gap-4">
-                {projectChandeliers.map((ch, idx) => {
+                {projectChandeliers.slice(0, 2).map((ch, idx) => {
                   const normalizeStr = (val: any) =>
                     String(val || '')
                       .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())
@@ -2123,122 +2123,27 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               return (
                 <div
                   key={row.id}
-                  className="w-full rounded-[20px] border border-[#e8e8e8] bg-white px-5 py-4 flex items-center justify-between gap-4 hover:shadow-[0_8px_28px_rgba(0,0,0,0.04)] transition-shadow"
+                  className="flex items-center justify-between py-4 border-b border-[#efefef] last:border-b-0"
                 >
-                  {/* ۱. تصویر محصول + عنوان و زیرعنوان در سمت راست */}
-                  <div className="flex items-center gap-4 min-w-[270px] lg:min-w-[320px]">
-                    <div
-                      onClick={() => handleProductDetailClick(row)}
-                      className="w-[96px] h-[68px] rounded-[14px] bg-[#f5f5f5] p-1.5 flex items-center justify-center shrink-0 cursor-pointer"
-                    >
-                      <TransparentProductImage
-                        src={row.image}
-                        alt={row.name}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <div className="text-right">
-                      <h3
-                        onClick={() => handleProductDetailClick(row)}
-                        className="text-[15px] lg:text-[16px] font-extrabold text-[#1a1a1a] hover:text-[#b08754] transition-colors cursor-pointer"
-                      >
-                        {row.name}
-                      </h3>
-                      <p className="text-[12px] text-[#7a7a7a] mt-1">
-                        {row.subtitle}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* خط عمودی طلایی */}
-                  <span className="hidden lg:block w-[1.5px] h-9 bg-[#c5a676] shrink-0" />
-
-                  {/* ۲. قیمت محصول */}
-                  <div className="text-right">
-                    <span className="block text-[14px] lg:text-[15px] font-extrabold text-[#1a1a1a]">
-                      {outOfStockMode ? 'قیمت لوستر :' : row.desktopPriceLabel}
-                    </span>
-                    <span className="block text-[12px] text-[#7a7a7a] mt-1">
-                      {row.desktopPriceText}
+                  <div className="flex items-center gap-3">
+                    <EightPointStarburstIcon className="w-4 h-4 text-[#b58c56]" />
+                    <span className="text-[15px] font-bold text-[#1e1e1e]">
+                      {row.name}
                     </span>
                   </div>
 
-                  {/* خط عمودی طلایی */}
-                  <span className="hidden lg:block w-[1.5px] h-9 bg-[#c5a676] shrink-0" />
-
-                  {/* ۳. کد محصول */}
-                  <div className="text-right">
-                    <span className="block text-[14px] lg:text-[15px] font-extrabold text-[#1a1a1a]">
-                      کد محصول :
-                    </span>
-                    <span className="block text-[12px] text-[#7a7a7a] mt-1">
-                      {row.codeText}
-                    </span>
-                  </div>
-
-                  {/* ۴. دکمه مشاهده جزییات و دکمه سبد خرید در سمت چپ */}
-                  <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="flex items-center gap-4">
                     <button
                       type="button"
                       onClick={() => handleProductDetailClick(row)}
-                      className={`h-[42px] min-w-[148px] px-5 rounded-[10px] text-[12.5px] font-bold transition-all flex items-center justify-center cursor-pointer ${
-                        isBtnLoading
-                          ? 'bg-[#2b2b2b] text-white'
-                          : 'bg-[#f2f2f2] text-[#222222] hover:bg-[#2b2b2b] hover:text-white'
-                      }`}
+                      className="text-[13px] font-bold text-[#b58c56] hover:text-[#a07a4a] cursor-pointer"
                     >
-                      {isBtnLoading ? (
-                        <span className="inline-flex items-center gap-1.5 py-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        </span>
-                      ) : (
-                        <span>مشاهده و جزییات محصول</span>
-                      )}
+                      مشاهده محصول
                     </button>
-
-                    {/* دکمه مربعی سبد خرید همراه با تولتیپ‌های عکس ۲ و ۳ */}
-                    <div
-                      className="relative"
-                      onMouseEnter={() => setActiveTooltipRowId(row.id)}
-                      onMouseLeave={() => setActiveTooltipRowId(null)}
-                    >
-                      {showDarkAddedTooltip && (
-                        <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-[7px] bg-[#222222] text-white text-[10.5px] font-bold whitespace-nowrap shadow-md z-20 pointer-events-none">
-                          {toPersianDigits(qtyAdded)} محصول اضافه شد
-                          <span className="absolute -bottom-1 left-[15px] w-2 h-2 bg-[#222222] rotate-45" />
-                        </div>
-                      )}
-
-                      {showPinkTooltip && (
-                        <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-[7px] bg-[#ffe4e6] text-[#ef4444] text-[10.5px] font-bold whitespace-nowrap shadow-xs z-20 pointer-events-none">
-                          محصول در انبار وجود ندارد!
-                          <span className="absolute -bottom-1 left-[15px] w-2 h-2 bg-[#ffe4e6] rotate-45" />
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleProductCartClick(row)}
-                        aria-label="افزودن به سبد خرید"
-                        className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
-                          isRowOutOfStock
-                            ? 'bg-[#fee8ea] text-[#ef4444]'
-                            : isGoldenAdded
-                              ? 'bg-[#b08754] text-white shadow-xs'
-                              : 'bg-[#f2f2f2] text-[#222222] hover:bg-[#2b2b2b] hover:text-white'
-                        }`}
-                      >
-                        {isRowOutOfStock ? (
-                          <OutOfStockBagIcon className="w-5 h-5" />
-                        ) : isGoldenAdded ? (
-                          <PlusCircleIcon className="w-5 h-5" />
-                        ) : (
-                          <ShoppingBasketIcon className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
+                    <span className="text-[#e0e0e0]">|</span>
+                    <span className="text-[14px] font-extrabold text-[#262626] tabular-nums">
+                      {row.desktopPriceText}
+                    </span>
                   </div>
                 </div>
               );
@@ -2250,7 +2155,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
             className="flex md:hidden gap-3.5 overflow-x-auto snap-x snap-mandatory pb-3 pt-2 touch-pan-x [&::-webkit-scrollbar]:hidden"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {projectChandeliers.map((ch, idx) => {
+            {projectChandeliers.slice(0, 2).map((ch, idx) => {
               const normalizeStr = (val: any) =>
                 String(val || '')
                   .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())

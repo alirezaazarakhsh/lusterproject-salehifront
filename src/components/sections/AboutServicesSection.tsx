@@ -36,7 +36,7 @@ export const AboutServicesSection: React.FC<AboutServicesSectionProps> = ({
             {/* وکتور اسلیمی سمت راست قاب (Vector2rtl.png: برگ ۷پر طلایی) */}
             <ExactPalmetteVector
               strokeColor="#cbb592"
-              className="-scale-x-100 w-16 xs:w-20 sm:w-24 h-16 xs:h-20 sm:h-24 absolute -right-8 xs:-right-11 sm:-right-14 top-1/2 -translate-y-1/2 z-0 pointer-events-none"
+              className="-scale-x-100 w-16 xs:w-20 sm:w-24 h-16 xs:h-20 sm:h-24 absolute -right-8 xs:-right-11 sm:-right-14 top-1/2 -translate-y-1/2 -z-10 pointer-events-none"
             />
 
             {/* قاب قوسی سفید با تصویر لوستر و امضای Akbar Salehi Collection */}
@@ -82,7 +82,7 @@ export const AboutServicesSection: React.FC<AboutServicesSectionProps> = ({
             {/* وکتور اسلیمی سمت چپ قاب (Vector2ltr.png: برگ ۷پر طلایی) */}
             <ExactPalmetteVector
               strokeColor="#cbb592"
-              className="w-16 xs:w-20 sm:w-24 h-16 xs:h-20 sm:h-24 absolute -left-8 xs:-left-11 sm:-left-14 top-1/2 -translate-y-1/2 z-0 pointer-events-none"
+              className="w-16 xs:w-20 sm:w-24 h-16 xs:h-20 sm:h-24 absolute -left-8 xs:-left-11 sm:-left-14 top-1/2 -translate-y-1/2 -z-10 pointer-events-none"
             />
           </div>
         </div>

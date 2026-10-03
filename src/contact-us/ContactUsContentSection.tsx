@@ -455,9 +455,7 @@ export const ContactUsContentSection: React.FC<
         ? contactUsSettings.branchPhones
         : INITIAL_CONTACT_US_SETTINGS.branchPhones,
   };
-  const [subject, setSubject] = useState<string>(
-    'مشکل در برقراری ارتباط با شما دارم'
-  );
+  const [subject, setSubject] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [mobilePhone, setMobilePhone] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -468,10 +466,7 @@ export const ContactUsContentSection: React.FC<
   const emptyAttemptCountRef = useRef<number>(0);
   const filledAttemptCountRef = useRef<number>(0);
 
-  const subjectCharCountDisplay =
-    subject === 'مشکل در برقراری ارتباط با شما دارم'
-      ? '۱۸ کاراکتر'
-      : `${toPersianDigits(subject.length)} کاراکتر`;
+  const subjectCharCountDisplay = `${toPersianDigits(subject.length)} کاراکتر`;
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -805,6 +800,7 @@ export const ContactUsContentSection: React.FC<
               {/* فیلد ۲: نام و نام خانوادگی */}
               <input
                 type="text"
+                required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="* نام و نام خانوادگی خود را وارد نمایید"
@@ -814,6 +810,7 @@ export const ContactUsContentSection: React.FC<
               {/* فیلد ۳: شماره موبایل */}
               <input
                 type="tel"
+                required
                 value={mobilePhone}
                 onChange={(e) => setMobilePhone(e.target.value)}
                 placeholder="* شماره موبایل خود را وارد نمایید"

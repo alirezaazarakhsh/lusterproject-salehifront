@@ -1742,6 +1742,8 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
           await authFetch(`/api/admin/stories/${id}`, { method: 'DELETE' });
           await loadAllAdminData();
           onCatalogUpdated?.();
+          window.dispatchEvent(new CustomEvent('app-catalog-updated'));
+          window.dispatchEvent(new CustomEvent('app-stories-updated'));
           showNotice('success', 'استوری با موفقیت از وب‌سایت حذف شد.');
         } catch (err: any) {
           showNotice('error', err?.message || 'خطا در حذف استوری از سایت');
