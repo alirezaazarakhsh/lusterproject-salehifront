@@ -1011,14 +1011,16 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     if (sessionToken && adminUser) {
       loadAllAdminData();
     }
-    const handleContactMessageCreated = () => {
+    const handleDataUpdated = () => {
       if (sessionToken && adminUser) {
         loadAllAdminData();
       }
     };
-    window.addEventListener('app-contact-message-created', handleContactMessageCreated);
+    window.addEventListener('app-contact-message-created', handleDataUpdated);
+    window.addEventListener('app-catalog-updated', handleDataUpdated);
     return () => {
-      window.removeEventListener('app-contact-message-created', handleContactMessageCreated);
+      window.removeEventListener('app-contact-message-created', handleDataUpdated);
+      window.removeEventListener('app-catalog-updated', handleDataUpdated);
     };
   }, [sessionToken, adminUser, loadAllAdminData]);
 

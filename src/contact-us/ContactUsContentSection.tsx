@@ -768,18 +768,20 @@ export const ContactUsContentSection: React.FC<
       </section>
 
       {/* ==================== ۴. بخش فرم «با ما در ارتباط باشید» ==================== */}
-      <section className="mt-12 sm:mt-16">
-        <div className="text-right">
-          <h3 className="text-[16.5px] sm:text-[18.5px] font-bold text-[#1e1e1e]">
-            با ما در ارتباط باشید
-          </h3>
-          <p className="hidden md:block text-[13.5px] text-[#666666] mt-2">
-            دوست داریم نظرات و پیشنهادات شما را بشنویم پیام هایتان را با ما در
-            میان بذارید.
+      <section className="mt-12 sm:mt-16 bg-white rounded-[24px] border border-[#f0f0f0] p-6 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+        <div className="text-right mb-8">
+          <div className="flex items-center justify-start gap-3 mb-3">
+            <span className="w-8 h-[2px] bg-[#b08c57]" />
+            <h3 className="text-[18px] sm:text-[22px] font-black text-[#1e1e1e]">
+              با ما در ارتباط باشید
+            </h3>
+          </div>
+          <p className="text-[13.5px] sm:text-[14.5px] text-[#666666] leading-relaxed">
+            دوست داریم نظرات و پیشنهادات شما را بشنویم. پیام‌هایتان را با ما در میان بگذارید تا در اسرع وقت پاسخگوی شما باشیم.
           </p>
         </div>
 
-        <form onSubmit={handleSubmitForm} className="mt-5">
+        <form onSubmit={handleSubmitForm}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
             {/* ستون راست فرم (۴ فیلد ورودی روی هم در دسکتاپ و موبایل) */}
             <div className="lg:col-span-4 flex flex-col gap-3.5 sm:gap-4">

@@ -98,10 +98,11 @@ async function startServer() {
       const isSuccess = res.statusCode >= 200 && res.statusCode < 300;
       const isAdminMutation = req.path.startsWith('/api/admin/') && req.method !== 'GET';
       const isPublicLikeMutation = req.path.includes('/like') && req.method === 'POST';
+      const isPublicContactMutation = (req.path === '/api/contact' || req.path === '/api/public/contact') && req.method === 'POST';
 
       const result = originalJson.call(this, body);
 
-      if (isSuccess && (isAdminMutation || isPublicLikeMutation)) {
+      if (isSuccess && (isAdminMutation || isPublicLikeMutation || isPublicContactMutation)) {
         setTimeout(() => {
           broadcastSseEvent({ type: 'catalog-updated', path: req.path, method: req.method, timestamp: Date.now() });
         }, 100);
