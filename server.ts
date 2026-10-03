@@ -67,6 +67,50 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
 
+  let sseClients: any[] = [];
+  const broadcastSseEvent = (data: any) => {
+    const payload = `data: ${JSON.stringify(data)}\n\n`;
+    sseClients.forEach((client) => {
+      try {
+        client.write(payload);
+      } catch {
+        // ignore
+      }
+    });
+  };
+
+  app.get('/api/realtime/stream', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    sseClients.push(res);
+
+    req.on('close', () => {
+      sseClients = sseClients.filter((c) => c !== res);
+    });
+  });
+
+  app.use((req, res, next) => {
+    const originalJson = res.json;
+    res.json = function (body) {
+      const isSuccess = res.statusCode >= 200 && res.statusCode < 300;
+      const isAdminMutation = req.path.startsWith('/api/admin/') && req.method !== 'GET';
+      const isPublicLikeMutation = req.path.includes('/like') && req.method === 'POST';
+
+      const result = originalJson.call(this, body);
+
+      if (isSuccess && (isAdminMutation || isPublicLikeMutation)) {
+        setTimeout(() => {
+          broadcastSseEvent({ type: 'catalog-updated', path: req.path, method: req.method, timestamp: Date.now() });
+        }, 100);
+      }
+      return result;
+    };
+    next();
+  });
+
   // ==================== ۱. APIهای عمومی فروشگاه (متصل به دیتابیس PostgreSQL) ====================
   app.get('/api/public/catalog', async (_req, res) => {
     try {

@@ -448,6 +448,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   // صفحه‌بندی پروژه‌ها و آمار لایک‌ها در پنل ادمین
   const [adminProjectsPage, setAdminProjectsPage] = useState<number>(1);
   const [adminProjectCategoryFilter, setAdminProjectCategoryFilter] = useState<string>('all');
+  const [adminProjectSearchQuery, setAdminProjectSearchQuery] = useState<string>('');
   const [projectLikesMap, setProjectLikesMap] = useState<Record<string, number>>(() => {
     try {
       const raw = localStorage.getItem('app_project_likes_stats');
@@ -1438,6 +1439,20 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     }
     setIsSavingProject(true);
     try {
+      // بررسی عدم وجود محصولات تکراری در لوسترهای پروژه (بر اساس فیلد کد محصول)
+      const chandelierCodes = (projectForm.chandeliersList || [])
+        .map((ch) => ch.code?.trim())
+        .filter(Boolean);
+      const uniqueChandelierCodes = new Set(chandelierCodes);
+      if (chandelierCodes.length !== uniqueChandelierCodes.size) {
+        showNotice(
+          'error',
+          'خطا: محصول تکراری در لیست لوسترهای پروژه وجود دارد! هر محصول را فقط یکبار می‌توانید اضافه کنید.'
+        );
+        setIsSavingProject(false);
+        return;
+      }
+
       const cleanDescText = projectForm.usedChandeliersText
         .replace(/<!--CHANDELIERS_DATA-->[\s\S]*?<!--\/CHANDELIERS_DATA-->/g, '')
         .replace(/(\n|^)\s*\[\s*\{[\s\S]*\}\s*\]\s*$/g, '')
@@ -4423,8 +4438,14 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
               {/* ۳. دیو لیست پروژه‌ها همراه با صفحه‌بندی ۱۰ تایی از جدیدترین‌ها و آمار لایک کاربران */}
               {(() => {
                 const filteredProjects = projectsList.filter((p) => {
-                  if (adminProjectCategoryFilter === 'all') return true;
-                  return p.categoryTab === adminProjectCategoryFilter;
+                  const matchesCategory = adminProjectCategoryFilter === 'all' || p.categoryTab === adminProjectCategoryFilter;
+                  const matchesSearch = !adminProjectSearchQuery.trim() || 
+                    (p.title || '').toLowerCase().includes(adminProjectSearchQuery.toLowerCase()) ||
+                    (p.description || '').toLowerCase().includes(adminProjectSearchQuery.toLowerCase()) ||
+                    (p.district || '').toLowerCase().includes(adminProjectSearchQuery.toLowerCase()) ||
+                    (p.sampleCode || '').toLowerCase().includes(adminProjectSearchQuery.toLowerCase()) ||
+                    (p.slug || '').toLowerCase().includes(adminProjectSearchQuery.toLowerCase());
+                  return matchesCategory && matchesSearch;
                 });
                 const sortedAdminProjects = [...filteredProjects].sort(
                   (a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)
@@ -4460,6 +4481,33 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                           هر صفحه: ۱۰ پروژه جدید
                         </span>
                       </div>
+                    </div>
+
+                    {/* فیلتر جستجوی پروژه‌ها با فیلد ورودی مدرن در تمام دسته‌بندی‌ها */}
+                    <div className="relative flex items-center">
+                      <Search className="w-4 h-4 text-[#a68452] absolute right-3 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={adminProjectSearchQuery}
+                        onChange={(e) => {
+                          setAdminProjectSearchQuery(e.target.value);
+                          setAdminProjectsPage(1);
+                        }}
+                        placeholder="جستجوی سریع پروژه در تمام بخش‌ها (نام، توضیحات، منطقه، کد نمونه یا اسلاگ)..."
+                        className="w-full h-10 pr-10 pl-8 rounded-xl border border-[#d5c6ab] text-xs font-semibold bg-[#faf8f4] text-[#1e1e1e] placeholder:text-[#999] focus:outline-none focus:border-[#b59766] focus:bg-white transition-all shadow-2xs"
+                      />
+                      {adminProjectSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdminProjectSearchQuery('');
+                            setAdminProjectsPage(1);
+                          }}
+                          className="absolute left-2.5 text-[#999] hover:text-[#333] p-1 cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
                     {/* فیلتر دسته‌بندی پروژه‌ها در پنل ادمین */}

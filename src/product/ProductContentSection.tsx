@@ -1839,7 +1839,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [justAddedMap, setJustAddedMap] = useState<Record<string, boolean>>({});
   const [recentTooltipId, setRecentTooltipId] = useState<string | null>(null);
-  const totalPages = 6;
 
   const categoryStripRef = useRef<HTMLDivElement | null>(null);
   const [hasCategoryOverflow, setHasCategoryOverflow] = useState<boolean>(
@@ -1888,6 +1887,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           : getProductCategorySlugFromLocation();
       const resolved = resolveProductCategoryBySlug(slug);
       setActiveCategory(resolved);
+      setCurrentPage(1);
       syncPriceBoundsForCategory(resolved.slug);
     };
 
@@ -1943,6 +1943,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   ) => {
     if (e) e.preventDefault();
     setActiveCategory(tab);
+    setCurrentPage(1);
     syncPriceBoundsForCategory(tab.slug);
     triggerFilterCalculation();
     navigateToProductCategory(tab.slug);
@@ -2056,7 +2057,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const allPageProducts = buildCategoryPageProducts(
     products,
     activeCategory.slug,
-    currentPage
+    1
   );
 
   const isCategoryEmpty = allPageProducts.length === 0;
@@ -2307,12 +2308,29 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     return true;
   };
 
-  const baseDesktopSlice = allPageProducts.slice(0, 9);
-  const desktopProducts = baseDesktopSlice.filter((p, idx) =>
+  const allFilteredDesktopProducts = allPageProducts.filter((p, idx) =>
     filterProductItem(p, idx, false)
   );
-  const mobileProducts = allPageProducts.filter((p, idx) =>
+  const allFilteredMobileProducts = allPageProducts.filter((p, idx) =>
     filterProductItem(p, idx, true)
+  );
+
+  const desktopItemsPerPage = 9;
+  const mobileItemsPerPage = 6;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(allFilteredDesktopProducts.length / desktopItemsPerPage)
+  );
+
+  const desktopProducts = allFilteredDesktopProducts.slice(
+    (currentPage - 1) * desktopItemsPerPage,
+    currentPage * desktopItemsPerPage
+  );
+
+  const mobileProducts = allFilteredMobileProducts.slice(
+    (currentPage - 1) * mobileItemsPerPage,
+    currentPage * mobileItemsPerPage
   );
 
   const priceSpan = Math.max(1, categoryMaxPrice - categoryMinPrice);
@@ -3192,6 +3210,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   );
 
   const renderPaginationBar = (className = 'mt-8 mb-2') => {
+    if (totalPages <= 1) return null;
     const maxVisible = Math.min(3, totalPages);
     const highestVisiblePage = Math.max(
       maxVisible,

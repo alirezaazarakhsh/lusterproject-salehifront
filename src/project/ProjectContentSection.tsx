@@ -2725,7 +2725,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
             <button
               type="button"
               onClick={() => triggerProjectsLoading(450)}
-              title={`مجموع ${toPersianDigits(allTabProjects.length)} پروژه در دسته‌بندی ${activeTabInfo.label}`}
+              title={`مجموع ${toPersianDigits(rawTabProjects.length)} پروژه در دسته‌بندی ${activeTabInfo.label}`}
               className="h-[38px] px-3.5 sm:px-4 rounded-[10px] border border-[#c8a878] bg-[#faf7f2] hover:bg-[#f4ede1] text-[#937242] text-[12px] sm:text-[12.5px] font-bold transition-all flex items-center justify-center cursor-pointer shadow-2xs whitespace-nowrap"
             >
               {isTabLoading ? (
@@ -2735,7 +2735,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-[#937242] animate-pulse" />
                 </span>
               ) : (
-                <span>مجموع {toPersianDigits(allTabProjects.length)} پروژه</span>
+                <span>مجموع {toPersianDigits(rawTabProjects.length)} پروژه</span>
               )}
             </button>
           </div>

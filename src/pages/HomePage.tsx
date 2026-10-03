@@ -101,6 +101,25 @@ export const HomePage: React.FC = () => {
     };
     initApp();
 
+    // راه‌اندازی ریل تایم با SSE برای به‌روزرسانی آنی صفحات سایت در هنگام هرگونه تغییر در ادمین
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/realtime/stream');
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed && parsed.type === 'catalog-updated') {
+            console.log('Real-time database update event received:', parsed);
+            window.dispatchEvent(new CustomEvent('app-catalog-updated'));
+          }
+        } catch (e) {
+          console.error('Failed to parse realtime event data:', e);
+        }
+      };
+    } catch (e) {
+      console.error('Failed to connect to realtime stream:', e);
+    }
+
     const unsubscribe = subscribeToRoute((nextRoute) => {
       triggerPagePreloader(1000);
       setCurrentRoute(nextRoute);
@@ -226,6 +245,9 @@ export const HomePage: React.FC = () => {
       document.removeEventListener('click', handleGlobalLinkClick);
       if (preloaderTimeoutRef.current) {
         window.clearTimeout(preloaderTimeoutRef.current);
+      }
+      if (eventSource) {
+        eventSource.close();
       }
     };
   }, []);

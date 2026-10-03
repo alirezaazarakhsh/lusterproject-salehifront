@@ -29,6 +29,32 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   categories,
   products = [],
 }) => {
+  const getProductCountText = (catSlug: string) => {
+    let count = 40;
+    if (products && products.length > 4) {
+      if (catSlug === 'all') {
+        count = products.length;
+      } else {
+        const matching = products.filter((p) => {
+          const pCat = String(p.categoryKey || p.categorySlug || '').toLowerCase();
+          const cSlug = String(catSlug || '').toLowerCase();
+          return pCat === cSlug;
+        });
+        count = matching.length;
+      }
+    } else {
+      if (catSlug === 'chandeliers') count = 18;
+      else if (catSlug === 'single-branch') count = 14;
+      else if (catSlug === 'abalour') count = 12;
+      else if (catSlug === 'mirror-console') count = 10;
+      else if (catSlug === 'shamdooni') count = 9;
+      else if (catSlug === 'table') count = 8;
+      else if (catSlug === 'all') count = 71;
+    }
+    const persianCount = String(count).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+    return `${persianCount} محصول`;
+  };
+
   const displayCategories =
     categories && categories.length > 0
       ? categories.slice(0, 4)
@@ -139,6 +165,9 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   <h3 className="text-[16px] xs:text-[17px] font-black text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-snug">
                     {category.title}
                   </h3>
+                  <p className="text-[12px] text-[#7a7a7a] mt-1 font-bold">
+                    {getProductCountText(catSlug)}
+                  </p>
                 </div>
               </a>
             );
@@ -218,6 +247,9 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   <h3 className="text-[17px] font-bold text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-tight">
                     {category.title}
                   </h3>
+                  <p className="text-[12.5px] text-[#7a7a7a] mt-1.5 font-bold">
+                    {getProductCountText(catSlug)}
+                  </p>
                 </div>
               </a>
             );
