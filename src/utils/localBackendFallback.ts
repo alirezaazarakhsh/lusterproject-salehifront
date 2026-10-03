@@ -1196,8 +1196,8 @@ export async function handleLocalApiRequest(
 /**
  * فراخوانی هوشمند API:
  * ۱. ابتدا سرور Express + PostgreSQL را صدا می‌زند.
- * ۲. اگر روی هاست استاتیک/پروداکشن (مانند Vercel) پاسخ غیر JSON (مثلاً index.html یا 404/405/502) برگشت،
- *    به‌صورت خودکار و بدون خطا از موتور دیتابیس محلی پاسخ می‌دهد.
+ * ۲. فقط در توسعه، اگر API در دسترس نباشد از داده‌های محلی مرورگر استفاده می‌کند.
+ * در production خطای API نمایش داده می‌شود تا ذخیره‌سازی محلی با دیتابیس اشتباه نشود.
  */
 // وضعیت فعلی اتصال به سرور (جهت نمایش در پنل ادمین)
 let isCurrentlyUsingFallback = false;
@@ -1240,7 +1240,7 @@ export async function apiFetchWithFallback(
       const errJson = await res.json().catch(() => ({}));
       
       // فقط برای ورود ادمین پیش‌فرض ساشا اجازه عبور محلی بده (در صورت قطعی سرور)
-      if (url === '/api/admin/login') {
+      if (import.meta.env.DEV && url === '/api/admin/login') {
         const body = parseBody(options);
         const normPhone = normalizeAdminPhoneClient(body.phone || '');
         const pass = String(body.password || '').trim();
@@ -1259,7 +1259,7 @@ export async function apiFetchWithFallback(
 
     // در محیط واقعی، خطاهای ۴۰۴ یا ۵۰۰ نباید به موتور محلی هدایت شوند چون باعث تضاد داده‌ای می‌شود.
     // فقط در صورتی که درخواست GET باشد و پاسخ نامعتبر باشد، از موتور محلی به عنوان کش لودینگ استفاده می‌کنیم.
-    if (options.method === 'GET' || !options.method) {
+    if (import.meta.env.DEV && (options.method === 'GET' || !options.method)) {
        console.warn(`GET ${url} failed with status ${res.status}. Falling back to local storage.`);
        isCurrentlyUsingFallback = true;
        return await handleLocalApiRequest(url, options);
@@ -1267,6 +1267,10 @@ export async function apiFetchWithFallback(
 
     throw new Error(`خطای سرور (${res.status})`);
   } catch (err: any) {
+    if (!import.meta.env.DEV) {
+      throw err;
+    }
+
     // اگر خطای شبکه بود و درخواست GET بود، از کش محلی استفاده کن
     if ((!options.method || options.method === 'GET') && err instanceof TypeError) {
        console.warn(`Network error fetching ${url}. Falling back to local storage.`);

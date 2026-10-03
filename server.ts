@@ -2,7 +2,6 @@ import 'dotenv/config';
 import fs from 'fs';
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { requireAuth, type AuthRequest } from './src/middleware/auth.ts';
 import {
   authenticateAdminByPhoneAndPassword,
@@ -1078,7 +1077,8 @@ async function startServer() {
   );
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
+  if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -1097,7 +1097,7 @@ async function startServer() {
         next(e);
       }
     });
-  } else {
+  } else if (!process.env.VERCEL) {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
@@ -1105,9 +1105,13 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
+
+  return app;
 }
 
-startServer();
+export const appReady = startServer();
