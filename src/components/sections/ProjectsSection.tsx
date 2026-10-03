@@ -88,9 +88,14 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   const liveProducts =
     products && products.length > 0 ? products : SALEHI_COLLECTION_PRODUCTS;
 
-  // خواندن ۴ پروژه مربوط به تب انتخاب‌شده مستقیماً از دیتابیس PostgreSQL
+  // خواندن ۴ پروژه مربوط به تب انتخاب‌شده مستقیماً از دیتابیس PostgreSQL (مرتب‌شده از جدیدترین به قدیمی‌ترین)
   const dbTabProjects = (projects || [])
     .filter((p) => p.categoryTab === activeTab)
+    .sort((a, b) => {
+      const numA = Number(String(a.id).replace(/\D/g, '')) || 0;
+      const numB = Number(String(b.id).replace(/\D/g, '')) || 0;
+      return numB - numA;
+    })
     .slice(0, 4);
   const fallbackTabProjects = EXECUTED_PROJECTS.filter(
     (p) => p.categoryTab === activeTab
@@ -473,63 +478,68 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               })}
             </div>
 
-            {/* دکمه فلش راست داخل عکس */}
-            <button
-              type="button"
-              onClick={handleNextImage}
-              aria-label="تصویر بعدی"
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg bg-white/90 hover:bg-white text-[#222222] flex items-center justify-center shadow-md cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            {/* دکمه فلش چپ داخل عکس */}
-            <button
-              type="button"
-              onClick={handlePrevImage}
-              aria-label="تصویر قبلی"
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg bg-white/65 hover:bg-white text-[#222222] flex items-center justify-center shadow-md cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* ۴ تصویر بندانگشتی (Thumbnail) زیر عکس اصلی */}
-          <div className="grid grid-cols-4 gap-3">
-            {currentProject.galleryImages.map((imgUrl, idx) => {
-              const isThumbActive = activeGalleryIdx === idx;
-              return (
+            {/* دکمه‌های چپ و راست داخل عکس (فقط هنگامی که گالری بیشتر از ۱ تصویر داشته باشد) */}
+            {currentProject.galleryImages.length > 1 && (
+              <>
                 <button
-                  key={`${currentProject.id}-thumb-${idx}`}
                   type="button"
-                  onClick={() => setActiveGalleryIdx(idx)}
-                  className="relative pt-1.5 focus:outline-none cursor-pointer group"
+                  onClick={handleNextImage}
+                  aria-label="تصویر بعدی"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg bg-white/90 hover:bg-white text-[#222222] flex items-center justify-center shadow-md cursor-pointer"
                 >
-                  {/* خط طلایی بالای تصویر کوچک فعال با انیمیشن نرم */}
-                  <span
-                    className={`absolute top-0 inset-x-1 h-[2.5px] bg-[#b59766] rounded-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                      isThumbActive
-                        ? 'opacity-100 scale-x-100'
-                        : 'opacity-0 scale-x-50'
-                    }`}
-                  />
-                  <div
-                    className={`h-16 sm:h-20 rounded-[8px] overflow-hidden border transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                      isThumbActive
-                        ? 'border-[#b59766] opacity-100'
-                        : 'border-transparent opacity-80 group-hover:opacity-100'
-                    }`}
-                  >
-                    <AdaptiveGalleryImage
-                      src={imgUrl}
-                      alt={`${currentProject.title} نمای ${idx + 1}`}
-                      isThumbnail
-                    />
-                  </div>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
-              );
-            })}
+
+                <button
+                  type="button"
+                  onClick={handlePrevImage}
+                  aria-label="تصویر قبلی"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg bg-white/65 hover:bg-white text-[#222222] flex items-center justify-center shadow-md cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
+
+          {/* تصاویر بندانگشتی (Thumbnail) زیر عکس اصلی (فقط هنگامی که گالری بیشتر از ۱ تصویر داشته باشد) */}
+          {currentProject.galleryImages.length > 1 && (
+            <div className="grid grid-cols-4 gap-3">
+              {currentProject.galleryImages.map((imgUrl, idx) => {
+                const isThumbActive = activeGalleryIdx === idx;
+                return (
+                  <button
+                    key={`${currentProject.id}-thumb-${idx}`}
+                    type="button"
+                    onClick={() => setActiveGalleryIdx(idx)}
+                    className="relative pt-1.5 focus:outline-none cursor-pointer group"
+                  >
+                    {/* خط طلایی بالای تصویر کوچک فعال با انیمیشن نرم */}
+                    <span
+                      className={`absolute top-0 inset-x-1 h-[2.5px] bg-[#b59766] rounded-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                        isThumbActive
+                          ? 'opacity-100 scale-x-100'
+                          : 'opacity-0 scale-x-50'
+                      }`}
+                    />
+                    <div
+                      className={`h-16 sm:h-20 rounded-[8px] overflow-hidden border transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                        isThumbActive
+                          ? 'border-[#b59766] opacity-100'
+                          : 'border-transparent opacity-80 group-hover:opacity-100'
+                      }`}
+                    >
+                      <AdaptiveGalleryImage
+                        src={imgUrl}
+                        alt={`${currentProject.title} نمای ${idx + 1}`}
+                        isThumbnail
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </section>

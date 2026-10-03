@@ -6,12 +6,27 @@ interface PagePreloaderProps {
 }
 
 /**
- * پریلودر (Preloader) صفحات سایت هنگام باز شدن اولیه و جابه‌جایی بین صفحات
- * دقیقاً مطابق تصاویر دسکتاپ (Screenshot 13.01.36) و موبایل (Screenshot 13.02.12)
+ * پریلودر (Preloader) کامل و تک‌رنگ (100% Opaque) تمام‌صفحه
+ * جهت پوشش ۱۰۰٪ فضا تا زمان بارگذاری کامل داده‌های دیتابیس و جلوگیری از نمایش محتوای قبلی
  */
 export const PagePreloader: React.FC<PagePreloaderProps> = ({ isVisible }) => {
-  // اندیس نقطه خاکستری روشن (پیش‌فرض ۱ یعنی نقطه وسط روشن و دو نقطه کناری تیره دقیقاً مطابق عکس)
+  const [shouldRender, setShouldRender] = useState(isVisible);
+  const [isFadingOut, setIsFadingOut] = useState(false);
   const [lightDotIndex, setLightDotIndex] = useState<number>(1);
+
+  useEffect(() => {
+    if (isVisible) {
+      setShouldRender(true);
+      setIsFadingOut(false);
+    } else {
+      setIsFadingOut(true);
+      const timer = window.setTimeout(() => {
+        setShouldRender(false);
+        setIsFadingOut(false);
+      }, 350);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isVisible]);
 
   useEffect(() => {
     if (!isVisible) {
@@ -24,7 +39,7 @@ export const PagePreloader: React.FC<PagePreloaderProps> = ({ isVisible }) => {
     return () => window.clearInterval(interval);
   }, [isVisible]);
 
-  if (!isVisible) return null;
+  if (!shouldRender) return null;
 
   return (
     <div
@@ -32,9 +47,11 @@ export const PagePreloader: React.FC<PagePreloaderProps> = ({ isVisible }) => {
       role="status"
       aria-live="polite"
       aria-label="در حال بارگذاری صفحه"
-      className="fixed inset-0 z-[120] bg-black/45 flex items-center justify-center px-5 select-none transition-opacity duration-200"
+      className={`fixed inset-0 z-[99999] bg-[#faf8f5] flex items-center justify-center px-5 select-none transition-opacity duration-350 ease-out ${
+        isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
+      }`}
     >
-      <div className="w-full max-w-[348px] sm:max-w-[345px] bg-white rounded-[18px] sm:rounded-[18px] shadow-[0_20px_60px_rgba(0,0,0,0.22)] px-5 sm:px-6 pt-6 pb-5 sm:pt-6 sm:pb-5 flex flex-col items-center justify-center">
+      <div className="w-full max-w-[348px] sm:max-w-[345px] bg-white rounded-[18px] border border-[#e8e2d5] shadow-[0_20px_60px_rgba(0,0,0,0.08)] px-5 sm:px-6 pt-6 pb-5 sm:pt-6 sm:pb-5 flex flex-col items-center justify-center">
         {/* عنوان طلایی بالای لوگو */}
         <span className="text-[13.5px] sm:text-[12px] font-semibold tracking-[0.02em] text-[#b58d53] leading-none mb-1.5">
           Chandelier

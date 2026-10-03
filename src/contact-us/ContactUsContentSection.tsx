@@ -473,82 +473,66 @@ export const ContactUsContentSection: React.FC<
       ? '۱۸ کاراکتر'
       : `${toPersianDigits(subject.length)} کاراکتر`;
 
-  const handleSubmitForm = (e: React.FormEvent) => {
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
+    const trimmedName = fullName.trim();
+    const trimmedPhone = mobilePhone.trim();
+    const trimmedMsg = messageText.trim();
+    const trimmedSubject = subject.trim() || 'مشاوره خرید';
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName || !trimmedPhone || !trimmedMsg) {
+      onShowToast?.(
+        'contact-empty-error',
+        'خطایی رخ داد!',
+        'مشتری عزیز فیلدهای الزامی فرم تماس (نام، شماره تماس و متن پیام) را تکمیل نمایید.'
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
-    const isFormIncomplete =
-      !subject.trim() ||
-      !fullName.trim() ||
-      !mobilePhone.trim() ||
-      !email.trim() ||
-      !messageText.trim();
+    try {
+      const res = await fetch('/api/public/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: trimmedName,
+          phone: trimmedPhone,
+          email: trimmedEmail,
+          subject: trimmedSubject,
+          message: trimmedMsg,
+        }),
+      });
 
-    window.setTimeout(() => {
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'خطا در برقراری ارتباط با سرور');
+      }
+
+      onShowToast?.(
+        'contact-success',
+        'پیام شما با موفقیت ارسال شد',
+        'پیام شما در پنل ادمین و سیستم ثبت شد. به زودی با شما تماس خواهیم گرفت.'
+      );
+
+      setFullName('');
+      setMobilePhone('');
+      setEmail('');
+      setMessageText('');
+
+      window.dispatchEvent(new CustomEvent('app-contact-message-created'));
+    } catch {
+      onShowToast?.(
+        'contact-send-error',
+        'پیام شما ارسال نشد!',
+        'برای ارسال فرم تماس با تیم مجموعه مجدد تلاش کنید.'
+      );
+    } finally {
       setIsSubmitting(false);
-
-      if (isFormIncomplete) {
-        emptyAttemptCountRef.current += 1;
-        const cycle = emptyAttemptCountRef.current % 3;
-
-        if (cycle === 1) {
-          // وضعیت ۱: خطای خالی بودن فیلد فرم تماس (عکس ۱۱ موبایل و توست میانی عکس ۱۳ دسکتاپ)
-          onShowToast?.(
-            'contact-empty-error',
-            'خطایی رخ داد!',
-            'مشتری عزیز فیلد فرم تماس با مجموعه خالی میباشد.'
-          );
-        } else if (cycle === 2) {
-          // وضعیت ۲: خطای ارسال نشدن پیام (عکس ۱۲ موبایل و توست بالایی عکس ۱۳ دسکتاپ)
-          onShowToast?.(
-            'contact-send-error',
-            'پیام شما ارسال نشد!',
-            'برای ارسال فرم تماس با تیم مجموعه مجدد تلاش کنید.'
-          );
-        } else {
-          // وضعیت ۳: ارسال موفقیت‌آمیز پیام (عکس ۱۰ موبایل و توست پایینی عکس ۱۳ دسکتاپ)
-          onShowToast?.(
-            'contact-success',
-            'پیام شما با موفقیت ارسال شد',
-            'به زودی تیم پاسخگویی با شما تماس خواهند گرفت.'
-          );
-        }
-        return;
-      }
-
-      filledAttemptCountRef.current += 1;
-      if (filledAttemptCountRef.current % 2 === 1) {
-        fetch('/api/public/contact', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fullName: fullName.trim(),
-            phone: mobilePhone.trim(),
-            email: email.trim(),
-            subject: subject.trim(),
-            message: messageText.trim(),
-          }),
-        }).catch(() => {});
-
-        onShowToast?.(
-          'contact-success',
-          'پیام شما با موفقیت ارسال شد',
-          'به زودی تیم پاسخگویی با شما تماس خواهند گرفت.'
-        );
-        setFullName('');
-        setMobilePhone('');
-        setEmail('');
-        setMessageText('');
-      } else {
-        onShowToast?.(
-          'contact-send-error',
-          'پیام شما ارسال نشد!',
-          'برای ارسال فرم تماس با تیم مجموعه مجدد تلاش کنید.'
-        );
-      }
-    }, 650);
+    }
   };
 
   return (

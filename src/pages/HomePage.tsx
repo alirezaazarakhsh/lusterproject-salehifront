@@ -12,6 +12,7 @@ import {
   MagazineArticle,
 } from '../data/chandelierData';
 import { FinishType } from '../components/Chandelier3DViewer';
+import { ALL_INITIAL_PROJECTS } from '../data/allDatabaseProjectsSeed';
 import { HeaderSection } from '../components/sections/HeaderSection';
 import { StoriesSection } from '../components/sections/StoriesSection';
 import {
@@ -90,11 +91,18 @@ export const HomePage: React.FC = () => {
   };
 
   useEffect(() => {
-    // نمایش پریلودر هنگام باز شدن اولیه سایت
-    triggerPagePreloader(1650);
+    // بارگذاری کامل اطلاعات از دیتابیس همزمان با نمایش پریلودر تا زمانی که لود کامل انجام شود
+    const initApp = async () => {
+      setIsPagePreloading(true);
+      await fetchLiveCatalogFromDb();
+      window.setTimeout(() => {
+        setIsPagePreloading(false);
+      }, 350);
+    };
+    initApp();
 
     const unsubscribe = subscribeToRoute((nextRoute) => {
-      triggerPagePreloader(1350);
+      triggerPagePreloader(1000);
       setCurrentRoute(nextRoute);
     });
     const syncRoute = (e?: Event) => {
@@ -120,7 +128,9 @@ export const HomePage: React.FC = () => {
         rawHref.startsWith('http://') ||
         rawHref.startsWith('https://') ||
         rawHref.startsWith('tel:') ||
-        rawHref.startsWith('mailto:')
+        rawHref.startsWith('mailto:') ||
+        rawHref.startsWith('tg:') ||
+        rawHref.startsWith('whatsapp:')
       ) {
         return;
       }
@@ -128,34 +138,6 @@ export const HomePage: React.FC = () => {
       const lowerHref = rawHref.toLowerCase();
 
       if (lowerHref.startsWith('#')) {
-        if (
-          lowerHref === '#rule' ||
-          lowerHref === '#/rule' ||
-          lowerHref === '#contact-us' ||
-          lowerHref === '#/contact-us' ||
-          lowerHref === '#about-us' ||
-          lowerHref === '#/about-us' ||
-          lowerHref === '#project' ||
-          lowerHref === '#/project' ||
-          lowerHref === '#projects' ||
-          lowerHref === '#/projects' ||
-          lowerHref.startsWith('#project/') ||
-          lowerHref.startsWith('#/project/') ||
-          lowerHref.startsWith('#projects/') ||
-          lowerHref.startsWith('#/projects/') ||
-          lowerHref === '#product' ||
-          lowerHref === '#/product' ||
-          lowerHref === '#products' ||
-          lowerHref === '#/products' ||
-          lowerHref.startsWith('#product/') ||
-          lowerHref.startsWith('#/product/') ||
-          lowerHref.startsWith('#products/') ||
-          lowerHref.startsWith('#/products/') ||
-          lowerHref === '#admin' ||
-          lowerHref === '#/admin'
-        ) {
-          return;
-        }
         if (
           lowerHref === '#500' ||
           lowerHref === '#/500' ||
@@ -167,10 +149,16 @@ export const HomePage: React.FC = () => {
           navigateToRoute('server-error');
           return;
         }
-        if (!VALID_HOME_HASHES.has(lowerHref)) {
+        if (
+          lowerHref === '#404' ||
+          lowerHref === '#/404' ||
+          lowerHref === '#not-found' ||
+          lowerHref === '#/not-found'
+        ) {
           e.preventDefault();
           setCurrentRoute('not-found');
           navigateToRoute('not-found');
+          return;
         }
         return;
       }
@@ -223,6 +211,8 @@ export const HomePage: React.FC = () => {
 
     window.addEventListener('offline', handleServerDown);
     window.addEventListener('app-server-error', handleServerDown);
+    window.addEventListener('app-catalog-updated', fetchLiveCatalogFromDb);
+    window.addEventListener('app-projects-updated', fetchLiveCatalogFromDb);
     document.addEventListener('click', handleGlobalLinkClick);
     return () => {
       unsubscribe();
@@ -231,6 +221,8 @@ export const HomePage: React.FC = () => {
       window.removeEventListener('app-route-change', syncRoute);
       window.removeEventListener('offline', handleServerDown);
       window.removeEventListener('app-server-error', handleServerDown);
+      window.removeEventListener('app-catalog-updated', fetchLiveCatalogFromDb);
+      window.removeEventListener('app-projects-updated', fetchLiveCatalogFromDb);
       document.removeEventListener('click', handleGlobalLinkClick);
       if (preloaderTimeoutRef.current) {
         window.clearTimeout(preloaderTimeoutRef.current);
@@ -242,8 +234,35 @@ export const HomePage: React.FC = () => {
   );
   const [categoriesList, setCategoriesList] =
     useState<CategoryItem[]>(PRODUCT_CATEGORIES);
-  const [projectsList, setProjectsList] =
-    useState<ExecutedProject[]>(EXECUTED_PROJECTS);
+  const [projectsList, setProjectsList] = useState<ExecutedProject[]>(() =>
+    ALL_INITIAL_PROJECTS.map((pr, idx) => ({
+      id: String(idx + 1),
+      slug: pr.slug,
+      sampleCode: pr.sampleCode,
+      district: pr.district,
+      categoryTab: pr.categoryTab,
+      title: pr.title,
+      description: pr.description,
+      usedChandeliersText: pr.usedChandeliersText,
+      mainImage: pr.mainImage,
+      galleryImages: pr.galleryImages,
+      likesCount: 0,
+      usedProducts: [
+        {
+          id: `up-${idx + 1}-1`,
+          name: 'لوستر ۱۲ شاخه تک',
+          price: '۱۲,۵۰۰,۰۰۰ تومان',
+          productId: 'prod-3',
+        },
+        {
+          id: `up-${idx + 1}-2`,
+          name: 'لوستر شاه ملکه',
+          price: '۱۲,۵۰۰,۰۰۰ تومان',
+          productId: 'prod-4',
+        },
+      ],
+    }))
+  );
   const [storiesList, setStoriesList] = useState<StoryItem[]>(STORY_ITEMS);
   const [articlesList, setArticlesList] =
     useState<MagazineArticle[]>(MAGAZINE_ARTICLES);
@@ -355,7 +374,7 @@ export const HomePage: React.FC = () => {
 
       if (Array.isArray(data.projects) && data.projects.length > 0) {
         const mappedProjects: ExecutedProject[] = data.projects.map(
-          (projRow: any) => {
+          (projRow: any, idx: number) => {
             let parsedGallery: string[] = [];
             if (Array.isArray(projRow.galleryImages)) {
               parsedGallery = projRow.galleryImages;
@@ -366,8 +385,31 @@ export const HomePage: React.FC = () => {
                 parsedGallery = [];
               }
             }
+
+            let parsedChs: any[] = [];
+            if (Array.isArray(projRow.chandeliersList) && projRow.chandeliersList.length > 0) {
+              parsedChs = projRow.chandeliersList;
+            } else if (projRow.usedChandeliersText) {
+              const tagMatch = projRow.usedChandeliersText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
+              if (tagMatch) {
+                try {
+                  const arr = JSON.parse(tagMatch[1]);
+                  if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
+                } catch {}
+              }
+              if (parsedChs.length === 0) {
+                const jsonMatch = projRow.usedChandeliersText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+                if (jsonMatch) {
+                  try {
+                    const arr = JSON.parse(jsonMatch[0]);
+                    if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
+                  } catch {}
+                }
+              }
+            }
+
             return {
-              id: projRow.slug ? `proj-${projRow.slug}` : `proj-${projRow.id}`,
+              id: projRow.id ?? (projRow.slug ? `proj-${projRow.slug}` : `proj-${idx + 1}`),
               slug: projRow.slug,
               sampleCode: projRow.sampleCode || 'نمونه ۱',
               district: projRow.district || 'فرشته',
@@ -375,25 +417,20 @@ export const HomePage: React.FC = () => {
               title: projRow.title,
               description: projRow.description,
               usedChandeliersText: projRow.usedChandeliersText || '',
-              usedProducts: [
-                {
-                  id: `up-${projRow.id}-1`,
-                  name: currentProducts[0]?.name || 'لوستر ۱۲ شاخه تک',
-                  price:
-                    currentProducts[0]?.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان',
-                  productId: currentProducts[0]?.id || 'prod-3',
-                },
-                {
-                  id: `up-${projRow.id}-2`,
-                  name: currentProducts[1]?.name || 'لوستر شاه ملکه',
-                  price:
-                    currentProducts[1]?.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان',
-                  productId: currentProducts[1]?.id || 'prod-4',
-                },
-              ],
+              chandeliersList: parsedChs,
+              usedProducts: parsedChs.map((ch: any, cIdx: number) => ({
+                id: `up-${projRow.id}-${cIdx + 1}`,
+                name: ch.name || 'لوستر سفارشی صالحی',
+                price: ch.desc || ch.price || 'استعلام قیمت',
+                productId: ch.code || `prod-${cIdx + 1}`,
+              })),
               mainImage: projRow.mainImage,
               galleryImages:
                 parsedGallery.length > 0 ? parsedGallery : [projRow.mainImage],
+              dateBadge: projRow.dateBadge || '',
+              ownerName: projRow.ownerName || '',
+              locationBadge: projRow.locationBadge || projRow.district || '',
+              likesCount: Number(projRow.likesCount) || 0,
             };
           }
         );
@@ -551,9 +588,6 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchLiveCatalogFromDb();
-  }, []);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);

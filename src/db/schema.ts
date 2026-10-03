@@ -76,6 +76,9 @@ export const projects = pgTable('projects', {
   galleryJson: text('gallery_json').notNull(),
   locationBadge: text('location_badge').notNull(),
   dateBadge: text('date_badge').notNull(),
+  ownerName: text('owner_name').default('').notNull(),
+  likesCount: integer('likes_count').default(0).notNull(),
+  stylesJson: text('styles_json').default('{}').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -122,6 +125,7 @@ export const contactMessages = pgTable('contact_messages', {
   id: serial('id').primaryKey(),
   fullName: text('full_name').notNull(),
   phone: text('phone').notNull(),
+  email: text('email').default('').notNull(),
   subject: text('subject').notNull(),
   message: text('message').notNull(),
   status: text('status').default('new').notNull(),

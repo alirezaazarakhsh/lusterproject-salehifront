@@ -391,7 +391,7 @@ const SnappPayBadge: React.FC<{ compact?: boolean }> = ({
 );
 
 /**
- * آیکون سبد خرید در حالت عادی
+ * آیکون سبد خرید دقیقاً مطابق فایل Figma (دسته‌های باز در بالا)
  */
 const ShoppingBasketIcon: React.FC<{ className?: string }> = ({
   className = 'w-5 h-5',
@@ -403,42 +403,53 @@ const ShoppingBasketIcon: React.FC<{ className?: string }> = ({
     className={className}
   >
     <path
-      d="M8.5 4.5L5.5 8.5"
+      d="M8 8.5L10 4.5"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
-      d="M15.5 4.5L18.5 8.5"
+      d="M16 8.5L14 4.5"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <rect
+      x="3"
+      y="8.5"
+      width="18"
+      height="2.5"
+      rx="1.25"
+      stroke="currentColor"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
-      d="M3.5 8.5H20.5"
+      d="M4.5 11L5.8 19.3C5.95 20.3 6.8 21 7.8 21H16.2C17.2 21 18.05 20.3 18.2 19.3L19.5 11"
       stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-    />
-    <path
-      d="M4.8 8.5L6.4 18.3C6.65 19.8 7.6 20.8 9.2 20.8H14.8C16.4 20.8 17.35 19.8 17.6 18.3L19.2 8.5"
-      stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    <path
-      d="M9.75 12.25V16.75"
+    <line
+      x1="10"
+      y1="14"
+      x2="10"
+      y2="18"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="1.8"
       strokeLinecap="round"
     />
-    <path
-      d="M14.25 12.25V16.75"
+    <line
+      x1="14"
+      y1="14"
+      x2="14"
+      y2="18"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="1.8"
       strokeLinecap="round"
     />
   </svg>
@@ -475,7 +486,7 @@ const PlusSquareIcon: React.FC<{ className?: string }> = ({
 );
 
 /**
- * آیکون کیف خرید با ضربدر (برای حالت ناموجود در انبار)
+ * آیکون کیف خرید با ضربدر (برای حالت ناموجود در انبار - مطابق طراحی Figma با دسته‌های باز)
  */
 const OutOfStockBagIcon: React.FC<{ className?: string }> = ({
   className = 'w-5 h-5',
@@ -487,20 +498,39 @@ const OutOfStockBagIcon: React.FC<{ className?: string }> = ({
     className={className}
   >
     <path
-      d="M8.5 7.5V6.5C8.5 4.57 10.07 3 12 3C13.93 3 15.5 4.57 15.5 6.5V7.5"
+      d="M8 8.5L10 4.5"
       stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-    />
-    <path
-      d="M6.8 7.5H17.2C18.6 7.5 19.5 8.5 19.7 10.1L20.4 17.6C20.6 19.6 19.6 21 17.4 21H6.6C4.4 21 3.4 19.6 3.6 17.6L4.3 10.1C4.5 8.5 5.4 7.5 6.8 7.5Z"
-      stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
-      d="M10 12.2L14 16.2M14 12.2L10 16.2"
+      d="M16 8.5L14 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <rect
+      x="3"
+      y="8.5"
+      width="18"
+      height="2.5"
+      rx="1.25"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M4.5 11L5.8 19.3C5.95 20.3 6.8 21 7.8 21H16.2C17.2 21 18.05 20.3 18.2 19.3L19.5 11"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M10.5 13.5L13.5 16.5M13.5 13.5L10.5 16.5"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
@@ -1764,7 +1794,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const [activeCategory, setActiveCategory] = useState<ProductCategoryTabItem>(
     () => resolveProductCategoryBySlug(getProductCategorySlugFromLocation())
   );
-  const [currentPage, setCurrentPage] = useState<number>(2);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const [openFilterGroups, setOpenFilterGroups] = useState<
     Record<string, boolean>

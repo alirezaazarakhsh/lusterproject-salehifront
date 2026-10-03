@@ -21,8 +21,9 @@ import {
   HeroSliderSettingsConfig,
   INITIAL_HERO_SLIDER_SETTINGS,
 } from '../components/sections/HeroSection';
+import { ALL_INITIAL_PROJECTS } from '../data/allDatabaseProjectsSeed';
 
-const LOCAL_DB_STORAGE_KEY = 'salehi_cms_fallback_db_v1';
+const LOCAL_DB_STORAGE_KEY = 'salehi_cms_fallback_db_v2';
 
 export const DEFAULT_SUPER_ADMIN_PHONE = '09120759419';
 export const DEFAULT_SUPER_ADMIN_PASS = 'sasha9419';
@@ -244,25 +245,23 @@ function createInitialLocalDb(): LocalDbSchema {
     sortOrder: idx + 1,
   }));
 
-  const seededProjects = EXECUTED_PROJECTS.map((pr, idx) => ({
+  const seededProjects = ALL_INITIAL_PROJECTS.map((pr, idx) => ({
     id: idx + 1,
-    slug: pr.id || `proj-${idx + 1}`,
+    slug: pr.slug,
     categoryTab: pr.categoryTab,
     sampleCode: pr.sampleCode,
     district: pr.district,
     title: pr.title,
-    subtitle: `${pr.district} | تهران`,
+    subtitle: pr.subtitle,
     description: pr.description,
     usedChandeliersText: pr.usedChandeliersText,
     mainImage: pr.mainImage,
-    galleryImages: Array.isArray(pr.galleryImages)
-      ? pr.galleryImages
-      : [pr.mainImage],
-    galleryJson: JSON.stringify(
-      Array.isArray(pr.galleryImages) ? pr.galleryImages : [pr.mainImage]
-    ),
-    locationBadge: 'تهران، الهیه',
-    dateBadge: '۲۵ شهریور ماه ۱۴۰۴',
+    galleryImages: pr.galleryImages,
+    galleryJson: pr.galleryJson,
+    locationBadge: pr.locationBadge,
+    dateBadge: pr.dateBadge,
+    likesCount: 0,
+    chandeliersList: pr.chandeliersList,
   }));
 
   const seededStories = STORY_ITEMS.map((st, idx) => ({
@@ -391,9 +390,16 @@ function loadLocalDb(): LocalDbSchema {
           Array.isArray(parsed.categories) && parsed.categories.length > 0
             ? parsed.categories
             : initial.categories,
-        projects: Array.isArray(parsed.projects)
-          ? parsed.projects
-          : initial.projects,
+        projects:
+          Array.isArray(parsed.projects) && parsed.projects.length >= initial.projects.length
+            ? parsed.projects
+            : [
+                ...(parsed.projects || []).filter(
+                  (p: any) =>
+                    String(p.id).startsWith('custom-') || Number(p.id) > 20
+                ),
+                ...initial.projects,
+              ],
         stories:
           Array.isArray(parsed.stories) && parsed.stories.length > 0
             ? parsed.stories
@@ -800,6 +806,7 @@ export async function handleLocalApiRequest(
         id: nextId,
         slug: body.slug || `proj-${nextId}`,
         chandeliersList: Array.isArray(body.chandeliersList) ? body.chandeliersList : [],
+        likesCount: Math.max(0, Number(body.likesCount) || 0),
       };
       dbState.projects.unshift(created);
       saveLocalDb(dbState);
@@ -827,6 +834,10 @@ export async function handleLocalApiRequest(
             body.chandeliersList !== undefined
               ? body.chandeliersList
               : dbState.projects[idx].chandeliersList,
+          likesCount:
+            body.likesCount !== undefined
+              ? Math.max(0, Number(body.likesCount) || 0)
+              : (Number(dbState.projects[idx].likesCount) || 0),
         };
         saveLocalDb(dbState);
         return dbState.projects[idx];
@@ -841,6 +852,55 @@ export async function handleLocalApiRequest(
       });
       saveLocalDb(dbState);
       return { success: true, id: rawParam };
+    }
+  }
+
+  // دریافت لیست پروژه‌ها (عمومی)
+  if ((cleanUrl === '/api/projects' || cleanUrl === '/api/public/projects') && method === 'GET') {
+    return dbState.projects;
+  }
+
+  // ثبت لایک یا برداشتن لایک پروژه
+  if ((cleanUrl.startsWith('/api/projects/') || cleanUrl.startsWith('/api/public/projects/')) && cleanUrl.endsWith('/like') && method === 'POST') {
+    const parts = cleanUrl.split('/');
+    const idOrSlug = parts[parts.length - 2];
+    const numId = Number(idOrSlug);
+    const isNum = !isNaN(numId) && idOrSlug.trim() !== '';
+    const cleanParam = idOrSlug.replace(/^proj-/, '').toLowerCase();
+    const idx = dbState.projects.findIndex((p) => {
+      if (isNum && Number(p.id) === numId) return true;
+      if (String(p.id).toLowerCase() === idOrSlug.toLowerCase() || String(p.id).toLowerCase() === cleanParam) return true;
+      if (p.slug && (p.slug.toLowerCase() === idOrSlug.toLowerCase() || p.slug.toLowerCase() === cleanParam)) return true;
+      return false;
+    });
+    if (idx !== -1) {
+      const inc = body?.increment !== false;
+      const cur = Number(dbState.projects[idx].likesCount) || 0;
+      const nextLikes = inc ? cur + 1 : Math.max(0, cur - 1);
+      dbState.projects[idx].likesCount = nextLikes;
+      saveLocalDb(dbState);
+      return { success: true, likesCount: nextLikes, project: dbState.projects[idx] };
+    }
+  }
+
+  // تنظیم یا افزایش تعداد لایک‌ها از پنل ادمین
+  if ((cleanUrl.startsWith('/api/projects/') || cleanUrl.startsWith('/api/admin/projects/')) && cleanUrl.endsWith('/likes') && (method === 'PATCH' || method === 'POST')) {
+    const parts = cleanUrl.split('/');
+    const idOrSlug = parts[parts.length - 2];
+    const numId = Number(idOrSlug);
+    const isNum = !isNaN(numId) && idOrSlug.trim() !== '';
+    const cleanParam = idOrSlug.replace(/^proj-/, '').toLowerCase();
+    const idx = dbState.projects.findIndex((p) => {
+      if (isNum && Number(p.id) === numId) return true;
+      if (String(p.id).toLowerCase() === idOrSlug.toLowerCase() || String(p.id).toLowerCase() === cleanParam) return true;
+      if (p.slug && (p.slug.toLowerCase() === idOrSlug.toLowerCase() || p.slug.toLowerCase() === cleanParam)) return true;
+      return false;
+    });
+    if (idx !== -1) {
+      const nextLikes = Math.max(0, Number(body?.likesCount) || 0);
+      dbState.projects[idx].likesCount = nextLikes;
+      saveLocalDb(dbState);
+      return { success: true, likesCount: nextLikes, project: dbState.projects[idx] };
     }
   }
 

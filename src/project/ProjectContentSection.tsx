@@ -13,6 +13,7 @@ import {
   ChandelierProduct,
   ExecutedProject,
 } from '../data/chandelierData';
+import { ALL_INITIAL_PROJECTS, SeedProjectItem } from '../data/allDatabaseProjectsSeed';
 import aboutGalleryShowroomImg from '../assets/images/about_gallery_showroom_1790844789780.jpg';
 import aboutGalleryEmeraldPalaceImg from '../assets/images/about_gallery_emerald_palace_1790844830735.jpg';
 import aboutGalleryGrandAtelierImg from '../assets/images/about_gallery_grand_atelier_1790845407976.jpg';
@@ -81,7 +82,7 @@ export const CustomPlayDuotoneIcon: React.FC<{ className?: string }> = ({
 );
 
 /**
- * آیکون سبد خرید در حالت عادی
+ * آیکون سبد خرید دقیقاً مطابق فایل Figma (دسته‌های باز در بالا)
  */
 const ShoppingBasketIcon: React.FC<{ className?: string }> = ({
   className = 'w-5 h-5',
@@ -89,42 +90,85 @@ const ShoppingBasketIcon: React.FC<{ className?: string }> = ({
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    <path d="M8.3 8.2V6.9C8.3 4.75 9.96 3 12 3C14.04 3 15.7 4.75 15.7 6.9V8.2" />
-    <path d="M9.1 21H14.9C18.45 21 19.15 19.55 19.4 17.7L20.05 12.4C20.3 9.95 19.65 8.2 15.75 8.2H8.25C4.35 8.2 3.7 9.95 3.95 12.4L4.6 17.7C4.85 19.55 5.55 21 9.1 21Z" />
-    <line x1="12" y1="11.5" x2="12" y2="16.5" />
-    <line x1="9.5" y1="14" x2="14.5" y2="14" />
+    <path
+      d="M8 8.5L10 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16 8.5L14 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <rect
+      x="3"
+      y="8.5"
+      width="18"
+      height="2.5"
+      rx="1.25"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M4.5 11L5.8 19.3C5.95 20.3 6.8 21 7.8 21H16.2C17.2 21 18.05 20.3 18.2 19.3L19.5 11"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <line
+      x1="10"
+      y1="14"
+      x2="10"
+      y2="18"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+    <line
+      x1="14"
+      y1="14"
+      x2="14"
+      y2="18"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
 /**
- * آیکون مربع گوشه‌گرد با علامت بعلاوه (+) برای دکمه طلایی افزوده شده به سبد خرید
+ * آیکون دایره با علامت بعلاوه (+) برای دکمه طلایی/قهوه‌ای افزوده شده به سبد خرید
  */
-const PlusSquareIcon: React.FC<{ className?: string }> = ({
+const PlusCircleIcon: React.FC<{ className?: string }> = ({
   className = 'w-5 h-5',
 }) => (
   <svg
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="1.9"
+    strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
   >
-    <rect x="3" y="3" width="18" height="18" rx="5.5" />
-    <line x1="12" y1="8.5" x2="12" y2="15.5" />
-    <line x1="8.5" y1="12" x2="15.5" y2="12" />
+    <circle cx="12" cy="12" r="8.5" />
+    <line x1="12" y1="8" x2="12" y2="16" />
+    <line x1="8" y1="12" x2="16" y2="12" />
   </svg>
 );
 
 /**
- * آیکون قرمز ناموجود در انبار (کیف خرید با علامت ضربدر × در مرکز)
+ * آیکون قرمز ناموجود در انبار (سبد خرید با دسته‌های باز و علامت ضربدر × در مرکز)
  */
 const OutOfStockBagIcon: React.FC<{ className?: string }> = ({
   className = 'w-5 h-5',
@@ -132,16 +176,47 @@ const OutOfStockBagIcon: React.FC<{ className?: string }> = ({
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke="currentColor"
-    strokeWidth="1.9"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    <path d="M8.3 8.2V6.9C8.3 4.75 9.96 3 12 3C14.04 3 15.7 4.75 15.7 6.9V8.2" />
-    <path d="M9.1 21H14.9C18.45 21 19.15 19.55 19.4 17.7L20.05 12.4C20.3 9.95 19.65 8.2 15.75 8.2H8.25C4.35 8.2 3.7 9.95 3.95 12.4L4.6 17.7C4.85 19.55 5.55 21 9.1 21Z" />
-    <path d="M10 12.2L14 16.2" />
-    <path d="M14 12.2L10 16.2" />
+    <path
+      d="M8 8.5L10 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16 8.5L14 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <rect
+      x="3"
+      y="8.5"
+      width="18"
+      height="2.5"
+      rx="1.25"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M4.5 11L5.8 19.3C5.95 20.3 6.8 21 7.8 21H16.2C17.2 21 18.05 20.3 18.2 19.3L19.5 11"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M10.5 13.5L13.5 16.5M13.5 13.5L10.5 16.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
@@ -526,6 +601,16 @@ const GOV_PAGE_1_PROJECTS: ProjectPageItem[] = [
     image: aboutGalleryGrandAtelierImg,
     description: DESKTOP_PROJECT_LONG_DESCRIPTION,
   },
+  {
+    id: 'gov-p1-10',
+    slug: 'elahiyeh-residence',
+    title: 'پروژه منطقه الهیه',
+    location: 'تهران، الهیه',
+    categoryTab: 'gov',
+    categoryLabel: 'منازل مسکونی',
+    image: GENERATED_IMAGES.projectLobbyHotel,
+    description: DESKTOP_PROJECT_LONG_DESCRIPTION,
+  },
 ];
 
 /**
@@ -739,17 +824,17 @@ const findProjectBySlug = (
         id: foundDb.id,
         slug: foundDb.slug || `project-${foundDb.id}`,
         title: foundDb.title,
-        location: foundDb.district || 'تهران، ایران',
+        location: foundDb.district || (foundDb as any).locationBadge || '',
         categoryTab: (foundDb.categoryTab as any) || 'residential',
         categoryLabel:
           PROJECT_CATEGORY_TABS.find((t) => t.id === foundDb.categoryTab)
             ?.label || 'پروژه‌های اجرایی',
         image: mainImg,
-        description: foundDb.description || DESKTOP_PROJECT_LONG_DESCRIPTION,
+        description: foundDb.description || '',
         galleryImages: gallery,
-        projectDate: '۲۵ شهریور ماه ۱۴۰۴',
-        ownerName: 'جناب مهندس علیرضا آذرخش',
-        initialLikes: 7193,
+        projectDate: (foundDb as any).dateBadge || '',
+        ownerName: (foundDb as any).ownerName || '',
+        initialLikes: Number((foundDb as any).likesCount) || 0,
         chandeliersList: parsedChs,
       };
     }
@@ -915,7 +1000,7 @@ interface ProjectContentSectionProps {
 
 export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
   projects,
-  products: _products,
+  products,
   onOpenProductModal,
   onAddToCart,
   onShowToast,
@@ -957,6 +1042,30 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     );
   const [activeGalleryIdx, setActiveGalleryIdx] = useState<number>(0);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const [, setLikesUpdateTick] = useState<number>(0);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('app_project_likes_stats');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Object.values(parsed).some((v) => typeof v === 'number' && v > 500)) {
+          localStorage.removeItem('app_project_likes_stats');
+          setLikesUpdateTick((t) => t + 1);
+        }
+      }
+    } catch {}
+
+    const handleLikesUpdated = () => {
+      setLikesUpdateTick((t) => t + 1);
+    };
+    window.addEventListener('app-project-liked', handleLikesUpdated);
+    window.addEventListener('app-projects-updated', handleLikesUpdated);
+    return () => {
+      window.removeEventListener('app-project-liked', handleLikesUpdated);
+      window.removeEventListener('app-projects-updated', handleLikesUpdated);
+    };
+  }, []);
   const [loadingDetailBtnId, setLoadingDetailBtnId] = useState<string | null>(
     null
   );
@@ -1028,9 +1137,14 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     PROJECT_CATEGORY_TABS.find((t) => t.id === activeTab) ||
     PROJECT_CATEGORY_TABS[0];
 
-  const dbProjectsForTab = (projects || []).filter(
-    (p) => p.categoryTab === activeTab
-  );
+  // دریافت مستقیم پروژه‌های این تب از دیتابیس و مرتب‌سازی از جدیدترین به قدیمی‌ترین
+  const dbProjectsForTab = (projects || [])
+    .filter((p) => p.categoryTab === activeTab)
+    .sort((a, b) => {
+      const numA = Number(String(a.id).replace(/\D/g, '')) || 0;
+      const numB = Number(String(b.id).replace(/\D/g, '')) || 0;
+      return numB - numA;
+    });
 
   const mappedDbProjects: ProjectPageItem[] = dbProjectsForTab.map(
     (dbProj, idx) => {
@@ -1054,40 +1168,101 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
       }
 
       return {
-        id: dbProj.id,
+        id: String(dbProj.id),
         slug:
           (dbProj as any).slug ||
-          dbProj.id.replace(/^proj-/, '') ||
+          String(dbProj.id).replace(/^proj-/, '') ||
           `project-${idx + 1}`,
         title: dbProj.title,
-        description: dbProj.description,
+        description: dbProj.description || '',
         image: dbProj.mainImage || dbProj.galleryImages?.[0] || undefined,
         galleryImages:
           dbProj.galleryImages && dbProj.galleryImages.length > 0
             ? dbProj.galleryImages
-            : [dbProj.mainImage],
+            : (dbProj.mainImage ? [dbProj.mainImage] : []),
         categoryTab: activeTab,
         categoryLabel: activeTabInfo.label,
-        location: dbProj.district || 'تهران، پردیس',
-        projectDate: '۲۵ شهریور ماه ۱۴۰۴',
-        ownerName: 'جناب مهندس علیرضا آذرخش',
-        initialLikes: 7193 + idx * 42,
+        location: dbProj.district || (dbProj as any).locationBadge || '',
+        projectDate: (dbProj as any).dateBadge || '',
+        ownerName: (dbProj as any).ownerName || '',
+        initialLikes: Number((dbProj as any).likesCount) || 0,
         chandeliersList: parsedChs,
       };
     }
   );
 
-  const allTabProjects =
-    mappedDbProjects.length > 0
-      ? mappedDbProjects
-      : [1, 2, 3, 4, 5, 6].flatMap((p) => buildProjectsForTabAndPage(activeTab, p));
+  // تبدیل پروژه‌های دیتابیس
+  const initialSeedProjectsForTab: ProjectPageItem[] = ALL_INITIAL_PROJECTS
+    .filter((p: SeedProjectItem) => p.categoryTab === activeTab)
+    .map((p: SeedProjectItem, idx: number) => ({
+      id: `seed-${activeTab}-${idx + 1}`,
+      slug: p.slug,
+      title: p.title,
+      description: p.description,
+      image: p.mainImage,
+      galleryImages: p.galleryImages,
+      categoryTab: activeTab,
+      categoryLabel: activeTabInfo.label,
+      location: p.district || p.locationBadge || '',
+      projectDate: p.dateBadge || '',
+      ownerName: '',
+      initialLikes: 0,
+      chandeliersList: p.chandeliersList,
+    }));
 
-  const totalPages = Math.max(1, Math.ceil(allTabProjects.length / 5));
+  // ترکیب هوشمند پروژه‌های دیتابیس با پروژه‌های کامل کاتالوگ (بدون تکرار اسلاگ)
+  const combinedProjects: ProjectPageItem[] = [...mappedDbProjects];
+  initialSeedProjectsForTab.forEach((seedP) => {
+    if (
+      !combinedProjects.some(
+        (cp) => cp.slug === seedP.slug || String(cp.id) === String(seedP.id)
+      )
+    ) {
+      combinedProjects.push(seedP);
+    }
+  });
+
+  const rawTabProjects =
+    combinedProjects.length > 0 ? combinedProjects : initialSeedProjectsForTab;
+
+  // تعداد پروژه‌ها در هر صفحه: ۶ عدد (۲ ردیف کامل ۳ تایی متناسب با چیدمان ۳ ستونه دسکتاپ)
+  const PROJECTS_PER_PAGE = 6;
+
+  // تکمیل خودکار موارد ناقص تا تمام ردیف‌های شبکه ۳ تایی دسکتاپ کاملاً پر باشند
+  const allTabProjects = [...rawTabProjects];
+  if (allTabProjects.length > 0 && allTabProjects.length % PROJECTS_PER_PAGE !== 0) {
+    const remainder = allTabProjects.length % PROJECTS_PER_PAGE;
+    if (remainder < PROJECTS_PER_PAGE) {
+      const needed = PROJECTS_PER_PAGE - remainder;
+      for (let i = 0; i < needed; i++) {
+        const sourceItem =
+          rawTabProjects[i % rawTabProjects.length] || rawTabProjects[0];
+        if (sourceItem) {
+          allTabProjects.push({
+            ...sourceItem,
+            id: `${sourceItem.id}-pad-${i + 1}`,
+            slug: `${sourceItem.slug}-ref-${i + 1}`,
+          });
+        }
+      }
+    }
+  }
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(allTabProjects.length / PROJECTS_PER_PAGE)
+  );
   const currentProjects = allTabProjects.slice(
-    (currentPage - 1) * 5,
-    currentPage * 5
+    (currentPage - 1) * PROJECTS_PER_PAGE,
+    currentPage * PROJECTS_PER_PAGE
   );
   const isTabEmpty = currentProjects.length === 0;
+
+  const getTabProjectsCount = (
+    tabId: 'gov' | 'commercial' | 'mosques' | 'restaurants' | 'residential'
+  ): number => {
+    return (projects || []).filter((p) => p.categoryTab === tabId).length;
+  };
 
   const handleBackToProjectsList = () => {
     setActiveSingleProject(null);
@@ -1132,18 +1307,18 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     }, 360);
   };
 
-  const handleToggleLike = (project: ProjectPageItem) => {
+  const handleToggleLike = async (project: ProjectPageItem) => {
     const currentlyLiked = Boolean(likedMap[project.id]);
     const nextLiked = !currentlyLiked;
     setLikedMap((prev) => ({ ...prev, [project.id]: nextLiked }));
 
+    const key = project.slug || project.id;
+    let updatedCount = 0;
     try {
       const statsRaw = localStorage.getItem('app_project_likes_stats');
       const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
-      const key = project.slug || project.id;
-      const baseLikes = 24 + ((project.id.length * 7) % 65);
-      const prevCount = stats[key] ?? baseLikes;
-      const updatedCount = nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1);
+      const prevCount = (stats[key] ?? Number(project.initialLikes)) || 0;
+      updatedCount = nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1);
       stats[key] = updatedCount;
       if (project.id) stats[project.id] = updatedCount;
       if (project.slug) stats[project.slug] = updatedCount;
@@ -1154,6 +1329,34 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
         })
       );
     } catch {}
+
+    // ارسال درخواست به سرور و دیتابیس
+    try {
+      const target = project.slug || project.id;
+      const res = await fetch(`/api/projects/${target}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ increment: nextLiked }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.likesCount === 'number') {
+          const statsRaw = localStorage.getItem('app_project_likes_stats');
+          const stats = statsRaw ? JSON.parse(statsRaw) : {};
+          stats[key] = data.likesCount;
+          if (project.id) stats[project.id] = data.likesCount;
+          if (project.slug) stats[project.slug] = data.likesCount;
+          localStorage.setItem('app_project_likes_stats', JSON.stringify(stats));
+          window.dispatchEvent(
+            new CustomEvent('app-project-liked', {
+              detail: { projectId: project.id, slug: project.slug, count: data.likesCount },
+            })
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('Project like error:', err);
+    }
 
     if (onShowToast) {
       if (nextLiked) {
@@ -1236,37 +1439,115 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
   };
 
   const getDesktopPaginationItems = (): Array<number | 'ellipsis'> => {
-    if (currentPage <= 3) {
-      return [1, 2, 3, 'ellipsis', 6];
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-    return [1, 'ellipsis', 4, 5, 6];
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, 'ellipsis', totalPages];
+    }
+    if (currentPage >= totalPages - 2) {
+      return [1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages];
   };
 
   const getMobilePaginationItems = (): Array<number | 'ellipsis'> => {
+    if (totalPages <= 3) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
     if (currentPage <= 2) {
-      return [1, 2, 'ellipsis'];
+      return [1, 2, 'ellipsis', totalPages];
     }
-    if (currentPage >= totalPages) {
-      return ['ellipsis', totalPages - 1, totalPages];
+    if (currentPage >= totalPages - 1) {
+      return [1, 'ellipsis', totalPages - 1, totalPages];
     }
-    return [1, currentPage, 'ellipsis'];
+    return [1, 'ellipsis', currentPage, 'ellipsis', totalPages];
   };
 
   // ==================== صفحه داخلی پروژه (Single Project View) ====================
   if (activeSingleProject) {
     const hasImages =
       Boolean(activeSingleProject.image) && !forceNoImageMode;
-    const projectGallery = [
-      activeSingleProject.image || GENERATED_IMAGES.projectRoyalRestaurant,
-      GENERATED_IMAGES.projectLobbyHotel,
-      GENERATED_IMAGES.projectDuplexVilla,
-      GENERATED_IMAGES.projectFereshteh,
-      aboutGalleryRoyalStaircaseImg,
-      aboutGalleryShowroomImg,
-      aboutGalleryGrandAtelierImg,
-    ];
+    const projectGallery =
+      activeSingleProject.galleryImages && activeSingleProject.galleryImages.length > 0
+        ? activeSingleProject.galleryImages
+        : (activeSingleProject.image ? [activeSingleProject.image] : [GENERATED_IMAGES.projectRoyalRestaurant]);
     const isProjectLiked = Boolean(likedMap[activeSingleProject.id]);
-    const likeCount = (activeSingleProject.initialLikes || 7193) + (isProjectLiked ? 1 : 0);
+    const singleStatsRaw = typeof window !== 'undefined' ? localStorage.getItem('app_project_likes_stats') : null;
+    const singleStats = singleStatsRaw ? JSON.parse(singleStatsRaw) : {};
+    const singleKey = activeSingleProject.slug || activeSingleProject.id;
+    const likeCount =
+      (singleStats[singleKey] ??
+      singleStats[activeSingleProject.id] ??
+      Number(activeSingleProject.initialLikes)) ||
+      0;
+
+    // استخراج و پارس دقیق لوسترهای به‌کاررفته در پروژه
+    const projectChandeliers: any[] = (() => {
+      if (Array.isArray(activeSingleProject.chandeliersList) && activeSingleProject.chandeliersList.length > 0) {
+        return activeSingleProject.chandeliersList;
+      }
+      const rawText = (activeSingleProject as any).usedChandeliersText || '';
+      if (rawText) {
+        const tagMatch = rawText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
+        if (tagMatch && tagMatch[1]) {
+          try {
+            const arr = JSON.parse(tagMatch[1].trim());
+            if (Array.isArray(arr) && arr.length > 0) return arr;
+          } catch {}
+        }
+        const jsonMatch = rawText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        if (jsonMatch && jsonMatch[0]) {
+          try {
+            const arr = JSON.parse(jsonMatch[0].trim());
+            if (Array.isArray(arr) && arr.length > 0) return arr;
+          } catch {}
+        }
+      }
+      const matchingProj = (projects || []).find((p) =>
+        (p.slug && p.slug === activeSingleProject.slug) ||
+        String(p.id) === String(activeSingleProject.id)
+      );
+      if (matchingProj) {
+        if (Array.isArray((matchingProj as any).chandeliersList) && (matchingProj as any).chandeliersList.length > 0) {
+          return (matchingProj as any).chandeliersList;
+        }
+        const mText = matchingProj.usedChandeliersText || '';
+        if (mText) {
+          const tagMatch = mText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
+          if (tagMatch && tagMatch[1]) {
+            try {
+              const arr = JSON.parse(tagMatch[1].trim());
+              if (Array.isArray(arr) && arr.length > 0) return arr;
+            } catch {}
+          }
+          const jsonMatch = mText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+          if (jsonMatch && jsonMatch[0]) {
+            try {
+              const arr = JSON.parse(jsonMatch[0].trim());
+              if (Array.isArray(arr) && arr.length > 0) return arr;
+            } catch {}
+          }
+        }
+      }
+      return [];
+    })();
+
+    const activeSingleProjectStyles = (() => {
+      try {
+        return JSON.parse((activeSingleProject as any).stylesJson || '{}');
+      } catch {
+        return {};
+      }
+    })();
+
+    const activeProjectTextAlign = activeSingleProjectStyles.descAlign === 'right'
+      ? 'right'
+      : activeSingleProjectStyles.descAlign === 'center'
+        ? 'center'
+        : activeSingleProjectStyles.descAlign === 'left'
+          ? 'left'
+          : 'justify';
 
     // اسلایدهای زوج در لایت‌باکس عکس و اسلایدهای فرد در لایت‌باکس ویدیو هستند (مطابق عکس ۶، ۷ و ۱۴)
     const isLightboxVideoSlide = lightboxSlideIdx % 2 === 1;
@@ -1301,10 +1582,22 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
           <div className="lg:col-span-7 flex flex-col justify-between">
             {/* ردیف عنوان پروژه در راست + دکمه لایک و تعداد لایک در چپ */}
             <div className="flex items-center justify-between gap-4">
-              <h1 className="text-[19px] xl:text-[22px] font-extrabold text-[#1a1a1a] text-right">
-                {activeSingleProject.title.includes('(')
-                  ? activeSingleProject.title
-                  : `${activeSingleProject.title} (${activeSingleProject.categoryLabel || 'منازل مسکونی'})`}
+              <h1
+                className={`${
+                  activeSingleProjectStyles.titleSize === 'small'
+                    ? 'text-[16px] xl:text-[18px]'
+                    : activeSingleProjectStyles.titleSize === 'large'
+                      ? 'text-[24px] xl:text-[28px]'
+                      : activeSingleProjectStyles.titleSize === 'xlarge'
+                        ? 'text-[30px] xl:text-[34px]'
+                        : 'text-[19px] xl:text-[22px]'
+                } ${activeSingleProjectStyles.titleWeight || 'font-extrabold'}`}
+                style={{
+                  color: activeSingleProjectStyles.titleColor || '#1a1a1a',
+                  textAlign: activeSingleProjectStyles.titleAlign || 'right',
+                }}
+              >
+                {activeSingleProject.title}
               </h1>
 
               <div className="flex items-center gap-2 shrink-0">
@@ -1343,58 +1636,85 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               </div>
             </div>
 
-            {/* متن توضیحات کامل پروژه */}
-            <p className="text-[13.5px] xl:text-[14px] text-[#555555] leading-[2.25] text-justify my-6">
-              {activeSingleProject.description}
-            </p>
+            {/* متن توضیحات کامل پروژه (فقط در صورت وجود) */}
+            {Boolean(activeSingleProject.description && activeSingleProject.description.trim()) && (
+              <p
+                className={`my-6 ${
+                  activeSingleProjectStyles.descSize === 'small'
+                    ? 'text-[12px] xl:text-[12.5px]'
+                    : activeSingleProjectStyles.descSize === 'large'
+                      ? 'text-[15px] xl:text-[16px]'
+                      : 'text-[13.5px] xl:text-[14px]'
+                }`}
+                style={{
+                  color: activeSingleProjectStyles.descColor || '#555555',
+                  textAlign: activeProjectTextAlign,
+                  lineHeight: activeSingleProjectStyles.descLineHeight || '2.25',
+                }}
+              >
+                {activeSingleProject.description}
+              </p>
+            )}
 
-            {/* ردیف ۳ آیتم اطلاعات پروژه در پایین ستون راست */}
-            <div className="grid grid-cols-3 gap-4 pt-2">
-              {/* ۱. شهر پذیرش اجرایی پروژه (location-tick.png) */}
-              <div className="flex items-center gap-3">
-                <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
-                  <ProjectLocationTickIcon className="w-[22px] h-[22px]" />
-                </div>
-                <div className="text-right min-w-0">
-                  <span className="block text-[13px] font-extrabold text-[#1e1e1e] truncate">
-                    شهر پذیرش اجرایی پروژه :
-                  </span>
-                  <span className="block text-[12px] text-[#7a7a7a] mt-1 truncate">
-                    {activeSingleProject.location || 'تهران، پردیس'}
-                  </span>
-                </div>
-              </div>
+            {/* ردیف آیتم‌های اطلاعات پروژه (تنها مواردی که در ادمین پر شده‌اند نمایش داده می‌شوند) */}
+            {Boolean(
+              (activeSingleProject.location && activeSingleProject.location.trim()) ||
+              (activeSingleProject.projectDate && activeSingleProject.projectDate.trim()) ||
+              (activeSingleProject.ownerName && activeSingleProject.ownerName.trim())
+            ) && (
+              <div className="flex flex-wrap items-center gap-6 pt-2">
+                {/* ۱. شهر پذیرش اجرایی پروژه */}
+                {Boolean(activeSingleProject.location && activeSingleProject.location.trim()) && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
+                      <ProjectLocationTickIcon className="w-[22px] h-[22px]" />
+                    </div>
+                    <div className="text-right min-w-0">
+                      <span className="block text-[13px] font-extrabold text-[#1e1e1e] truncate">
+                        شهر پذیرش اجرایی پروژه :
+                      </span>
+                      <span className="block text-[12px] text-[#7a7a7a] mt-1 truncate">
+                        {activeSingleProject.location}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
-              {/* ۲. تاریخ انجام پروژه (receipt-item.png) */}
-              <div className="flex items-center gap-3">
-                <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
-                  <ProjectReceiptItemIcon className="w-[22px] h-[22px]" />
-                </div>
-                <div className="text-right min-w-0">
-                  <span className="block text-[13px] font-extrabold text-[#1e1e1e] truncate">
-                    تاریخ انجام پروژه :
-                  </span>
-                  <span className="block text-[12px] text-[#7a7a7a] mt-1 truncate">
-                    {activeSingleProject.projectDate || '۲۵ شهریورو ماه ۱۴۰۴'}
-                  </span>
-                </div>
-              </div>
+                {/* ۲. تاریخ انجام پروژه */}
+                {Boolean(activeSingleProject.projectDate && activeSingleProject.projectDate.trim()) && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
+                      <ProjectReceiptItemIcon className="w-[22px] h-[22px]" />
+                    </div>
+                    <div className="text-right min-w-0">
+                      <span className="block text-[13px] font-extrabold text-[#1e1e1e] truncate">
+                        تاریخ انجام پروژه :
+                      </span>
+                      <span className="block text-[12px] text-[#7a7a7a] mt-1 truncate">
+                        {activeSingleProject.projectDate}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
-              {/* ۳. مالک پروژه (frame.png) */}
-              <div className="flex items-center gap-3">
-                <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
-                  <ProjectOwnerFrameIcon className="w-[22px] h-[22px]" />
-                </div>
-                <div className="text-right min-w-0">
-                  <span className="block text-[13px] font-extrabold text-[#1e1e1e] truncate">
-                    مالک پروژه :
-                  </span>
-                  <span className="block text-[12px] text-[#7a7a7a] mt-1 truncate">
-                    {activeSingleProject.ownerName || 'جناب مهندس علیرضا آذرخش'}
-                  </span>
-                </div>
+                {/* ۳. مالک پروژه */}
+                {Boolean(activeSingleProject.ownerName && activeSingleProject.ownerName.trim()) && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
+                      <ProjectOwnerFrameIcon className="w-[22px] h-[22px]" />
+                    </div>
+                    <div className="text-right min-w-0">
+                      <span className="block text-[13px] font-extrabold text-[#1e1e1e] truncate">
+                        مالک پروژه :
+                      </span>
+                      <span className="block text-[12px] text-[#7a7a7a] mt-1 truncate">
+                        {activeSingleProject.ownerName}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
 
           {/* ستون چپ (گالری بزرگ پروژه + ۴ تصویر بندانگشتی پایین آن مطابق عکس ۲ و ۵) */}
@@ -1432,89 +1752,116 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                 <ProjectNoImageIcon className="w-[92px] h-[92px]" />
               )}
 
-              {/* دکمه‌های چپ و راست روی تصویر اصلی */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveGalleryIdx((prev) => (prev + 1) % 4);
-                }}
-                aria-label="تصویر بعدی"
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-[8px] bg-white/65 hover:bg-white text-[#2b2b2b] hover:text-[#111111] flex items-center justify-center shadow-xs transition-all duration-200 cursor-pointer z-10"
-              >
-                <ChevronRight className="w-4 h-4 stroke-[2.2]" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveGalleryIdx((prev) => (prev + 3) % 4);
-                }}
-                aria-label="تصویر قبلی"
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-[8px] bg-white/65 hover:bg-white text-[#2b2b2b] hover:text-[#111111] flex items-center justify-center shadow-xs transition-all duration-200 cursor-pointer z-10"
-              >
-                <ChevronLeft className="w-4 h-4 stroke-[2.2]" />
-              </button>
+              {/* دکمه‌های چپ و راست روی تصویر اصلی (فقط هنگامی که گالری بیشتر از ۱ تصویر داشته باشد) */}
+              {projectGallery.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveGalleryIdx(
+                        (prev) => (prev + 1) % projectGallery.length
+                      );
+                    }}
+                    aria-label="تصویر بعدی"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-[8px] bg-white/65 hover:bg-white text-[#2b2b2b] hover:text-[#111111] flex items-center justify-center shadow-xs transition-all duration-200 cursor-pointer z-10"
+                  >
+                    <ChevronRight className="w-4 h-4 stroke-[2.2]" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveGalleryIdx(
+                        (prev) =>
+                          (prev - 1 + projectGallery.length) %
+                          projectGallery.length
+                      );
+                    }}
+                    aria-label="تصویر قبلی"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-[8px] bg-white/65 hover:bg-white text-[#2b2b2b] hover:text-[#111111] flex items-center justify-center shadow-xs transition-all duration-200 cursor-pointer z-10"
+                  >
+                    <ChevronLeft className="w-4 h-4 stroke-[2.2]" />
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* ۴ تصویر بندانگشتی زیر تصویر اصلی (مطابق عکس ۲ و ۵) */}
-            <div className="grid grid-cols-4 gap-3 mt-3.5">
-              {[0, 1, 2, 3].map((thumbIdx) => {
-                const isSelectedThumb = activeGalleryIdx === thumbIdx;
-                return (
-                  <div
-                    key={`thumb-${thumbIdx}`}
-                    onClick={() => {
-                      setActiveGalleryIdx(thumbIdx);
-                      if (hasImages) {
-                        setLightboxSlideIdx(thumbIdx);
-                        setIsVideoPlaying(false);
-                        setIsLightboxOpen(true);
-                      }
-                    }}
-                    className={`relative h-[78px] xl:h-[88px] rounded-[12px] overflow-hidden bg-[#f2f2f2] flex items-center justify-center cursor-pointer transition-all ${
-                      isSelectedThumb && hasImages
-                        ? 'ring-2 ring-[#b08c57]'
-                        : 'hover:opacity-90'
-                    }`}
-                  >
-                    {hasImages ? (
-                      <>
-                        <img
-                          src={projectGallery[thumbIdx % projectGallery.length]}
-                          alt={`${activeSingleProject.title} - ${thumbIdx + 1}`}
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover object-center"
-                        />
-                        {thumbIdx === 1 && (
-                          <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                            <div className="w-7 h-7 rounded-full bg-white/30 backdrop-blur-xs border border-white/80 flex items-center justify-center">
-                              <CustomPlayDuotoneIcon className="w-4 h-4" />
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <ProjectNoImageIcon className="w-8 h-8" />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            {/* تصاویر بندانگشتی زیر تصویر اصلی گالری */}
+            {projectGallery.length > 1 && (
+              <div className="grid grid-cols-4 gap-3 mt-3.5">
+                {projectGallery.slice(0, 4).map((thumbSrc, thumbIdx) => {
+                  const isSelectedThumb = activeGalleryIdx === thumbIdx;
+                  return (
+                    <div
+                      key={`thumb-${thumbIdx}`}
+                      onClick={() => {
+                        setActiveGalleryIdx(thumbIdx);
+                        if (hasImages) {
+                          setLightboxSlideIdx(thumbIdx);
+                          setIsVideoPlaying(false);
+                          setIsLightboxOpen(true);
+                        }
+                      }}
+                      className={`relative h-[78px] xl:h-[88px] rounded-[12px] overflow-hidden bg-[#f2f2f2] flex items-center justify-center cursor-pointer transition-all ${
+                        isSelectedThumb && hasImages
+                          ? 'ring-2 ring-[#b08c57]'
+                          : 'hover:opacity-90'
+                      }`}
+                    >
+                      <img
+                        src={thumbSrc}
+                        alt={`${activeSingleProject.title} - ${thumbIdx + 1}`}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover object-center"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
         {/* ==================== ۲. چیدمان موبایل صفحه داخلی پروژه (عکس ۸ و ۱۰) ==================== */}
         <div className="block lg:hidden">
-          <h1 className="text-[16px] xs:text-[17px] font-extrabold text-[#1a1a1a] text-right mb-3">
-            {activeSingleProject.title.includes('(')
-              ? activeSingleProject.title
-              : `${activeSingleProject.title} (${activeSingleProject.categoryLabel || 'منازل مسکونی'})`}
+          <h1
+            className={`mb-3 ${
+              activeSingleProjectStyles.titleSize === 'small'
+                ? 'text-[14px]'
+                : activeSingleProjectStyles.titleSize === 'large'
+                  ? 'text-[19px] xs:text-[20px]'
+                  : activeSingleProjectStyles.titleSize === 'xlarge'
+                    ? 'text-[22px] xs:text-[24px]'
+                    : 'text-[16px] xs:text-[17px]'
+            } ${activeSingleProjectStyles.titleWeight || 'font-extrabold'}`}
+            style={{
+              color: activeSingleProjectStyles.titleColor || '#1a1a1a',
+              textAlign: activeSingleProjectStyles.titleAlign || 'right',
+            }}
+          >
+            {activeSingleProject.title}
           </h1>
 
-          <p className="text-[12px] xs:text-[12.5px] text-[#555555] leading-[2.05] text-justify mb-5">
-            {MOBILE_PROJECT_LONG_DESCRIPTION}
-          </p>
+          {/* متن توضیحات پروژه در موبایل (در صورت وجود) */}
+          {Boolean(activeSingleProject.description && activeSingleProject.description.trim()) && (
+            <p
+              className={`mb-5 ${
+                activeSingleProjectStyles.descSize === 'small'
+                  ? 'text-[11px]'
+                  : activeSingleProjectStyles.descSize === 'large'
+                    ? 'text-[13.5px] xs:text-[14px]'
+                    : 'text-[12px] xs:text-[12.5px]'
+              }`}
+              style={{
+                color: activeSingleProjectStyles.descColor || '#555555',
+                textAlign: activeProjectTextAlign,
+                lineHeight: activeSingleProjectStyles.descLineHeight || '2.05',
+              }}
+            >
+              {activeSingleProject.description}
+            </p>
+          )}
 
           {/* قاب عکس پروژه در موبایل همراه با نقطه‌های سفید پایین عکس و انیمیشن نرم تغییر اسلاید */}
           <div
@@ -1549,78 +1896,87 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               <ProjectNoImageIcon className="w-20 h-20" />
             )}
 
-            {/* ۷ نقطه سفید اسلایدر در پایین تصویر موبایل */}
-            <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-1.5 z-10">
-              {[0, 1, 2, 3, 4, 5, 6].map((dotIdx) => {
-                const activeDotIdx = activeGalleryIdx % 7;
-                const isActiveDot = dotIdx === activeDotIdx;
-                const dist = Math.abs(dotIdx - activeDotIdx);
-                return (
-                  <button
-                    key={`m-proj-dot-${dotIdx}`}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveGalleryIdx(dotIdx % projectGallery.length);
-                    }}
-                    className={`rounded-full transition-all duration-300 ${
-                      isActiveDot
-                        ? 'w-2.5 h-2.5 bg-white shadow-xs'
-                        : dist === 1
-                          ? 'w-1.5 h-1.5 bg-white/80'
-                          : 'w-1 h-1 bg-white/60'
-                    }`}
-                  />
-                );
-              })}
-            </div>
+            {/* نقطه‌های اسلایدر در پایین تصویر موبایل (فقط زمانی که بیشتر از ۱ عکس باشد) */}
+            {projectGallery.length > 1 && (
+              <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-1.5 z-10">
+                {projectGallery.map((_, dotIdx) => {
+                  const activeDotIdx =
+                    activeGalleryIdx % projectGallery.length;
+                  const isActiveDot = dotIdx === activeDotIdx;
+                  const dist = Math.abs(dotIdx - activeDotIdx);
+                  return (
+                    <button
+                      key={`m-proj-dot-${dotIdx}`}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveGalleryIdx(dotIdx);
+                      }}
+                      className={`rounded-full transition-all duration-300 ${
+                        isActiveDot
+                          ? 'w-2.5 h-2.5 bg-white shadow-xs'
+                          : dist === 1
+                            ? 'w-1.5 h-1.5 bg-white/80'
+                            : 'w-1 h-1 bg-white/60'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* ردیف اطلاعات پروژه در سمت راست + دکمه لایک در سمت چپ (مطابق عکس ۸ و ۱۰) */}
+          {/* ردیف اطلاعات پروژه در سمت راست + دکمه لایک در سمت چپ */}
           <div className="flex items-start justify-between gap-2">
-            {/* ستون راست: ۳ آیتم اطلاعات (دقیقاً مطابق آیکون‌های location-tick.png، receipt-item.png و frame.png) */}
+            {/* ستون راست: آیتم‌های اطلاعاتی (فقط مواردی که مقدار دارند نمایش داده می‌شوند) */}
             <div className="space-y-3.5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-11 h-11 rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
-                  <ProjectLocationTickIcon className="w-5 h-5" />
+              {Boolean(activeSingleProject.location && activeSingleProject.location.trim()) && (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-11 h-11 rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
+                    <ProjectLocationTickIcon className="w-5 h-5" />
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-[12px] font-extrabold text-[#1e1e1e]">
+                      شهر پذیرش اجرایی پروژه :
+                    </span>
+                    <span className="block text-[11.5px] text-[#7a7a7a] mt-0.5">
+                      {activeSingleProject.location}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="block text-[12px] font-extrabold text-[#1e1e1e]">
-                    شهر پذیرش اجرایی پروژه :
-                  </span>
-                  <span className="block text-[11.5px] text-[#7a7a7a] mt-0.5">
-                    {activeSingleProject.location || 'تهران، پردیس'}
-                  </span>
-                </div>
-              </div>
+              )}
 
-              <div className="flex items-center gap-2.5">
-                <div className="w-11 h-11 rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
-                  <ProjectReceiptItemIcon className="w-5 h-5" />
+              {Boolean(activeSingleProject.projectDate && activeSingleProject.projectDate.trim()) && (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-11 h-11 rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
+                    <ProjectReceiptItemIcon className="w-5 h-5" />
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-[12px] font-extrabold text-[#1e1e1e]">
+                      تاریخ انجام پروژه :
+                    </span>
+                    <span className="block text-[11.5px] text-[#7a7a7a] mt-0.5">
+                      {activeSingleProject.projectDate}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="block text-[12px] font-extrabold text-[#1e1e1e]">
-                    تاریخ انجام پروژه :
-                  </span>
-                  <span className="block text-[11.5px] text-[#7a7a7a] mt-0.5">
-                    {activeSingleProject.projectDate || '۲۵ شهریورو ماه ۱۴۰۴'}
-                  </span>
-                </div>
-              </div>
+              )}
 
-              <div className="flex items-center gap-2.5">
-                <div className="w-11 h-11 rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
-                  <ProjectOwnerFrameIcon className="w-5 h-5" />
+              {Boolean(activeSingleProject.ownerName && activeSingleProject.ownerName.trim()) && (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-11 h-11 rounded-[11px] bg-[#f5efe6] text-[#a68452] flex items-center justify-center shrink-0">
+                    <ProjectOwnerFrameIcon className="w-5 h-5" />
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-[12px] font-extrabold text-[#1e1e1e]">
+                      مالک پروژه :
+                    </span>
+                    <span className="block text-[11.5px] text-[#7a7a7a] mt-0.5">
+                      {activeSingleProject.ownerName}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="block text-[12px] font-extrabold text-[#1e1e1e]">
-                    مالک پروژه :
-                  </span>
-                  <span className="block text-[11.5px] text-[#7a7a7a] mt-0.5">
-                    {activeSingleProject.ownerName || 'جناب مهندس علیرضا آذرخش'}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* ستون چپ: دکمه قلب و شمارنده لایک */}
@@ -1660,10 +2016,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
         </div>
 
         {/* ==================== ۳. بخش «لوستر های استفاده شده در این پروژه» (در صورت عدم انتخاب لوستر، این ویجت کلاً هیدن می‌شود) ==================== */}
-        {Boolean(
-          activeSingleProject?.chandeliersList &&
-          activeSingleProject.chandeliersList.length > 0
-        ) && (
+        {Boolean(projectChandeliers && projectChandeliers.length > 0) && (
           <>
             {/* خط جداکننده افقی */}
             <div className="border-t border-[#ececec] my-8 sm:my-11" />
@@ -1677,25 +2030,87 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
 
               {/* لیست افقی تمام‌عرض در دسکتاپ (عکس ۲ و ۳) */}
               <div className="hidden md:flex flex-col gap-4">
-                {(activeSingleProject?.chandeliersList || []).map((ch, idx) => ({
+                {projectChandeliers.map((ch, idx) => {
+                  const normalizeStr = (val: any) =>
+                    String(val || '')
+                      .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())
+                      .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+                      .toLowerCase()
+                      .replace(/[\s\-_]+/g, '')
+                      .trim();
+
+                  const chCode = normalizeStr(ch.code || '');
+                  const chName = normalizeStr(ch.name || '');
+
+                  const matchedProd = (products || []).find((p: any) => {
+                    const pCode = normalizeStr(p.productCode || '');
+                    const pId = normalizeStr(p.id || '').replace(/^prod/, '');
+                    const pKey = normalizeStr(p.productKey || '').replace(/^prod/, '');
+                    const pName = normalizeStr(p.name || '');
+
+                    if (chCode && (pCode === chCode || pId === chCode || pKey === chCode)) return true;
+                    if (chName && (pName === chName || pName.includes(chName) || chName.includes(pName))) return true;
+                    return false;
+                  });
+
+                  // استخراج زنده قیمت مستقیماً از اطلاعات خود محصول در دیتابیس / کاتالوگ
+                  const resolveLivePrice = (prod: any, fallback?: string) => {
+                    if (prod) {
+                      if (typeof prod.priceFormatted === 'string' && prod.priceFormatted.trim()) {
+                        return prod.priceFormatted.trim();
+                      }
+                      if (typeof prod.price === 'string' && prod.price.trim()) {
+                        return prod.price.trim();
+                      }
+                      if (typeof prod.priceNumeric === 'number' && prod.priceNumeric > 0) {
+                        return `${toPersianDigits(prod.priceNumeric.toLocaleString('fa-IR'))} تومان`;
+                      }
+                      if (typeof prod.price === 'number' && prod.price > 0) {
+                        return `${toPersianDigits(prod.price.toLocaleString('fa-IR'))} تومان`;
+                      }
+                    }
+                    if (fallback && fallback.trim()) return fallback.trim();
+                    return 'استعلام قیمت از گالری';
+                  };
+
+                  const livePrice = resolveLivePrice(matchedProd, ch.price);
+                  const finalPrice = livePrice;
+                  const finalMobilePrice = livePrice;
+                  const finalName = matchedProd?.name || ch.name || 'لوستر سفارشی صالحی';
+                  const finalSubtitle = matchedProd?.subtitle || ch.desc || 'مناسب کلاسیک پذیرایی | کلاسیک خواب';
+                  const finalCode = matchedProd?.productCode || ch.code || '۱۲۸۹۸۲';
+                  const finalImage = matchedProd?.image || ch.image || GENERATED_IMAGES.crystaliCherub;
+                  const isItemOutOfStock = matchedProd ? Boolean(matchedProd.outOfStock) : Boolean(ch.isOutOfStock);
+
+                  const linkedProductObj = matchedProd || {
+                    ...SALEHI_COLLECTION_PRODUCTS[0],
+                    id: `ch-prod-desktop-${idx}`,
+                    name: finalName,
+                    subtitle: finalSubtitle,
+                    priceFormatted: finalPrice,
+                    image: finalImage,
+                    productCode: finalCode,
+                    outOfStock: isItemOutOfStock,
+                  };
+
+                  const cleanPrice = String(finalPrice || '').replace(/^هزینه بدون نصب\s*/, '');
+                  const priceSubtext = cleanPrice.includes('استعلام') ? cleanPrice : `هزینه بدون نصب ${cleanPrice}`;
+
+                  return {
                     id: `used-ch-desktop-${idx}`,
-                    name: ch.name || 'لوستر سفارشی صالحی',
-                    subtitle: ch.desc || 'کلکسیون اختصاصی گالری لوستر اکبر صالحی',
+                    name: finalName,
+                    subtitle: finalSubtitle,
                     desktopPriceLabel: 'قیمت محصول :',
-                    desktopPriceText: 'استعلام قیمت از گالری',
-                    mobilePriceText: 'استعلام قیمت',
-                    codeText: `به شماره انبار ${ch.code || '۱۲۸۹'}`,
-                    mobileCodeText: ch.code || '۱۲۸۹',
-                    image: ch.image || GENERATED_IMAGES.crystaliCherub,
-                    linkedProduct: {
-                      ...SALEHI_COLLECTION_PRODUCTS[0],
-                      id: `ch-prod-desktop-${idx}`,
-                      name: ch.name || 'لوستر سفارشی صالحی',
-                      image: ch.image || GENERATED_IMAGES.crystaliCherub,
-                      productCode: ch.code || '۱۲۸۹',
-                    },
+                    desktopPriceText: priceSubtext,
+                    mobilePriceText: cleanPrice,
+                    codeText: `به شماره انبار ${finalCode}`,
+                    mobileCodeText: finalCode,
+                    image: finalImage,
+                    linkedProduct: linkedProductObj,
+                    isOutOfStock: isItemOutOfStock,
                     initialAddedCount: 0,
-                  })).map((row) => {
+                  };
+                }).map((row) => {
               const isRowOutOfStock = outOfStockMode || Boolean((row as any).isOutOfStock);
               const qtyAdded = addedCounts[row.id] || 0;
               const isGoldenAdded = !isRowOutOfStock && qtyAdded > 0;
@@ -1708,13 +2123,13 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               return (
                 <div
                   key={row.id}
-                  className="w-full rounded-[18px] border border-[#eaeaea] bg-white px-5 py-4 flex items-center justify-between gap-4 hover:shadow-[0_8px_28px_rgba(0,0,0,0.04)] transition-shadow"
+                  className="w-full rounded-[20px] border border-[#e8e8e8] bg-white px-5 py-4 flex items-center justify-between gap-4 hover:shadow-[0_8px_28px_rgba(0,0,0,0.04)] transition-shadow"
                 >
                   {/* ۱. تصویر محصول + عنوان و زیرعنوان در سمت راست */}
                   <div className="flex items-center gap-4 min-w-[270px] lg:min-w-[320px]">
                     <div
                       onClick={() => handleProductDetailClick(row)}
-                      className="w-[96px] h-[68px] rounded-[12px] bg-[#f5f5f5] p-1.5 flex items-center justify-center shrink-0 cursor-pointer"
+                      className="w-[96px] h-[68px] rounded-[14px] bg-[#f5f5f5] p-1.5 flex items-center justify-center shrink-0 cursor-pointer"
                     >
                       <TransparentProductImage
                         src={row.image}
@@ -1725,38 +2140,38 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                     <div className="text-right">
                       <h3
                         onClick={() => handleProductDetailClick(row)}
-                        className="text-[15px] lg:text-[16px] font-extrabold text-[#1a1a1a] hover:text-[#b08c57] transition-colors cursor-pointer"
+                        className="text-[15px] lg:text-[16px] font-extrabold text-[#1a1a1a] hover:text-[#b08754] transition-colors cursor-pointer"
                       >
                         {row.name}
                       </h3>
-                      <p className="text-[12px] text-[#8e8e8e] mt-1.5">
+                      <p className="text-[12px] text-[#7a7a7a] mt-1">
                         {row.subtitle}
                       </p>
                     </div>
                   </div>
 
                   {/* خط عمودی طلایی */}
-                  <span className="hidden lg:block w-[1.5px] h-9 bg-[#b08c57]/55 shrink-0" />
+                  <span className="hidden lg:block w-[1.5px] h-9 bg-[#c5a676] shrink-0" />
 
                   {/* ۲. قیمت محصول */}
                   <div className="text-right">
                     <span className="block text-[14px] lg:text-[15px] font-extrabold text-[#1a1a1a]">
                       {outOfStockMode ? 'قیمت لوستر :' : row.desktopPriceLabel}
                     </span>
-                    <span className="block text-[12px] text-[#7a7a7a] mt-1.5">
+                    <span className="block text-[12px] text-[#7a7a7a] mt-1">
                       {row.desktopPriceText}
                     </span>
                   </div>
 
                   {/* خط عمودی طلایی */}
-                  <span className="hidden lg:block w-[1.5px] h-9 bg-[#b08c57]/55 shrink-0" />
+                  <span className="hidden lg:block w-[1.5px] h-9 bg-[#c5a676] shrink-0" />
 
                   {/* ۳. کد محصول */}
                   <div className="text-right">
                     <span className="block text-[14px] lg:text-[15px] font-extrabold text-[#1a1a1a]">
                       کد محصول :
                     </span>
-                    <span className="block text-[12px] text-[#7a7a7a] mt-1.5">
+                    <span className="block text-[12px] text-[#7a7a7a] mt-1">
                       {row.codeText}
                     </span>
                   </div>
@@ -1774,9 +2189,9 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                     >
                       {isBtnLoading ? (
                         <span className="inline-flex items-center gap-1.5 py-1">
-                          <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                          <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                          <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                         </span>
                       ) : (
                         <span>مشاهده و جزییات محصول</span>
@@ -1790,16 +2205,16 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                       onMouseLeave={() => setActiveTooltipRowId(null)}
                     >
                       {showDarkAddedTooltip && (
-                        <div className="absolute -top-10 left-0 px-3 py-1.5 rounded-[7px] bg-[#2b2b2b] text-white text-[11px] font-bold whitespace-nowrap shadow-md z-20 pointer-events-none">
+                        <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-[7px] bg-[#222222] text-white text-[10.5px] font-bold whitespace-nowrap shadow-md z-20 pointer-events-none">
                           {toPersianDigits(qtyAdded)} محصول اضافه شد
-                          <span className="absolute -bottom-1 left-[17px] w-2 h-2 bg-[#2b2b2b] rotate-45" />
+                          <span className="absolute -bottom-1 left-[15px] w-2 h-2 bg-[#222222] rotate-45" />
                         </div>
                       )}
 
                       {showPinkTooltip && (
-                        <div className="absolute -top-10 left-0 px-3 py-1.5 rounded-[7px] bg-[#ffe4e6] text-[#ef4444] text-[11px] font-bold whitespace-nowrap shadow-xs z-20 pointer-events-none">
+                        <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-[7px] bg-[#ffe4e6] text-[#ef4444] text-[10.5px] font-bold whitespace-nowrap shadow-xs z-20 pointer-events-none">
                           محصول در انبار وجود ندارد!
-                          <span className="absolute -bottom-1 left-[17px] w-2 h-2 bg-[#ffe4e6] rotate-45" />
+                          <span className="absolute -bottom-1 left-[15px] w-2 h-2 bg-[#ffe4e6] rotate-45" />
                         </div>
                       )}
 
@@ -1809,18 +2224,18 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                         aria-label="افزودن به سبد خرید"
                         className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
                           isRowOutOfStock
-                            ? 'bg-[#ffe4e6] text-[#ef4444]'
+                            ? 'bg-[#fee8ea] text-[#ef4444]'
                             : isGoldenAdded
-                              ? 'bg-[#b59766] text-white shadow-xs'
+                              ? 'bg-[#b08754] text-white shadow-xs'
                               : 'bg-[#f2f2f2] text-[#222222] hover:bg-[#2b2b2b] hover:text-white'
                         }`}
                       >
                         {isRowOutOfStock ? (
-                          <OutOfStockBagIcon />
+                          <OutOfStockBagIcon className="w-5 h-5" />
                         ) : isGoldenAdded ? (
-                          <PlusSquareIcon />
+                          <PlusCircleIcon className="w-5 h-5" />
                         ) : (
-                          <ShoppingBasketIcon />
+                          <ShoppingBasketIcon className="w-5 h-5" />
                         )}
                       </button>
                     </div>
@@ -1835,28 +2250,89 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
             className="flex md:hidden gap-3.5 overflow-x-auto snap-x snap-mandatory pb-3 pt-2 touch-pan-x [&::-webkit-scrollbar]:hidden"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {(activeSingleProject?.chandeliersList || []).map((ch, idx) => ({
-                    id: `used-ch-mob-${idx}`,
-                    name: ch.name || 'لوستر سفارشی صالحی',
-                    subtitle: ch.desc || 'کلکسیون اختصاصی گالری لوستر اکبر صالحی',
-                    desktopPriceLabel: 'قیمت محصول :',
-                    desktopPriceText: 'استعلام قیمت از گالری',
-                    mobilePriceText: 'استعلام قیمت',
-                    codeText: `به شماره انبار ${ch.code || '۱۲۸۹'}`,
-                    mobileCodeText: ch.code || '۱۲۸۹',
-                    image: ch.image || GENERATED_IMAGES.crystaliCherub,
-                    linkedProduct: {
-                      ...SALEHI_COLLECTION_PRODUCTS[0],
-                      id: `ch-prod-mob-${idx}`,
-                      name: ch.name || 'لوستر سفارشی صالحی',
-                      image: ch.image || GENERATED_IMAGES.crystaliCherub,
-                      productCode: ch.code || '۱۲۸۹',
-                    },
-                    initialAddedCount: 0,
-                  })).map((row) => {
+            {projectChandeliers.map((ch, idx) => {
+              const normalizeStr = (val: any) =>
+                String(val || '')
+                  .replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())
+                  .replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
+                  .toLowerCase()
+                  .replace(/[\s\-_]+/g, '')
+                  .trim();
+
+              const chCode = normalizeStr(ch.code || '');
+              const chName = normalizeStr(ch.name || '');
+
+              const matchedProd = (products || []).find((p: any) => {
+                const pCode = normalizeStr(p.productCode || '');
+                const pId = normalizeStr(p.id || '').replace(/^prod/, '');
+                const pKey = normalizeStr(p.productKey || '').replace(/^prod/, '');
+                const pName = normalizeStr(p.name || '');
+
+                if (chCode && (pCode === chCode || pId === chCode || pKey === chCode)) return true;
+                if (chName && (pName === chName || pName.includes(chName) || chName.includes(pName))) return true;
+                return false;
+              });
+
+              // استخراج زنده قیمت مستقیماً از اطلاعات خود محصول در دیتابیس / کاتالوگ
+              const resolveLivePrice = (prod: any, fallback?: string) => {
+                if (prod) {
+                  if (typeof prod.priceFormatted === 'string' && prod.priceFormatted.trim()) {
+                    return prod.priceFormatted.trim();
+                  }
+                  if (typeof prod.price === 'string' && prod.price.trim()) {
+                    return prod.price.trim();
+                  }
+                  if (typeof prod.priceNumeric === 'number' && prod.priceNumeric > 0) {
+                    return `${toPersianDigits(prod.priceNumeric.toLocaleString('fa-IR'))} تومان`;
+                  }
+                  if (typeof prod.price === 'number' && prod.price > 0) {
+                    return `${toPersianDigits(prod.price.toLocaleString('fa-IR'))} تومان`;
+                  }
+                }
+                if (fallback && fallback.trim()) return fallback.trim();
+                return 'استعلام قیمت از گالری';
+              };
+
+              const livePrice = resolveLivePrice(matchedProd, ch.price);
+              const finalPrice = livePrice;
+              const finalName = matchedProd?.name || ch.name || 'لوستر سفارشی صالحی';
+              const finalSubtitle = matchedProd?.subtitle || ch.desc || 'مناسب کلاسیک پذیرایی | کلاسیک خواب';
+              const finalCode = matchedProd?.productCode || ch.code || '۱۲۸۹۸۲';
+              const finalImage = matchedProd?.image || ch.image || GENERATED_IMAGES.crystaliCherub;
+              const isItemOutOfStock = matchedProd ? Boolean(matchedProd.outOfStock) : Boolean(ch.isOutOfStock);
+
+              const linkedProductObj = matchedProd || {
+                ...SALEHI_COLLECTION_PRODUCTS[0],
+                id: `ch-prod-mob-${idx}`,
+                name: finalName,
+                subtitle: finalSubtitle,
+                priceFormatted: finalPrice,
+                image: finalImage,
+                productCode: finalCode,
+                outOfStock: isItemOutOfStock,
+              };
+
+              const cleanPrice = String(finalPrice || '').replace(/^هزینه بدون نصب\s*/, '');
+
+              return {
+                id: `used-ch-mob-${idx}`,
+                name: finalName,
+                subtitle: finalSubtitle,
+                desktopPriceLabel: 'قیمت محصول :',
+                desktopPriceText: finalPrice,
+                mobilePriceText: cleanPrice,
+                codeText: `به شماره انبار ${finalCode}`,
+                mobileCodeText: finalCode,
+                image: finalImage,
+                linkedProduct: linkedProductObj,
+                isOutOfStock: isItemOutOfStock,
+                initialAddedCount: 0,
+              };
+            }).map((row) => {
               const isRowOutOfStock = outOfStockMode || Boolean((row as any).isOutOfStock);
               const qtyAdded = addedCounts[row.id] || 0;
               const isGoldenAdded = !isRowOutOfStock && qtyAdded > 0;
+              const isBtnLoading = loadingDetailBtnId === row.id;
               const showPinkTooltip =
                 isRowOutOfStock && activeTooltipRowId === row.id;
               const showDarkAddedTooltip =
@@ -1865,12 +2341,12 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               return (
                 <div
                   key={`m-used-${row.id}`}
-                  className="w-[78vw] max-w-[305px] shrink-0 snap-start rounded-[18px] border border-[#e8e8e8] bg-white p-3.5 flex flex-col justify-between"
+                  className="w-[78vw] max-w-[310px] shrink-0 snap-start rounded-[22px] border border-[#e8e8e8] bg-white p-4 flex flex-col justify-between shadow-2xs hover:shadow-md transition-shadow"
                 >
                   <div>
                     <div
                       onClick={() => handleProductDetailClick(row)}
-                      className="w-full h-[185px] rounded-[14px] bg-[#f5f5f5] p-3 flex items-center justify-center mb-3.5 cursor-pointer"
+                      className="w-full h-[185px] rounded-[16px] bg-[#f5f5f5] p-3 flex items-center justify-center mb-3.5 cursor-pointer"
                     >
                       <TransparentProductImage
                         src={row.image}
@@ -1879,23 +2355,26 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                       />
                     </div>
 
-                    <h3 className="text-[14.5px] font-extrabold text-[#1a1a1a] text-right truncate">
+                    <h3
+                      onClick={() => handleProductDetailClick(row)}
+                      className="text-[16px] font-extrabold text-[#1a1a1a] text-right truncate cursor-pointer hover:text-[#b08754] transition-colors"
+                    >
                       {row.name}
                     </h3>
-                    <p className="text-[11.5px] text-[#8e8e8e] mt-1 text-right truncate">
+                    <p className="text-[12px] text-[#7a7a7a] mt-1 text-right truncate">
                       {row.subtitle}
                     </p>
-                    <p className="text-[12.5px] font-bold text-[#666666] mt-2 text-right">
+                    <p className="text-[13.5px] font-extrabold text-[#1a1a1a] mt-2 text-right">
                       {row.mobilePriceText}
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-2 flex items-center justify-between gap-2">
+                  <div className="mt-4 pt-2 flex items-center justify-between gap-2 border-t border-[#f5f5f5]">
                     <div className="text-right">
-                      <span className="block text-[11.5px] font-bold text-[#222222]">
+                      <span className="block text-[11px] font-bold text-[#1a1a1a]">
                         کد محصول
                       </span>
-                      <span className="block text-[11.5px] text-[#888888] mt-0.5">
+                      <span className="block text-[11px] text-[#7a7a7a] mt-0.5">
                         {row.mobileCodeText}
                       </span>
                     </div>
@@ -1904,9 +2383,21 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                       <button
                         type="button"
                         onClick={() => handleProductDetailClick(row)}
-                        className="h-[38px] px-3.5 rounded-[10px] bg-[#f2f2f2] hover:bg-[#2b2b2b] active:bg-[#2b2b2b] text-[#222222] hover:text-white active:text-white text-[11.5px] font-bold transition-colors cursor-pointer whitespace-nowrap"
+                        className={`h-[42px] px-4 rounded-[10px] text-[12px] font-bold transition-all flex items-center justify-center cursor-pointer whitespace-nowrap ${
+                          isBtnLoading
+                            ? 'bg-[#2b2b2b] text-white min-w-[96px]'
+                            : 'bg-[#f2f2f2] text-[#222222] hover:bg-[#2b2b2b] hover:text-white'
+                        }`}
                       >
-                        مشاهده و خرید
+                        {isBtnLoading ? (
+                          <span className="inline-flex items-center gap-1.5 py-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          </span>
+                        ) : (
+                          <span>مشاهده و خرید</span>
+                        )}
                       </button>
 
                       <div
@@ -1915,9 +2406,9 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                         onMouseLeave={() => setActiveTooltipRowId(null)}
                       >
                         {showDarkAddedTooltip && (
-                          <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-[7px] bg-[#2b2b2b] text-white text-[10.5px] font-bold whitespace-nowrap shadow-md z-20 pointer-events-none">
+                          <div className="absolute -top-10 left-0 px-2.5 py-1 rounded-[7px] bg-[#222222] text-white text-[10.5px] font-bold whitespace-nowrap shadow-md z-20 pointer-events-none">
                             {toPersianDigits(qtyAdded)} محصول اضافه شد
-                            <span className="absolute -bottom-1 left-[15px] w-2 h-2 bg-[#2b2b2b] rotate-45" />
+                            <span className="absolute -bottom-1 left-[15px] w-2 h-2 bg-[#222222] rotate-45" />
                           </div>
                         )}
 
@@ -1932,20 +2423,20 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                           type="button"
                           onClick={() => handleProductCartClick(row)}
                           aria-label="افزودن به سبد خرید"
-                          className={`w-[38px] h-[38px] rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
+                          className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
                             isRowOutOfStock
-                              ? 'bg-[#ffe4e6] text-[#ef4444]'
+                              ? 'bg-[#fee8ea] text-[#ef4444]'
                               : isGoldenAdded
-                                ? 'bg-[#b59766] text-white'
-                                : 'bg-[#f2f2f2] text-[#222222]'
+                                ? 'bg-[#b08754] text-white shadow-xs'
+                                : 'bg-[#f2f2f2] text-[#222222] hover:bg-[#2b2b2b] hover:text-white'
                           }`}
                         >
                           {isRowOutOfStock ? (
-                            <OutOfStockBagIcon className="w-[18px] h-[18px]" />
+                            <OutOfStockBagIcon className="w-5 h-5" />
                           ) : isGoldenAdded ? (
-                            <PlusSquareIcon className="w-[18px] h-[18px]" />
+                            <PlusCircleIcon className="w-5 h-5" />
                           ) : (
-                            <ShoppingBasketIcon className="w-[18px] h-[18px]" />
+                            <ShoppingBasketIcon className="w-5 h-5" />
                           )}
                         </button>
                       </div>
@@ -1979,18 +2470,22 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               onClick={(e) => e.stopPropagation()}
               className="relative w-full md:w-auto flex items-center justify-center md:gap-6 lg:gap-9"
             >
-              {/* دکمه اسلاید بعدی در بیرون سمت راست قاب عکس/ویدیو (دقیقاً مطابق اسکرین‌شات‌ها) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setLightboxSlideIdx((prev) => (prev + 1) % 7);
-                  setIsVideoPlaying(false);
-                }}
-                aria-label="اسلاید بعدی"
-                className="hidden md:flex w-[42px] h-[42px] rounded-[10px] bg-white/60 hover:bg-white text-[#222222] hover:text-[#111111] items-center justify-center shadow-md transition-all duration-200 shrink-0 cursor-pointer z-30"
-              >
-                <ChevronRight className="w-5 h-5 stroke-[2.1]" />
-              </button>
+              {/* دکمه اسلاید بعدی در بیرون سمت راست قاب عکس/ویدیو (فقط هنگامی که گالری بیشتر از ۱ تصویر داشته باشد) */}
+              {projectGallery.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLightboxSlideIdx(
+                      (prev) => (prev + 1) % projectGallery.length
+                    );
+                    setIsVideoPlaying(false);
+                  }}
+                  aria-label="اسلاید بعدی"
+                  className="hidden md:flex w-[42px] h-[42px] rounded-[10px] bg-white/60 hover:bg-white text-[#222222] hover:text-[#111111] items-center justify-center shadow-md transition-all duration-200 shrink-0 cursor-pointer z-30"
+                >
+                  <ChevronRight className="w-5 h-5 stroke-[2.1]" />
+                </button>
+              )}
 
               {/* قاب رسانه وسط صفحه */}
               <div className="relative w-full md:w-[76vw] lg:w-[860px] xl:w-[950px] max-w-[960px] aspect-[4/3.5] md:aspect-auto md:h-[510px] lg:h-[565px] md:rounded-[22px] overflow-hidden bg-[#141414] shadow-2xl flex items-center justify-center select-none">
@@ -2128,45 +2623,55 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                   </>
                 )}
 
-                {/* ۷ نقطه سفید پایین لایت‌باکس (مطابق عکس ۶، ۷ و ۱۴) */}
-                <div className="absolute bottom-3.5 inset-x-0 z-20 flex items-center justify-center gap-2">
-                  {[0, 1, 2, 3, 4, 5, 6].map((dotIdx) => {
-                    const isActiveDot = lightboxSlideIdx === dotIdx;
-                    const dist = Math.abs(dotIdx - lightboxSlideIdx);
-                    return (
-                      <button
-                        key={`lb-dot-${dotIdx}`}
-                        type="button"
-                        onClick={() => {
-                          setLightboxSlideIdx(dotIdx);
-                          setIsVideoPlaying(false);
-                        }}
-                        aria-label={`اسلاید ${dotIdx + 1}`}
-                        className={`rounded-full transition-all duration-300 cursor-pointer ${
-                          isActiveDot
-                            ? 'w-3 h-3 bg-white shadow-xs'
-                            : dist === 1
-                              ? 'w-2 h-2 bg-white/85'
-                              : 'w-1.5 h-1.5 bg-white/65'
-                        }`}
-                      />
-                    );
-                  })}
-                </div>
+                {/* نقطه‌های سفید پایین لایت‌باکس (فقط هنگامی که بیشتر از ۱ عکس باشد) */}
+                {projectGallery.length > 1 && (
+                  <div className="absolute bottom-3.5 inset-x-0 z-20 flex items-center justify-center gap-2">
+                    {projectGallery.map((_, dotIdx) => {
+                      const activeDot =
+                        lightboxSlideIdx % projectGallery.length;
+                      const isActiveDot = activeDot === dotIdx;
+                      const dist = Math.abs(dotIdx - activeDot);
+                      return (
+                        <button
+                          key={`lb-dot-${dotIdx}`}
+                          type="button"
+                          onClick={() => {
+                            setLightboxSlideIdx(dotIdx);
+                            setIsVideoPlaying(false);
+                          }}
+                          aria-label={`اسلاید ${dotIdx + 1}`}
+                          className={`rounded-full transition-all duration-300 cursor-pointer ${
+                            isActiveDot
+                              ? 'w-3 h-3 bg-white shadow-xs'
+                              : dist === 1
+                                ? 'w-2 h-2 bg-white/85'
+                                : 'w-1.5 h-1.5 bg-white/65'
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* دکمه اسلاید قبلی در بیرون سمت چپ قاب عکس/ویدیو (دقیقاً مطابق اسکرین‌شات‌ها) */}
-              <button
-                type="button"
-                onClick={() => {
-                  setLightboxSlideIdx((prev) => (prev + 6) % 7);
-                  setIsVideoPlaying(false);
-                }}
-                aria-label="اسلاید قبلی"
-                className="hidden md:flex w-[42px] h-[42px] rounded-[10px] bg-white/60 hover:bg-white text-[#222222] hover:text-[#111111] items-center justify-center shadow-md transition-all duration-200 shrink-0 cursor-pointer z-30"
-              >
-                <ChevronLeft className="w-5 h-5 stroke-[2.1]" />
-              </button>
+              {/* دکمه اسلاید قبلی در بیرون سمت چپ قاب عکس/ویدیو (فقط هنگامی که بیشتر از ۱ عکس باشد) */}
+              {projectGallery.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLightboxSlideIdx(
+                      (prev) =>
+                        (prev - 1 + projectGallery.length) %
+                        projectGallery.length
+                    );
+                    setIsVideoPlaying(false);
+                  }}
+                  aria-label="اسلاید قبلی"
+                  className="hidden md:flex w-[42px] h-[42px] rounded-[10px] bg-white/60 hover:bg-white text-[#222222] hover:text-[#111111] items-center justify-center shadow-md transition-all duration-200 shrink-0 cursor-pointer z-30"
+                >
+                  <ChevronLeft className="w-5 h-5 stroke-[2.1]" />
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -2201,10 +2706,10 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => handleSelectTab(tab.id)}
-                  className={`relative pb-3.5 pt-2 sm:pb-4 sm:pt-1.5 text-[13.5px] xs:text-[14px] sm:text-[15.5px] transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
+                  className={`relative pb-3.5 pt-2 sm:pb-4 sm:pt-1.5 text-[13px] xs:text-[14px] sm:text-[15px] transition-colors whitespace-nowrap cursor-pointer shrink-0 flex items-center ${
                     isSelected
-                      ? 'font-bold text-[#1a1a1a]'
-                      : 'font-medium text-[#b4b4b4] hover:text-[#444444]'
+                      ? 'font-extrabold text-[#1a1a1a]'
+                      : 'font-medium text-[#777777] hover:text-[#222222]'
                   }`}
                 >
                   <span>{tab.label}</span>
@@ -2216,21 +2721,21 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
             })}
           </div>
 
-          <div className="hidden md:flex items-center shrink-0 pb-3">
+          <div className="flex items-center shrink-0 pb-3">
             <button
               type="button"
               onClick={() => triggerProjectsLoading(450)}
-              title={activeTabInfo.badgeCountLabel}
-              className="h-[38px] min-w-[116px] px-4 rounded-[9px] border border-[#c8a878] bg-white hover:bg-[#faf6ef] text-[#a68452] text-[12.5px] font-medium transition-colors flex items-center justify-center cursor-pointer"
+              title={`مجموع ${toPersianDigits(allTabProjects.length)} پروژه در دسته‌بندی ${activeTabInfo.label}`}
+              className="h-[38px] px-3.5 sm:px-4 rounded-[10px] border border-[#c8a878] bg-[#faf7f2] hover:bg-[#f4ede1] text-[#937242] text-[12px] sm:text-[12.5px] font-bold transition-all flex items-center justify-center cursor-pointer shadow-2xs whitespace-nowrap"
             >
               {isTabLoading ? (
                 <span className="inline-flex items-center gap-1.5 py-1">
-                  <span className="w-1 h-1 rounded-full bg-[#a68452] animate-pulse" />
-                  <span className="w-1 h-1 rounded-full bg-[#a68452] animate-pulse" />
-                  <span className="w-1 h-1 rounded-full bg-[#a68452] animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#937242] animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#937242] animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#937242] animate-pulse" />
                 </span>
               ) : (
-                <span>{activeTabInfo.badgeCountLabel}</span>
+                <span>مجموع {toPersianDigits(allTabProjects.length)} پروژه</span>
               )}
             </button>
           </div>
@@ -2255,29 +2760,65 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               const showImage = Boolean(project.image) && !forceNoImageMode;
               const isCardLoading = loadingProjectId === project.id;
 
+              const isLiked = Boolean(likedMap[project.id]);
+              const statsRaw = typeof window !== 'undefined' ? localStorage.getItem('app_project_likes_stats') : null;
+              const stats = statsRaw ? JSON.parse(statsRaw) : {};
+              const cardLikes = (stats[project.slug] ?? stats[project.id] ?? Number(project.initialLikes)) || 0;
+
               return (
                 <article
                   key={project.id}
                   className="group flex flex-col"
                 >
-                  <a
-                    href={`/project/${project.slug}`}
-                    onClick={(e) => handleOpenProjectDetails(project, e)}
-                    className="relative w-full h-[240px] xs:h-[260px] sm:h-[280px] lg:h-[295px] xl:h-[315px] rounded-[18px] overflow-hidden bg-[#f2f2f2] flex items-center justify-center cursor-pointer"
-                  >
-                    {showImage ? (
-                      <img
-                        src={project.image}
-                        alt={project.title}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-[#f2f2f2] flex items-center justify-center">
-                        <ProjectNoImageIcon />
-                      </div>
-                    )}
-                  </a>
+                  <div className="relative">
+                    <a
+                      href={`/project/${project.slug}`}
+                      onClick={(e) => handleOpenProjectDetails(project, e)}
+                      className="relative w-full h-[240px] xs:h-[260px] sm:h-[280px] lg:h-[295px] xl:h-[315px] rounded-[18px] overflow-hidden bg-[#f2f2f2] flex items-center justify-center cursor-pointer block"
+                    >
+                      {showImage ? (
+                        <img
+                          src={project.image}
+                          alt={project.title}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-[#f2f2f2] flex items-center justify-center">
+                          <ProjectNoImageIcon />
+                        </div>
+                      )}
+                    </a>
+
+                    {/* دکمه لایک پروژه در گوشه بالای کارت متصل به دیتابیس */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleToggleLike(project);
+                      }}
+                      aria-label="لایک این پروژه"
+                      className={`absolute top-3 right-3 z-10 h-8 px-2.5 rounded-full backdrop-blur-md flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                        isLiked
+                          ? 'bg-[#b08c57] text-white shadow-xs'
+                          : 'bg-black/45 hover:bg-black/65 text-white'
+                      }`}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill={isLiked ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="w-3.5 h-3.5"
+                      >
+                        <path d="M12.62 20.81C12.28 20.93 11.72 20.93 11.38 20.81C8.48 19.82 2 15.69 2 8.69C2 5.6 4.49 3.1 7.56 3.1C9.38 3.1 10.99 3.98 12 5.34C13.01 3.98 14.63 3.1 16.44 3.1C19.51 3.1 22 5.6 22 8.69C22 15.69 15.52 19.82 12.62 20.81Z" />
+                      </svg>
+                      <span className="text-[11px] font-bold">
+                        {toPersianDigits(cardLikes)}
+                      </span>
+                    </button>
+                  </div>
 
                   <div className="mt-3.5 flex items-center justify-between gap-3">
                     <div className="text-right min-w-0">
@@ -2330,108 +2871,116 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
           </div>
 
           {/* ۴. نوار صفحه‌بندی (Pagination) */}
-          <div
-            dir="ltr"
-            className="mt-12 sm:mt-16 flex items-center justify-center gap-2 sm:gap-2.5 select-none"
-          >
-            <button
-              type="button"
-              onClick={() =>
-                handlePageChange(
-                  currentPage > 1 ? currentPage - 1 : totalPages
-                )
-              }
-              aria-label="صفحه قبلی"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-[9px] bg-[#f2f2f2] hover:bg-[#2b2b2b] text-[#333333] hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+          {totalPages > 1 && (
+            <div
+              dir="ltr"
+              className="mt-12 sm:mt-16 flex items-center justify-center gap-2 sm:gap-2.5 select-none"
             >
-              <ChevronRight className="w-4 h-4 stroke-[2.2]" />
-            </button>
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                aria-label="صفحه قبلی"
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[9px] transition-colors flex items-center justify-center ${
+                  currentPage <= 1
+                    ? 'bg-[#f4f4f4] text-[#c0c0c0] cursor-not-allowed'
+                    : 'bg-[#f2f2f2] hover:bg-[#2b2b2b] text-[#333333] hover:text-white cursor-pointer shadow-2xs'
+                }`}
+              >
+                <ChevronLeft className="w-4 h-4 stroke-[2.2]" />
+              </button>
 
-            <div className="hidden sm:flex items-center gap-2.5">
-              {getDesktopPaginationItems().map((item, idx) => {
-                if (item === 'ellipsis') {
+              <div className="hidden sm:flex items-center gap-2.5">
+                {getDesktopPaginationItems().map((item, idx) => {
+                  if (item === 'ellipsis') {
+                    return (
+                      <button
+                        key={`d-ellipsis-${idx}`}
+                        type="button"
+                        onClick={() =>
+                          handlePageChange(
+                            idx === 1
+                              ? Math.max(1, currentPage - 2)
+                              : Math.min(totalPages, currentPage + 2)
+                          )
+                        }
+                        className="w-10 h-10 rounded-[9px] bg-white border border-[#e5e5e5] hover:border-[#b08c57] text-[#333333] text-[13px] font-medium transition-colors flex items-center justify-center cursor-pointer shadow-2xs"
+                      >
+                        ...
+                      </button>
+                    );
+                  }
+
+                  const isCurrent = currentPage === item;
                   return (
                     <button
-                      key={`d-ellipsis-${idx}`}
+                      key={`d-page-${item}`}
                       type="button"
-                      onClick={() =>
-                        handlePageChange(currentPage <= 3 ? 4 : 3)
-                      }
-                      className="w-10 h-10 rounded-[9px] bg-white border border-[#e5e5e5] hover:border-[#b08c57] text-[#333333] text-[13px] font-medium transition-colors flex items-center justify-center cursor-pointer"
+                      onClick={() => handlePageChange(item)}
+                      className={`w-10 h-10 rounded-[9px] text-[13.5px] transition-all flex items-center justify-center cursor-pointer ${
+                        isCurrent
+                          ? 'bg-[#2b2b2b] text-white border border-[#2b2b2b] font-bold shadow-xs'
+                          : 'bg-white text-[#333333] border border-[#e5e5e5] hover:border-[#b08c57] font-medium shadow-2xs'
+                      }`}
                     >
-                      ...
+                      {toPersianDigits(item)}
                     </button>
                   );
-                }
+                })}
+              </div>
 
-                const isCurrent = currentPage === item;
-                return (
-                  <button
-                    key={`d-page-${item}`}
-                    type="button"
-                    onClick={() => handlePageChange(item)}
-                    className={`w-10 h-10 rounded-[9px] text-[13.5px] transition-all flex items-center justify-center cursor-pointer ${
-                      isCurrent
-                        ? 'bg-[#2b2b2b] text-white border border-[#2b2b2b] font-bold shadow-xs'
-                        : 'bg-white text-[#333333] border border-[#e5e5e5] hover:border-[#b08c57] font-medium'
-                    }`}
-                  >
-                    {toPersianDigits(item)}
-                  </button>
-                );
-              })}
-            </div>
+              <div className="flex sm:hidden items-center gap-2">
+                {getMobilePaginationItems().map((item, idx) => {
+                  if (item === 'ellipsis') {
+                    return (
+                      <button
+                        key={`m-ellipsis-${idx}`}
+                        type="button"
+                        onClick={() =>
+                          handlePageChange(
+                            currentPage < totalPages ? currentPage + 1 : 1
+                          )
+                        }
+                        className="w-9 h-9 rounded-[9px] bg-white border border-[#e5e5e5] hover:border-[#b08c57] text-[#333333] text-[12.5px] font-medium transition-colors flex items-center justify-center cursor-pointer"
+                      >
+                        ...
+                      </button>
+                    );
+                  }
 
-            <div className="flex sm:hidden items-center gap-2">
-              {getMobilePaginationItems().map((item, idx) => {
-                if (item === 'ellipsis') {
+                  const isCurrent = currentPage === item;
                   return (
                     <button
-                      key={`m-ellipsis-${idx}`}
+                      key={`m-page-${item}`}
                       type="button"
-                      onClick={() =>
-                        handlePageChange(
-                          currentPage < totalPages ? currentPage + 1 : 1
-                        )
-                      }
-                      className="w-9 h-9 rounded-[9px] bg-white border border-[#e5e5e5] hover:border-[#b08c57] text-[#333333] text-[12.5px] font-medium transition-colors flex items-center justify-center cursor-pointer"
+                      onClick={() => handlePageChange(item)}
+                      className={`w-9 h-9 rounded-[9px] text-[13px] transition-all flex items-center justify-center cursor-pointer ${
+                        isCurrent
+                          ? 'bg-[#2b2b2b] text-white border border-[#2b2b2b] font-bold shadow-xs'
+                          : 'bg-white text-[#333333] border border-[#e5e5e5] hover:border-[#b08c57] font-medium'
+                      }`}
                     >
-                      ...
+                      {toPersianDigits(item)}
                     </button>
                   );
-                }
+                })}
+              </div>
 
-                const isCurrent = currentPage === item;
-                return (
-                  <button
-                    key={`m-page-${item}`}
-                    type="button"
-                    onClick={() => handlePageChange(item)}
-                    className={`w-9 h-9 rounded-[9px] text-[13px] transition-all flex items-center justify-center cursor-pointer ${
-                      isCurrent
-                        ? 'bg-[#2b2b2b] text-white border border-[#2b2b2b] font-bold shadow-xs'
-                        : 'bg-white text-[#333333] border border-[#e5e5e5] hover:border-[#b08c57] font-medium'
-                    }`}
-                  >
-                    {toPersianDigits(item)}
-                  </button>
-                );
-              })}
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                aria-label="صفحه بعدی"
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[9px] transition-colors flex items-center justify-center ${
+                  currentPage >= totalPages
+                    ? 'bg-[#f4f4f4] text-[#c0c0c0] cursor-not-allowed'
+                    : 'bg-[#f2f2f2] hover:bg-[#2b2b2b] text-[#333333] hover:text-white cursor-pointer shadow-2xs'
+                }`}
+              >
+                <ChevronRight className="w-4 h-4 stroke-[2.2]" />
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                handlePageChange(
-                  currentPage < totalPages ? currentPage + 1 : 1
-                )
-              }
-              aria-label="صفحه بعدی"
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-[9px] bg-[#f2f2f2] hover:bg-[#2b2b2b] text-[#333333] hover:text-white transition-colors flex items-center justify-center cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4 stroke-[2.2]" />
-            </button>
-          </div>
+          )}
         </>
       )}
     </main>

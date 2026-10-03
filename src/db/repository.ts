@@ -12,6 +12,7 @@ import {
   stories,
   users,
 } from './schema.ts';
+import { ALL_INITIAL_PROJECTS } from '../data/allDatabaseProjectsSeed.ts';
 
 let seedPromise: Promise<void> | null = null;
 let hasSeededProjects = false;
@@ -602,68 +603,21 @@ const INITIAL_PRODUCTS_SEED = [
 const DEFAULT_PROJECT_DESCRIPTION =
   'در طراحی روشنایی و نورپردازی این مجموعه فاخر، از لوسترهای برنزی کلکسیون اکبر صالحی با آبکاری طلای ۲۴ عیار و کریستال‌های شامپاینی استفاده شده است. انتخاب تمامی محصولات روشنایی از یک خانواده واحد، انسجام بصری و شکوه معماری کلاسیک فضا را دوچندان ساخته است.';
 
-const INITIAL_PROJECTS_SEED = [
-  {
-    slug: 'kiani-shomali',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۱',
-    district: 'منطقه کیانی شمالی',
-    title: 'پروژه منطقه کیانی شمالی',
-    subtitle: 'منازل مسکونی و تشریفاتی | اهواز، خوزستان',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'ترکیب لوسترهای ۱۲ شاخه دوبل در مرکز سالن به همراه دیوارکوب‌های هم‌خانواده در ستون‌های جانبی، هارمونی بی‌نظیری ایجاد کرده است.',
-    mainImage: ASSET_PATHS.projectRoyalRestaurant,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectDuplexVilla,
-    ]),
-    locationBadge: 'اهواز، خوزستان',
-    dateBadge: '۲۵ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'elahiyeh',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۲',
-    district: 'منطقه الهیه',
-    title: 'پروژه منطقه الهیه',
-    subtitle: 'تالار تشریفات و همایش | تهران، شمیرانات',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'در این پروژه از لوسترهای پرشاخه با شیدهای دست‌دوز و کریستال‌های منشوری ضد خیرگی چشم استفاده شده است.',
-    mainImage: ASSET_PATHS.projectLobbyHotel,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectRoyalRestaurant,
-      ASSET_PATHS.heroBanner,
-    ]),
-    locationBadge: 'تهران، شمیرانات',
-    dateBadge: '۲۵ شهریور ماه ۱۴۰۴',
-  },
-  {
-    slug: 'zafaraniyeh',
-    categoryTab: 'gov',
-    sampleCode: 'نمونه ۳',
-    district: 'منطقه زعفرانیه',
-    title: 'پروژه منطقه زعفرانیه',
-    subtitle: 'ساختمان دیپلماتیک و تشریفات | تهران، تهران',
-    description: DEFAULT_PROJECT_DESCRIPTION,
-    usedChandeliersText:
-      'معمولا برای فضاهای نشیمن لوسترهای گرد و بالای میزهای پذیرایی دیزاین کشیده و لاینر استفاده می‌شود.',
-    mainImage: ASSET_PATHS.projectDuplexVilla,
-    galleryJson: JSON.stringify([
-      ASSET_PATHS.projectDuplexVilla,
-      ASSET_PATHS.projectFereshteh,
-      ASSET_PATHS.projectLobbyHotel,
-      ASSET_PATHS.heroBanner,
-    ]),
-    locationBadge: 'تهران، تهران',
-    dateBadge: '۲۵ شهریور ماه ۱۴۰۴',
-  },
-];
+const INITIAL_PROJECTS_SEED = ALL_INITIAL_PROJECTS.map((pr) => ({
+  slug: pr.slug,
+  categoryTab: pr.categoryTab,
+  sampleCode: pr.sampleCode,
+  district: pr.district,
+  title: pr.title,
+  subtitle: pr.subtitle,
+  description: pr.description,
+  usedChandeliersText: pr.usedChandeliersText,
+  mainImage: pr.mainImage,
+  galleryJson: pr.galleryJson,
+  locationBadge: pr.locationBadge,
+  dateBadge: pr.dateBadge,
+  likesCount: 0,
+}));
 
 const INITIAL_STORIES_SEED = [
   {
@@ -1178,13 +1132,17 @@ export async function ensureSeeded(): Promise<void> {
           .onConflictDoNothing();
       }
 
-      // ۳. پروژه‌های اجرایی (فقط در صورتی که دیتابیس در راه‌اندازی اولیه کاملاً خالی باشد)
+      // ۳. پروژه‌های اجرایی (ثبت کامل تمامی ۶۶ پروژه و اتصال هماهنگ به دیتابیس)
       if (!hasSeededProjects) {
         const existingProjects = await db.select().from(projects);
-        if (existingProjects.length === 0) {
+        const existingSlugs = new Set(existingProjects.map((p) => p.slug));
+        const missingProjects = INITIAL_PROJECTS_SEED.filter(
+          (p) => !existingSlugs.has(p.slug)
+        );
+        if (missingProjects.length > 0) {
           await db
             .insert(projects)
-            .values(INITIAL_PROJECTS_SEED)
+            .values(missingProjects)
             .onConflictDoNothing();
         }
         hasSeededProjects = true;
@@ -1430,7 +1388,32 @@ export async function deleteProductRecord(id: number) {
 export async function getAllProjects() {
   try {
     await ensureSeeded();
-    return await db.select().from(projects).orderBy(asc(projects.id));
+    const rows = await db.select().from(projects).orderBy(desc(projects.id));
+    return rows.map((row) => {
+      let parsedChs: any[] = [];
+      if (row.usedChandeliersText) {
+        const tagMatch = row.usedChandeliersText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
+        if (tagMatch && tagMatch[1]) {
+          try {
+            const arr = JSON.parse(tagMatch[1].trim());
+            if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
+          } catch {}
+        }
+        if (parsedChs.length === 0) {
+          const jsonMatch = row.usedChandeliersText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+          if (jsonMatch && jsonMatch[0]) {
+            try {
+              const arr = JSON.parse(jsonMatch[0].trim());
+              if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
+            } catch {}
+          }
+        }
+      }
+      return {
+        ...row,
+        chandeliersList: parsedChs,
+      };
+    });
   } catch (error) {
     console.error('Database query failed in getAllProjects:', error);
     throw new Error('خطا در دریافت پروژه‌ها از دیتابیس.', { cause: error });
@@ -1441,44 +1424,57 @@ export async function createProjectRecord(data: {
   slug?: string;
   categoryTab: string;
   sampleCode?: string;
-  district: string;
+  district?: string;
   title: string;
-  subtitle: string;
-  description: string;
+  subtitle?: string;
+  description?: string;
   usedChandeliersText?: string;
+  chandeliersList?: any[];
   mainImage?: string;
   galleryJson?: string;
+  galleryImages?: string[];
   locationBadge?: string;
   dateBadge?: string;
+  ownerName?: string;
+  likesCount?: number;
+  stylesJson?: string;
 }) {
   try {
     const mainImg = data.mainImage || ASSET_PATHS.projectLobbyHotel;
+    let finalGalleryJson = data.galleryJson || '';
+    if (!finalGalleryJson && Array.isArray(data.galleryImages) && data.galleryImages.length > 0) {
+      finalGalleryJson = JSON.stringify(data.galleryImages);
+    } else if (!finalGalleryJson) {
+      finalGalleryJson = JSON.stringify([mainImg]);
+    }
+
+    let finalUsedText = data.usedChandeliersText || '';
+    if (Array.isArray(data.chandeliersList) && data.chandeliersList.length > 0) {
+      const cleanDesc = (data.usedChandeliersText || '')
+        .replace(/<!--CHANDELIERS_DATA-->[\s\S]*?<!--\/CHANDELIERS_DATA-->/g, '')
+        .replace(/(\n|^)\s*\[\s*\{[\s\S]*\}\s*\]\s*$/g, '')
+        .trim();
+      finalUsedText = `${cleanDesc}\n<!--CHANDELIERS_DATA-->${JSON.stringify(data.chandeliersList)}<!--/CHANDELIERS_DATA-->\n${JSON.stringify(data.chandeliersList)}`.trim();
+    }
+
     const result = await db
       .insert(projects)
       .values({
         slug: data.slug || `project-${Date.now()}`,
         categoryTab: data.categoryTab || 'gov',
         sampleCode: data.sampleCode || 'نمونه جدید',
-        district: data.district || 'تهران',
+        district: data.district || '',
         title: data.title,
         subtitle: data.subtitle || data.district || 'پروژه اجرایی لوستر صالحی',
-        description: data.description || DEFAULT_PROJECT_DESCRIPTION,
-        usedChandeliersText:
-          data.usedChandeliersText ||
-          'طراحی و اجرای سفارشی توسط گالری لوستر اکبر صالحی',
+        description: data.description !== undefined ? data.description : DEFAULT_PROJECT_DESCRIPTION,
+        usedChandeliersText: finalUsedText,
         mainImage: mainImg,
-        galleryJson:
-          data.galleryJson ||
-          (Array.isArray((data as any).galleryImages)
-            ? JSON.stringify((data as any).galleryImages)
-            : JSON.stringify([
-                mainImg,
-                ASSET_PATHS.projectFereshteh,
-                ASSET_PATHS.projectRoyalRestaurant,
-                ASSET_PATHS.projectDuplexVilla,
-              ])),
-        locationBadge: data.locationBadge || data.district || 'تهران',
-        dateBadge: data.dateBadge || '۲۵ شهریور ماه ۱۴۰۴',
+        galleryJson: finalGalleryJson,
+        locationBadge: data.locationBadge !== undefined ? data.locationBadge : (data.district || ''),
+        dateBadge: data.dateBadge !== undefined ? data.dateBadge : '',
+        ownerName: data.ownerName !== undefined ? data.ownerName : '',
+        likesCount: Math.max(0, Number(data.likesCount) || 0),
+        stylesJson: data.stylesJson !== undefined ? data.stylesJson : '{}',
       })
       .returning();
     return result[0];
@@ -1501,15 +1497,36 @@ export async function updateProjectRecord(
     if (data.title !== undefined) validData.title = data.title;
     if (data.subtitle !== undefined) validData.subtitle = data.subtitle;
     if (data.description !== undefined) validData.description = data.description;
-    if (data.usedChandeliersText !== undefined) validData.usedChandeliersText = data.usedChandeliersText;
+    
+    if (data.chandeliersList !== undefined && Array.isArray(data.chandeliersList)) {
+      const cleanDesc = (data.usedChandeliersText || '')
+        .replace(/<!--CHANDELIERS_DATA-->[\s\S]*?<!--\/CHANDELIERS_DATA-->/g, '')
+        .replace(/(\n|^)\s*\[\s*\{[\s\S]*\}\s*\]\s*$/g, '')
+        .trim();
+      if (data.chandeliersList.length > 0) {
+        validData.usedChandeliersText = `${cleanDesc}\n<!--CHANDELIERS_DATA-->${JSON.stringify(data.chandeliersList)}<!--/CHANDELIERS_DATA-->\n${JSON.stringify(data.chandeliersList)}`.trim();
+      } else {
+        validData.usedChandeliersText = cleanDesc;
+      }
+    } else if (data.usedChandeliersText !== undefined) {
+      validData.usedChandeliersText = data.usedChandeliersText;
+    }
+
     if (data.mainImage !== undefined) validData.mainImage = data.mainImage;
     if (data.galleryJson !== undefined) {
       validData.galleryJson = data.galleryJson;
-    } else if (data.galleryImages !== undefined) {
+    } else if (data.galleryImages !== undefined && Array.isArray(data.galleryImages)) {
       validData.galleryJson = JSON.stringify(data.galleryImages);
     }
     if (data.locationBadge !== undefined) validData.locationBadge = data.locationBadge;
     if (data.dateBadge !== undefined) validData.dateBadge = data.dateBadge;
+    if (data.ownerName !== undefined) validData.ownerName = data.ownerName;
+    if (data.likesCount !== undefined) {
+      validData.likesCount = Math.max(0, Number(data.likesCount) || 0);
+    }
+    if (data.stylesJson !== undefined) {
+      validData.stylesJson = data.stylesJson;
+    }
 
     const result = await db
       .update(projects)
@@ -1520,6 +1537,61 @@ export async function updateProjectRecord(
   } catch (error) {
     console.error('Database query failed in updateProjectRecord:', error);
     throw new Error('خطا در ویرایش پروژه.', { cause: error });
+  }
+}
+
+export async function toggleProjectLike(
+  idOrSlug: number | string,
+  increment: boolean = true
+) {
+  try {
+    await ensureSeeded();
+    const num = Number(idOrSlug);
+    const isNum = !isNaN(num) && num > 0;
+    const condition = isNum
+      ? eq(projects.id, num)
+      : or(eq(projects.slug, String(idOrSlug)), eq(projects.slug, String(idOrSlug).replace(/^proj-/, '')));
+
+    const rows = await db.select().from(projects).where(condition);
+    if (!rows.length) {
+      throw new Error('پروژه مورد نظر یافت نشد.');
+    }
+    const currentLikes = Number(rows[0].likesCount) || 0;
+    const nextLikes = increment ? currentLikes + 1 : Math.max(0, currentLikes - 1);
+
+    const updated = await db
+      .update(projects)
+      .set({ likesCount: nextLikes })
+      .where(condition)
+      .returning();
+    return updated[0];
+  } catch (error) {
+    console.error('Database query failed in toggleProjectLike:', error);
+    throw new Error('خطا در ثبت لایک پروژه.', { cause: error });
+  }
+}
+
+export async function updateProjectLikesCount(
+  idOrSlug: number | string,
+  newLikesCount: number
+) {
+  try {
+    await ensureSeeded();
+    const num = Number(idOrSlug);
+    const isNum = !isNaN(num) && num > 0;
+    const condition = isNum
+      ? eq(projects.id, num)
+      : or(eq(projects.slug, String(idOrSlug)), eq(projects.slug, String(idOrSlug).replace(/^proj-/, '')));
+
+    const updated = await db
+      .update(projects)
+      .set({ likesCount: Math.max(0, Number(newLikesCount) || 0) })
+      .where(condition)
+      .returning();
+    return updated[0];
+  } catch (error) {
+    console.error('Database query failed in updateProjectLikesCount:', error);
+    throw new Error('خطا در به‌روزرسانی تعداد لایک پروژه.', { cause: error });
   }
 }
 
@@ -1822,6 +1894,7 @@ export async function getAllContactMessages() {
 export async function createContactMessageRecord(data: {
   fullName: string;
   phone: string;
+  email?: string;
   subject: string;
   message: string;
 }) {
@@ -1831,6 +1904,7 @@ export async function createContactMessageRecord(data: {
       .values({
         fullName: data.fullName,
         phone: data.phone,
+        email: data.email || '',
         subject: data.subject,
         message: data.message,
         status: 'new',
@@ -1848,6 +1922,7 @@ export async function updateContactMessageRecord(
   data: Partial<{
     fullName: string;
     phone: string;
+    email: string;
     subject: string;
     message: string;
     status: string;
@@ -3453,8 +3528,7 @@ export async function getFaqSettings(): Promise<FaqSettingsData> {
         rules: Array.isArray(parsed.faqs?.rules) ? parsed.faqs.rules : DEFAULT_FAQ_SETTINGS.faqs.rules,
       },
     };
-  } catch (error) {
-    console.error('Database query failed in getFaqSettings:', error);
+  } catch {
     return DEFAULT_FAQ_SETTINGS;
   }
 }

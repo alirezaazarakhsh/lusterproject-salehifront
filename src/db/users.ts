@@ -198,8 +198,8 @@ export async function verifyAdminSessionToken(token: string) {
       if (rows[0]) {
         return rows[0];
       }
-    } catch (dbErr) {
-      console.error('DB lookup fallback in verifyAdminSessionToken:', dbErr);
+    } catch {
+      // Clean fallback when DB is offline or timing out
     }
     if (normalizedPhone === DEFAULT_SUPER_ADMIN_PHONE) {
       return DEFAULT_SUPER_ADMIN_RECORD;

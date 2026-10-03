@@ -31,7 +31,7 @@ interface ProductsCarouselSectionProps {
 }
 
 /**
- * آیکون سبد خرید در حالت عادی
+ * آیکون سبد خرید دقیقاً مطابق فایل Figma (دسته‌های باز در بالا)
  */
 const ShoppingBasketIcon: React.FC<{ className?: string }> = ({
   className = 'w-5 h-5',
@@ -39,16 +39,59 @@ const ShoppingBasketIcon: React.FC<{ className?: string }> = ({
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    <path d="M8.3 8.2V6.9C8.3 4.75 9.96 3 12 3C14.04 3 15.7 4.75 15.7 6.9V8.2" />
-    <path d="M9.1 21H14.9C18.45 21 19.15 19.55 19.4 17.7L20.05 12.4C20.3 9.95 19.65 8.2 15.75 8.2H8.25C4.35 8.2 3.7 9.95 3.95 12.4L4.6 17.7C4.85 19.55 5.55 21 9.1 21Z" />
-    <line x1="12" y1="11.5" x2="12" y2="16.5" />
-    <line x1="9.5" y1="14" x2="14.5" y2="14" />
+    <path
+      d="M8 8.5L10 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16 8.5L14 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <rect
+      x="3"
+      y="8.5"
+      width="18"
+      height="2.5"
+      rx="1.25"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M4.5 11L5.8 19.3C5.95 20.3 6.8 21 7.8 21H16.2C17.2 21 18.05 20.3 18.2 19.3L19.5 11"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <line
+      x1="10"
+      y1="14"
+      x2="10"
+      y2="18"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+    <line
+      x1="14"
+      y1="14"
+      x2="14"
+      y2="18"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
@@ -74,7 +117,7 @@ const PlusSquareIcon: React.FC<{ className?: string }> = ({
 );
 
 /**
- * آیکون قرمز ناموجود در انبار (کیف خرید با علامت ضربدر × در مرکز - بدون شباهت به سطل زباله)
+ * آیکون قرمز ناموجود در انبار (سبد خرید با دسته‌های باز و علامت ضربدر × در مرکز)
  */
 const OutOfStockBagIcon: React.FC<{ className?: string }> = ({
   className = 'w-[22px] h-[22px]',
@@ -82,16 +125,47 @@ const OutOfStockBagIcon: React.FC<{ className?: string }> = ({
   <svg
     viewBox="0 0 24 24"
     fill="none"
-    stroke="currentColor"
-    strokeWidth="1.9"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    <path d="M8.3 8.2V6.9C8.3 4.75 9.96 3 12 3C14.04 3 15.7 4.75 15.7 6.9V8.2" />
-    <path d="M9.1 21H14.9C18.45 21 19.15 19.55 19.4 17.7L20.05 12.4C20.3 9.95 19.65 8.2 15.75 8.2H8.25C4.35 8.2 3.7 9.95 3.95 12.4L4.6 17.7C4.85 19.55 5.55 21 9.1 21Z" />
-    <path d="M10 12.2L14 16.2" />
-    <path d="M14 12.2L10 16.2" />
+    <path
+      d="M8 8.5L10 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M16 8.5L14 4.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <rect
+      x="3"
+      y="8.5"
+      width="18"
+      height="2.5"
+      rx="1.25"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M4.5 11L5.8 19.3C5.95 20.3 6.8 21 7.8 21H16.2C17.2 21 18.05 20.3 18.2 19.3L19.5 11"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M10.5 13.5L13.5 16.5M13.5 13.5L10.5 16.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
@@ -129,8 +203,9 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
   const isButtonScrollingRef = useRef<boolean>(false);
   const buttonScrollTimeoutRef = useRef<number | null>(null);
 
-  // استفاده مستقیم از محصولات دیتابیس (در موبایل ۴ محصول اول نمایش داده می‌شوند تا چیدمان موبایل ۱۰۰٪ دست‌نخورده بماند و در دسکتاپ کل محصولات دیتابیس در کاروسل قرار می‌گیرند)
-  const allCarouselItems = products.map((item, idx) => ({
+  // استفاده مستقیم از محصولات دیتابیس (حداکثر ۲۰ محصول جدید)
+  const limitedProducts = products.slice(0, 20);
+  const allCarouselItems = limitedProducts.map((item, idx) => ({
     product: item,
     desktopOnly: idx >= 4,
   }));
@@ -581,34 +656,36 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
         </a>
       </div>
 
-      {/* دکمه‌های صفحه‌بندی پایین بخش (فقط در دسکتاپ - در موبایل طبق درخواست حذف شد) */}
-      <div className="hidden md:flex mt-8 items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => scrollDesktopCarousel('prev')}
-          aria-label="قبلی"
-          className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#b59766] hover:text-white hover:border-[#b59766] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer active:scale-95"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+      {/* دکمه‌های صفحه‌بندی پایین بخش (فقط در دسکتاپ و زمانی که محصولات بیشتر از ۴ تا باشند) */}
+      {allCarouselItems.length > 4 && (
+        <div className="hidden md:flex mt-8 items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => scrollDesktopCarousel('prev')}
+            aria-label="قبلی"
+            className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#b59766] hover:text-white hover:border-[#b59766] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer active:scale-95"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
 
-        <a
-          href="/product/categories/chandeliers"
-          onClick={(e) => navigateToProductCategory('chandeliers', e)}
-          className="h-10 px-6 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer whitespace-nowrap"
-        >
-          مشاهده محصولات
-        </a>
+          <a
+            href="/product/categories/chandeliers"
+            onClick={(e) => navigateToProductCategory('chandeliers', e)}
+            className="h-10 px-6 rounded-[8px] bg-white hover:bg-[#b59766] text-[#b59766] hover:text-white border border-[#c9b28b] text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer whitespace-nowrap"
+          >
+            مشاهده محصولات
+          </a>
 
-        <button
-          type="button"
-          onClick={() => scrollDesktopCarousel('next')}
-          aria-label="بعدی"
-          className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#b59766] hover:text-white hover:border-[#b59766] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer active:scale-95"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => scrollDesktopCarousel('next')}
+            aria-label="بعدی"
+            className="w-10 h-10 rounded-[8px] bg-white hover:bg-[#b59766] hover:text-white hover:border-[#b59766] border border-[#e5e5e5] flex items-center justify-center text-[#444] transition-colors cursor-pointer active:scale-95"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </section>
   );
 };

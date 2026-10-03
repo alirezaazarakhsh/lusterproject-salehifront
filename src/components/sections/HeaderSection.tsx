@@ -6,6 +6,7 @@ import {
   getCurrentRoute,
   navigateToRoute,
   navigateToProductCategory,
+  navigateFromHref,
   subscribeToRoute,
 } from '../../utils/navigation';
 
@@ -716,18 +717,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                             href={item.href}
                             onClick={(e) => {
                               setOpenSubmenu(null);
-                              if (item.categorySlug) {
-                                setActiveRoute('product');
-                                navigateToProductCategory(item.categorySlug, e);
-                              } else if (item.href.startsWith('/')) {
-                                e.preventDefault();
-                                triggerRouteNavigation(item.href.replace('/', '') as AppRoute);
-                              } else {
-                                if (activeRoute !== 'home') {
-                                  e.preventDefault();
-                                  triggerRouteNavigation('home', item.href);
-                                }
-                              }
+                              navigateFromHref(item.href, e);
                             }}
                             className="group/item block w-full px-5 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] transition-colors"
                           >
@@ -754,15 +744,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 key={menu.id}
                 href={menu.href}
                 onClick={(e) => {
-                  if (menu.href.startsWith('/')) {
-                    e.preventDefault();
-                    triggerRouteNavigation(menu.href.replace('/', '') as AppRoute);
-                  } else if (menu.href.startsWith('#')) {
-                    if (activeRoute !== 'home') {
-                      e.preventDefault();
-                      triggerRouteNavigation('home', menu.href);
-                    }
-                  }
+                  setOpenSubmenu(null);
+                  navigateFromHref(menu.href, e);
                 }}
                 className={`transition-colors whitespace-nowrap py-3 cursor-pointer ${
                   activeRoute === menu.href.replace('/', '')
@@ -1440,17 +1423,9 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                         key={more.id}
                         href={more.href}
                         onClick={(e) => {
-                          e.preventDefault();
                           setIsMobileCategoriesOpen(false);
                           setActiveMobileTab('home');
-                          if (more.categorySlug) {
-                            setActiveRoute('product');
-                            navigateToProductCategory(more.categorySlug, e);
-                          } else if (more.href === '/rule') {
-                            triggerRouteNavigation('rule');
-                          } else {
-                            triggerRouteNavigation('home', more.href);
-                          }
+                          navigateFromHref(more.href, e);
                         }}
                         className="group/item block w-full px-4 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] active:bg-[#f6f1e7] active:text-[#b59766] transition-colors"
                       >

@@ -24,6 +24,8 @@ import {
   createProjectRecord,
   updateProjectRecord,
   deleteProjectRecord,
+  toggleProjectLike,
+  updateProjectLikesCount,
   getAllStories,
   createStoryRecord,
   updateStoryRecord,
@@ -117,19 +119,26 @@ async function startServer() {
     }
   });
 
-  app.post('/api/public/contact', async (req, res) => {
+  app.post(['/api/contact', '/api/public/contact'], async (req, res) => {
     try {
-      const { fullName, phone, subject, message } = req.body || {};
-      if (!fullName || !phone || !message) {
+      const { fullName, phone, mobilePhone, email, subject, message, messageText } = req.body || {};
+      const finalName = fullName || '';
+      const finalPhone = phone || mobilePhone || '';
+      const finalMessage = message || messageText || '';
+      const finalSubject = subject || 'مشاوره خرید';
+      const finalEmail = email || '';
+
+      if (!String(finalName).trim() || !String(finalPhone).trim() || !String(finalMessage).trim()) {
         return res
           .status(400)
           .json({ error: 'نام، شماره تماس و متن پیام الزامی است.' });
       }
       const created = await createContactMessageRecord({
-        fullName: String(fullName),
-        phone: String(phone),
-        subject: String(subject || 'مشاوره خرید'),
-        message: String(message),
+        fullName: String(finalName).trim(),
+        phone: String(finalPhone).trim(),
+        email: String(finalEmail).trim(),
+        subject: String(finalSubject).trim(),
+        message: String(finalMessage).trim(),
       });
       res.status(201).json(created);
     } catch (error: any) {
@@ -456,6 +465,67 @@ async function startServer() {
       } catch (error: any) {
         console.error('Failed to delete project:', error);
         res.status(500).json({ error: error.message || 'خطا در حذف پروژه' });
+      }
+    }
+  );
+
+  // دریافت لیست پروژه‌ها (عمومی)
+  app.get(['/api/projects', '/api/public/projects'], async (_req, res) => {
+    try {
+      const list = await getAllProjects();
+      res.json(list);
+    } catch (error: any) {
+      console.error('Failed to fetch public projects:', error);
+      res.status(500).json({ error: error.message || 'خطا در دریافت پروژه‌ها' });
+    }
+  });
+
+  // ثبت لایک یا برداشتن لایک پروژه
+  app.post(
+    ['/api/projects/:idOrSlug/like', '/api/public/projects/:idOrSlug/like'],
+    async (req, res) => {
+      try {
+        const { idOrSlug } = req.params;
+        const { increment } = req.body || {};
+        const updated = await toggleProjectLike(idOrSlug, increment !== false);
+        res.json({
+          success: true,
+          likesCount: updated.likesCount,
+          project: updated,
+        });
+      } catch (error: any) {
+        console.error('Failed to toggle project like:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ثبت لایک پروژه' });
+      }
+    }
+  );
+
+  // تغییر مستقیم تعداد لایک‌ها از پنل ادمین
+  app.patch(
+    [
+      '/api/projects/:idOrSlug/likes',
+      '/api/admin/projects/:idOrSlug/likes',
+    ],
+    async (req, res) => {
+      try {
+        const { idOrSlug } = req.params;
+        const { likesCount } = req.body || {};
+        const updated = await updateProjectLikesCount(
+          idOrSlug,
+          Number(likesCount) || 0
+        );
+        res.json({
+          success: true,
+          likesCount: updated.likesCount,
+          project: updated,
+        });
+      } catch (error: any) {
+        console.error('Failed to update project likes:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در به‌روزرسانی لایک پروژه' });
       }
     }
   );

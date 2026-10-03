@@ -373,30 +373,94 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
   // ۴. فرم پروژه اجرایی
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [isSavingProject, setIsSavingProject] = useState<boolean>(false);
+  const [projectActionModal, setProjectActionModal] = useState<{
+    mode: 'save' | 'delete';
+    title: string;
+    subtitle: string;
+    progress: number;
+  } | null>(null);
+
+  const runProjectProgressModal = (
+    mode: 'save' | 'delete',
+    title: string,
+    subtitle: string,
+    onComplete: () => Promise<void> | void
+  ) => {
+    setProjectActionModal({ mode, title, subtitle, progress: 10 });
+    let currentProg = 10;
+    const intervalId = window.setInterval(() => {
+      currentProg = Math.min(100, currentProg + 18);
+      setProjectActionModal((prev) =>
+        prev ? { ...prev, progress: currentProg } : null
+      );
+      if (currentProg >= 100) {
+        window.clearInterval(intervalId);
+        Promise.resolve(onComplete()).finally(() => {
+          window.setTimeout(() => {
+            setProjectActionModal(null);
+          }, 250);
+        });
+      }
+    }, 100);
+  };
+
+  const [newGalleryImageUrl, setNewGalleryImageUrl] = useState<string>('');
   const [projectForm, setProjectForm] = useState({
     title: '',
     slug: '',
     categoryTab: 'residential',
-    district: 'تهران، الهیه',
+    district: '',
+    dateBadge: '',
+    ownerName: '',
     sampleCode: 'نمونه ۱',
     description: '',
-    usedChandeliersText:
-      'استفاده از لوسترهای سفارشی کلکسیون صالحی متناسب با ارتفاع سقف و معماری کلاسیک فضا.',
-    mainImage: GENERATED_IMAGES.projectFereshteh,
+    usedChandeliersText: '',
+    mainImage: '',
+    galleryImages: [] as string[],
     chandeliersList: [] as Array<{
       name: string;
       code: string;
       image: string;
       desc: string;
+      price?: string;
     }>,
+    likesCount: 0,
+    stylesJson: '{}',
   });
+
+  const currentProjectStyles = (() => {
+    try {
+      return JSON.parse(projectForm.stylesJson || '{}');
+    } catch {
+      return {};
+    }
+  })();
+
+  const updateProjectStyleField = (key: string, value: any) => {
+    const updated = { ...currentProjectStyles, [key]: value };
+    setProjectForm((prev) => ({
+      ...prev,
+      stylesJson: JSON.stringify(updated),
+    }));
+  };
 
   // صفحه‌بندی پروژه‌ها و آمار لایک‌ها در پنل ادمین
   const [adminProjectsPage, setAdminProjectsPage] = useState<number>(1);
+  const [adminProjectCategoryFilter, setAdminProjectCategoryFilter] = useState<string>('all');
   const [projectLikesMap, setProjectLikesMap] = useState<Record<string, number>>(() => {
     try {
       const raw = localStorage.getItem('app_project_likes_stats');
-      return raw ? JSON.parse(raw) : {};
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // پاک‌سازی مقادیر فیک قدیمی بالای ۵۰۰ تا همه از صفر دقیق شروع شوند
+        if (Object.values(parsed).some((v) => typeof v === 'number' && v > 500)) {
+          localStorage.removeItem('app_project_likes_stats');
+          return {};
+        }
+        return parsed;
+      }
+      return {};
     } catch {
       return {};
     }
@@ -414,8 +478,61 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       } catch {}
     };
     window.addEventListener('app-project-liked', handleLikesUpdated);
-    return () => window.removeEventListener('app-project-liked', handleLikesUpdated);
+    return () => {
+      window.removeEventListener('app-project-liked', handleLikesUpdated);
+    };
   }, []);
+
+  // تابع تغییر سریع تعداد لایک‌های پروژه از پنل ادمین
+  const handleQuickAdjustProjectLikes = async (
+    proj: any,
+    deltaOrExact: number,
+    isExact: boolean = false
+  ) => {
+    try {
+      const currentLikes =
+        (projectLikesMap[proj.slug] ??
+        projectLikesMap[proj.id] ??
+        Number(proj.likesCount)) ||
+        0;
+      const targetLikes = isExact
+        ? Math.max(0, deltaOrExact)
+        : Math.max(0, currentLikes + deltaOrExact);
+      const targetId = proj.id;
+
+      await authFetch(`/api/admin/projects/${targetId}/likes`, {
+        method: 'PATCH',
+        body: JSON.stringify({ likesCount: targetLikes }),
+      });
+
+      const statsRaw = localStorage.getItem('app_project_likes_stats');
+      const stats = statsRaw ? JSON.parse(statsRaw) : {};
+      stats[proj.id] = targetLikes;
+      if (proj.slug) stats[proj.slug] = targetLikes;
+      localStorage.setItem('app_project_likes_stats', JSON.stringify(stats));
+      setProjectLikesMap({ ...stats });
+
+      showNotice(
+        'success',
+        `تعداد لایک‌های پروژه «${proj.title}» به ${targetLikes.toLocaleString('fa-IR')} تغییر یافت.`
+      );
+      await loadAllAdminData();
+      onCatalogUpdated?.();
+      window.dispatchEvent(new CustomEvent('app-catalog-updated'));
+      window.dispatchEvent(new CustomEvent('app-projects-updated'));
+      window.dispatchEvent(
+        new CustomEvent('app-project-liked', {
+          detail: {
+            projectId: proj.id,
+            slug: proj.slug,
+            count: targetLikes,
+          },
+        })
+      );
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در تغییر تعداد لایک');
+    }
+  };
 
   // ۵. فرم استوری بالای سایت (دسته‌بندی استوری با امکان افزودن تا ۱۰ استوری با تایپ‌های مختلف در هر دسته‌بندی)
   const [editingStoryId, setEditingStoryId] = useState<number | null>(null);
@@ -893,6 +1010,15 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     if (sessionToken && adminUser) {
       loadAllAdminData();
     }
+    const handleContactMessageCreated = () => {
+      if (sessionToken && adminUser) {
+        loadAllAdminData();
+      }
+    };
+    window.addEventListener('app-contact-message-created', handleContactMessageCreated);
+    return () => {
+      window.removeEventListener('app-contact-message-created', handleContactMessageCreated);
+    };
   }, [sessionToken, adminUser, loadAllAdminData]);
 
   const performDirectLogout = useCallback((reasonMessage?: string) => {
@@ -1310,6 +1436,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       showNotice('error', 'عنوان پروژه اجرایی الزامی است.');
       return;
     }
+    setIsSavingProject(true);
     try {
       const cleanDescText = projectForm.usedChandeliersText
         .replace(/<!--CHANDELIERS_DATA-->[\s\S]*?<!--\/CHANDELIERS_DATA-->/g, '')
@@ -1326,17 +1453,20 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         : projectForm.title.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\u0600-\u06FF_-]/g, '') ||
           `project-${Date.now()}`;
 
+      const finalGalleryImages =
+        Array.isArray(projectForm.galleryImages) && projectForm.galleryImages.length > 0
+          ? (projectForm.mainImage && !projectForm.galleryImages.includes(projectForm.mainImage)
+              ? [projectForm.mainImage, ...projectForm.galleryImages]
+              : projectForm.galleryImages)
+          : (projectForm.mainImage ? [projectForm.mainImage] : []);
+
       const payload = {
         ...projectForm,
         slug: finalSlug,
         usedChandeliersText: finalUsedText,
         chandeliersList: projectForm.chandeliersList,
-        galleryImages: [
-          projectForm.mainImage,
-          GENERATED_IMAGES.projectLobbyHotel,
-          GENERATED_IMAGES.projectDuplexVilla,
-          GENERATED_IMAGES.projectRoyalRestaurant,
-        ],
+        galleryImages: finalGalleryImages,
+        galleryJson: JSON.stringify(finalGalleryImages),
       };
 
       if (editingProjectId) {
@@ -1354,34 +1484,53 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       }
 
       setEditingProjectId(null);
+      setNewGalleryImageUrl('');
       setProjectForm({
         title: '',
         slug: '',
         categoryTab: 'residential',
-        district: 'تهران، الهیه',
+        district: '',
+        dateBadge: '',
+        ownerName: '',
         sampleCode: 'نمونه ۱',
         description: '',
-        usedChandeliersText:
-          'استفاده از لوسترهای سفارشی کلکسیون صالحی متناسب با ارتفاع سقف و معماری کلاسیک فضا.',
-        mainImage: GENERATED_IMAGES.projectFereshteh,
+        usedChandeliersText: '',
+        mainImage: '',
+        galleryImages: [],
         chandeliersList: [],
+        likesCount: 0,
+        stylesJson: '{}',
       });
       await loadAllAdminData();
       onCatalogUpdated?.();
+      window.dispatchEvent(new CustomEvent('app-catalog-updated'));
+      window.dispatchEvent(new CustomEvent('app-projects-updated'));
     } catch (err: any) {
       showNotice('error', err?.message || 'خطا در ذخیره پروژه');
+    } finally {
+      setIsSavingProject(false);
     }
   };
 
-  const handleDeleteProject = async (id: number) => {
-    try {
-      await authFetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
-      showNotice('success', 'پروژه از دیتابیس حذف شد.');
-      await loadAllAdminData();
-      onCatalogUpdated?.();
-    } catch (err: any) {
-      showNotice('error', err?.message || 'خطا در حذف پروژه');
-    }
+  const handleDeleteProject = (id: number, title?: string) => {
+    const displayTitle = title || 'پروژه اجرایی انتخاب‌شده';
+    runProjectProgressModal(
+      'delete',
+      `در حال حذف پروژه «${displayTitle}»`,
+      'در حال پاکسازی اطلاعات پروژه و تصاویر مرتبط از وب‌سایت و دیتابیس...',
+      async () => {
+        try {
+          await authFetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
+          showNotice('success', `پروژه «${displayTitle}» با موفقیت از دیتابیس حذف شد.`);
+          await loadAllAdminData();
+          onCatalogUpdated?.();
+          window.dispatchEvent(new CustomEvent('app-catalog-updated'));
+          window.dispatchEvent(new CustomEvent('app-projects-updated'));
+        } catch (err: any) {
+          showNotice('error', err?.message || 'خطا در حذف پروژه');
+        }
+      }
+    );
   };
 
   // ==================== ۵. عملیات مدیریت استوری‌ها (دسته‌بندی استوری با تا ۱۰ استوری از ۳ تایپ مجزا) ====================
@@ -3317,10 +3466,11 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* ۱. عنوان پروژه */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-[#333]">
-                      عنوان پروژه:
+                      عنوان پروژه <span className="text-[#ea1d2c]">*</span>:
                     </label>
                     <input
                       type="text"
@@ -3346,24 +3496,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#333]">
-                      منطقه / شهر / مکان:
-                    </label>
-                    <input
-                      type="text"
-                      value={projectForm.district}
-                      onChange={(e) =>
-                        setProjectForm({
-                          ...projectForm,
-                          district: e.target.value,
-                        })
-                      }
-                      placeholder="مثلاً: فرشته، تهران"
-                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
-                    />
-                  </div>
-
+                  {/* ۲. دسته‌بندی اجرایی */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-[#333]">
                       دسته‌بندی اجرایی:
@@ -3386,9 +3519,10 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     </select>
                   </div>
 
+                  {/* ۳. اسلاگ آدرس URL */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-[#333]">
-                      اسلاگ پروژه (شناسه URL):
+                      اسلاگ پروژه (شناسه URL اختیاری):
                     </label>
                     <input
                       type="text"
@@ -3410,9 +3544,152 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     </p>
                   </div>
 
+                  {/* ۴. تعداد لایک‌های پروژه */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-[#333]">
-                      تصویر اصلی پروژه:
+                      تعداد لایک‌های پروژه:
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        value={projectForm.likesCount}
+                        onChange={(e) =>
+                          setProjectForm({
+                            ...projectForm,
+                            likesCount: Math.max(0, parseInt(e.target.value) || 0),
+                          })
+                        }
+                        className="flex-1 min-w-0 h-11 rounded-xl border border-[#e0e0e0] px-2.5 text-xs font-bold text-[#1e1e1e]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setProjectForm((prev) => ({
+                            ...prev,
+                            likesCount: prev.likesCount + 10,
+                          }))
+                        }
+                        className="h-11 px-2 rounded-xl bg-[#fff1f2] hover:bg-[#ffe4e6] text-[#e11d48] text-[11px] font-bold shrink-0 transition-colors border border-[#fecdd3] cursor-pointer"
+                        title="افزودن ۱۰ لایک"
+                      >
+                        +۱۰
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setProjectForm((prev) => ({
+                            ...prev,
+                            likesCount: prev.likesCount + 50,
+                          }))
+                        }
+                        className="h-11 px-2 rounded-xl bg-[#fff1f2] hover:bg-[#ffe4e6] text-[#e11d48] text-[11px] font-bold shrink-0 transition-colors border border-[#fecdd3] cursor-pointer"
+                        title="افزودن ۵۰ لایک"
+                      >
+                        +۵۰
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setProjectForm((prev) => ({
+                            ...prev,
+                            likesCount: 0,
+                          }))
+                        }
+                        className="h-11 px-2 rounded-xl bg-[#f5f5f5] hover:bg-gray-200 text-[#777] text-[10px] font-bold shrink-0 transition-colors border border-[#e0e0e0] cursor-pointer"
+                        title="صفر کردن لایک"
+                      >
+                        ۰
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ردیف ۲: مشخصات اختیاری پروژه (شهر، تاریخ، مالک، نمونه) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-[#faf8f4] border border-[#ece4d4]">
+                  {/* شهر / منطقه پذیرش */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      شهر / منطقه پذیرش (اختیاری):
+                    </label>
+                    <input
+                      type="text"
+                      value={projectForm.district}
+                      onChange={(e) =>
+                        setProjectForm({
+                          ...projectForm,
+                          district: e.target.value,
+                        })
+                      }
+                      placeholder="مثلاً: تهران، پردیس"
+                      className="w-full h-10 rounded-xl border border-[#e0e0e0] bg-white px-3.5 text-xs font-semibold"
+                    />
+                  </div>
+
+                  {/* تاریخ انجام پروژه */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      تاریخ انجام پروژه (اختیاری):
+                    </label>
+                    <input
+                      type="text"
+                      value={projectForm.dateBadge}
+                      onChange={(e) =>
+                        setProjectForm({
+                          ...projectForm,
+                          dateBadge: e.target.value,
+                        })
+                      }
+                      placeholder="مثلاً: ۲۵ شهریور ماه ۱۴۰۴"
+                      className="w-full h-10 rounded-xl border border-[#e0e0e0] bg-white px-3.5 text-xs font-semibold"
+                    />
+                  </div>
+
+                  {/* نام مالک / کارفرمای پروژه */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      نام مالک / کارفرما (اختیاری):
+                    </label>
+                    <input
+                      type="text"
+                      value={projectForm.ownerName}
+                      onChange={(e) =>
+                        setProjectForm({
+                          ...projectForm,
+                          ownerName: e.target.value,
+                        })
+                      }
+                      placeholder="مثلاً: جناب مهندس علیرضا آذرخش"
+                      className="w-full h-10 rounded-xl border border-[#e0e0e0] bg-white px-3.5 text-xs font-semibold"
+                    />
+                  </div>
+
+                  {/* کد / نام نمونه کار */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      کد یا نام نمونه کار (اختیاری):
+                    </label>
+                    <input
+                      type="text"
+                      value={projectForm.sampleCode}
+                      onChange={(e) =>
+                        setProjectForm({
+                          ...projectForm,
+                          sampleCode: e.target.value,
+                        })
+                      }
+                      placeholder="مثلاً: نمونه ۱"
+                      className="w-full h-10 rounded-xl border border-[#e0e0e0] bg-white px-3.5 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* ردیف ۳: تصویر شاخص و توضیحات کامل */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* تصویر شاخص پروژه */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      تصویر شاخص پروژه (Cover Image):
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -3428,9 +3705,9 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                         placeholder="https://... یا آپلود تصویر"
                         className="flex-1 h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold text-left"
                       />
-                      <label className="h-11 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-xs" title="آپلود تصویر از حافظه">
+                      <label className="h-11 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-xs" title="آپلود تصویر شاخص از حافظه">
                         <Upload className="w-4 h-4" />
-                        <span className="hidden sm:inline">آپلود</span>
+                        <span className="hidden sm:inline">آپلود شاخص</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -3442,6 +3719,10 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                 setProjectForm((prev) => ({
                                   ...prev,
                                   mainImage: dataUrl,
+                                  galleryImages:
+                                    prev.galleryImages.length === 0
+                                      ? [dataUrl]
+                                      : prev.galleryImages,
                                 }))
                             )
                           }
@@ -3449,18 +3730,18 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                       </label>
                     </div>
 
-                    {/* پیش‌نمایش زنده عکس پروژه انتخابی */}
+                    {/* پیش‌نمایش تصویر شاخص */}
                     {projectForm.mainImage ? (
                       <div className="mt-2 relative rounded-xl overflow-hidden border border-[#d5c6ab] bg-[#faf8f4] p-1.5 flex items-center gap-2.5">
                         <img
                           src={projectForm.mainImage}
-                          alt="پیش‌نمایش تصویر پروژه"
+                          alt="پیش‌نمایش تصویر شاخص"
                           className="w-16 h-12 rounded-lg object-cover border border-[#e2d8c3] shrink-0 bg-white"
                         />
                         <div className="flex-1 min-w-0">
                           <span className="text-[10px] font-bold text-[#10b981] flex items-center gap-1">
                             <Check className="w-3 h-3" />
-                            <span>پیش‌نمایش تصویر پروژه</span>
+                            <span>تصویر شاخص تعیین شده است</span>
                           </span>
                           <p className="text-[9px] text-[#777] truncate mt-0.5 dir-ltr font-mono">
                             {projectForm.mainImage.startsWith('data:') ? 'عکس آپلود شده' : projectForm.mainImage}
@@ -3470,35 +3751,326 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                           type="button"
                           onClick={() => setProjectForm((prev) => ({ ...prev, mainImage: '' }))}
                           className="text-[#ea1d2c] hover:bg-[#fde8ea] p-1 rounded-lg cursor-pointer transition-colors"
-                          title="پاک کردن عکس"
+                          title="پاک کردن عکس شاخص"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ) : (
                       <p className="text-[10px] text-[#999] italic mt-1">
-                        عکسی برای پروژه انتخاب نشده است (یک آدرس وارد یا فایلی آپلود کنید).
+                        عکسی برای تصویر شاخص پروژه انتخاب نشده است.
                       </p>
                     )}
                   </div>
+
+                  {/* توضیحات کامل پروژه */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#333]">
+                      متن و توضیحات کامل پروژه (اختیاری):
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={projectForm.description}
+                      onChange={(e) =>
+                        setProjectForm({
+                          ...projectForm,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="توضیحات اختصاصی معماری، ارتفاع سقف و نورپردازی این پروژه..."
+                      className="w-full rounded-xl border border-[#e0e0e0] p-3 text-xs font-semibold"
+                    />
+                  </div>
+
+                  {/* بخش سفارشی‌سازی استایل عنوان و توضیحات برای هر پروژه */}
+                  <div className="p-4 rounded-xl border border-[#ece4d4] bg-[#faf8f4]/60 space-y-4">
+                    <h3 className="text-xs font-black text-[#1a1814] flex items-center gap-2 pb-2 border-b border-[#ece4d4]">
+                      <svg className="w-4 h-4 text-[#b59766]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>تنظیمات استایل اختصاصی پروژه (تغییر سایز، رنگ و چیدمان متون در سایت)</span>
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+                      {/* ستون راست: استایل عنوان (h1) */}
+                      <div className="space-y-3.5">
+                        <h4 className="text-[11px] font-bold text-[#b59766] flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#b59766]"></span>
+                          <span>استایل عنوان پروژه (h1)</span>
+                        </h4>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* رنگ متن عنوان */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-[#555]">رنگ متن عنوان:</label>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="color"
+                                value={currentProjectStyles.titleColor || '#1a1a1a'}
+                                onChange={(e) => updateProjectStyleField('titleColor', e.target.value)}
+                                className="w-7 h-7 rounded-md border border-[#e0e0e0] cursor-pointer p-0 overflow-hidden"
+                              />
+                              <input
+                                type="text"
+                                value={currentProjectStyles.titleColor || '#1a1a1a'}
+                                onChange={(e) => updateProjectStyleField('titleColor', e.target.value)}
+                                placeholder="#1a1a1a"
+                                className="flex-1 min-w-0 h-7 text-[11px] font-mono font-bold text-center border border-[#e0e0e0] rounded-md px-1 bg-white"
+                              />
+                            </div>
+                          </div>
+
+                          {/* چیدمان متن عنوان */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-[#555]">چیدمان متن عنوان:</label>
+                            <select
+                              value={currentProjectStyles.titleAlign || 'right'}
+                              onChange={(e) => updateProjectStyleField('titleAlign', e.target.value)}
+                              className="w-full h-7 text-[11px] font-bold border border-[#e0e0e0] rounded-md px-1 bg-white"
+                            >
+                              <option value="right">راست‌چین (پیش‌فرض)</option>
+                              <option value="center">وسط‌چین</option>
+                              <option value="left">چپ‌چین</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* سایز فونت عنوان */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-[#555]">سایز فونت (دسکتاپ):</label>
+                            <select
+                              value={currentProjectStyles.titleSize || 'medium'}
+                              onChange={(e) => updateProjectStyleField('titleSize', e.target.value)}
+                              className="w-full h-7 text-[11px] font-bold border border-[#e0e0e0] rounded-md px-1 bg-white"
+                            >
+                              <option value="small">کوچک (18px)</option>
+                              <option value="medium">متوسط (22px - پیش‌فرض)</option>
+                              <option value="large">بزرگ (28px)</option>
+                              <option value="xlarge">خیلی بزرگ (34px)</option>
+                            </select>
+                          </div>
+
+                          {/* ضخامت متن عنوان */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-[#555]">ضخامت فونت:</label>
+                            <select
+                              value={currentProjectStyles.titleWeight || 'font-extrabold'}
+                              onChange={(e) => updateProjectStyleField('titleWeight', e.target.value)}
+                              className="w-full h-7 text-[11px] font-bold border border-[#e0e0e0] rounded-md px-1 bg-white"
+                            >
+                              <option value="font-normal">عادی (Normal)</option>
+                              <option value="font-semibold">نیمه‌ضخیم (SemiBold)</option>
+                              <option value="font-bold">ضخیم (Bold)</option>
+                              <option value="font-extrabold">بسیار ضخیم (ExtraBold - پیش‌فرض)</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ستون چپ: استایل توضیحات (p) */}
+                      <div className="space-y-3.5">
+                        <h4 className="text-[11px] font-bold text-[#b59766] flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#b59766]"></span>
+                          <span>استایل توضیحات کامل پروژه (p)</span>
+                        </h4>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* رنگ متن توضیحات */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-[#555]">رنگ متن توضیحات:</label>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="color"
+                                value={currentProjectStyles.descColor || '#555555'}
+                                onChange={(e) => updateProjectStyleField('descColor', e.target.value)}
+                                className="w-7 h-7 rounded-md border border-[#e0e0e0] cursor-pointer p-0 overflow-hidden"
+                              />
+                              <input
+                                type="text"
+                                value={currentProjectStyles.descColor || '#555555'}
+                                onChange={(e) => updateProjectStyleField('descColor', e.target.value)}
+                                placeholder="#555555"
+                                className="flex-1 min-w-0 h-7 text-[11px] font-mono font-bold text-center border border-[#e0e0e0] rounded-md px-1 bg-white"
+                              />
+                            </div>
+                          </div>
+
+                          {/* چیدمان متن توضیحات */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-[#555]">چیدمان متن توضیحات:</label>
+                            <select
+                              value={currentProjectStyles.descAlign || 'justify'}
+                              onChange={(e) => updateProjectStyleField('descAlign', e.target.value)}
+                              className="w-full h-7 text-[11px] font-bold border border-[#e0e0e0] rounded-md px-1 bg-white"
+                            >
+                              <option value="justify">تراز شده (Justify - پیش‌فرض)</option>
+                              <option value="right">راست‌چین</option>
+                              <option value="center">وسط‌چین</option>
+                              <option value="left">چپ‌چین</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* سایز فونت توضیحات */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-[#555]">سایز فونت (دسکتاپ):</label>
+                            <select
+                              value={currentProjectStyles.descSize || 'medium'}
+                              onChange={(e) => updateProjectStyleField('descSize', e.target.value)}
+                              className="w-full h-7 text-[11px] font-bold border border-[#e0e0e0] rounded-md px-1 bg-white"
+                            >
+                              <option value="small">کوچک (12.5px)</option>
+                              <option value="medium">متوسط (14px - پیش‌فرض)</option>
+                              <option value="large">بزرگ (16px)</option>
+                            </select>
+                          </div>
+
+                          {/* فاصله بین خطوط (Line Height) */}
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-[#555]">فاصله بین خطوط:</label>
+                            <select
+                              value={currentProjectStyles.descLineHeight || '2.25'}
+                              onChange={(e) => updateProjectStyleField('descLineHeight', e.target.value)}
+                              className="w-full h-7 text-[11px] font-bold border border-[#e0e0e0] rounded-md px-1 bg-white"
+                            >
+                              <option value="1.8">کوتاه (1.8)</option>
+                              <option value="2.0">متوسط (2.0)</option>
+                              <option value="2.25">استاندارد (2.25 - پیش‌فرض)</option>
+                              <option value="2.5">بلند (2.5)</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-[#333]">
-                    توضیحات کامل اجرای پروژه:
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={projectForm.description}
-                    onChange={(e) =>
-                      setProjectForm({
-                        ...projectForm,
-                        description: e.target.value,
-                      })
-                    }
-                    placeholder="توضیحات کامل اجرای پروژه و نورپردازی..."
-                    className="w-full rounded-xl border border-[#e0e0e0] p-3.5 text-xs font-semibold"
-                  />
+                {/* ردیف ۴: بخش اختصاصی مدیریت گالری تصاویر پروژه */}
+                <div className="p-4 rounded-2xl bg-[#fdfcf9] border border-[#d5c6ab] space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ece4d4] pb-3">
+                    <div>
+                      <h3 className="text-xs font-black text-[#1e1e1e] flex items-center gap-2">
+                        <span>گالری تصاویر پروژه</span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#1a1814] text-[#e8d7b8] text-[10px] font-bold">
+                          {projectForm.galleryImages.length.toLocaleString('fa-IR')} تصویر
+                        </span>
+                      </h3>
+                      <p className="text-[11px] text-[#777] mt-0.5">
+                        می‌توانید بی‌نهایت عکس با کیفیت بالا به گالری و اسلایدر این پروژه اضافه کنید.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <label className="h-9 px-3 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>آپلود گروهی تصاویر</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length === 0) return;
+                            files.forEach((file) => {
+                              handleFileUploadToDataUrl(file, (dataUrl) => {
+                                setProjectForm((prev) => ({
+                                  ...prev,
+                                  galleryImages: [...prev.galleryImages, dataUrl],
+                                  mainImage: prev.mainImage || dataUrl,
+                                }));
+                              });
+                            });
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* افزودن تک تصویر با URL */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={newGalleryImageUrl}
+                      onChange={(e) => setNewGalleryImageUrl(e.target.value)}
+                      placeholder="لینک URL تصویر برای افزودن به گالری..."
+                      className="flex-1 h-9 rounded-xl border border-[#e0e0e0] px-3 text-xs bg-white text-left font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!newGalleryImageUrl.trim()) return;
+                        setProjectForm((prev) => ({
+                          ...prev,
+                          galleryImages: [...prev.galleryImages, newGalleryImageUrl.trim()],
+                          mainImage: prev.mainImage || newGalleryImageUrl.trim(),
+                        }));
+                        setNewGalleryImageUrl('');
+                      }}
+                      className="h-9 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>افزودن به گالری</span>
+                    </button>
+                  </div>
+
+                  {/* نمایش شبکه کارت‌های تصاویر گالری */}
+                  {projectForm.galleryImages && projectForm.galleryImages.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-1">
+                      {projectForm.galleryImages.map((imgUrl, imgIdx) => (
+                        <div
+                          key={`gallery-item-${imgIdx}`}
+                          className="group relative h-28 rounded-xl overflow-hidden border border-[#e2d8c3] bg-white shadow-2xs"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`گالری پروژه ${imgIdx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-white bg-black/60 px-1.5 py-0.5 rounded">
+                                #{imgIdx + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setProjectForm((prev) => ({
+                                    ...prev,
+                                    galleryImages: prev.galleryImages.filter((_, i) => i !== imgIdx),
+                                  }));
+                                }}
+                                className="w-6 h-6 rounded-md bg-[#ea1d2c] text-white flex items-center justify-center hover:scale-105 transition-transform cursor-pointer"
+                                title="حذف این تصویر از گالری"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProjectForm((prev) => ({
+                                  ...prev,
+                                  mainImage: imgUrl,
+                                }));
+                              }}
+                              className="text-[9px] font-bold text-white bg-[#b59766]/90 hover:bg-[#b59766] py-1 px-1 rounded text-center cursor-pointer"
+                            >
+                              تنظیم به عنوان شاخص
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-[#888] italic py-2">
+                      هنوز تصویری به گالری این پروژه افزوده نشده است. از دکمه «آپلود گروهی تصاویر» استفاده کنید یا لینک وارد نمایید.
+                    </p>
+                  )}
                 </div>
 
                 {/* بخش افزودن تعداد بی نهایت لوسترهای به کار رفته در این پروژه */}
@@ -3628,12 +4200,24 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                         <div
                                           key={pIdx}
                                           onClick={() => {
+                                            const isDuplicate = (projectForm.chandeliersList || []).some(
+                                              (item, i) => i !== chIdx && item.code === prod.productCode
+                                            );
+                                            if (isDuplicate) {
+                                              showNotice(
+                                                'error',
+                                                `لوستر «${prod.name}» (با کد ${prod.productCode}) قبلاً به این پروژه متصل شده است. هر محصول را فقط یکبار می‌توانید اضافه کنید.`
+                                              );
+                                              return;
+                                            }
+
                                             const next = [...projectForm.chandeliersList];
                                             next[chIdx] = {
                                               name: prod.name,
                                               code: prod.productCode,
                                               image: prod.image,
                                               desc: prod.subtitle || prod.description || '',
+                                              price: prod.priceFormatted || 'استعلام قیمت از گالری',
                                             };
                                             setProjectForm({ ...projectForm, chandeliersList: next });
                                             setChandelierSearchQueries((prev) => ({
@@ -3687,6 +4271,11 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                       <span className="text-[10px] font-black text-[#a68452] bg-[#ebdcc5]/60 px-2 py-0.5 rounded-md">
                                         کد کالا: {chItem.code || '۱۲۸۹'}
                                       </span>
+                                      {chItem.price && (
+                                        <span className="text-[10px] font-bold text-[#1e1e1e] bg-white px-2 py-0.5 rounded-md border border-[#e0d6c5]">
+                                          قیمت محصول: {chItem.price}
+                                        </span>
+                                      )}
                                       <span className="text-[10px] text-[#10b981] font-bold">
                                         ● پیش‌نمایش متصل به پروژه
                                       </span>
@@ -3806,23 +4395,41 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
                 <button
                   type="submit"
-                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-xs"
+                  disabled={isSavingProject}
+                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-xs transition-all"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>
-                    {editingProjectId
-                      ? 'ویرایش پروژه اجرایی در وب سایت'
-                      : 'ثبت پروژه در وب سایت'}
-                  </span>
+                  {isSavingProject ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>
+                        {editingProjectId
+                          ? 'در حال ذخیره تغییرات پروژه...'
+                          : 'در حال ثبت پروژه جدید در وب سایت...'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>
+                        {editingProjectId
+                          ? 'ویرایش پروژه اجرایی در وب سایت'
+                          : 'ثبت پروژه در وب سایت'}
+                      </span>
+                    </>
+                  )}
                 </button>
               </form>
 
-              {/* ۳. دیو لیست پروژه‌ها همراه با صفحه‌بندی ۵ تایی از جدیدترین‌ها و آمار لایک کاربران */}
+              {/* ۳. دیو لیست پروژه‌ها همراه با صفحه‌بندی ۱۰ تایی از جدیدترین‌ها و آمار لایک کاربران */}
               {(() => {
-                const sortedAdminProjects = [...projectsList].sort(
+                const filteredProjects = projectsList.filter((p) => {
+                  if (adminProjectCategoryFilter === 'all') return true;
+                  return p.categoryTab === adminProjectCategoryFilter;
+                });
+                const sortedAdminProjects = [...filteredProjects].sort(
                   (a, b) => (Number(b.id) || 0) - (Number(a.id) || 0)
                 );
-                const ADMIN_PROJECTS_PER_PAGE = 5;
+                const ADMIN_PROJECTS_PER_PAGE = 10;
                 const totalAdminProjectPages = Math.max(
                   1,
                   Math.ceil(sortedAdminProjects.length / ADMIN_PROJECTS_PER_PAGE)
@@ -3832,6 +4439,11 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                   adminProjectsPage * ADMIN_PROJECTS_PER_PAGE
                 );
 
+                const getCatCount = (catId: string) => {
+                  if (catId === 'all') return projectsList.length;
+                  return projectsList.filter((p) => p.categoryTab === catId).length;
+                };
+
                 return (
                   <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#efefef] pb-3">
@@ -3840,14 +4452,51 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                           پروژه‌های اجرایی در دیتابیس ({projectsList.length.toLocaleString('fa-IR')} پروژه)
                         </h3>
                         <p className="text-[11px] text-[#777] mt-0.5">
-                          نمایش ۵ پروژه در هر صفحه به‌ترتیب از جدیدترین‌ها (صفحه {adminProjectsPage.toLocaleString('fa-IR')} از {totalAdminProjectPages.toLocaleString('fa-IR')})
+                          نمایش ۱۰ پروژه در هر صفحه به‌ترتیب از جدیدترین‌ها (صفحه {adminProjectsPage.toLocaleString('fa-IR')} از {totalAdminProjectPages.toLocaleString('fa-IR')})
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-[#b59766] bg-[#fbf8f2] px-3 py-1.5 rounded-lg border border-[#edd9be]">
-                          هر صفحه: ۵ پروژه
+                          هر صفحه: ۱۰ پروژه جدید
                         </span>
                       </div>
+                    </div>
+
+                    {/* فیلتر دسته‌بندی پروژه‌ها در پنل ادمین */}
+                    <div className="flex flex-wrap items-center gap-2 pb-1">
+                      {[
+                        { id: 'all', label: 'همه دسته‌ها' },
+                        { id: 'gov', label: 'ارگان‌های دولتی' },
+                        { id: 'commercial', label: 'ارگان‌های تجاری' },
+                        { id: 'mosques', label: 'مساجد و حسینیه‌ها' },
+                        { id: 'restaurants', label: 'رستوران‌ها' },
+                        { id: 'residential', label: 'منازل مسکونی' },
+                      ].map((catTab) => {
+                        const isCatSelected = adminProjectCategoryFilter === catTab.id;
+                        const cCount = getCatCount(catTab.id);
+                        return (
+                          <button
+                            key={catTab.id}
+                            type="button"
+                            onClick={() => {
+                              setAdminProjectCategoryFilter(catTab.id);
+                              setAdminProjectsPage(1);
+                            }}
+                            className={`h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${
+                              isCatSelected
+                                ? 'bg-[#1a1814] text-white shadow-xs'
+                                : 'bg-[#faf8f4] text-[#666] hover:bg-[#ebdcc5] border border-[#e5d8c3]'
+                            }`}
+                          >
+                            <span>{catTab.label}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                              isCatSelected ? 'bg-[#b59766] text-white' : 'bg-[#eee] text-[#555]'
+                            }`}>
+                              {cCount.toLocaleString('fa-IR')}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {currentAdminProjects.length === 0 ? (
@@ -3858,7 +4507,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                           const likesCount =
                             projectLikesMap[proj.slug] ??
                             projectLikesMap[proj.id] ??
-                            (24 + ((Number(proj.id) * 7) % 65));
+                            (Number(proj.likesCount) || 0);
 
                           return (
                             <div
@@ -3886,11 +4535,38 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                     دسته: {proj.categoryTab} • منطقه: {proj.district} • {proj.sampleCode}
                                   </p>
                                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                                    {/* آمار لایک‌های کاربران */}
+                                    {/* آمار دقیق لایک‌های کاربران */}
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#fff1f2] border border-[#fecdd3] text-[#e11d48] text-[11px] font-black">
                                       <Heart className="w-3.5 h-3.5 fill-[#e11d48]" />
                                       <span>{likesCount.toLocaleString('fa-IR')} لایک کاربر</span>
                                     </div>
+
+                                    {/* دکمه‌های سریع افزایش لایک از پنل ادمین */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickAdjustProjectLikes(proj, 10)}
+                                      className="h-6 px-2 text-[10.5px] font-bold rounded-md bg-[#fff5f5] hover:bg-[#ffe4e6] text-[#e11d48] border border-[#fecdd3] transition-colors cursor-pointer"
+                                      title="افزودن ۱۰ لایک به این پروژه"
+                                    >
+                                      +۱۰ لایک
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickAdjustProjectLikes(proj, 50)}
+                                      className="h-6 px-2 text-[10.5px] font-bold rounded-md bg-[#fff5f5] hover:bg-[#ffe4e6] text-[#e11d48] border border-[#fecdd3] transition-colors cursor-pointer"
+                                      title="افزودن ۵۰ لایک به این پروژه"
+                                    >
+                                      +۵۰ لایک
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuickAdjustProjectLikes(proj, 0, true)}
+                                      className="h-6 px-2 text-[10px] font-bold rounded-md bg-[#f5f5f5] hover:bg-gray-200 text-[#777] border border-[#e0e0e0] transition-colors cursor-pointer"
+                                      title="صفر کردن لایک‌های پروژه"
+                                    >
+                                      صفر
+                                    </button>
+
                                     <span className="text-[10px] text-[#888] bg-[#f9f9f9] px-2 py-1 rounded-md border border-[#eee]">
                                       شناسه پروژه: #{proj.id}
                                     </span>
@@ -3963,13 +4639,17 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                       title: proj.title || '',
                                       slug: proj.slug || '',
                                       categoryTab: proj.categoryTab || 'residential',
-                                      district: proj.district || '',
+                                      district: proj.district || (proj as any).locationBadge || '',
                                       sampleCode: proj.sampleCode || 'نمونه ۱',
+                                      dateBadge: (proj as any).dateBadge || '',
+                                      ownerName: (proj as any).ownerName || '',
                                       description: proj.description || '',
                                       usedChandeliersText: cleanText,
-                                      mainImage:
-                                        proj.mainImage || GENERATED_IMAGES.projectFereshteh,
+                                      mainImage: proj.mainImage || '',
+                                      galleryImages: Array.isArray(proj.galleryImages) && proj.galleryImages.length > 0 ? proj.galleryImages : (proj.mainImage ? [proj.mainImage] : []),
                                       chandeliersList: parsedChs,
+                                      likesCount: Number(proj.likesCount) || 0,
+                                      stylesJson: (proj as any).stylesJson || '{}',
                                     });
                                     window.scrollTo({ top: 350, behavior: 'smooth' });
                                   }}
@@ -5529,6 +6209,14 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                   >
                                     ({msg.phone})
                                   </span>
+                                  {msg.email && (
+                                    <span
+                                      dir="ltr"
+                                      className="text-xs font-semibold text-[#666] font-sans"
+                                    >
+                                      {msg.email}
+                                    </span>
+                                  )}
                                   <span
                                     className={`text-[10.5px] px-2 py-0.5 rounded-md font-bold ${
                                       msg.status === 'new'
@@ -9584,13 +10272,32 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                 <span className="block text-[11px] font-bold text-[#777]">
                   شماره تماس:
                 </span>
-                <span
-                  dir="ltr"
-                  className="block text-sm font-black text-[#b59766] tabular-nums text-right mt-1"
-                >
-                  {viewingMessage.phone}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    dir="ltr"
+                    className="block text-sm font-black text-[#b59766] tabular-nums text-right"
+                  >
+                    {viewingMessage.phone}
+                  </span>
+                  <a
+                    href={`tel:${viewingMessage.phone}`}
+                    className="px-2 py-0.5 rounded-md bg-[#b59766] hover:bg-[#9f8252] text-white text-[10px] font-bold flex items-center gap-1 transition-colors"
+                  >
+                    <Phone className="w-2.5 h-2.5" />
+                    <span>تماس</span>
+                  </a>
+                </div>
               </div>
+              {viewingMessage.email && (
+                <div className="sm:col-span-2 pt-2 border-t border-[#e8dfd0]">
+                  <span className="block text-[11px] font-bold text-[#777]">
+                    آدرس ایمیل:
+                  </span>
+                  <span dir="ltr" className="block text-xs font-bold text-[#181818] mt-1 font-sans text-right">
+                    {viewingMessage.email}
+                  </span>
+                </div>
+              )}
               <div className="sm:col-span-2 pt-2 border-t border-[#e8dfd0]">
                 <span className="block text-[11px] font-bold text-[#777]">
                   موضوع پیام:
@@ -9738,6 +10445,62 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                 </span>
                 <span className="tabular-nums">
                   {storyActionModal.progress.toLocaleString('fa-IR')}٪
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* مودال پیشرفت و حذف/ثبت پروژه اجرایی در وب‌سایت */}
+      {projectActionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+          <div
+            className="w-full max-w-md rounded-[24px] bg-white border border-[#e7dfd1] p-6 shadow-2xl text-center space-y-4"
+            dir="rtl"
+          >
+            <div
+              className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${
+                projectActionModal.mode === 'save'
+                  ? 'bg-[#f5efe4] text-[#b59766]'
+                  : 'bg-[#fde8ea] text-[#ea1d2c]'
+              }`}
+            >
+              {projectActionModal.mode === 'save' ? (
+                <Check className="w-7 h-7 stroke-[2.5]" />
+              ) : (
+                <Trash2 className="w-7 h-7 stroke-[2.2]" />
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-base font-black text-[#181818]">
+                {projectActionModal.title}
+              </h3>
+              <p className="text-xs text-[#666] leading-relaxed">
+                {projectActionModal.subtitle}
+              </p>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <div className="w-full h-3 rounded-full bg-[#f0ece3] overflow-hidden p-0.5">
+                <div
+                  className={`h-full rounded-full transition-all duration-150 ${
+                    projectActionModal.mode === 'save'
+                      ? 'bg-[#b59766]'
+                      : 'bg-[#ea1d2c]'
+                  }`}
+                  style={{ width: `${projectActionModal.progress}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#777]">
+                <span>
+                  {projectActionModal.mode === 'save'
+                    ? 'در حال ذخیره و به‌روزرسانی پروژه...'
+                    : 'در حال حذف پروژه از دیتابیس...'}
+                </span>
+                <span className="tabular-nums">
+                  {projectActionModal.progress.toLocaleString('fa-IR')}٪
                 </span>
               </div>
             </div>

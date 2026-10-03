@@ -9,7 +9,6 @@ import {
   CategoryItem,
   ChandelierProduct,
 } from '../../data/chandelierData';
-import { formatCategoryProductCount } from '../../product/ProductContentSection';
 import { navigateToProductCategory } from '../../utils/navigation';
 
 interface CategorySectionProps {
@@ -109,8 +108,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {displayCategories.map((category, idx) => {
-            const catFilterKey = category.filterKey || category.key || 'all';
-            const catSlug = category.slug || category.key || 'chandeliers';
+            const catFilterKey = category.filterKey || (category as any).key || 'all';
+            const catSlug = category.slug || (category as any).key || 'chandeliers';
             const isActive = selectedCategory === catFilterKey;
             const isDotActive = activeCategoryDot === idx;
 
@@ -135,14 +134,11 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   className="shrink-0 group-hover:scale-105 transition-transform duration-300"
                 />
 
-                {/* ۲. عنوان دسته‌بندی و تعداد محصول در سمت چپ آیکون وریفای */}
+                {/* ۲. عنوان دسته‌بندی در سمت چپ آیکون وریفای */}
                 <div className="text-right flex-1 min-w-0">
                   <h3 className="text-[16px] xs:text-[17px] font-black text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-snug">
                     {category.title}
                   </h3>
-                  <p className="text-[13px] text-[#777777] font-medium mt-1">
-                    {formatCategoryProductCount(catSlug, products)}
-                  </p>
                 </div>
               </a>
             );
@@ -194,8 +190,8 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
         {/* شبکه ۴ ستونه کارت‌ها */}
         <div className="relative z-10 w-full max-w-[1800px] mx-auto px-10 md:px-14 lg:px-[62px] xl:px-[68px] grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
           {displayCategories.map((category) => {
-            const catFilterKey = category.filterKey || category.key || 'all';
-            const catSlug = category.slug || category.key || 'chandeliers';
+            const catFilterKey = category.filterKey || (category as any).key || 'all';
+            const catSlug = category.slug || (category as any).key || 'chandeliers';
             const isActive = selectedCategory === catFilterKey;
             return (
               <a
@@ -217,14 +213,11 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   className="shrink-0 group-hover:scale-105 transition-transform duration-300"
                 />
 
-                {/* عنوان دسته‌بندی و تعداد محصول */}
+                {/* عنوان دسته‌بندی */}
                 <div className="text-right flex-1 min-w-0">
                   <h3 className="text-[17px] font-bold text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-tight">
                     {category.title}
                   </h3>
-                  <p className="text-[13.5px] text-[#777777] font-normal mt-2">
-                    {formatCategoryProductCount(catSlug, products)}
-                  </p>
                 </div>
               </a>
             );

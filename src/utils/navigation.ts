@@ -241,8 +241,11 @@ export const detectRouteFromLocation = (): AppRoute => {
   }
 
   if (pathname === '' || pathname === '/' || pathname === '/index.html') {
-    if (hash && !VALID_HOME_HASHES.has(hash)) {
+    if (hash && (hash === '#404' || hash === '#/404' || hash === '#not-found')) {
       return 'not-found';
+    }
+    if (hash && (hash === '#500' || hash === '#/500' || hash === '#server-error')) {
+      return 'server-error';
     }
     return 'home';
   }
@@ -357,11 +360,7 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
   let resolvedRoute: AppRoute = route;
   const normalizedHash = hashAnchor ? hashAnchor.toLowerCase().trim() : '';
 
-  if (
-    route === 'home' &&
-    normalizedHash &&
-    !VALID_HOME_HASHES.has(normalizedHash)
-  ) {
+  if (route === 'home' && normalizedHash) {
     if (
       normalizedHash === '#500' ||
       normalizedHash === '#/500' ||
@@ -369,6 +368,12 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
       normalizedHash === '#/server-error'
     ) {
       resolvedRoute = 'server-error';
+    } else if (
+      normalizedHash === '#404' ||
+      normalizedHash === '#/404' ||
+      normalizedHash === '#not-found'
+    ) {
+      resolvedRoute = 'not-found';
     } else if (
       normalizedHash === '#project' ||
       normalizedHash === '#/project' ||
@@ -393,7 +398,7 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
     ) {
       resolvedRoute = 'admin';
     } else {
-      resolvedRoute = 'not-found';
+      resolvedRoute = 'home';
     }
   }
 
@@ -509,3 +514,112 @@ if (typeof window !== 'undefined') {
     );
   });
 }
+
+/**
+ * ناوبری هوشمند برای تمام لینک‌های داخلی، خارجی، دسته‌بندی‌ها و هش‌های بخش‌های مختلف سایت
+ */
+export const navigateFromHref = (
+  rawHref: string,
+  e?: React.SyntheticEvent | React.MouseEvent
+) => {
+  if (!rawHref) return;
+  const href = rawHref.trim();
+
+  // ۱. لینک‌های خارجی (http, https, tel, mailto, tg, whatsapp)
+  if (
+    href.startsWith('http://') ||
+    href.startsWith('https://') ||
+    href.startsWith('tel:') ||
+    href.startsWith('mailto:') ||
+    href.startsWith('tg:') ||
+    href.startsWith('whatsapp:')
+  ) {
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+      if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+      }
+      if (typeof window !== 'undefined') {
+        window.open(href, '_blank', 'noopener,noreferrer');
+      }
+    }
+    return;
+  }
+
+  // ۲. لینک دسته‌بندی محصولات (مانند /product/categories/chandeliers)
+  const catMatch = href.match(
+    /^\/?(?:product|products)\/(?:categories|category)\/([^/?#]+)/i
+  );
+  if (catMatch && catMatch[1]) {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    navigateToProductCategory(decodeURIComponent(catMatch[1]));
+    return;
+  }
+
+  // ۳. لینک پروژه‌ها (مانند /project/sample-1)
+  const projMatch = href.match(/^\/?(?:project|projects)\/([^/?#]+)/i);
+  if (projMatch && projMatch[1]) {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    navigateToProjectSlug(decodeURIComponent(projMatch[1]));
+    return;
+  }
+
+  // ۴. صفحات داخلی منو (/rule, /contact-us, /about-us, /project, /product, /admin)
+  const cleanPath = href.split('#')[0].split('?')[0].toLowerCase().trim();
+  const hashPart = href.includes('#') ? `#${href.split('#')[1]}` : '';
+
+  if (cleanPath === '/rule' || cleanPath === 'rule') {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    navigateToRoute('rule');
+    return;
+  }
+  if (cleanPath === '/contact-us' || cleanPath === 'contact-us') {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    navigateToRoute('contact-us');
+    return;
+  }
+  if (cleanPath === '/about-us' || cleanPath === 'about-us') {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    navigateToRoute('about-us');
+    return;
+  }
+  if (
+    cleanPath === '/project' ||
+    cleanPath === '/projects' ||
+    cleanPath === 'project' ||
+    cleanPath === 'projects'
+  ) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    navigateToRoute('project');
+    return;
+  }
+  if (
+    cleanPath === '/product' ||
+    cleanPath === '/products' ||
+    cleanPath === 'product' ||
+    cleanPath === 'products'
+  ) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    navigateToRoute('product');
+    return;
+  }
+  if (cleanPath === '/admin' || cleanPath === 'admin') {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    navigateToRoute('admin');
+    return;
+  }
+
+  // ۵. انکرهای داخلی بخش‌ها (#...) یا صفحه اصلی
+  if (href.startsWith('#') || cleanPath === '/' || cleanPath === '' || cleanPath === '/index.html') {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    navigateToRoute('home', href.startsWith('#') ? href : hashPart);
+    return;
+  }
+
+  // لینک‌های غیرمنتظره
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  navigateToRoute('home', href);
+};

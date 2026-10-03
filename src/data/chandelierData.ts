@@ -824,6 +824,18 @@ export interface ExecutedProject {
   usedChandeliersText: string;
   mainImage: string;
   galleryImages: string[];
+  dateBadge?: string;
+  ownerName?: string;
+  locationBadge?: string;
+  likesCount?: number;
+  chandeliersList?: Array<{
+    name: string;
+    code?: string;
+    image?: string;
+    desc?: string;
+    price?: string;
+    isOutOfStock?: boolean;
+  }>;
   usedProducts: {
     id: string;
     name: string;
