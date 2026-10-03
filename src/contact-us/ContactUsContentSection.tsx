@@ -475,14 +475,14 @@ export const ContactUsContentSection: React.FC<
     const trimmedName = fullName.trim();
     const trimmedPhone = mobilePhone.trim();
     const trimmedMsg = messageText.trim();
-    const trimmedSubject = subject.trim() || 'مشاوره خرید';
+    const trimmedSubject = subject.trim();
     const trimmedEmail = email.trim();
 
-    if (!trimmedName || !trimmedPhone || !trimmedMsg) {
+    if (!trimmedName || !trimmedPhone || !trimmedMsg || !trimmedSubject) {
       onShowToast?.(
         'contact-empty-error',
         'خطایی رخ داد!',
-        'مشتری عزیز فیلدهای الزامی فرم تماس (نام، شماره تماس و متن پیام) را تکمیل نمایید.'
+        'مشتری عزیز فیلدهای الزامی فرم تماس (نام، شماره تماس، موضوع و متن پیام) را تکمیل نمایید.'
       );
       return;
     }

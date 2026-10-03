@@ -169,13 +169,13 @@ async function startServer() {
       const finalName = fullName || '';
       const finalPhone = phone || mobilePhone || '';
       const finalMessage = message || messageText || '';
-      const finalSubject = subject || 'مشاوره خرید';
+      const finalSubject = subject || '';
       const finalEmail = email || '';
 
-      if (!String(finalName).trim() || !String(finalPhone).trim() || !String(finalMessage).trim()) {
+      if (!String(finalName).trim() || !String(finalPhone).trim() || !String(finalMessage).trim() || !String(finalSubject).trim()) {
         return res
           .status(400)
-          .json({ error: 'نام، شماره تماس و متن پیام الزامی است.' });
+          .json({ error: 'نام، شماره تماس، موضوع و متن پیام الزامی است.' });
       }
       const created = await createContactMessageRecord({
         fullName: String(finalName).trim(),

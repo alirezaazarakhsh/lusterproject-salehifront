@@ -1132,17 +1132,14 @@ export async function ensureSeeded(): Promise<void> {
           .onConflictDoNothing();
       }
 
-      // ۳. پروژه‌های اجرایی (ثبت کامل تمامی ۶۶ پروژه و اتصال هماهنگ به دیتابیس)
+      // ۳. پروژه‌های اجرایی (فقط در صورتی که دیتابیس کاملاً خالی باشد، سید اولیه انجام می‌شود)
       if (!hasSeededProjects) {
-        const existingProjects = await db.select().from(projects);
-        const existingSlugs = new Set(existingProjects.map((p) => p.slug));
-        const missingProjects = INITIAL_PROJECTS_SEED.filter(
-          (p) => !existingSlugs.has(p.slug)
-        );
-        if (missingProjects.length > 0) {
+        const existingProjects = await db.select().from(projects).limit(1);
+        if (existingProjects.length === 0) {
+          console.log('Seeding projects because table is empty...');
           await db
             .insert(projects)
-            .values(missingProjects)
+            .values(INITIAL_PROJECTS_SEED)
             .onConflictDoNothing();
         }
         hasSeededProjects = true;
@@ -1454,7 +1451,7 @@ export async function createProjectRecord(data: {
         .replace(/<!--CHANDELIERS_DATA-->[\s\S]*?<!--\/CHANDELIERS_DATA-->/g, '')
         .replace(/(\n|^)\s*\[\s*\{[\s\S]*\}\s*\]\s*$/g, '')
         .trim();
-      finalUsedText = `${cleanDesc}\n<!--CHANDELIERS_DATA-->${JSON.stringify(data.chandeliersList)}<!--/CHANDELIERS_DATA-->\n${JSON.stringify(data.chandeliersList)}`.trim();
+      finalUsedText = `${cleanDesc}\n<!--CHANDELIERS_DATA-->${JSON.stringify(data.chandeliersList)}<!--/CHANDELIERS_DATA-->`.trim();
     }
 
     const result = await db
@@ -1504,7 +1501,7 @@ export async function updateProjectRecord(
         .replace(/(\n|^)\s*\[\s*\{[\s\S]*\}\s*\]\s*$/g, '')
         .trim();
       if (data.chandeliersList.length > 0) {
-        validData.usedChandeliersText = `${cleanDesc}\n<!--CHANDELIERS_DATA-->${JSON.stringify(data.chandeliersList)}<!--/CHANDELIERS_DATA-->\n${JSON.stringify(data.chandeliersList)}`.trim();
+        validData.usedChandeliersText = `${cleanDesc}\n<!--CHANDELIERS_DATA-->${JSON.stringify(data.chandeliersList)}<!--/CHANDELIERS_DATA-->`.trim();
       } else {
         validData.usedChandeliersText = cleanDesc;
       }
