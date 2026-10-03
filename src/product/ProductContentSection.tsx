@@ -3211,16 +3211,14 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
   const renderPaginationBar = (className = 'mt-8 mb-2') => {
     if (totalPages <= 1) return null;
-    const maxVisible = Math.min(3, totalPages);
-    const highestVisiblePage = Math.max(
-      maxVisible,
-      Math.min(totalPages, currentPage)
-    );
-    // آرایه صفحات از چپ به راست در کانتینر LTR (معادل ۱، ۲، ۳ از راست به چپ)
-    const visiblePageNumbers = Array.from(
-      { length: maxVisible },
-      (_, idx) => highestVisiblePage - idx
-    );
+    const maxVisible = 3;
+    let startPage = Math.max(1, Math.min(currentPage - 1, totalPages - maxVisible + 1));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
+    const visiblePageNumbers = [];
+    for (let i = startPage; i <= endPage; i++) {
+      visiblePageNumbers.push(i);
+    }
 
     return (
       <div
