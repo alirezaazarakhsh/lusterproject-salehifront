@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { HomePage } from './pages/HomePage';
 import { HeaderSection } from './components/sections/HeaderSection';
 import { ServerErrorContentSection } from './server-error';
 import { navigateToRoute } from './utils/navigation';
+import { initFirestoreAutoSync } from './utils/localBackendFallback';
 
 interface AppErrorBoundaryState {
   hasError: boolean;
@@ -62,6 +63,10 @@ class AppErrorBoundary extends React.Component<
  * نقطه ورود اصلی اپلیکیشن گالری لوستر اکبر صالحی
  */
 export function App() {
+  useEffect(() => {
+    initFirestoreAutoSync();
+  }, []);
+
   return (
     <AppErrorBoundary>
       <HomePage />

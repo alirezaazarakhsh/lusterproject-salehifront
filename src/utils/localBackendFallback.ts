@@ -22,6 +22,10 @@ import {
   INITIAL_HERO_SLIDER_SETTINGS,
 } from '../components/sections/HeroSection';
 import { ALL_INITIAL_PROJECTS } from '../data/allDatabaseProjectsSeed';
+import {
+  fetchAllDataFromFirestore,
+  saveAllDataToFirestore,
+} from '../lib/firestoreSync';
 
 const LOCAL_DB_STORAGE_KEY = 'salehi_cms_fallback_db_v2';
 
@@ -456,6 +460,92 @@ function saveLocalDb(dbState: LocalDbSchema) {
   } catch {
     // ignore quota errors
   }
+  // ذخیره دائم و بلادرنگ در Cloud Firestore تا با پاک شدن لوکال استوریج داده‌ها از بین نروند
+  saveAllDataToFirestore(dbState).catch((err) => {
+    console.warn('Firestore cloud sync notice:', err);
+  });
+}
+
+let hasInitiatedFirestoreSync = false;
+
+export async function syncFromFirestore(): Promise<void> {
+  try {
+    const cloudData = await fetchAllDataFromFirestore();
+    if (cloudData && typeof cloudData === 'object') {
+      const current = loadLocalDb();
+      const merged: LocalDbSchema = {
+        users:
+          Array.isArray(cloudData.users) && cloudData.users.length > 0
+            ? cloudData.users
+            : current.users,
+        products:
+          Array.isArray(cloudData.products) && cloudData.products.length > 0
+            ? cloudData.products
+            : current.products,
+        categories:
+          Array.isArray(cloudData.categories) && cloudData.categories.length > 0
+            ? cloudData.categories
+            : current.categories,
+        projects:
+          Array.isArray(cloudData.projects) && cloudData.projects.length > 0
+            ? cloudData.projects
+            : current.projects,
+        stories:
+          Array.isArray(cloudData.stories) && cloudData.stories.length > 0
+            ? cloudData.stories
+            : current.stories,
+        articles:
+          Array.isArray(cloudData.articles) && cloudData.articles.length > 0
+            ? cloudData.articles
+            : current.articles,
+        messages: Array.isArray(cloudData.messages)
+          ? cloudData.messages
+          : current.messages,
+        orders: Array.isArray(cloudData.orders)
+          ? cloudData.orders
+          : current.orders,
+        footerSettings: {
+          ...current.footerSettings,
+          ...(cloudData.footerSettings || {}),
+        },
+        contactUsSettings: {
+          ...current.contactUsSettings,
+          ...(cloudData.contactUsSettings || {}),
+        },
+        aboutUsSettings: {
+          ...current.aboutUsSettings,
+          ...(cloudData.aboutUsSettings || {}),
+        },
+        heroSliderSettings: {
+          ...current.heroSliderSettings,
+          ...(cloudData.heroSliderSettings || {}),
+        },
+        mainSettings: {
+          ...current.mainSettings,
+          ...(cloudData.mainSettings || {}),
+        },
+        smsSettings: {
+          ...current.smsSettings,
+          ...(cloudData.smsSettings || {}),
+        },
+        faqSettings: {
+          ...current.faqSettings,
+          ...(cloudData.faqSettings || {}),
+        },
+      };
+      try {
+        localStorage.setItem(LOCAL_DB_STORAGE_KEY, JSON.stringify(merged));
+      } catch {}
+    }
+  } catch (e) {
+    console.warn('Failed to sync from Firestore:', e);
+  }
+}
+
+export function initFirestoreAutoSync(): void {
+  if (hasInitiatedFirestoreSync) return;
+  hasInitiatedFirestoreSync = true;
+  syncFromFirestore().catch(() => {});
 }
 
 function parseBody(options?: RequestInit): any {
@@ -1211,6 +1301,7 @@ export async function apiFetchWithFallback(
   options: RequestInit = {}
 ): Promise<any> {
   try {
+    initFirestoreAutoSync();
     const res = await fetch(url, options);
     const contentType = res.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
@@ -1218,7 +1309,7 @@ export async function apiFetchWithFallback(
     if (res.ok && isJson) {
       isCurrentlyUsingFallback = false;
       const data = await res.json();
-      // همگام‌سازی تنظیمات با کش محلی در صورت دریافت از سرور
+      // همگام‌سازی تنظیمات با کش محلی و کلود در صورت دریافت از سرور
       if (url === '/api/public/catalog' && data) {
         const local = loadLocalDb();
         if (data.footerSettings) local.footerSettings = data.footerSettings;
@@ -1235,11 +1326,9 @@ export async function apiFetchWithFallback(
       return data;
     }
 
-    // اگر پاسخ سرور JSON واقعی خطای احراز هویت بود ولی مربوط به اکانت پیش‌فرض نبود
-    if (isJson && res.status >= 400 && res.status < 500 && res.status !== 404 && res.status !== 405) {
+    // اگر سرور ارور احراز هویت داد (۴۰۱ یا ۴۰۳)
+    if (isJson && (res.status === 401 || res.status === 403)) {
       const errJson = await res.json().catch(() => ({}));
-      
-      // فقط برای ورود ادمین پیش‌فرض ساشا اجازه عبور محلی بده (در صورت قطعی سرور)
       if (url === '/api/admin/login') {
         const body = parseBody(options);
         const normPhone = normalizeAdminPhoneClient(body.phone || '');
@@ -1248,31 +1337,36 @@ export async function apiFetchWithFallback(
           normPhone === DEFAULT_SUPER_ADMIN_PHONE &&
           pass === DEFAULT_SUPER_ADMIN_PASS
         ) {
-          console.warn('Admin login server error. Falling back to local auth for super admin.');
           isCurrentlyUsingFallback = true;
-          return handleLocalApiRequest(url, options);
+          return await handleLocalApiRequest(url, options);
         }
       }
-
-      throw new Error(errJson.error || `خطای درخواست (${res.status})`);
+      throw new Error(errJson.error || 'شماره موبایل یا رمز عبور اشتباه است.');
     }
 
-    // در محیط واقعی، خطاهای ۴۰۴ یا ۵۰۰ نباید به موتور محلی هدایت شوند چون باعث تضاد داده‌ای می‌شود.
-    // فقط در صورتی که درخواست GET باشد و پاسخ نامعتبر باشد، از موتور محلی به عنوان کش لودینگ استفاده می‌کنیم.
-    if (options.method === 'GET' || !options.method) {
-       console.warn(`GET ${url} failed with status ${res.status}. Falling back to local storage.`);
-       isCurrentlyUsingFallback = true;
-       return await handleLocalApiRequest(url, options);
+    // در هاست‌های استاتیک یا سرورهایی که ۴۰۵ (Method Not Allowed) یا ۴۰۴ یا ۵۰۰ برمی‌گردانند، مستقیماً از موتور دیتابیس کلود فایراستور پاسخ بده
+    if (res.status === 405 || res.status === 404 || res.status >= 500 || !res.ok) {
+      console.warn(
+        `API ${options.method || 'GET'} ${url} returned status ${res.status}. Seamlessly processed via Cloud Firestore database.`
+      );
+      isCurrentlyUsingFallback = true;
+      return await handleLocalApiRequest(url, options);
     }
 
-    throw new Error(`خطای سرور (${res.status})`);
+    throw new Error(`خطای ارتباط (${res.status})`);
   } catch (err: any) {
-    // اگر خطای شبکه بود و درخواست GET بود، از کش محلی استفاده کن
-    if ((!options.method || options.method === 'GET') && err instanceof TypeError) {
-       console.warn(`Network error fetching ${url}. Falling back to local storage.`);
-       isCurrentlyUsingFallback = true;
-       return await handleLocalApiRequest(url, options);
+    // در صورت خطای شبکه یا اجرای استاتیک بدون سرور Node، مستقیماً از Cloud Firestore پاسخ بده
+    if (
+      err.message?.includes('شماره موبایل') ||
+      err.message?.includes('رمز عبور') ||
+      err.message?.includes('الزامی')
+    ) {
+      throw err;
     }
-    throw err;
+    console.warn(
+      `Network/Execution fallback for ${url}: Handled by Cloud Firestore.`
+    );
+    isCurrentlyUsingFallback = true;
+    return await handleLocalApiRequest(url, options);
   }
 }
