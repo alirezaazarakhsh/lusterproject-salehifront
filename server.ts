@@ -242,6 +242,17 @@ async function startServer() {
     });
   };
 
+  /**
+   * @openapi
+   * /api/realtime/stream:
+   *   get:
+   *     summary: اتصال ریل‌تایم (SSE)
+   *     description: برقراری اتصال مداوم برای دریافت اعلان‌های آنی در صورت بروز هرگونه تغییر در دیتابیس یا کاتالوگ محصولات.
+   *     tags: [System - سیستم]
+   *     responses:
+   *       200:
+   *         description: اتصال موفقیت‌آمیز SSE
+   */
   app.get('/api/realtime/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -477,10 +488,14 @@ async function startServer() {
    * @openapi
    * /api/admin/me:
    *   get:
-   *     summary: دریافت اطلاعات ادمین فعلی
-   *     tags: [Admin Auth]
+   *     summary: دریافت اطلاعات پروفایل ادمین
+   *     description: دریافت اطلاعات کامل حساب کاربری ادمین جاری شامل نام، نقش و دسترسی‌ها بر اساس توکن فعال.
+   *     tags: [Admin Auth - احراز هویت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: اطلاعات پروفایل با موفقیت دریافت شد
    */
   app.get('/api/admin/me', requireAuth, async (req: AuthRequest, res) => {
     res.json({ admin: req.user, user: req.user });
@@ -490,10 +505,14 @@ async function startServer() {
    * @openapi
    * /api/admin/dashboard:
    *   get:
-   *     summary: دریافت آمار کلی داشبورد مدیریت
-   *     tags: [Admin Dashboard]
+   *     summary: آمار داشبورد مدیریت
+   *     description: دریافت تعداد محصولات، دسته‌بندی‌ها، سفارشات، پیام‌ها و سایر آمارهای کلیدی برای نمایش در صفحه اصلی پنل ادمین.
+   *     tags: [Admin Dashboard - داشبورد]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: آمار با موفقیت استخراج شد
    */
   app.get(
     ['/api/admin/summary', '/api/admin/dashboard'],
@@ -517,12 +536,14 @@ async function startServer() {
    * /api/admin/users:
    *   get:
    *     summary: لیست ادمین‌های سیستم
-   *     tags: [Admin Users]
+   *     description: دریافت لیست تمامی مدیران سایت به همراه شماره تماس و نقش‌های آن‌ها.
+   *     tags: [Admin Users - ادمین‌ها]
    *     security:
    *       - bearerAuth: []
    *   post:
-   *     summary: ایجاد ادمین جدید
-   *     tags: [Admin Users]
+   *     summary: ایجاد مدیر جدید
+   *     description: ثبت یک حساب کاربری جدید برای دسترسی به پنل مدیریت با تعیین دسترسی‌های خاص.
+   *     tags: [Admin Users - ادمین‌ها]
    *     security:
    *       - bearerAuth: []
    */
@@ -943,6 +964,33 @@ async function startServer() {
     }
   });
 
+  /**
+   * @openapi
+   * /api/projects/{idOrSlug}/like:
+   *   post:
+   *     summary: لایک کردن پروژه
+   *     description: افزایش یا کاهش تعداد لایک‌های یک پروژه توسط کاربران عمومی سایت.
+   *     tags: [Public - عمومی]
+   *     parameters:
+   *       - in: path
+   *         name: idOrSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: شناسه یا اسلاگ پروژه
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               increment:
+   *                 type: boolean
+   *                 description: افزایش لایک (true) یا کاهش (false)
+   *     responses:
+   *       200:
+   *         description: لایک با موفقیت ثبت شد
+   */
   // ثبت لایک یا برداشتن لایک پروژه
   app.post(
     ['/api/projects/:idOrSlug/like', '/api/public/projects/:idOrSlug/like'],
@@ -965,6 +1013,33 @@ async function startServer() {
     }
   );
 
+  /**
+   * @openapi
+   * /api/admin/projects/{idOrSlug}/likes:
+   *   patch:
+   *     summary: مدیریت مستقیم لایک‌ها
+   *     description: تنظیم دستی تعداد لایک‌های یک پروژه توسط ادمین در پنل مدیریت.
+   *     tags: [Admin Projects - پروژه‌ها]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: idOrSlug
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               likesCount:
+   *                 type: integer
+   *     responses:
+   *       200:
+   *         description: تعداد لایک‌ها بروزرسانی شد
+   */
   // تغییر مستقیم تعداد لایک‌ها از پنل ادمین
   app.patch(
     [
