@@ -232,6 +232,7 @@ export const HomePage: React.FC = () => {
     window.addEventListener('app-server-error', handleServerDown);
     window.addEventListener('app-catalog-updated', fetchLiveCatalogFromDb);
     window.addEventListener('app-projects-updated', fetchLiveCatalogFromDb);
+    window.addEventListener('app-stories-updated', fetchLiveCatalogFromDb);
     document.addEventListener('click', handleGlobalLinkClick);
     return () => {
       unsubscribe();
@@ -242,6 +243,7 @@ export const HomePage: React.FC = () => {
       window.removeEventListener('app-server-error', handleServerDown);
       window.removeEventListener('app-catalog-updated', fetchLiveCatalogFromDb);
       window.removeEventListener('app-projects-updated', fetchLiveCatalogFromDb);
+      window.removeEventListener('app-stories-updated', fetchLiveCatalogFromDb);
       document.removeEventListener('click', handleGlobalLinkClick);
       if (preloaderTimeoutRef.current) {
         window.clearTimeout(preloaderTimeoutRef.current);
@@ -463,7 +465,7 @@ export const HomePage: React.FC = () => {
         setProjectsList(mappedProjects);
       }
 
-      if (Array.isArray(data.stories) && data.stories.length > 0) {
+      if (Array.isArray(data.stories)) {
         const mappedStories: StoryItem[] = data.stories.map(
           (stRow: any, idx: number) => {
             const rawType = stRow.storyType || 'single-product';

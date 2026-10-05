@@ -724,8 +724,10 @@ async function startServer() {
     requireAuth,
     async (req: AuthRequest, res) => {
       try {
-        const id = Number(req.params.id);
-        const result = await deleteStoryRecord(id);
+        const paramId = req.params.id;
+        const numId = Number(paramId);
+        const target = !isNaN(numId) && numId > 0 ? numId : paramId;
+        const result = await deleteStoryRecord(target);
         res.json(result);
       } catch (error: any) {
         console.error('Failed to delete story:', error);

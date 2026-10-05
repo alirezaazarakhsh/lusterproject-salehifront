@@ -1842,9 +1842,17 @@ export async function updateStoryRecord(
   }
 }
 
-export async function deleteStoryRecord(id: number) {
+export async function deleteStoryRecord(idOrKey: number | string) {
   try {
-    await db.delete(stories).where(eq(stories.id, id));
+    const num = Number(idOrKey);
+    const strVal = String(idOrKey);
+    if (!isNaN(num) && num > 0) {
+      await db
+        .delete(stories)
+        .where(or(eq(stories.id, num), eq(stories.storyKey, strVal)));
+    } else {
+      await db.delete(stories).where(eq(stories.storyKey, strVal));
+    }
     return { success: true };
   } catch (error) {
     console.error('Database query failed in deleteStoryRecord:', error);

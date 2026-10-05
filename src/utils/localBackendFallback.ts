@@ -1011,14 +1011,20 @@ export async function handleLocalApiRequest(
     }
   }
   if (cleanUrl.startsWith('/api/admin/stories/')) {
-    const id = Number(cleanUrl.split('/').pop());
+    const rawParam = cleanUrl.split('/').pop() || '';
+    const numId = Number(rawParam);
+    const isNum = !isNaN(numId) && rawParam.trim() !== '';
+
     if (method === 'PUT') {
-      const idx = dbState.stories.findIndex((s) => Number(s.id) === id);
+      const idx = dbState.stories.findIndex((s) => {
+        if (isNum && Number(s.id) === numId) return true;
+        if (String(s.id) === rawParam || s.storyKey === rawParam) return true;
+        return false;
+      });
       if (idx !== -1) {
         dbState.stories[idx] = {
           ...dbState.stories[idx],
           ...body,
-          id,
           slidesJson: Array.isArray(body.slides)
             ? JSON.stringify(body.slides)
             : body.slidesJson || dbState.stories[idx].slidesJson,
@@ -1028,9 +1034,13 @@ export async function handleLocalApiRequest(
       }
     }
     if (method === 'DELETE') {
-      dbState.stories = dbState.stories.filter((s) => Number(s.id) !== id);
+      dbState.stories = dbState.stories.filter((s) => {
+        if (isNum && Number(s.id) === numId) return false;
+        if (String(s.id) === rawParam || s.storyKey === rawParam) return false;
+        return true;
+      });
       saveLocalDb(dbState);
-      return { success: true, id };
+      return { success: true, id: rawParam };
     }
   }
 
