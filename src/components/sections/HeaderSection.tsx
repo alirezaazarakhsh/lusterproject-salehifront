@@ -858,24 +858,6 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             </div>
           )}
 
-          {/* ۲. دکمه تغییر تم (Dark / Light Mode) */}
-          <button
-            type="button"
-            onClick={() => {
-              const next = toggleTheme();
-              setCurrentTheme(next);
-            }}
-            aria-label={currentTheme === 'dark' ? 'تغییر به حالت روز' : 'تغییر به حالت شب'}
-            title={currentTheme === 'dark' ? 'حالت روز (Light Mode)' : 'حالت شب (Dark Mode)'}
-            className="w-12 h-12 rounded-[14px] bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer group"
-          >
-            {currentTheme === 'dark' ? (
-              <Sun className="w-[22px] h-[22px] text-[#f59e0b] group-hover:text-white transition-colors" />
-            ) : (
-              <Moon className="w-[22px] h-[22px] transition-colors" />
-            )}
-          </button>
-
           {/* ۳. دکمه سبد خرید - در کنار دکمه‌های سمت چپ */}
           <button
             type="button"
