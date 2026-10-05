@@ -628,23 +628,6 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             <ExactPalmetteVector className="w-14 h-14 sm:w-16 sm:h-16 text-[#cbb592]" />
           </div>
 
-          {/* دکمه تغییر تم در گوشه هدر موبایل */}
-          <button
-            type="button"
-            onClick={() => {
-              const next = toggleTheme();
-              setCurrentTheme(next);
-            }}
-            aria-label={currentTheme === 'dark' ? 'حالت روز' : 'حالت شب'}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all cursor-pointer"
-          >
-            {currentTheme === 'dark' ? (
-              <Sun className="w-4 h-4 text-[#f59e0b]" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
-          </button>
-
           {/* لوگوی مرکزی متمرکز: Chandelier بالای AKBAR SALEHI */}
           <a
             href="/"

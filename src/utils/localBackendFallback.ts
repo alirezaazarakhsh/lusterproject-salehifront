@@ -443,9 +443,7 @@ function loadLocalDb(): LocalDbSchema {
   } catch {
     // ignore storage errors
   }
-  const fresh = createInitialLocalDb();
-  saveLocalDb(fresh);
-  return fresh;
+  return createInitialLocalDb();
 }
 
 function saveLocalDb(dbState: LocalDbSchema) {
