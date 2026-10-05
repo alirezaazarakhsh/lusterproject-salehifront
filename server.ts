@@ -2328,4 +2328,17 @@ async function startServer() {
   return app;
 }
 
-export const appReady = startServer();
+export const appReady = startServer().catch((err) => {
+  console.error('Critical server start error:', err);
+  const fallbackApp = express();
+  fallbackApp.use(express.json());
+  fallbackApp.all('*', (req, res) => {
+    res.status(500).json({
+      error: 'خطای سرور',
+      message: err?.message || 'Server startup failed',
+      url: req.url,
+      timestamp: new Date().toISOString(),
+    });
+  });
+  return fallbackApp;
+});
