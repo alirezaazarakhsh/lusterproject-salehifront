@@ -16,7 +16,7 @@ export interface ImageOptimizationOptions {
  */
 export const CHANDELIER_CDN_MAP: Record<string, string> = {
   // ۱. محصولات اصلی و دسته‌بندی‌های لوستر
-  shahMalakeh: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=1200&auto=format&fit=crop&q=85',
+  shahMalakeh: '/src/assets/images/loster05_1_1791243643370.jpg',
   shakheh12: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=1200&auto=format&fit=crop&q=85',
   ristani: 'https://images.unsplash.com/photo-1565183997392-2f6f122e5c12?w=1200&auto=format&fit=crop&q=85',
   resansRoses: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=85',
