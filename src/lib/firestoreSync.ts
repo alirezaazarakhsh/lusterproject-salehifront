@@ -49,12 +49,16 @@ export async function fetchAllDataFromFirestore(): Promise<any | null> {
 export async function saveCollectionToFirestore(collectionName: string, items: any[]): Promise<boolean> {
   try {
     const colRef = collection(firestoreDb, collectionName);
-    // Simple implementation: for large collections, this needs to be chunked or managed differently
-    // but for now, we just update the global doc for smaller settings and individual docs for items if possible.
-    // Given the previous monolithic approach, let's start by splitting the main collections.
     for (const item of items) {
-       // Assuming items have an 'id' or 'productKey' to use as doc ID
        const docId = String(item.id || item.productKey || item.slug || Math.random().toString(36).substr(2, 9));
+       
+       // Check if individual item is too large (Firestore limit is 1MB, we use 800KB to be safe)
+       const itemSize = JSON.stringify(item).length;
+       if (itemSize > 800000) {
+         console.warn(`Item ${docId} in ${collectionName} is too large (${itemSize} bytes). Skipping Firestore sync for this item.`);
+         continue;
+       }
+       
        await setDoc(doc(colRef, docId), item, { merge: true });
     }
     return true;
@@ -65,24 +69,30 @@ export async function saveCollectionToFirestore(collectionName: string, items: a
 }
 
 export async function saveAllDataToFirestore(data: any): Promise<boolean> {
-  // Refactored to save collections individually to avoid size limits
   try {
+    // Save main collections individually
     await saveCollectionToFirestore('products', data.products || []);
     await saveCollectionToFirestore('projects', data.projects || []);
     await saveCollectionToFirestore('categories', data.categories || []);
     await saveCollectionToFirestore('orders', data.orders || []);
+    await saveCollectionToFirestore('articles', data.articles || []);
+    await saveCollectionToFirestore('stories', data.stories || []);
     
-    // Save smaller settings in the main doc
-    const { products, projects, categories, orders, messages, ...settings } = data;
-    const docRef = doc(firestoreDb, SETTINGS_COLLECTION, FIRESTORE_STATE_DOC);
-    await setDoc(docRef, {
-      ...settings,
-      updatedAt: new Date().toISOString(),
-    }, { merge: true });
+    // Save settings individually to avoid monolithic document limit
+    const settingsKeys = [
+      'footerSettings', 'contactUsSettings', 'aboutUsSettings', 
+      'heroSliderSettings', 'mainSettings', 'smsSettings', 'faqSettings'
+    ];
+    
+    for (const key of settingsKeys) {
+      if (data[key]) {
+        await saveSettingToFirestore(key, data[key]);
+      }
+    }
     
     return true;
   } catch (err) {
-    console.error('Error saving to Cloud Firestore:', err);
+    console.error('Error saving all data to Cloud Firestore:', err);
     return false;
   }
 }

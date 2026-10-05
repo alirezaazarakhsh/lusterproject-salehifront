@@ -1302,8 +1302,13 @@ export async function apiFetchWithFallback(
   url: string,
   options: RequestInit = {}
 ): Promise<any> {
+  const method = (options.method || 'GET').toUpperCase();
+  const isMutation = method !== 'GET';
+
   try {
+    // Ensure sync is initiated
     initFirestoreAutoSync();
+
     const res = await fetch(url, options);
     const contentType = res.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
@@ -1311,64 +1316,68 @@ export async function apiFetchWithFallback(
     if (res.ok && isJson) {
       isCurrentlyUsingFallback = false;
       const data = await res.json();
-      // همگام‌سازی تنظیمات با کش محلی و کلود در صورت دریافت از سرور
+      
+      // Update local cache with server data if it's the catalog
       if (url === '/api/public/catalog' && data) {
         const local = loadLocalDb();
         if (data.footerSettings) local.footerSettings = data.footerSettings;
-        if (data.contactUsSettings)
-          local.contactUsSettings = data.contactUsSettings;
+        if (data.contactUsSettings) local.contactUsSettings = data.contactUsSettings;
         if (data.aboutUsSettings) local.aboutUsSettings = data.aboutUsSettings;
-        if (data.heroSliderSettings)
-          local.heroSliderSettings = data.heroSliderSettings;
+        if (data.heroSliderSettings) local.heroSliderSettings = data.heroSliderSettings;
         if (data.mainSettings) local.mainSettings = data.mainSettings;
         if (data.smsSettings) local.smsSettings = data.smsSettings;
         if (data.faqSettings) local.faqSettings = data.faqSettings;
-        saveLocalDb(local);
+        
+        // Only save to localStorage, don't trigger firestore save back immediately to avoid loops
+        try {
+          localStorage.setItem(LOCAL_DB_STORAGE_KEY, JSON.stringify(local));
+        } catch {}
       }
       return data;
     }
 
-    // اگر سرور ارور احراز هویت داد (۴۰۱ یا ۴۰۳)
-    if (isJson && (res.status === 401 || res.status === 403)) {
+    // Authentication errors (401, 403) should not trigger local fallback for mutations
+    if (res.status === 401 || res.status === 403) {
       const errJson = await res.json().catch(() => ({}));
       if (url === '/api/admin/login') {
-        const body = parseBody(options);
-        const normPhone = normalizeAdminPhoneClient(body.phone || '');
-        const pass = String(body.password || '').trim();
-        if (
-          normPhone === DEFAULT_SUPER_ADMIN_PHONE &&
-          pass === DEFAULT_SUPER_ADMIN_PASS
-        ) {
-          isCurrentlyUsingFallback = true;
-          return await handleLocalApiRequest(url, options);
-        }
+         // Special case: allow default admin login if server fails
+         const body = parseBody(options);
+         if (normalizeAdminPhoneClient(body.phone) === DEFAULT_SUPER_ADMIN_PHONE && body.password === DEFAULT_SUPER_ADMIN_PASS) {
+           isCurrentlyUsingFallback = true;
+           return await handleLocalApiRequest(url, options);
+         }
       }
-      throw new Error(errJson.error || 'شماره موبایل یا رمز عبور اشتباه است.');
+      throw new Error(errJson.error || 'دسترسی غیرمجاز یا نشست منقضی شده است.');
     }
 
-    // در هاست‌های استاتیک یا سرورهایی که ۴۰۵ (Method Not Allowed) یا ۴۰۴ یا ۵۰۰ برمی‌گردانند، مستقیماً از موتور دیتابیس کلود فایراستور پاسخ بده
-    if (res.status === 405 || res.status === 404 || res.status >= 500 || !res.ok) {
-      console.warn(
-        `API ${options.method || 'GET'} ${url} returned status ${res.status}. Seamlessly processed via Cloud Firestore database.`
-      );
+    // If server returns error, only fallback for GET requests or if it's a known environment issue
+    if (res.status === 404 || res.status === 405 || res.status >= 500) {
+      if (!isMutation) {
+        console.warn(`Server returned ${res.status} for ${url}. Falling back to local/cloud database.`);
+        isCurrentlyUsingFallback = true;
+        return await handleLocalApiRequest(url, options);
+      } else {
+        // For mutations (POST/PUT/DELETE), we prefer to show the real server error 
+        // unless the user specifically wants local mode.
+        // But the user said "don't save in local backend", so we throw.
+        const errText = await res.text().catch(() => '');
+        throw new Error(`خطای سرور (${res.status}): ${errText.slice(0, 100)}`);
+      }
+    }
+
+    throw new Error(`خطای ارتباط با سرور (${res.status})`);
+  } catch (err: any) {
+    // Network errors or fetch failures
+    if (err.message?.includes('خطای سرور') || err.message?.includes('دسترسی')) {
+      throw err;
+    }
+
+    if (!isMutation) {
+      console.warn(`Network error for ${url}. Falling back to Cloud Firestore.`);
       isCurrentlyUsingFallback = true;
       return await handleLocalApiRequest(url, options);
     }
-
-    throw new Error(`خطای ارتباط (${res.status})`);
-  } catch (err: any) {
-    // در صورت خطای شبکه یا اجرای استاتیک بدون سرور Node، مستقیماً از Cloud Firestore پاسخ بده
-    if (
-      err.message?.includes('شماره موبایل') ||
-      err.message?.includes('رمز عبور') ||
-      err.message?.includes('الزامی')
-    ) {
-      throw err;
-    }
-    console.warn(
-      `Network/Execution fallback for ${url}: Handled by Cloud Firestore.`
-    );
-    isCurrentlyUsingFallback = true;
-    return await handleLocalApiRequest(url, options);
+    
+    throw err;
   }
 }

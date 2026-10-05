@@ -67,9 +67,73 @@ import {
 } from './src/db/repository.ts';
 import { autoInitPostgresSchema } from './src/db/initSchema.ts';
 
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+
+  // Swagger Configuration
+  const swaggerOptions = {
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'گالری لوستر اکبر صالحی API',
+        version: '1.0.0',
+        description: 'مستندات APIهای پنل مدیریت و فروشگاه لوستر صالحی',
+      },
+      servers: [
+        {
+          url: `http://localhost:${PORT}`,
+          description: 'سرور محلی توسعه',
+        },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
+    },
+    apis: ['./server.ts'], // مسیر فایل‌هایی که شامل کامنت‌های Swagger هستند
+  };
+
+  const swaggerDocs = swaggerJsdoc(swaggerOptions);
+  
+  // تزریق فونت سایت به سواگر
+  const swaggerCustomCss = `
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('/fonts/IRANSansX-Regular.woff2') format('woff2'),
+           url('/fonts/IRANSansX-Regular.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'IRANSansX';
+      src: url('/fonts/IRANSansX-Bold.woff2') format('woff2'),
+           url('/fonts/IRANSansX-Bold.woff') format('woff');
+      font-weight: bold;
+      font-style: normal;
+    }
+    .swagger-ui { font-family: 'IRANSansX', 'IranSansX', sans-serif !important; }
+    .swagger-ui .topbar { display: none }
+    .swagger-ui .info .title { color: #b08c57; font-family: 'IRANSansX', sans-serif !important; }
+    .swagger-ui .opblock .opblock-summary-method { border-radius: 8px }
+    .swagger-ui input, .swagger-ui select, .swagger-ui textarea { font-family: 'IRANSansX', sans-serif !important; }
+  `;
+
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+    customCss: swaggerCustomCss,
+    customSiteTitle: "مستندات API لوستر صالحی"
+  }));
+  app.get('/api/docs.json', (_req, res) => {
+    res.json(swaggerDocs);
+  });
 
   // مقداردهی و ایجاد خودکار جداول PostgreSQL و سیدینگ در لوکال هاست یا داکر
   autoInitPostgresSchema(pool)
@@ -80,6 +144,13 @@ async function startServer() {
 
   app.use(express.json({ limit: '50mb' }));
 
+  /**
+   * @openapi
+   * /api/health:
+   *   get:
+   *     summary: بررسی وضعیت سلامت سرور و دیتابیس
+   *     tags: [System]
+   */
   app.get(['/health', '/api/health'], async (req, res) => {
     let dbStatus: 'connected' | 'disconnected' = 'connected';
     let dbLatencyMs: number | null = null;
@@ -203,6 +274,16 @@ async function startServer() {
   });
 
   // ==================== ۱. APIهای عمومی فروشگاه (متصل به دیتابیس PostgreSQL) ====================
+  /**
+   * @openapi
+   * /api/public/catalog:
+   *   get:
+   *     summary: دریافت اطلاعات کامل فروشگاه (محصولات، دسته‌بندی‌ها، پروژه‌ها و تنظیمات)
+   *     tags: [Public]
+   *     responses:
+   *       200:
+   *         description: کاتالوگ کامل فروشگاه
+   */
   app.get('/api/public/catalog', async (_req, res) => {
     try {
       const [
@@ -254,6 +335,13 @@ async function startServer() {
     }
   });
 
+  /**
+   * @openapi
+   * /api/contact:
+   *   post:
+   *     summary: ثبت پیام جدید در بخش تماس با ما
+   *     tags: [Public]
+   */
   app.post(['/api/contact', '/api/public/contact'], async (req, res) => {
     try {
       const { fullName, phone, mobilePhone, email, subject, message, messageText } = req.body || {};
@@ -282,6 +370,13 @@ async function startServer() {
     }
   });
 
+  /**
+   * @openapi
+   * /api/public/orders:
+   *   post:
+   *     summary: ثبت سفارش جدید توسط مشتری
+   *     tags: [Public]
+   */
   app.post('/api/public/orders', async (req, res) => {
     try {
       const {
@@ -322,6 +417,27 @@ async function startServer() {
 
   // ==================== ۲. APIهای احراز هویت و پنل مدیریت گرافیکی ====================
   // Initial admin credentials can be configured through ADMIN_INITIAL_PHONE and ADMIN_INITIAL_PASSWORD.
+  /**
+   * @openapi
+   * /api/admin/login:
+   *   post:
+   *     summary: ورود ادمین
+   *     tags: [Admin Auth]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               phone:
+   *                 type: string
+   *               password:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: موفق
+   */
   app.post('/api/admin/login', async (req, res) => {
     try {
       const { phone, password } = req.body || {};
@@ -344,10 +460,28 @@ async function startServer() {
     }
   });
 
+  /**
+   * @openapi
+   * /api/admin/me:
+   *   get:
+   *     summary: دریافت اطلاعات ادمین فعلی
+   *     tags: [Admin Auth]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get('/api/admin/me', requireAuth, async (req: AuthRequest, res) => {
     res.json({ admin: req.user, user: req.user });
   });
 
+  /**
+   * @openapi
+   * /api/admin/dashboard:
+   *   get:
+   *     summary: دریافت آمار کلی داشبورد مدیریت
+   *     tags: [Admin Dashboard]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     ['/api/admin/summary', '/api/admin/dashboard'],
     requireAuth,
@@ -365,6 +499,20 @@ async function startServer() {
   );
 
   // مدیریت ادمین‌ها (دریافت، افزودن ادمین جدید، ویرایش رمز/مشخصات، حذف ادمین)
+  /**
+   * @openapi
+   * /api/admin/users:
+   *   get:
+   *     summary: لیست ادمین‌های سیستم
+   *     tags: [Admin Users]
+   *     security:
+   *       - bearerAuth: []
+   *   post:
+   *     summary: ایجاد ادمین جدید
+   *     tags: [Admin Users]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get('/api/admin/users', requireAuth, async (_req: AuthRequest, res) => {
     try {
       const allUsers = await getUsers();
@@ -420,6 +568,18 @@ async function startServer() {
   );
 
   // مدیریت محصولات
+  /**
+   * @openapi
+   * /api/admin/products:
+   *   get:
+   *     summary: لیست تمامی محصولات (ادمین)
+   *     tags: [Admin Products]
+   *     security:
+   *       - bearerAuth: []
+   *   post:
+   *     summary: ایجاد محصول جدید
+   *     tags: [Admin Products]
+   */
   app.get(
     '/api/admin/products',
     requireAuth,
@@ -481,6 +641,20 @@ async function startServer() {
   );
 
   // مدیریت دسته‌بندی‌ها
+  /**
+   * @openapi
+   * /api/admin/categories:
+   *   get:
+   *     summary: لیست دسته‌بندی‌ها (ادمین)
+   *     tags: [Admin Categories]
+   *     security:
+   *       - bearerAuth: []
+   *   post:
+   *     summary: ایجاد دسته‌بندی جدید
+   *     tags: [Admin Categories]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/categories',
     requireAuth,
@@ -548,6 +722,20 @@ async function startServer() {
   );
 
   // مدیریت پروژه‌های اجرایی
+  /**
+   * @openapi
+   * /api/admin/projects:
+   *   get:
+   *     summary: لیست پروژه‌ها (ادمین)
+   *     tags: [Admin Projects]
+   *     security:
+   *       - bearerAuth: []
+   *   post:
+   *     summary: ایجاد پروژه جدید
+   *     tags: [Admin Projects]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/projects',
     requireAuth,
@@ -610,6 +798,13 @@ async function startServer() {
     }
   );
 
+  /**
+   * @openapi
+   * /api/public/projects:
+   *   get:
+   *     summary: لیست پروژه‌ها برای نمایش عمومی
+   *     tags: [Public]
+   */
   // دریافت لیست پروژه‌ها (عمومی)
   app.get(['/api/projects', '/api/public/projects'], async (_req, res) => {
     try {
@@ -672,6 +867,20 @@ async function startServer() {
   );
 
   // مدیریت استوری‌های بالای صفحه
+  /**
+   * @openapi
+   * /api/admin/stories:
+   *   get:
+   *     summary: لیست استوری‌ها (ادمین)
+   *     tags: [Admin Stories]
+   *     security:
+   *       - bearerAuth: []
+   *   post:
+   *     summary: ایجاد استوری جدید
+   *     tags: [Admin Stories]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/stories',
     requireAuth,
@@ -737,6 +946,20 @@ async function startServer() {
   );
 
   // مدیریت مقالات مجله
+  /**
+   * @openapi
+   * /api/admin/articles:
+   *   get:
+   *     summary: لیست مقالات مجله (ادمین)
+   *     tags: [Admin Articles]
+   *     security:
+   *       - bearerAuth: []
+   *   post:
+   *     summary: ایجاد مقاله جدید
+   *     tags: [Admin Articles]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/articles',
     requireAuth,
@@ -796,6 +1019,15 @@ async function startServer() {
   );
 
   // مدیریت پیام‌های تماس با ما
+  /**
+   * @openapi
+   * /api/admin/messages:
+   *   get:
+   *     summary: لیست پیام‌های تماس با ما
+   *     tags: [Admin Messages]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/messages',
     requireAuth,
@@ -861,6 +1093,15 @@ async function startServer() {
   );
 
   // مدیریت سفارشات
+  /**
+   * @openapi
+   * /api/admin/orders:
+   *   get:
+   *     summary: لیست سفارشات ثبت شده
+   *     tags: [Admin Orders]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get('/api/admin/orders', requireAuth, async (_req: AuthRequest, res) => {
     try {
       const list = await getAllOrders();
@@ -922,6 +1163,20 @@ async function startServer() {
   );
 
   // مدیریت تنظیمات فوتر سایت
+  /**
+   * @openapi
+   * /api/admin/settings/footer:
+   *   get:
+   *     summary: دریافت تنظیمات فوتر
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   *   put:
+   *     summary: بروزرسانی تنظیمات فوتر
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/settings/footer',
     requireAuth,
@@ -955,6 +1210,20 @@ async function startServer() {
   );
 
   // مدیریت تنظیمات صفحه تماس با ما
+  /**
+   * @openapi
+   * /api/admin/settings/contact-us:
+   *   get:
+   *     summary: دریافت تنظیمات تماس با ما
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   *   put:
+   *     summary: بروزرسانی تنظیمات تماس با ما
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/settings/contact-us',
     requireAuth,
@@ -999,6 +1268,20 @@ async function startServer() {
     }
   });
 
+  /**
+   * @openapi
+   * /api/admin/settings/about-us:
+   *   get:
+   *     summary: دریافت تنظیمات درباره ما
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   *   put:
+   *     summary: بروزرسانی تنظیمات درباره ما
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/settings/about-us',
     requireAuth,
@@ -1044,6 +1327,20 @@ async function startServer() {
     }
   });
 
+  /**
+   * @openapi
+   * /api/admin/settings/hero-slider:
+   *   get:
+   *     summary: دریافت تنظیمات اسلایدر اصلی
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   *   put:
+   *     summary: بروزرسانی تنظیمات اسلایدر اصلی
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/settings/hero-slider',
     requireAuth,
@@ -1077,6 +1374,20 @@ async function startServer() {
   );
 
   // ۱. مدیریت تنظیمات اصلی وب‌سایت
+  /**
+   * @openapi
+   * /api/admin/settings/main:
+   *   get:
+   *     summary: دریافت تنظیمات اصلی سایت
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   *   put:
+   *     summary: بروزرسانی تنظیمات اصلی سایت
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/settings/main',
     requireAuth,
@@ -1110,6 +1421,20 @@ async function startServer() {
   );
 
   // ۲. مدیریت تنظیمات پنل پیامک
+  /**
+   * @openapi
+   * /api/admin/settings/sms:
+   *   get:
+   *     summary: دریافت تنظیمات پنل پیامک
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   *   put:
+   *     summary: بروزرسانی تنظیمات پنل پیامک
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/settings/sms',
     requireAuth,
@@ -1143,6 +1468,20 @@ async function startServer() {
   );
 
   // ۳. مدیریت تنظیمات سوالات متداول صفحات
+  /**
+   * @openapi
+   * /api/admin/settings/faq:
+   *   get:
+   *     summary: دریافت تنظیمات سوالات متداول
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   *   put:
+   *     summary: بروزرسانی تنظیمات سوالات متداول
+   *     tags: [Admin Settings]
+   *     security:
+   *       - bearerAuth: []
+   */
   app.get(
     '/api/admin/settings/faq',
     requireAuth,

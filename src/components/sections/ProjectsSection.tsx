@@ -31,6 +31,7 @@ const AdaptiveGalleryImage: React.FC<{
   isThumbnail?: boolean;
 }> = ({ src, alt, isThumbnail = false }) => {
   const [isPortraitOrSquare, setIsPortraitOrSquare] = useState<boolean>(false);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
@@ -38,10 +39,11 @@ const AdaptiveGalleryImage: React.FC<{
       const ratio = img.naturalWidth / img.naturalHeight;
       setIsPortraitOrSquare(ratio < 1.22);
     }
+    setIsLoaded(true);
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#f6f5f2] flex items-center justify-center">
+    <div className="relative w-full h-full overflow-hidden bg-[#f0f0f0] flex items-center justify-center">
       {isPortraitOrSquare && (
         <img
           src={src}
@@ -56,7 +58,11 @@ const AdaptiveGalleryImage: React.FC<{
         alt={alt}
         onLoad={handleLoad}
         referrerPolicy="no-referrer"
+        loading="lazy"
+        decoding="async"
         className={`relative z-10 w-full h-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          !isLoaded ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+        } ${
           isPortraitOrSquare
             ? isThumbnail
               ? 'object-contain p-1'

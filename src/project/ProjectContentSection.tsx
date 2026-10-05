@@ -1720,34 +1720,36 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
           {/* ستون چپ (گالری بزرگ پروژه + ۴ تصویر بندانگشتی پایین آن مطابق عکس ۲ و ۵) */}
           <div className="lg:col-span-5">
             {/* قاب اصلی تصویر پروژه با انیمیشن نرم تغییر اسلاید */}
-            <div
-              onClick={() => {
-                if (hasImages) {
-                  setLightboxSlideIdx(activeGalleryIdx);
-                  setIsVideoPlaying(false);
-                  setIsLightboxOpen(true);
-                }
-              }}
-              className="relative w-full h-[310px] xl:h-[345px] rounded-[18px] overflow-hidden bg-[#f2f2f2] flex items-center justify-center cursor-pointer group"
-            >
-              {hasImages ? (
-                projectGallery.map((imgSrc, slideIdx) => {
-                  const isCurrentSlide =
-                    activeGalleryIdx % projectGallery.length === slideIdx;
-                  return (
-                    <img
-                      key={`d-main-slide-${slideIdx}`}
-                      src={imgSrc}
-                      alt={`${activeSingleProject.title} - ${slideIdx + 1}`}
-                      referrerPolicy="no-referrer"
-                      className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                        isCurrentSlide
-                          ? 'opacity-100 scale-100 z-[2] group-hover:scale-[1.02]'
-                          : 'opacity-0 scale-[1.04] z-[1] pointer-events-none'
-                      }`}
-                    />
-                  );
-                })
+              <div
+                onClick={() => {
+                  if (hasImages) {
+                    setLightboxSlideIdx(activeGalleryIdx);
+                    setIsVideoPlaying(false);
+                    setIsLightboxOpen(true);
+                  }
+                }}
+                className="relative w-full aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:h-[310px] xl:h-[345px] rounded-[18px] overflow-hidden bg-[#f0f0f0] flex items-center justify-center cursor-pointer group"
+              >
+                {hasImages ? (
+                  projectGallery.map((imgSrc, slideIdx) => {
+                    const isCurrentSlide =
+                      activeGalleryIdx % projectGallery.length === slideIdx;
+                    return (
+                      <img
+                        key={`d-main-slide-${slideIdx}`}
+                        src={imgSrc}
+                        alt={`${activeSingleProject.title} - ${slideIdx + 1}`}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
+                        className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                          isCurrentSlide
+                            ? 'opacity-100 scale-100 z-[2] group-hover:scale-[1.02]'
+                            : 'opacity-0 scale-[1.04] z-[1] pointer-events-none'
+                        }`}
+                      />
+                    );
+                  })
               ) : (
                 <ProjectNoImageIcon className="w-[92px] h-[92px]" />
               )}
@@ -1864,34 +1866,36 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
           )}
 
           {/* قاب عکس پروژه در موبایل همراه با نقطه‌های سفید پایین عکس و انیمیشن نرم تغییر اسلاید */}
-          <div
-            onClick={() => {
-              if (hasImages) {
-                setLightboxSlideIdx(activeGalleryIdx);
-                setIsVideoPlaying(false);
-                setIsLightboxOpen(true);
-              }
-            }}
-            className="relative w-full h-[230px] xs:h-[255px] sm:h-[300px] rounded-[18px] overflow-hidden bg-[#f2f2f2] flex items-center justify-center mb-5 cursor-pointer"
-          >
-            {hasImages ? (
-              projectGallery.map((imgSrc, slideIdx) => {
-                const isCurrentSlide =
-                  activeGalleryIdx % projectGallery.length === slideIdx;
-                return (
-                  <img
-                    key={`m-main-slide-${slideIdx}`}
-                    src={imgSrc}
-                    alt={`${activeSingleProject.title} - ${slideIdx + 1}`}
-                    referrerPolicy="no-referrer"
-                    className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                      isCurrentSlide
-                        ? 'opacity-100 scale-100 z-[2]'
-                        : 'opacity-0 scale-[1.04] z-[1] pointer-events-none'
-                    }`}
-                  />
-                );
-              })
+            <div
+              onClick={() => {
+                if (hasImages) {
+                  setLightboxSlideIdx(activeGalleryIdx);
+                  setIsVideoPlaying(false);
+                  setIsLightboxOpen(true);
+                }
+              }}
+              className="relative w-full aspect-[4/3] xs:aspect-[16/10] sm:aspect-video lg:aspect-auto lg:h-[230px] xs:h-[255px] sm:h-[300px] rounded-[18px] overflow-hidden bg-[#f0f0f0] flex items-center justify-center mb-5 cursor-pointer"
+            >
+              {hasImages ? (
+                projectGallery.map((imgSrc, slideIdx) => {
+                  const isCurrentSlide =
+                    activeGalleryIdx % projectGallery.length === slideIdx;
+                  return (
+                    <img
+                      key={`m-main-slide-${slideIdx}`}
+                      src={imgSrc}
+                      alt={`${activeSingleProject.title} - ${slideIdx + 1}`}
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
+                      className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                        isCurrentSlide
+                          ? 'opacity-100 scale-100 z-[2]'
+                          : 'opacity-0 scale-[1.04] z-[1] pointer-events-none'
+                      }`}
+                    />
+                  );
+                })
             ) : (
               <ProjectNoImageIcon className="w-20 h-20" />
             )}
