@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { SectionHeading } from '../components/Ornaments';
 import { AppToast } from '../components/InteractiveModals';
+import { addMessageToFirestore } from '../lib/firestoreSync';
 
 export interface ContactUsBranchLocationItem {
   id: string;
@@ -490,40 +491,39 @@ export const ContactUsContentSection: React.FC<
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/public/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: trimmedName,
-          phone: trimmedPhone,
-          email: trimmedEmail,
-          subject: trimmedSubject,
-          message: trimmedMsg,
-        }),
-      });
+      const messageData = {
+        fullName: trimmedName,
+        phone: trimmedPhone,
+        email: trimmedEmail,
+        subject: trimmedSubject,
+        message: trimmedMsg,
+        status: 'new',
+        createdAt: new Date().toISOString(),
+      };
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData?.error || 'خطا در برقراری ارتباط با سرور');
+      const docId = await addMessageToFirestore(messageData);
+      
+      if (!docId) {
+        throw new Error('خطا در ذخیره‌سازی پیام در دیتابیس');
       }
 
       onShowToast?.(
         'contact-success',
         'پیام شما با موفقیت ارسال شد',
-        'پیام شما در پنل ادمین و سیستم ثبت شد. به زودی با شما تماس خواهیم گرفت.'
+        'پیام شما مستقیماً در دیتابیس اصلی ثبت شد.'
       );
 
       setFullName('');
       setMobilePhone('');
       setEmail('');
       setMessageText('');
-
-      window.dispatchEvent(new CustomEvent('app-contact-message-created'));
-    } catch {
+      setSubject('');
+    } catch (err) {
+      console.error(err);
       onShowToast?.(
         'contact-send-error',
         'پیام شما ارسال نشد!',
-        'برای ارسال فرم تماس با تیم مجموعه مجدد تلاش کنید.'
+        'لطفاً مجدد تلاش کنید.'
       );
     } finally {
       setIsSubmitting(false);
