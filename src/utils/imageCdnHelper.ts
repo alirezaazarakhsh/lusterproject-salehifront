@@ -17,21 +17,21 @@ export interface ImageOptimizationOptions {
 export const CHANDELIER_CDN_MAP: Record<string, string> = {
   // ۱. محصولات اصلی و دسته‌بندی‌های لوستر
   shahMalakeh: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=1200&auto=format&fit=crop&q=85',
-  shakheh12: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=1200&auto=format&fit=crop&q=85',
-  ristani: 'https://images.unsplash.com/photo-1517991104123-1d56a6e81ed9?w=1200&auto=format&fit=crop&q=85',
-  resansRoses: 'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=1200&auto=format&fit=crop&q=85',
-  crystaliCherub: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=85',
-  crystaliGold: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=1200&auto=format&fit=crop&q=85',
+  shakheh12: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=1200&auto=format&fit=crop&q=85',
+  ristani: 'https://images.unsplash.com/photo-1565183997392-2f6f122e5c12?w=1200&auto=format&fit=crop&q=85',
+  resansRoses: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=85',
+  crystaliCherub: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=1200&auto=format&fit=crop&q=85',
+  crystaliGold: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200&auto=format&fit=crop&q=85',
 
   // ۲. بنر اصلی و پس‌زمینه‌ها
-  heroBanner: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&auto=format&fit=crop&q=85',
+  heroBanner: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=1920&auto=format&fit=crop&q=85',
 
   // ۳. پروژه‌های اجرا شده
-  projectFereshteh: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&auto=format&fit=crop&q=85',
-  projectLobbyHotel: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200&auto=format&fit=crop&q=85',
-  projectMosqueDome: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?w=1200&auto=format&fit=crop&q=85',
-  projectRoyalRestaurant: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&auto=format&fit=crop&q=85',
-  projectDuplexVilla: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&auto=format&fit=crop&q=85',
+  projectFereshteh: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200&auto=format&fit=crop&q=85',
+  projectLobbyHotel: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=1200&auto=format&fit=crop&q=85',
+  projectMosqueDome: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=85',
+  projectRoyalRestaurant: 'https://images.unsplash.com/photo-1565183997392-2f6f122e5c12?w=1200&auto=format&fit=crop&q=85',
+  projectDuplexVilla: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=1200&auto=format&fit=crop&q=85',
 
   // ۴. استوری‌ها (قاب‌های پرتره عمودی)
   storyPortraitRustic: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=800&auto=format&fit=crop&q=85',
@@ -39,12 +39,12 @@ export const CHANDELIER_CDN_MAP: Record<string, string> = {
   storyPortraitPalace: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&auto=format&fit=crop&q=85',
 
   // ۵. گالری و درباره ما
-  aboutShowroom: 'https://images.unsplash.com/photo-1543198126-a8ad8e47fb22?w=1200&auto=format&fit=crop&q=85',
+  aboutShowroom: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?w=1200&auto=format&fit=crop&q=85',
   aboutGrandAtelier: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1200&auto=format&fit=crop&q=85',
-  aboutRoyalStaircase: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&auto=format&fit=crop&q=85',
-  aboutModernVilla: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&auto=format&fit=crop&q=85',
-  aboutEmeraldPalace: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200&auto=format&fit=crop&q=85',
-  aboutCraftsmanship: 'https://images.unsplash.com/photo-1524484485831-a92ffc0de03f?w=1200&auto=format&fit=crop&q=85',
+  aboutRoyalStaircase: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=85',
+  aboutModernVilla: 'https://images.unsplash.com/photo-1565183997392-2f6f122e5c12?w=1200&auto=format&fit=crop&q=85',
+  aboutEmeraldPalace: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=1200&auto=format&fit=crop&q=85',
+  aboutCraftsmanship: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=1200&auto=format&fit=crop&q=85',
 };
 
 export const CHANDELIER_CDN_FALLBACKS = CHANDELIER_CDN_MAP;
