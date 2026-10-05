@@ -1648,7 +1648,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                   setIsMobileProfileOpen(false);
                   onLogout?.();
                 }}
-                className="w-full p-4 rounded-[20px] bg-[#fdecee] border border-[#f8d4d7] text-[#e02b3a] flex items-center justify-center gap-2.5 font-bold text-[14px] cursor-pointer hover:bg-[#fbd2d6] transition-colors mt-4"
+                className="w-full p-4 rounded-[20px] bg-black text-white flex items-center justify-center gap-2.5 font-bold text-[14px] cursor-pointer hover:bg-gray-800 transition-colors mt-4"
               >
                 <ProfileLogoutIcon className="w-5 h-5 shrink-0" />
                 <span>خروج از حساب کاربری</span>
