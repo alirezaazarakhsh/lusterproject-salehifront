@@ -231,10 +231,23 @@ html.dark section {
 }
 
 html.dark footer a,
+html.dark footer span,
+html.dark footer p,
 html.dark section h2,
-html.dark section h3 {
+html.dark section h3,
+html.dark section button {
   color: #e5e7eb !important;
 }
+
+html.dark section button {
+  background-color: #262626 !important;
+  border-color: #383838 !important;
+}
+
+html.dark section button:hover {
+  background-color: #373737 !important;
+}
+
 
 /* انیمیشن پر شدن خط نوتیفیکیشن و دراور خطاها */
 @keyframes toastProgress {
