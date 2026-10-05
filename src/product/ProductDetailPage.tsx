@@ -586,7 +586,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                   <OptimizedImage
                     src={imgSrc}
                     alt={`${product.name} ${idx + 1}`}
-                    loading="lazy"
+                    loading="eager"
                     options={{ width: 400, quality: 80 }}
                     className="w-full h-full object-cover rounded-[12px]"
                   />
@@ -708,7 +708,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       <OptimizedImage
                         src={rev.avatarUrl}
                         alt={rev.authorName}
-                        loading="lazy"
+                        loading="eager"
                         options={{ width: 120, quality: 80 }}
                         containerClassName="w-10 h-10 rounded-full shrink-0 border border-[#eee]"
                         className="w-10 h-10 rounded-full object-cover"

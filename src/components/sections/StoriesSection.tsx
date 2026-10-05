@@ -169,7 +169,7 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
                     <img
                       src={resolveDirectImageUrl(story.thumbnailImage || story.image, { width: 300, quality: 80 })}
                       alt={story.fullTitle}
-                      loading="lazy"
+                      loading="eager"
                       decoding="async"
                       referrerPolicy="no-referrer"
                       onError={(e) => handleImgErrorFallback(e)}

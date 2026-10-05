@@ -27,7 +27,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
   alt,
   className = '',
-  loading = 'lazy',
+  loading = 'eager',
   priority = false,
   options,
   fallbackSrc,

@@ -1740,7 +1740,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                         src={imgSrc}
                         alt={`${activeSingleProject.title} - ${slideIdx + 1}`}
                         referrerPolicy="no-referrer"
-                        loading="lazy"
+                        loading="eager"
                         decoding="async"
                         className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                           isCurrentSlide
@@ -1886,7 +1886,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                       src={imgSrc}
                       alt={`${activeSingleProject.title} - ${slideIdx + 1}`}
                       referrerPolicy="no-referrer"
-                      loading="lazy"
+                      loading="eager"
                       decoding="async"
                       className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                         isCurrentSlide

@@ -3437,7 +3437,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   <OptimizedImage
                     src={galleryImages[activeSlideIdx]}
                     alt={`${product.name} نمای ${activeSlideIdx}`}
-                    loading="lazy"
+                    loading="eager"
                     options={{ width: 900, quality: 85 }}
                     containerClassName="w-full h-full"
                     className="w-full h-full object-cover object-center"
@@ -3482,7 +3482,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                     <OptimizedImage
                       src={thumbSrc}
                       alt={index === 0 ? 'نمای سه‌بعدی محصول' : 'محیط اجرایی گالری'}
-                      loading="lazy"
+                      loading="eager"
                       options={{ width: 200, quality: 80 }}
                       containerClassName="w-full h-full flex items-center justify-center"
                       className="max-w-full max-h-full object-contain object-center rounded-md"

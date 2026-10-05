@@ -62,7 +62,7 @@ const AdaptiveGalleryImage: React.FC<{
         onLoad={handleLoad}
         onError={(e) => handleImgErrorFallback(e)}
         referrerPolicy="no-referrer"
-        loading="lazy"
+        loading="eager"
         decoding="async"
         className={`relative z-10 w-full h-full transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           !isLoaded ? 'opacity-0 scale-95' : 'opacity-100 scale-100'

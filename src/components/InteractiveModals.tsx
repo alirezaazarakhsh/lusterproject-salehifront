@@ -217,7 +217,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                 <img
                   src={resolveDirectImageUrl(galleryImages[activeSlideIdx], { width: 900, quality: 85 })}
                   alt={`${product.name} نمای ${activeSlideIdx}`}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   referrerPolicy="no-referrer"
                   onError={(e) => handleImgErrorFallback(e)}
@@ -245,7 +245,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                     <img
                       src={resolveDirectImageUrl(thumbSrc, { width: 250, quality: 80 })}
                       alt="محیط اجرایی گالری"
-                      loading="lazy"
+                      loading="eager"
                       decoding="async"
                       referrerPolicy="no-referrer"
                       onError={(e) => handleImgErrorFallback(e)}
@@ -1343,7 +1343,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
         <img
           src={resolveDirectImageUrl(sideStory.mediaUrl || sideStory.image, { width: 500, quality: 80 })}
           alt={sideStory.fullTitle}
-          loading="lazy"
+          loading="eager"
           decoding="async"
           referrerPolicy="no-referrer"
           onError={(e) => handleImgErrorFallback(e)}
@@ -1357,7 +1357,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
             <img
               src={resolveDirectImageUrl(sideStory.thumbnailImage || sideStory.image, { width: 120, quality: 80 })}
               alt={sideStory.title}
-              loading="lazy"
+              loading="eager"
               decoding="async"
               referrerPolicy="no-referrer"
               onError={(e) => handleImgErrorFallback(e)}
@@ -1634,7 +1634,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                     <img
                       src={resolveDirectImageUrl(story.thumbnailImage || story.image, { width: 120, quality: 80 })}
                       alt={story.title}
-                      loading="lazy"
+                      loading="eager"
                       decoding="async"
                       referrerPolicy="no-referrer"
                       onError={(e) => handleImgErrorFallback(e)}
