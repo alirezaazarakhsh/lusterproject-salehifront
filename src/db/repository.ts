@@ -1639,13 +1639,27 @@ export async function updateProjectLikesCount(
 export async function deleteProjectRecord(idOrSlug: number | string) {
   try {
     const num = Number(idOrSlug);
+    const strVal = String(idOrSlug);
+    const cleanSlug = strVal.replace(/^proj-/, '');
     if (!isNaN(num) && num > 0) {
-      await db.delete(projects).where(eq(projects.id, num));
+      await db
+        .delete(projects)
+        .where(
+          or(
+            eq(projects.id, num),
+            eq(projects.slug, strVal),
+            eq(projects.slug, cleanSlug)
+          )
+        );
     } else {
-      const cleanSlug = String(idOrSlug).replace(/^proj-/, '');
-      await db.delete(projects).where(
-        or(eq(projects.slug, String(idOrSlug)), eq(projects.slug, cleanSlug))
-      );
+      await db
+        .delete(projects)
+        .where(
+          or(
+            eq(projects.slug, strVal),
+            eq(projects.slug, cleanSlug)
+          )
+        );
     }
     return { success: true };
   } catch (error) {

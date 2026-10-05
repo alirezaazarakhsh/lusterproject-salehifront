@@ -387,29 +387,23 @@ function loadLocalDb(): LocalDbSchema {
       return {
         users: usersList,
         products:
-          Array.isArray(parsed.products) && parsed.products.length > 0
+          Array.isArray(parsed.products)
             ? parsed.products
             : initial.products,
         categories:
-          Array.isArray(parsed.categories) && parsed.categories.length > 0
+          Array.isArray(parsed.categories)
             ? parsed.categories
             : initial.categories,
         projects:
-          Array.isArray(parsed.projects) && parsed.projects.length >= initial.projects.length
+          Array.isArray(parsed.projects)
             ? parsed.projects
-            : [
-                ...(parsed.projects || []).filter(
-                  (p: any) =>
-                    String(p.id).startsWith('custom-') || Number(p.id) > 20
-                ),
-                ...initial.projects,
-              ],
+            : initial.projects,
         stories:
-          Array.isArray(parsed.stories) && parsed.stories.length > 0
+          Array.isArray(parsed.stories)
             ? parsed.stories
             : initial.stories,
         articles:
-          Array.isArray(parsed.articles) && parsed.articles.length > 0
+          Array.isArray(parsed.articles)
             ? parsed.articles
             : initial.articles,
         messages: Array.isArray(parsed.messages)
@@ -475,27 +469,27 @@ export async function syncFromFirestore(): Promise<void> {
       const current = loadLocalDb();
       const merged: LocalDbSchema = {
         users:
-          Array.isArray(cloudData.users) && cloudData.users.length > 0
+          Array.isArray(cloudData.users)
             ? cloudData.users
             : current.users,
         products:
-          Array.isArray(cloudData.products) && cloudData.products.length > 0
+          Array.isArray(cloudData.products)
             ? cloudData.products
             : current.products,
         categories:
-          Array.isArray(cloudData.categories) && cloudData.categories.length > 0
+          Array.isArray(cloudData.categories)
             ? cloudData.categories
             : current.categories,
         projects:
-          Array.isArray(cloudData.projects) && cloudData.projects.length > 0
+          Array.isArray(cloudData.projects)
             ? cloudData.projects
             : current.projects,
         stories:
-          Array.isArray(cloudData.stories) && cloudData.stories.length > 0
+          Array.isArray(cloudData.stories)
             ? cloudData.stories
             : current.stories,
         articles:
-          Array.isArray(cloudData.articles) && cloudData.articles.length > 0
+          Array.isArray(cloudData.articles)
             ? cloudData.articles
             : current.articles,
         messages: Array.isArray(cloudData.messages)
