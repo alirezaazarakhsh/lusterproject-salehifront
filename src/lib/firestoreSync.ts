@@ -46,13 +46,40 @@ export async function fetchAllDataFromFirestore(): Promise<any | null> {
   return null;
 }
 
-export async function saveAllDataToFirestore(data: any): Promise<boolean> {
+export async function saveCollectionToFirestore(collectionName: string, items: any[]): Promise<boolean> {
   try {
+    const colRef = collection(firestoreDb, collectionName);
+    // Simple implementation: for large collections, this needs to be chunked or managed differently
+    // but for now, we just update the global doc for smaller settings and individual docs for items if possible.
+    // Given the previous monolithic approach, let's start by splitting the main collections.
+    for (const item of items) {
+       // Assuming items have an 'id' or 'productKey' to use as doc ID
+       const docId = String(item.id || item.productKey || item.slug || Math.random().toString(36).substr(2, 9));
+       await setDoc(doc(colRef, docId), item, { merge: true });
+    }
+    return true;
+  } catch (err) {
+    console.error(`Error saving collection ${collectionName} to Cloud Firestore:`, err);
+    return false;
+  }
+}
+
+export async function saveAllDataToFirestore(data: any): Promise<boolean> {
+  // Refactored to save collections individually to avoid size limits
+  try {
+    await saveCollectionToFirestore('products', data.products || []);
+    await saveCollectionToFirestore('projects', data.projects || []);
+    await saveCollectionToFirestore('categories', data.categories || []);
+    await saveCollectionToFirestore('orders', data.orders || []);
+    
+    // Save smaller settings in the main doc
+    const { products, projects, categories, orders, messages, ...settings } = data;
     const docRef = doc(firestoreDb, SETTINGS_COLLECTION, FIRESTORE_STATE_DOC);
     await setDoc(docRef, {
-      ...data,
+      ...settings,
       updatedAt: new Date().toISOString(),
     }, { merge: true });
+    
     return true;
   } catch (err) {
     console.error('Error saving to Cloud Firestore:', err);
