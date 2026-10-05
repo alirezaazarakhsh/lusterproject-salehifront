@@ -2,7 +2,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import express from 'express';
 import path from 'path';
-import { pool } from './src/db/index.ts';
+import { pool, isPostgresConfigured } from './src/db/index.ts';
 import {
   renderHealthHtmlPage,
   type HealthStatusData,
@@ -308,11 +308,13 @@ async function startServer() {
   });
 
   // مقداردهی و ایجاد خودکار جداول PostgreSQL و سیدینگ در لوکال هاست یا داکر
-  autoInitPostgresSchema(pool)
-    .then(() => ensureSeeded())
-    .catch((err) => {
-      console.warn('Postgres auto init notice:', err?.message || err);
-    });
+  if (isPostgresConfigured()) {
+    autoInitPostgresSchema(pool)
+      .then(() => ensureSeeded())
+      .catch((err) => {
+        console.warn('Postgres auto init notice:', err?.message || err);
+      });
+  }
 
   app.use(express.json({ limit: '50mb' }));
   
