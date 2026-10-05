@@ -447,34 +447,45 @@ async function startServer() {
    *         description: اتصال موفقیت‌آمیز SSE
    */
   app.get('/api/realtime/stream', (req, res) => {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
+    if (process.env.VERCEL) {
+      return res.status(200).json({ status: 'ok', stream: 'polling', timestamp: Date.now() });
+    }
+    try {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      if (typeof (res as any).flushHeaders === 'function') {
+        (res as any).flushHeaders();
+      }
 
-    sseClients.push(res);
+      sseClients.push(res);
 
-    req.on('close', () => {
-      sseClients = sseClients.filter((c) => c !== res);
-    });
+      req.on('close', () => {
+        sseClients = sseClients.filter((c) => c !== res);
+      });
+    } catch {
+      res.status(200).json({ status: 'ok' });
+    }
   });
 
   app.use((req, res, next) => {
     const originalJson = res.json;
     res.json = function (body) {
-      const isSuccess = res.statusCode >= 200 && res.statusCode < 300;
-      const isAdminMutation = req.path.startsWith('/api/admin/') && req.method !== 'GET';
-      const isPublicLikeMutation = req.path.includes('/like') && req.method === 'POST';
-      const isPublicContactMutation = (req.path === '/api/contact' || req.path === '/api/public/contact') && req.method === 'POST';
+      try {
+        const isSuccess = res.statusCode >= 200 && res.statusCode < 300;
+        const isAdminMutation = req.path.startsWith('/api/admin/') && req.method !== 'GET';
+        const isPublicLikeMutation = req.path.includes('/like') && req.method === 'POST';
+        const isPublicContactMutation = (req.path === '/api/contact' || req.path === '/api/public/contact') && req.method === 'POST';
 
-      const result = originalJson.call(this, body);
-
-      if (isSuccess && (isAdminMutation || isPublicLikeMutation || isPublicContactMutation)) {
-        setTimeout(() => {
-          broadcastSseEvent({ type: 'catalog-updated', path: req.path, method: req.method, timestamp: Date.now() });
-        }, 100);
-      }
-      return result;
+        if (isSuccess && (isAdminMutation || isPublicLikeMutation || isPublicContactMutation)) {
+          setTimeout(() => {
+            try {
+              broadcastSseEvent({ type: 'catalog-updated', path: req.path, method: req.method, timestamp: Date.now() });
+            } catch {}
+          }, 100);
+        }
+      } catch {}
+      return originalJson.call(this, body);
     };
     next();
   });
@@ -521,18 +532,18 @@ async function startServer() {
         smsSettings,
         faqSettings,
       ] = await Promise.all([
-        getAllCategories(),
-        getAllProducts(),
-        getAllProjects(),
-        getAllStories(),
-        getAllArticles(),
-        getFooterSettings(),
-        getContactUsSettings(),
-        getAboutUsSettings(),
-        getHeroSliderSettings(),
-        getMainSettings(),
-        getSmsSettings(),
-        getFaqSettings(),
+        getAllCategories().catch(() => []),
+        getAllProducts().catch(() => []),
+        getAllProjects().catch(() => []),
+        getAllStories().catch(() => []),
+        getAllArticles().catch(() => []),
+        getFooterSettings().catch(() => ({})),
+        getContactUsSettings().catch(() => ({})),
+        getAboutUsSettings().catch(() => ({})),
+        getHeroSliderSettings().catch(() => ({})),
+        getMainSettings().catch(() => ({})),
+        getSmsSettings().catch(() => ({})),
+        getFaqSettings().catch(() => ({})),
       ]);
       res.json({
         categories: categoriesList,
@@ -549,10 +560,14 @@ async function startServer() {
         faqSettings,
       });
     } catch (error: any) {
-      console.error('Failed to load public catalog:', error);
-      res
-        .status(500)
-        .json({ error: error.message || 'خطا در دریافت اطلاعات فروشگاه' });
+      console.warn('Public catalog graceful fallback:', error);
+      res.json({
+        categories: await getAllCategories().catch(() => []),
+        products: await getAllProducts().catch(() => []),
+        projects: await getAllProjects().catch(() => []),
+        stories: await getAllStories().catch(() => []),
+        articles: await getAllArticles().catch(() => []),
+      });
     }
   });
 
