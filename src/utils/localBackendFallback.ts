@@ -678,7 +678,7 @@ export async function handleLocalApiRequest(
       createdAt: new Date().toISOString(),
     };
     dbState.messages.unshift(created);
-    saveLocalDb(dbState);
+    await saveLocalDb(dbState);
     return created;
   }
 
