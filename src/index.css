@@ -91,15 +91,136 @@
     min-height: 100vh;
   }
 
-  /* پررنگ‌تر کردن رنگ‌های خاکستری پیش‌فرض جهت افزایش فوق‌العاده کنتراست و جلوه فونت یکان بخ */
-  .text-slate-400, .text-zinc-400, .text-gray-400, .text-\[\#888888\] {
+  /* پررنگ‌تر کردن رنگ‌های خاکستری پیش‌فرض در حالت لایت */
+  html:not(.dark) .text-slate-400, html:not(.dark) .text-zinc-400, html:not(.dark) .text-gray-400, html:not(.dark) .text-\[\#888888\] {
     color: #373737 !important;
   }
-  .text-slate-500, .text-zinc-500, .text-neutral-500, .text-gray-500, .text-\[\#777777\], .text-\[\#666666\] {
+  html:not(.dark) .text-slate-500, html:not(.dark) .text-zinc-500, html:not(.dark) .text-neutral-500, html:not(.dark) .text-gray-500, html:not(.dark) .text-\[\#777777\], html:not(.dark) .text-\[\#666666\] {
     color: #212121 !important;
   }
-  .text-slate-600, .text-zinc-600, .text-neutral-600, .text-gray-600, .text-\[\#555555\] {
+  html:not(.dark) .text-slate-600, html:not(.dark) .text-zinc-600, html:not(.dark) .text-neutral-600, html:not(.dark) .text-gray-600, html:not(.dark) .text-\[\#555555\] {
     color: #111111 !important;
+  }
+}
+
+/* =========================================================
+   Luxury Dark Mode Theme Styles (دارک مود فوق‌العاده استاندارد و لوکس)
+   ========================================================= */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #121212 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark #root {
+  background-color: #121212 !important;
+  color: #f3f4f6 !important;
+}
+
+/* پس‌زمینه‌های روشن اصلی به خاکستری تیره و کربن لوکس تبدیل می‌شوند */
+html.dark .bg-\[\#fcfbf9\],
+html.dark .bg-\[\#faf9f5\],
+html.dark .bg-\[\#f8f7f4\],
+html.dark .bg-\[\#f6f5f0\],
+html.dark .bg-\[\#fcfcfc\],
+html.dark .bg-slate-50,
+html.dark .bg-gray-50 {
+  background-color: #161616 !important;
+}
+
+html.dark .bg-white {
+  background-color: #1e1e1e !important;
+  color: #f3f4f6;
+}
+
+html.dark .bg-\[\#f4f4f4\],
+html.dark .bg-\[\#f5f5f5\],
+html.dark .bg-\[\#f2f2f2\],
+html.dark .bg-\[\#eeeeee\],
+html.dark .bg-gray-100 {
+  background-color: #262626 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .bg-\[\#f5f0e8\] {
+  background-color: #2a251e !important;
+}
+
+/* بوردرها و خطوط جداکننده */
+html.dark .border-\[\#efefef\],
+html.dark .border-\[\#e5e5e5\],
+html.dark .border-\[\#e8e8e8\],
+html.dark .border-\[\#e8ddc9\],
+html.dark .border-gray-200,
+html.dark .border-gray-100 {
+  border-color: #2d2d2d !important;
+}
+
+/* هماهنگی و روشنایی مناسب نوشته‌ها در دارک مود */
+html.dark .text-\[\#1a1a1a\],
+html.dark .text-\[\#1e1e1e\],
+html.dark .text-\[\#222222\],
+html.dark .text-\[\#2b2b2b\],
+html.dark .text-\[\#292d32\],
+html.dark .text-\[\#171717\],
+html.dark .text-black,
+html.dark .text-gray-900,
+html.dark .text-slate-900 {
+  color: #f5f5f5 !important;
+}
+
+html.dark .text-\[\#444444\],
+html.dark .text-\[\#555555\],
+html.dark .text-\[\#666666\],
+html.dark .text-\[\#777777\],
+html.dark .text-gray-700,
+html.dark .text-gray-600 {
+  color: #d1d5db !important;
+}
+
+html.dark .text-\[\#888888\],
+html.dark .text-\[\#999999\],
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+/* فیلدهای ورودی فرم‌ها در دارک مود */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+  border-color: #383838 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #71717a !important;
+}
+
+/* شادوهای دارک مود */
+html.dark .shadow-sm,
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* اسکرول‌بار در دارک مود */
+@media (min-width: 1024px) {
+  html.dark ::-webkit-scrollbar-track {
+    background: #181818;
+  }
+  html.dark ::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+  }
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #b59866;
   }
 }
 

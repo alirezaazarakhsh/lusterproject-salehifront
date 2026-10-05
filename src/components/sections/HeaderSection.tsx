@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, X, Home, BookOpen, Phone, Info, FileText, Globe, MapPin } from 'lucide-react';
+import { ChevronDown, ChevronUp, X, Home, BookOpen, Phone, Info, FileText, Globe, MapPin, Sun, Moon } from 'lucide-react';
 import { HeaderBrandLogo, ExactPalmetteVector } from '../Ornaments';
 import {
   AppRoute,
@@ -9,6 +9,7 @@ import {
   navigateFromHref,
   subscribeToRoute,
 } from '../../utils/navigation';
+import { getInitialTheme, toggleTheme, type ThemeMode } from '../../utils/theme';
 
 export interface HeaderSubmenuItem {
   id: string;
@@ -524,8 +525,21 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   const [activeRoute, setActiveRoute] = useState<AppRoute>(() =>
     propCurrentRoute ?? getCurrentRoute()
   );
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => getInitialTheme());
   const closeTimeoutRef = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const handleThemeChange = (e: any) => {
+      if (e?.detail?.theme) {
+        setCurrentTheme(e.detail.theme);
+      } else {
+        setCurrentTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+      }
+    };
+    window.addEventListener('app-theme-changed', handleThemeChange);
+    return () => window.removeEventListener('app-theme-changed', handleThemeChange);
+  }, []);
 
   const menusToRender = mainSettings?.headerMenus && mainSettings.headerMenus.length > 0
     ? mainSettings.headerMenus
@@ -613,6 +627,23 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           <div className="shrink-0 flex items-center -mr-3 sm:-mr-1">
             <ExactPalmetteVector className="w-14 h-14 sm:w-16 sm:h-16 text-[#cbb592]" />
           </div>
+
+          {/* دکمه تغییر تم در گوشه هدر موبایل */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = toggleTheme();
+              setCurrentTheme(next);
+            }}
+            aria-label={currentTheme === 'dark' ? 'حالت روز' : 'حالت شب'}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all cursor-pointer"
+          >
+            {currentTheme === 'dark' ? (
+              <Sun className="w-4 h-4 text-[#f59e0b]" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
+          </button>
 
           {/* لوگوی مرکزی متمرکز: Chandelier بالای AKBAR SALEHI */}
           <a
@@ -844,7 +875,25 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             </div>
           )}
 
-          {/* ۲. دکمه سبد خرید - در وسط دکمه‌های سمت چپ */}
+          {/* ۲. دکمه تغییر تم (Dark / Light Mode) */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = toggleTheme();
+              setCurrentTheme(next);
+            }}
+            aria-label={currentTheme === 'dark' ? 'تغییر به حالت روز' : 'تغییر به حالت شب'}
+            title={currentTheme === 'dark' ? 'حالت روز (Light Mode)' : 'حالت شب (Dark Mode)'}
+            className="w-12 h-12 rounded-[14px] bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer group"
+          >
+            {currentTheme === 'dark' ? (
+              <Sun className="w-[22px] h-[22px] text-[#f59e0b] group-hover:text-white transition-colors" />
+            ) : (
+              <Moon className="w-[22px] h-[22px] transition-colors" />
+            )}
+          </button>
+
+          {/* ۳. دکمه سبد خرید - در کنار دکمه‌های سمت چپ */}
           <button
             type="button"
             onClick={onOpenCart}
@@ -862,7 +911,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             )}
           </button>
 
-          {/* ۳. دکمه کاربری / لاگین به همراه دراپ‌داون حساب کاربری پس از ورود - در منتهی‌الیه سمت چپ هدر */}
+          {/* ۴. دکمه کاربری / لاگین به همراه دراپ‌داون حساب کاربری پس از ورود - در منتهی‌الیه سمت چپ هدر */}
           <div
             className="relative"
             onMouseEnter={() => {

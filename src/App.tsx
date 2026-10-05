@@ -4,6 +4,7 @@ import { HeaderSection } from './components/sections/HeaderSection';
 import { ServerErrorContentSection } from './server-error';
 import { navigateToRoute } from './utils/navigation';
 import { initFirestoreAutoSync } from './utils/localBackendFallback';
+import { initTheme } from './utils/theme';
 
 interface AppErrorBoundaryState {
   hasError: boolean;
@@ -64,6 +65,7 @@ class AppErrorBoundary extends React.Component<
  */
 export function App() {
   useEffect(() => {
+    initTheme();
     initFirestoreAutoSync();
   }, []);
 
