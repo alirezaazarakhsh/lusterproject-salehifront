@@ -446,14 +446,14 @@ function loadLocalDb(): LocalDbSchema {
   return createInitialLocalDb();
 }
 
-function saveLocalDb(dbState: LocalDbSchema) {
+async function saveLocalDb(dbState: LocalDbSchema): Promise<void> {
   try {
     localStorage.setItem(LOCAL_DB_STORAGE_KEY, JSON.stringify(dbState));
   } catch {
     // ignore quota errors
   }
   // ذخیره دائم و بلادرنگ در Cloud Firestore تا با پاک شدن لوکال استوریج داده‌ها از بین نروند
-  saveAllDataToFirestore(dbState).catch((err) => {
+  await saveAllDataToFirestore(dbState).catch((err) => {
     console.warn('Firestore cloud sync notice:', err);
   });
 }
@@ -1004,7 +1004,7 @@ export async function handleLocalApiRequest(
           : body.slidesJson || '[]',
       };
       dbState.stories.unshift(created);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return created;
     }
   }
@@ -1027,7 +1027,7 @@ export async function handleLocalApiRequest(
             ? JSON.stringify(body.slides)
             : body.slidesJson || dbState.stories[idx].slidesJson,
         };
-        saveLocalDb(dbState);
+        await saveLocalDb(dbState);
         return dbState.stories[idx];
       }
     }
@@ -1037,7 +1037,7 @@ export async function handleLocalApiRequest(
         if (String(s.id) === rawParam || s.storyKey === rawParam) return false;
         return true;
       });
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, id: rawParam };
     }
   }
