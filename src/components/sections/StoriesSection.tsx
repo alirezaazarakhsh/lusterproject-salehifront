@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { STORY_ITEMS, StoryItem } from '../../data/chandelierData';
+import { handleImgErrorFallback, resolveDirectImageUrl } from '../../utils/imageCdnHelper';
 
 interface StoriesSectionProps {
   stories?: StoryItem[];
@@ -166,9 +167,12 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
                   {/* تصویر دایره‌ای تمام‌پر (۱۰۰٪ داخل گردی) با فاصله سفید تمیز از حلقه بیرونی */}
                   <div className="w-[66px] h-[66px] sm:w-[71px] sm:h-[71px] rounded-full overflow-hidden bg-[#1b1815]">
                     <img
-                      src={story.thumbnailImage || story.image}
+                      src={resolveDirectImageUrl(story.thumbnailImage || story.image, { width: 300, quality: 80 })}
                       alt={story.fullTitle}
+                      loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
+                      onError={(e) => handleImgErrorFallback(e)}
                       draggable={false}
                       className="w-full h-full object-cover object-center rounded-full group-hover:scale-110 transition-transform duration-300"
                     />
