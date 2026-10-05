@@ -85,8 +85,8 @@ async function startServer() {
       },
       servers: [
         {
-          url: `http://localhost:${PORT}`,
-          description: 'سرور محلی توسعه',
+          url: '/',
+          description: 'سرور فعلی (Default)',
         },
       ],
       components: {
@@ -104,7 +104,7 @@ async function startServer() {
 
   const swaggerDocs = swaggerJsdoc(swaggerOptions);
   
-  // تزریق فونت سایت به سواگر
+  // تزریق فونت سایت به سواگر و اصلاح استایل لینک‌ها
   const swaggerCustomCss = `
     @font-face {
       font-family: 'IRANSansX';
@@ -125,6 +125,8 @@ async function startServer() {
     .swagger-ui .info .title { color: #b08c57; font-family: 'IRANSansX', sans-serif !important; }
     .swagger-ui .opblock .opblock-summary-method { border-radius: 8px }
     .swagger-ui input, .swagger-ui select, .swagger-ui textarea { font-family: 'IRANSansX', sans-serif !important; }
+    .swagger-ui .opblock .opblock-summary-path { font-weight: bold; color: #333; }
+    .swagger-ui .opblock .opblock-summary-description { font-family: 'IRANSansX', sans-serif !important; margin-right: 10px; }
   `;
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
@@ -278,11 +280,14 @@ async function startServer() {
    * @openapi
    * /api/public/catalog:
    *   get:
-   *     summary: دریافت اطلاعات کامل فروشگاه (محصولات، دسته‌بندی‌ها، پروژه‌ها و تنظیمات)
-   *     tags: [Public]
+   *     summary: دریافت کاتالوگ کامل (عمومی)
+   *     description: دریافت تمامی اطلاعات مورد نیاز برای صفحه اصلی و فروشگاه شامل محصولات، دسته‌بندی‌ها، پروژه‌ها و تنظیمات کلی سایت.
+   *     tags: [Public - عمومی]
    *     responses:
    *       200:
-   *         description: کاتالوگ کامل فروشگاه
+   *         description: عملیات موفقیت‌آمیز - دریافت کل اطلاعات دیتابیس
+   *       500:
+   *         description: خطای سرور در بازیابی اطلاعات
    */
   app.get('/api/public/catalog', async (_req, res) => {
     try {
@@ -421,22 +426,30 @@ async function startServer() {
    * @openapi
    * /api/admin/login:
    *   post:
-   *     summary: ورود ادمین
-   *     tags: [Admin Auth]
+   *     summary: ورود به پنل مدیریت
+   *     description: احراز هویت ادمین با استفاده از شماره موبایل و رمز عبور. در صورت موفقیت، توکن JWT بازگردانده می‌شود.
+   *     tags: [Admin Auth - احراز هویت]
    *     requestBody:
    *       required: true
    *       content:
    *         application/json:
    *           schema:
    *             type: object
+   *             required: [phone, password]
    *             properties:
    *               phone:
    *                 type: string
+   *                 description: شماره موبایل ادمین (مثال 09120759419)
    *               password:
    *                 type: string
+   *                 description: رمز عبور پنل مدیریت
    *     responses:
    *       200:
-   *         description: موفق
+   *         description: ورود موفقیت‌آمیز و دریافت توکن
+   *       401:
+   *         description: شماره موبایل یا رمز عبور اشتباه است
+   *       503:
+   *         description: خطا در اتصال به سرویس احراز هویت
    */
   app.post('/api/admin/login', async (req, res) => {
     try {
@@ -537,6 +550,32 @@ async function startServer() {
     }
   });
 
+  /**
+   * @openapi
+   * /api/admin/users/{id}:
+   *   put:
+   *     summary: ویرایش اطلاعات ادمین
+   *     tags: [Admin Users - ادمین‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   *   delete:
+   *     summary: حذف ادمین
+   *     tags: [Admin Users - ادمین‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   */
   app.put(
     '/api/admin/users/:id',
     requireAuth,
@@ -572,13 +611,20 @@ async function startServer() {
    * @openapi
    * /api/admin/products:
    *   get:
-   *     summary: لیست تمامی محصولات (ادمین)
-   *     tags: [Admin Products]
+   *     summary: لیست تمامی محصولات
+   *     description: دریافت لیست کامل محصولات موجود در انبار برای نمایش در پنل مدیریت.
+   *     tags: [Admin Products - محصولات]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: لیست محصولات با موفقیت دریافت شد
    *   post:
-   *     summary: ایجاد محصول جدید
-   *     tags: [Admin Products]
+   *     summary: افزودن محصول جدید
+   *     description: ثبت یک محصول جدید شامل نام، قیمت، تصویر و سایر مشخصات فنی در دیتابیس.
+   *     tags: [Admin Products - محصولات]
+   *     security:
+   *       - bearerAuth: []
    */
   app.get(
     '/api/admin/products',
@@ -610,6 +656,32 @@ async function startServer() {
     }
   );
 
+  /**
+   * @openapi
+   * /api/admin/products/{id}:
+   *   put:
+   *     summary: ویرایش محصول
+   *     tags: [Admin Products - محصولات]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   *   delete:
+   *     summary: حذف محصول
+   *     tags: [Admin Products - محصولات]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   */
   app.put(
     '/api/admin/products/:id',
     requireAuth,
@@ -645,13 +717,14 @@ async function startServer() {
    * @openapi
    * /api/admin/categories:
    *   get:
-   *     summary: لیست دسته‌بندی‌ها (ادمین)
-   *     tags: [Admin Categories]
+   *     summary: لیست تمامی دسته‌بندی‌ها
+   *     description: دریافت لیست دسته‌بندی‌های محصولات (لوستر، آباژور و غیره).
+   *     tags: [Admin Categories - دسته‌بندی‌ها]
    *     security:
    *       - bearerAuth: []
    *   post:
    *     summary: ایجاد دسته‌بندی جدید
-   *     tags: [Admin Categories]
+   *     tags: [Admin Categories - دسته‌بندی‌ها]
    *     security:
    *       - bearerAuth: []
    */
@@ -687,6 +760,32 @@ async function startServer() {
     }
   );
 
+  /**
+   * @openapi
+   * /api/admin/categories/{id}:
+   *   put:
+   *     summary: ویرایش دسته‌بندی
+   *     tags: [Admin Categories - دسته‌بندی‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   *   delete:
+   *     summary: حذف دسته‌بندی
+   *     tags: [Admin Categories - دسته‌بندی‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   */
   app.put(
     '/api/admin/categories/:id',
     requireAuth,
@@ -726,13 +825,14 @@ async function startServer() {
    * @openapi
    * /api/admin/projects:
    *   get:
-   *     summary: لیست پروژه‌ها (ادمین)
-   *     tags: [Admin Projects]
+   *     summary: لیست تمامی پروژه‌های اجرایی
+   *     description: دریافت لیست پروژه‌های بزرگ انجام شده توسط گالری صالحی برای مدیریت در پنل ادمین.
+   *     tags: [Admin Projects - پروژه‌ها]
    *     security:
    *       - bearerAuth: []
    *   post:
-   *     summary: ایجاد پروژه جدید
-   *     tags: [Admin Projects]
+   *     summary: ثبت پروژه جدید
+   *     tags: [Admin Projects - پروژه‌ها]
    *     security:
    *       - bearerAuth: []
    */
@@ -766,6 +866,32 @@ async function startServer() {
     }
   );
 
+  /**
+   * @openapi
+   * /api/admin/projects/{id}:
+   *   put:
+   *     summary: ویرایش پروژه اجرایی
+   *     tags: [Admin Projects - پروژه‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     security:
+   *       - bearerAuth: []
+   *   delete:
+   *     summary: حذف پروژه
+   *     tags: [Admin Projects - پروژه‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     security:
+   *       - bearerAuth: []
+   */
   app.put(
     '/api/admin/projects/:id',
     requireAuth,
@@ -802,8 +928,9 @@ async function startServer() {
    * @openapi
    * /api/public/projects:
    *   get:
-   *     summary: لیست پروژه‌ها برای نمایش عمومی
-   *     tags: [Public]
+   *     summary: لیست پروژه‌های اجرایی (عمومی)
+   *     description: دریافت لیست پروژه‌ها برای نمایش در گالری پروژه‌های سایت به مشتریان.
+   *     tags: [Public - عمومی]
    */
   // دریافت لیست پروژه‌ها (عمومی)
   app.get(['/api/projects', '/api/public/projects'], async (_req, res) => {
@@ -871,13 +998,14 @@ async function startServer() {
    * @openapi
    * /api/admin/stories:
    *   get:
-   *     summary: لیست استوری‌ها (ادمین)
-   *     tags: [Admin Stories]
+   *     summary: لیست استوری‌های سایت
+   *     description: دریافت لیست استوری‌های دایره‌ای بالای صفحه اصلی.
+   *     tags: [Admin Stories - استوری‌ها]
    *     security:
    *       - bearerAuth: []
    *   post:
    *     summary: ایجاد استوری جدید
-   *     tags: [Admin Stories]
+   *     tags: [Admin Stories - استوری‌ها]
    *     security:
    *       - bearerAuth: []
    */
@@ -911,6 +1039,32 @@ async function startServer() {
     }
   );
 
+  /**
+   * @openapi
+   * /api/admin/stories/{id}:
+   *   put:
+   *     summary: ویرایش استوری
+   *     tags: [Admin Stories - استوری‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     security:
+   *       - bearerAuth: []
+   *   delete:
+   *     summary: حذف استوری
+   *     tags: [Admin Stories - استوری‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *     security:
+   *       - bearerAuth: []
+   */
   app.put(
     '/api/admin/stories/:id',
     requireAuth,
@@ -950,13 +1104,14 @@ async function startServer() {
    * @openapi
    * /api/admin/articles:
    *   get:
-   *     summary: لیست مقالات مجله (ادمین)
-   *     tags: [Admin Articles]
+   *     summary: لیست مقالات مجله
+   *     description: دریافت لیست مقالات و بلاگ‌های ثبت شده در بخش مجله سایت.
+   *     tags: [Admin Articles - مقالات]
    *     security:
    *       - bearerAuth: []
    *   post:
    *     summary: ایجاد مقاله جدید
-   *     tags: [Admin Articles]
+   *     tags: [Admin Articles - مقالات]
    *     security:
    *       - bearerAuth: []
    */
@@ -988,6 +1143,32 @@ async function startServer() {
     }
   );
 
+  /**
+   * @openapi
+   * /api/admin/articles/{id}:
+   *   put:
+   *     summary: ویرایش مقاله
+   *     tags: [Admin Articles - مقالات]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   *   delete:
+   *     summary: حذف مقاله
+   *     tags: [Admin Articles - مقالات]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   */
   app.put(
     '/api/admin/articles/:id',
     requireAuth,
@@ -1023,10 +1204,14 @@ async function startServer() {
    * @openapi
    * /api/admin/messages:
    *   get:
-   *     summary: لیست پیام‌های تماس با ما
-   *     tags: [Admin Messages]
+   *     summary: لیست پیام‌های دریافتی
+   *     description: دریافت تمامی پیام‌های ارسال شده توسط کاربران از طریق فرم تماس با ما.
+   *     tags: [Admin Messages - پیام‌ها]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: لیست پیام‌ها دریافت شد
    */
   app.get(
     '/api/admin/messages',
@@ -1042,6 +1227,43 @@ async function startServer() {
     }
   );
 
+  /**
+   * @openapi
+   * /api/admin/messages/{id}:
+   *   put:
+   *     summary: ویرایش کامل پیام
+   *     tags: [Admin Messages - پیام‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   *   patch:
+   *     summary: تغییر وضعیت پیام (خوانده شده/نشده)
+   *     tags: [Admin Messages - پیام‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   *   delete:
+   *     summary: حذف پیام
+   *     tags: [Admin Messages - پیام‌ها]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   */
   app.put(
     '/api/admin/messages/:id',
     requireAuth,
@@ -1097,10 +1319,14 @@ async function startServer() {
    * @openapi
    * /api/admin/orders:
    *   get:
-   *     summary: لیست سفارشات ثبت شده
-   *     tags: [Admin Orders]
+   *     summary: لیست سفارشات مشتریان
+   *     description: مشاهده تمامی سفارشات ثبت شده در سایت به همراه جزییات محصولات و اطلاعات خریدار.
+   *     tags: [Admin Orders - سفارشات]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: لیست سفارشات دریافت شد
    */
   app.get('/api/admin/orders', requireAuth, async (_req: AuthRequest, res) => {
     try {
@@ -1112,6 +1338,43 @@ async function startServer() {
     }
   });
 
+  /**
+   * @openapi
+   * /api/admin/orders/{id}:
+   *   put:
+   *     summary: ویرایش کامل سفارش
+   *     tags: [Admin Orders - سفارشات]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   *   patch:
+   *     summary: تغییر وضعیت سفارش (تکمیل شده/در حال پردازش)
+   *     tags: [Admin Orders - سفارشات]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   *   delete:
+   *     summary: حذف سفارش
+   *     tags: [Admin Orders - سفارشات]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     security:
+   *       - bearerAuth: []
+   */
   app.put(
     '/api/admin/orders/:id',
     requireAuth,
@@ -1168,12 +1431,13 @@ async function startServer() {
    * /api/admin/settings/footer:
    *   get:
    *     summary: دریافت تنظیمات فوتر
-   *     tags: [Admin Settings]
+   *     description: دریافت لینک‌ها، متون و اطلاعات تماس موجود در بخش فوتر سایت.
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    *   put:
    *     summary: بروزرسانی تنظیمات فوتر
-   *     tags: [Admin Settings]
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    */
@@ -1214,13 +1478,14 @@ async function startServer() {
    * @openapi
    * /api/admin/settings/contact-us:
    *   get:
-   *     summary: دریافت تنظیمات تماس با ما
-   *     tags: [Admin Settings]
+   *     summary: تنظیمات صفحه تماس با ما
+   *     description: دریافت آدرس شعبات، لوکیشن‌ها و شماره تماس‌های نمایش داده شده در صفحه تماس با ما.
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    *   put:
    *     summary: بروزرسانی تنظیمات تماس با ما
-   *     tags: [Admin Settings]
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    */
@@ -1272,13 +1537,14 @@ async function startServer() {
    * @openapi
    * /api/admin/settings/about-us:
    *   get:
-   *     summary: دریافت تنظیمات درباره ما
-   *     tags: [Admin Settings]
+   *     summary: تنظیمات صفحه درباره ما
+   *     description: دریافت متون معرفی گالری، تصاویر نمایشگاه و کاتالوگ‌های قابل دانلود.
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    *   put:
    *     summary: بروزرسانی تنظیمات درباره ما
-   *     tags: [Admin Settings]
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    */
@@ -1331,13 +1597,14 @@ async function startServer() {
    * @openapi
    * /api/admin/settings/hero-slider:
    *   get:
-   *     summary: دریافت تنظیمات اسلایدر اصلی
-   *     tags: [Admin Settings]
+   *     summary: تنظیمات اسلایدر بنر
+   *     description: دریافت لیست اسلایدها، متون و تصاویر متحرک بنر اصلی صفحه اول.
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    *   put:
-   *     summary: بروزرسانی تنظیمات اسلایدر اصلی
-   *     tags: [Admin Settings]
+   *     summary: بروزرسانی اسلایدر
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    */
@@ -1378,13 +1645,14 @@ async function startServer() {
    * @openapi
    * /api/admin/settings/main:
    *   get:
-   *     summary: دریافت تنظیمات اصلی سایت
-   *     tags: [Admin Settings]
+   *     summary: تنظیمات اصلی و هدر
+   *     description: دریافت عنوان سایت، لوگو، منوهای هدر و تنظیمات شبکه‌های اجتماعی.
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    *   put:
    *     summary: بروزرسانی تنظیمات اصلی سایت
-   *     tags: [Admin Settings]
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    */
@@ -1425,13 +1693,14 @@ async function startServer() {
    * @openapi
    * /api/admin/settings/sms:
    *   get:
-   *     summary: دریافت تنظیمات پنل پیامک
-   *     tags: [Admin Settings]
+   *     summary: تنظیمات پنل پیامک
+   *     description: دریافت وب‌سرویس پیامک، الگوهای ارسال پیامک به مشتری و ادمین برای سفارشات جدید.
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    *   put:
-   *     summary: بروزرسانی تنظیمات پنل پیامک
-   *     tags: [Admin Settings]
+   *     summary: بروزرسانی تنظیمات پیامک
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    */
@@ -1472,13 +1741,14 @@ async function startServer() {
    * @openapi
    * /api/admin/settings/faq:
    *   get:
-   *     summary: دریافت تنظیمات سوالات متداول
-   *     tags: [Admin Settings]
+   *     summary: تنظیمات سوالات متداول
+   *     description: دریافت لیست پرسش و پاسخ‌های متداول برای نمایش در صفحات راهنما و قوانین.
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    *   put:
-   *     summary: بروزرسانی تنظیمات سوالات متداول
-   *     tags: [Admin Settings]
+   *     summary: بروزرسانی سوالات متداول
+   *     tags: [Admin Settings - تنظیمات]
    *     security:
    *       - bearerAuth: []
    */
