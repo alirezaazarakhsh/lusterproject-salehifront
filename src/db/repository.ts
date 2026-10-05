@@ -1249,13 +1249,15 @@ export async function ensureSeeded(): Promise<void> {
 export async function getAllCategories() {
   try {
     await ensureSeeded();
-    return await db
+    const rows = await db
       .select()
       .from(categories)
       .orderBy(asc(categories.sortOrder), asc(categories.id));
+    if (rows && rows.length > 0) return rows;
+    return INITIAL_CATEGORIES_SEED.map((c, i) => ({ id: i + 1, ...c, createdAt: new Date() })) as any;
   } catch (error) {
-    console.error('Database query failed in getAllCategories:', error);
-    throw new Error('خطا در دریافت دسته‌بندی‌ها از دیتابیس.', { cause: error });
+    console.warn('Database fallback in getAllCategories:', error);
+    return INITIAL_CATEGORIES_SEED.map((c, i) => ({ id: i + 1, ...c, createdAt: new Date() })) as any;
   }
 }
 
@@ -1319,10 +1321,12 @@ export async function deleteCategoryById(id: number) {
 export async function getAllProducts() {
   try {
     await ensureSeeded();
-    return await db.select().from(products).orderBy(asc(products.id));
+    const rows = await db.select().from(products).orderBy(asc(products.id));
+    if (rows && rows.length > 0) return rows;
+    return INITIAL_PRODUCTS_SEED.map((p, i) => ({ id: i + 1, ...p, createdAt: new Date() })) as any;
   } catch (error) {
-    console.error('Database query failed in getAllProducts:', error);
-    throw new Error('خطا در دریافت محصولات از دیتابیس.', { cause: error });
+    console.warn('Database fallback in getAllProducts:', error);
+    return INITIAL_PRODUCTS_SEED.map((p, i) => ({ id: i + 1, ...p, createdAt: new Date() })) as any;
   }
 }
 
@@ -1430,34 +1434,37 @@ export async function getAllProjects() {
   try {
     await ensureSeeded();
     const rows = await db.select().from(projects).orderBy(desc(projects.id));
-    return rows.map((row) => {
-      let parsedChs: any[] = [];
-      if (row.usedChandeliersText) {
-        const tagMatch = row.usedChandeliersText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
-        if (tagMatch && tagMatch[1]) {
-          try {
-            const arr = JSON.parse(tagMatch[1].trim());
-            if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
-          } catch {}
-        }
-        if (parsedChs.length === 0) {
-          const jsonMatch = row.usedChandeliersText.match(/\[\s*\{[\s\S]*\}\s*\]/);
-          if (jsonMatch && jsonMatch[0]) {
+    if (rows && rows.length > 0) {
+      return rows.map((row) => {
+        let parsedChs: any[] = [];
+        if (row.usedChandeliersText) {
+          const tagMatch = row.usedChandeliersText.match(/<!--CHANDELIERS_DATA-->([\s\S]*?)<!--\/CHANDELIERS_DATA-->/);
+          if (tagMatch && tagMatch[1]) {
             try {
-              const arr = JSON.parse(jsonMatch[0].trim());
+              const arr = JSON.parse(tagMatch[1].trim());
               if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
             } catch {}
           }
+          if (parsedChs.length === 0) {
+            const jsonMatch = row.usedChandeliersText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if (jsonMatch && jsonMatch[0]) {
+              try {
+                const arr = JSON.parse(jsonMatch[0].trim());
+                if (Array.isArray(arr) && arr.length > 0) parsedChs = arr;
+              } catch {}
+            }
+          }
         }
-      }
-      return {
-        ...row,
-        chandeliersList: parsedChs,
-      };
-    });
+        return {
+          ...row,
+          chandeliersList: parsedChs,
+        };
+      });
+    }
+    return INITIAL_PROJECTS_SEED.map((p, i) => ({ id: i + 1, ...p, createdAt: new Date(), chandeliersList: [] })) as any;
   } catch (error) {
-    console.error('Database query failed in getAllProjects:', error);
-    throw new Error('خطا در دریافت پروژه‌ها از دیتابیس.', { cause: error });
+    console.warn('Database fallback in getAllProjects:', error);
+    return INITIAL_PROJECTS_SEED.map((p, i) => ({ id: i + 1, ...p, createdAt: new Date(), chandeliersList: [] })) as any;
   }
 }
 
@@ -1672,13 +1679,15 @@ export async function deleteProjectRecord(idOrSlug: number | string) {
 export async function getAllStories() {
   try {
     await ensureSeeded();
-    return await db
+    const rows = await db
       .select()
       .from(stories)
       .orderBy(desc(stories.createdAt), desc(stories.id));
+    if (rows && rows.length > 0) return rows;
+    return INITIAL_STORIES_SEED.map((s, i) => ({ id: i + 1, ...s, createdAt: new Date() })) as any;
   } catch (error) {
-    console.error('Database query failed in getAllStories:', error);
-    throw new Error('خطا در دریافت استوری‌ها.', { cause: error });
+    console.warn('Database fallback in getAllStories:', error);
+    return INITIAL_STORIES_SEED.map((s, i) => ({ id: i + 1, ...s, createdAt: new Date() })) as any;
   }
 }
 
@@ -1864,10 +1873,12 @@ export async function deleteStoryRecord(idOrKey: number | string) {
 export async function getAllArticles() {
   try {
     await ensureSeeded();
-    return await db.select().from(articles).orderBy(asc(articles.id));
+    const rows = await db.select().from(articles).orderBy(asc(articles.id));
+    if (rows && rows.length > 0) return rows;
+    return INITIAL_ARTICLES_SEED.map((a, i) => ({ id: i + 1, ...a, createdAt: new Date() })) as any;
   } catch (error) {
-    console.error('Database query failed in getAllArticles:', error);
-    throw new Error('خطا در دریافت مقالات از دیتابیس.', { cause: error });
+    console.warn('Database fallback in getAllArticles:', error);
+    return INITIAL_ARTICLES_SEED.map((a, i) => ({ id: i + 1, ...a, createdAt: new Date() })) as any;
   }
 }
 

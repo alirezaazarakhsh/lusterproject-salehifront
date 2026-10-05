@@ -66,6 +66,7 @@ import {
   ensureSeeded,
 } from './src/db/repository.ts';
 import { autoInitPostgresSchema } from './src/db/initSchema.ts';
+import { completeSwaggerSpec, renderSwaggerHtml } from './src/utils/swaggerDocs.ts';
 
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
@@ -241,13 +242,27 @@ async function startServer() {
     ],
   };
 
-  let swaggerDocs;
+  let swaggerDocs: any = completeSwaggerSpec;
   try {
-    swaggerDocs = swaggerJsdoc(swaggerOptions);
-    console.log('✅ Swagger documentation generated successfully');
+    const generated: any = swaggerJsdoc(swaggerOptions);
+    if (generated && generated.paths && Object.keys(generated.paths).length > 0) {
+      swaggerDocs = {
+        ...completeSwaggerSpec,
+        ...generated,
+        paths: {
+          ...completeSwaggerSpec.paths,
+          ...generated.paths,
+        },
+        components: {
+          ...completeSwaggerSpec.components,
+          ...generated.components,
+        },
+      };
+    }
+    console.log('✅ Swagger documentation initialized successfully');
   } catch (err) {
-    console.error('❌ Failed to generate Swagger docs:', err);
-    swaggerDocs = { openapi: '3.0.0', info: { title: 'Error' }, paths: {} };
+    console.warn('Swagger JSDoc fallback notice:', err);
+    swaggerDocs = completeSwaggerSpec;
   }
   
   // تزریق فونت سایت به سواگر و اصلاح استایل لینک‌ها
@@ -276,11 +291,19 @@ async function startServer() {
     .swagger-ui .opblock .opblock-summary { flex-direction: row-reverse; }
   `;
 
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+  // سرو مستقل HTML مستندات تعاملی API بدون وابستگی به فایل‌های محلی (سازگار کامل با ورسل، داکر، سرور ابری و محلی)
+  app.get(['/api-docs', '/api-docs/', '/docs', '/api/docs'], (_req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(renderSwaggerHtml('/api/docs.json'));
+  });
+
+  // سرو استاندارد swagger-ui-express به عنوان Fallback
+  app.use('/api-docs-express', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
     customCss: swaggerCustomCss,
     customSiteTitle: "مستندات API لوستر صالحی (Postman-Like)"
   }));
-  app.get('/api/docs.json', (_req, res) => {
+
+  app.get(['/api/docs.json', '/api-docs/swagger.json'], (_req, res) => {
     res.json(swaggerDocs);
   });
 
