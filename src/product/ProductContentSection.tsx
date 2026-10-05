@@ -22,6 +22,8 @@ import {
   FINISH_PRESETS,
 } from '../components/Chandelier3DViewer';
 import { TransparentProductImage } from '../components/TransparentProductImage';
+import { OptimizedImage } from '../components/OptimizedImage';
+import { handleImgErrorFallback, resolveDirectImageUrl } from '../utils/imageCdnHelper';
 import {
   getProductCategorySlugFromLocation,
   navigateToProductCategory,
@@ -3432,9 +3434,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                 </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <img
+                  <OptimizedImage
                     src={galleryImages[activeSlideIdx]}
                     alt={`${product.name} نمای ${activeSlideIdx}`}
+                    loading="lazy"
+                    options={{ width: 900, quality: 85 }}
+                    containerClassName="w-full h-full"
                     className="w-full h-full object-cover object-center"
                   />
                 </div>
@@ -3474,9 +3479,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                         : 'border-[#ebdcb9]/40 hover:border-[#b59766]/50'
                     }`}
                   >
-                    <img
+                    <OptimizedImage
                       src={thumbSrc}
                       alt={index === 0 ? 'نمای سه‌بعدی محصول' : 'محیط اجرایی گالری'}
+                      loading="lazy"
+                      options={{ width: 200, quality: 80 }}
+                      containerClassName="w-full h-full flex items-center justify-center"
                       className="max-w-full max-h-full object-contain object-center rounded-md"
                     />
                     {index === 0 && (

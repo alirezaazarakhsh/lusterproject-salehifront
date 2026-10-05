@@ -38,6 +38,7 @@ import {
   GENERATED_IMAGES,
 } from '../data/chandelierData';
 import { ExactPalmetteVector } from './Ornaments';
+import { handleImgErrorFallback, resolveDirectImageUrl } from '../utils/imageCdnHelper';
 import {
   Chandelier3DViewer,
   FinishType,
@@ -214,8 +215,12 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                 </div>
               ) : (
                 <img
-                  src={galleryImages[activeSlideIdx]}
+                  src={resolveDirectImageUrl(galleryImages[activeSlideIdx], { width: 900, quality: 85 })}
                   alt={`${product.name} نمای ${activeSlideIdx}`}
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => handleImgErrorFallback(e)}
                   className="w-full h-full object-cover object-center"
                 />
               )}
@@ -238,8 +243,12 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                     }`}
                   >
                     <img
-                      src={thumbSrc}
+                      src={resolveDirectImageUrl(thumbSrc, { width: 250, quality: 80 })}
                       alt="محیط اجرایی گالری"
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => handleImgErrorFallback(e)}
                       className="w-full h-full object-cover object-center"
                     />
                   </button>
@@ -1332,9 +1341,12 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
         className={`${visibilityClass} relative h-[430px] rounded-[18px] overflow-hidden bg-[#181614] cursor-pointer group shrink-0 shadow-xl`}
       >
         <img
-          src={sideStory.mediaUrl || sideStory.image}
+          src={resolveDirectImageUrl(sideStory.mediaUrl || sideStory.image, { width: 500, quality: 80 })}
           alt={sideStory.fullTitle}
+          loading="lazy"
+          decoding="async"
           referrerPolicy="no-referrer"
+          onError={(e) => handleImgErrorFallback(e)}
           className="w-full h-full object-cover brightness-[0.48] group-hover:brightness-[0.65] group-hover:scale-105 transition-all duration-300"
         />
 
@@ -1343,9 +1355,12 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
         <div className="absolute top-3.5 right-3.5 left-3.5 flex items-center justify-start gap-2.5">
           <div className="w-9 h-9 rounded-full p-[1.5px] border border-[#b59766] bg-white shrink-0 overflow-hidden">
             <img
-              src={sideStory.thumbnailImage || sideStory.image}
+              src={resolveDirectImageUrl(sideStory.thumbnailImage || sideStory.image, { width: 120, quality: 80 })}
               alt={sideStory.title}
+              loading="lazy"
+              decoding="async"
               referrerPolicy="no-referrer"
+              onError={(e) => handleImgErrorFallback(e)}
               className="w-full h-full rounded-full object-cover object-center"
             />
           </div>
@@ -1455,9 +1470,10 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
             {effectiveType === 'video' ? (
               <div className="absolute inset-0 w-full h-full bg-[#12100e] flex items-center justify-center overflow-hidden">
                 <img
-                  src={activeMediaUrl}
+                  src={resolveDirectImageUrl(activeMediaUrl, { width: 1000, quality: 85 })}
                   alt=""
                   referrerPolicy="no-referrer"
+                  onError={(e) => handleImgErrorFallback(e)}
                   className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125 brightness-[0.35]"
                 />
 
@@ -1465,7 +1481,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                   <video
                     ref={videoElementRef}
                     src={activeVideoUrl}
-                    poster={story.thumbnailImage || activeMediaUrl}
+                    poster={resolveDirectImageUrl(story.thumbnailImage || activeMediaUrl, { width: 800, quality: 80 })}
                     autoPlay
                     loop
                     muted={isVideoMuted}
@@ -1488,9 +1504,10 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                       }`}
                     >
                       <img
-                        src={activeMediaUrl}
+                        src={resolveDirectImageUrl(activeMediaUrl, { width: 1000, quality: 85 })}
                         alt={story.fullTitle}
                         referrerPolicy="no-referrer"
+                        onError={(e) => handleImgErrorFallback(e)}
                         className={`w-full h-full ${
                           mainIsStudio
                             ? 'object-contain'
@@ -1534,26 +1551,29 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
             ) : effectiveType === 'image-only' ? (
               /* ==================== استوری تک عکسی (تمام‌صفحه بدون نوار مشکی پایین) ==================== */
               <img
-                src={activeMediaUrl}
+                src={resolveDirectImageUrl(activeMediaUrl, { width: 1000, quality: 85 })}
                 alt={story.fullTitle}
                 referrerPolicy="no-referrer"
+                onError={(e) => handleImgErrorFallback(e)}
                 className="absolute inset-0 w-full h-full object-cover"
               />
             ) : mainIsStudio ? (
               /* ==================== در صورت استفاده از عکس استودیویی به عنوان پس‌زمینه ==================== */
               <div className="absolute inset-0 w-full h-full bg-[#181614] overflow-hidden">
                 <img
-                  src={activeMediaUrl}
+                  src={resolveDirectImageUrl(activeMediaUrl, { width: 600, quality: 75 })}
                   alt=""
                   referrerPolicy="no-referrer"
+                  onError={(e) => handleImgErrorFallback(e)}
                   className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125 brightness-[0.38] pointer-events-none"
                 />
                 <div className="relative z-10 w-full h-full flex items-center justify-center px-3.5 pt-18 pb-32">
                   <div className="w-full h-full rounded-[18px] overflow-hidden flex items-center justify-center shadow-lg bg-[#f8f6f1] p-3 sm:p-4">
                     <img
-                      src={activeMediaUrl}
+                      src={resolveDirectImageUrl(activeMediaUrl, { width: 900, quality: 85 })}
                       alt={story.fullTitle}
                       referrerPolicy="no-referrer"
+                      onError={(e) => handleImgErrorFallback(e)}
                       className="w-full h-full object-contain rounded-[12px] transition-all duration-300"
                     />
                   </div>
@@ -1562,9 +1582,10 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
             ) : (
               /* ==================== استوری محصول با تصویر تمام‌صفحه دقیقاً مطابق تصویر ۲ ==================== */
               <img
-                src={activeMediaUrl}
+                src={resolveDirectImageUrl(activeMediaUrl, { width: 1000, quality: 85 })}
                 alt={story.fullTitle}
                 referrerPolicy="no-referrer"
+                onError={(e) => handleImgErrorFallback(e)}
                 className="absolute inset-0 w-full h-full object-cover"
               />
             )}
@@ -1611,9 +1632,12 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full p-[1.5px] border border-[#b59766] bg-white shrink-0 overflow-hidden shadow-sm">
                     <img
-                      src={story.thumbnailImage || story.image}
+                      src={resolveDirectImageUrl(story.thumbnailImage || story.image, { width: 120, quality: 80 })}
                       alt={story.title}
+                      loading="lazy"
+                      decoding="async"
                       referrerPolicy="no-referrer"
+                      onError={(e) => handleImgErrorFallback(e)}
                       className="w-full h-full rounded-full object-cover"
                     />
                   </div>

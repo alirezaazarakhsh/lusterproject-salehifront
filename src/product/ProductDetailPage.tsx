@@ -30,6 +30,8 @@ import {
   FINISH_PRESETS,
 } from '../components/Chandelier3DViewer';
 import { TransparentProductImage } from '../components/TransparentProductImage';
+import { OptimizedImage } from '../components/OptimizedImage';
+import { handleImgErrorFallback, resolveDirectImageUrl } from '../utils/imageCdnHelper';
 import { toPersianDigits } from '../utils/persianDigits';
 
 interface ProductDetailPageProps {
@@ -581,9 +583,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                       : 'border-transparent hover:border-[#ddd]'
                   }`}
                 >
-                  <img
+                  <OptimizedImage
                     src={imgSrc}
                     alt={`${product.name} ${idx + 1}`}
+                    loading="lazy"
+                    options={{ width: 400, quality: 80 }}
                     className="w-full h-full object-cover rounded-[12px]"
                   />
                 </button>
@@ -701,10 +705,13 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <img
+                      <OptimizedImage
                         src={rev.avatarUrl}
                         alt={rev.authorName}
-                        className="w-10 h-10 rounded-full object-cover border border-[#eee]"
+                        loading="lazy"
+                        options={{ width: 120, quality: 80 }}
+                        containerClassName="w-10 h-10 rounded-full shrink-0 border border-[#eee]"
+                        className="w-10 h-10 rounded-full object-cover"
                       />
                       <div>
                         <span className="block text-xs font-extrabold text-[#111]">

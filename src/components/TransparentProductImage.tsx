@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { removeImageWhiteBackground } from '../utils/removeBackground';
+import { resolveDirectImageUrl, getFallbackCdnUrl, handleImgErrorFallback } from '../utils/imageCdnHelper';
 
 interface TransparentProductImageProps {
   src: string;
@@ -7,12 +8,11 @@ interface TransparentProductImageProps {
   className?: string;
   filterCss?: string;
   customHexColor?: string | null;
+  loading?: 'lazy' | 'eager';
 }
 
 /**
- * کامپوننت تصویر محصول بدون پس‌زمینه (Transparent Cutout)
- * به صورت خودکار پس‌زمینه سفید هر عکس محصول را حذف می‌کند
- * و در صورت انتخاب رنگ دلخواه توسط کاربر، فقط بدنه خود لوستر را رنگ‌آمیزی می‌کند.
+ * کامپوننت تصویر محصول با لودینگ بهینه Lazy، اتصال به CDN مستقیم و برش پس‌زمینه (Transparent Cutout)
  */
 export const TransparentProductImage: React.FC<TransparentProductImageProps> = ({
   src,
@@ -20,17 +20,31 @@ export const TransparentProductImage: React.FC<TransparentProductImageProps> = (
   className = '',
   filterCss = 'none',
   customHexColor = null,
+  loading = 'lazy',
 }) => {
-  const [cleanSrc, setCleanSrc] = useState<string>(src);
+  const directUrl = resolveDirectImageUrl(src);
+  const [cleanSrc, setCleanSrc] = useState<string>(directUrl);
   const [tintedSrc, setTintedSrc] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
-    removeImageWhiteBackground(src).then((result) => {
-      if (isMounted) {
-        setCleanSrc(result);
-      }
-    });
+    const initialDirect = resolveDirectImageUrl(src);
+    setCleanSrc(initialDirect);
+
+    // انجام عملیات حذف پس‌زمینه بدون بلاک کردن رندر اولیه
+    removeImageWhiteBackground(initialDirect)
+      .then((result) => {
+        if (isMounted && result) {
+          setCleanSrc(result);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setCleanSrc(getFallbackCdnUrl(src));
+        }
+      });
+
     return () => {
       isMounted = false;
     };
@@ -91,6 +105,9 @@ export const TransparentProductImage: React.FC<TransparentProductImageProps> = (
         if (isMounted) setTintedSrc(null);
       }
     };
+    img.onerror = () => {
+      if (isMounted) setTintedSrc(null);
+    };
     img.src = cleanSrc;
 
     return () => {
@@ -102,11 +119,15 @@ export const TransparentProductImage: React.FC<TransparentProductImageProps> = (
     <img
       src={tintedSrc || cleanSrc}
       alt={alt}
+      loading={loading}
+      decoding="async"
       referrerPolicy="no-referrer"
+      onError={(e) => handleImgErrorFallback(e, getFallbackCdnUrl(src))}
+      onLoad={() => setIsLoaded(true)}
       style={{
         filter: customHexColor ? 'none' : filterCss,
       }}
-      className={className}
+      className={`${className} transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-90'}`}
     />
   );
 };
