@@ -1,5 +1,5 @@
 import { asc, desc, eq, or } from 'drizzle-orm';
-import { db, isPostgresConfigured } from './index.ts';
+import { db } from './index.ts';
 import { ensureDefaultAdmin } from './users.ts';
 import {
   articles,
@@ -1110,10 +1110,6 @@ export async function ensureSeeded(): Promise<void> {
   if (seedPromise) {
     return seedPromise;
   }
-  if (!isPostgresConfigured()) {
-    seedPromise = Promise.resolve();
-    return seedPromise;
-  }
   seedPromise = (async () => {
     try {
       await ensureDefaultAdmin();
@@ -1241,7 +1237,8 @@ export async function ensureSeeded(): Promise<void> {
         await db.insert(orders).values(INITIAL_ORDERS_SEED);
       }
     } catch (error) {
-      console.warn('PostgreSQL database seeding notice (standalone mode):', (error as any)?.message || error);
+      console.error('Seed check error:', error);
+      seedPromise = null;
     }
   })();
 

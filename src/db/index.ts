@@ -6,16 +6,6 @@ declare global {
   var _postgresPool: Pool | undefined;
 }
 
-export const isPostgresConfigured = (): boolean => {
-  return Boolean(
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.POSTGRES_PRISMA_URL ||
-    process.env.SQL_HOST ||
-    process.env.PGHOST
-  );
-};
-
 export const createPool = (): Pool => {
   if (!global._postgresPool) {
     const connectionString =
@@ -37,7 +27,7 @@ export const createPool = (): Pool => {
         connectionString,
         ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
         max: 10,
-        connectionTimeoutMillis: 1500,
+        connectionTimeoutMillis: 10000,
         idleTimeoutMillis: 30000,
       };
     } else {
@@ -80,7 +70,7 @@ export const createPool = (): Pool => {
         database,
         ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
         max: 10,
-        connectionTimeoutMillis: 1500,
+        connectionTimeoutMillis: 10000,
         idleTimeoutMillis: 30000,
       };
     }
@@ -88,7 +78,7 @@ export const createPool = (): Pool => {
     global._postgresPool = new Pool(poolConfig);
 
     global._postgresPool.on('error', (err) => {
-      // Graceful pool background error handling
+      console.warn('PostgreSQL pool background notice:', err?.message || err);
     });
   }
   return global._postgresPool;
