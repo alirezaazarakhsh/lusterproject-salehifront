@@ -146,38 +146,9 @@ export async function autoInitPostgresSchema(pool: Pool): Promise<void> {
         CREATE TABLE IF NOT EXISTS site_settings (
           id SERIAL PRIMARY KEY,
           setting_key TEXT NOT NULL UNIQUE,
-          setting_value_json TEXT NOT NULL DEFAULT '{}',
+          setting_value TEXT NOT NULL,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-
-        DO $$
-        BEGIN
-          IF EXISTS (
-            SELECT 1
-            FROM information_schema.columns
-            WHERE table_schema = current_schema()
-              AND table_name = 'site_settings'
-              AND column_name = 'setting_value'
-          ) AND NOT EXISTS (
-            SELECT 1
-            FROM information_schema.columns
-            WHERE table_schema = current_schema()
-              AND table_name = 'site_settings'
-              AND column_name = 'setting_value_json'
-          ) THEN
-            ALTER TABLE site_settings
-              RENAME COLUMN setting_value TO setting_value_json;
-          ELSIF NOT EXISTS (
-            SELECT 1
-            FROM information_schema.columns
-            WHERE table_schema = current_schema()
-              AND table_name = 'site_settings'
-              AND column_name = 'setting_value_json'
-          ) THEN
-            ALTER TABLE site_settings
-              ADD COLUMN setting_value_json TEXT NOT NULL DEFAULT '{}';
-          END IF;
-        END $$;
       `);
       console.log('✅ PostgreSQL database schema verified & ready.');
     } finally {
