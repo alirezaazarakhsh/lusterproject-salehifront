@@ -317,11 +317,16 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   
   // Explicitly serve public assets in both dev and prod for robustness
-  app.use('/assets', express.static(path.join(process.cwd(), 'public/assets')));
-  app.use('/assets', express.static(path.join(process.cwd(), 'dist/assets')));
-  app.use('/assets', express.static(path.join(process.cwd(), 'src/assets')));
-  app.use('/fonts', express.static(path.join(process.cwd(), 'public/fonts')));
-  app.use('/fonts', express.static(path.join(process.cwd(), 'dist/fonts')));
+  app.use('/assets/images', express.static(path.join(process.cwd(), 'public/assets/images'), { maxAge: '7d' }));
+  app.use('/assets/images', express.static(path.join(process.cwd(), 'dist/assets/images'), { maxAge: '7d' }));
+  app.use('/assets/images', express.static(path.join(process.cwd(), 'src/assets/images'), { maxAge: '7d' }));
+  app.use('/assets', express.static(path.join(process.cwd(), 'public/assets'), { maxAge: '7d' }));
+  app.use('/assets', express.static(path.join(process.cwd(), 'dist/assets'), { maxAge: '7d' }));
+  app.use('/assets', express.static(path.join(process.cwd(), 'src/assets'), { maxAge: '7d' }));
+  app.use('/fonts', express.static(path.join(process.cwd(), 'public/fonts'), { maxAge: '30d' }));
+  app.use('/fonts', express.static(path.join(process.cwd(), 'dist/fonts'), { maxAge: '30d' }));
+  app.use(express.static(path.join(process.cwd(), 'public')));
+  app.use(express.static(path.join(process.cwd(), 'dist')));
 
   /**
    * @openapi

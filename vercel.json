@@ -2,33 +2,30 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api-docs",
-      "dest": "/api/index.ts"
+      "source": "/api-docs",
+      "destination": "/api/index.ts"
     },
     {
-      "src": "/api-docs/(.*)",
-      "dest": "/api/index.ts"
+      "source": "/api-docs/:match*",
+      "destination": "/api/index.ts"
     },
     {
-      "src": "/docs",
-      "dest": "/api/index.ts"
+      "source": "/docs",
+      "destination": "/api/index.ts"
     },
     {
-      "src": "/health",
-      "dest": "/api/index.ts"
+      "source": "/health",
+      "destination": "/api/index.ts"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "/api/index.ts"
+      "source": "/api/:match*",
+      "destination": "/api/index.ts"
     },
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/((?!assets/|fonts/|.*\\.[a-zA-Z0-9]+$).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
