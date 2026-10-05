@@ -85,6 +85,10 @@ async function startServer() {
       },
       servers: [
         {
+          url: 'https://lostersalehi.ir',
+          description: 'سرور اصلی (Production)',
+        },
+        {
           url: '/',
           description: 'سرور فعلی (Default)',
         },
