@@ -65,7 +65,6 @@ class AppErrorBoundary extends React.Component<
  */
 export function App() {
   useEffect(() => {
-    initTheme();
     initFirestoreAutoSync();
   }, []);
 

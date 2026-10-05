@@ -103,12 +103,9 @@
   }
 }
 
-/* =========================================================
-   Luxury Dark Mode Theme Styles (دارک مود فوق‌العاده استاندارد و لوکس)
-   ========================================================= */
-html.dark {
-  color-scheme: dark;
-}
+
+/* انیمیشن پر شدن خط نوتیفیکیشن و دراور خطاها */
+
 
 html.dark body {
   background-color: #121212 !important;
@@ -274,6 +271,7 @@ html.dark .hover\:bg-[#ececec]:hover {
 
 
 
+
 /* انیمیشن پر شدن خط نوتیفیکیشن و دراور خطاها */
 @keyframes toastProgress {
   from {
@@ -342,4 +340,5 @@ html.dark .hover\:bg-[#ececec]:hover {
     background: #b59866;
   }
 }
+
 
