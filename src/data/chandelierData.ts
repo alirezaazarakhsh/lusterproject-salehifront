@@ -1,39 +1,24 @@
 import { ChandelierModelType, FinishType } from '../components/Chandelier3DViewer';
-import heroBannerImg from '../assets/images/hero_chandelier_banner_1790646227735.jpg';
-import shahMalakehImg from '../assets/images/chandelier_shah_malakeh_1790646240589.jpg';
-import shakheh12Img from '../assets/images/chandelier_12_shakheh_1790646251083.jpg';
-import ristaniImg from '../assets/images/chandelier_ristani_1790646262438.jpg';
-import resansRosesImg from '../assets/images/chandelier_resans_roses_1790647324596.jpg';
-import crystaliCherubImg from '../assets/images/chandelier_crystali_cherub_1790647334691.jpg';
-import crystaliGoldImg from '../assets/images/chandelier_crystali_1790646272446.jpg';
-import projectFereshtehImg from '../assets/images/project_fereshteh_interior_1790646283141.jpg';
-import projectLobbyHotelImg from '../assets/images/project_lobby_hotel_1790681398126.jpg';
-import projectMosqueDomeImg from '../assets/images/project_mosque_dome_1790681415301.jpg';
-import projectRoyalRestaurantImg from '../assets/images/project_royal_restaurant_1790681438681.jpg';
-import projectDuplexVillaImg from '../assets/images/project_duplex_villa_1790681451000.jpg';
-import storyPortraitRusticImg from '../assets/images/story_portrait_rustic_1790682028851.jpg';
-import storyPortraitAtriumImg from '../assets/images/story_portrait_atrium_1790682040988.jpg';
-import storyPortraitPalaceImg from '../assets/images/story_portrait_palace_1790682052291.jpg';
 
 /**
- * مسیر تصاویر تولیدشده در پروژه (با Import استاندارد باندلر Vite تا در تمامی محیط‌ها ۱۰۰٪ لود شوند)
+ * مسیر تصاویر تولیدشده در پروژه (استفاده از مسیرهای استاتیک برای پایداری در تمامی محیط‌ها)
  */
 export const GENERATED_IMAGES = {
-  heroBanner: heroBannerImg,
-  shahMalakeh: shahMalakehImg,
-  shakheh12: shakheh12Img,
-  ristani: ristaniImg,
-  resansRoses: resansRosesImg,
-  crystaliCherub: crystaliCherubImg,
-  crystaliGold: crystaliGoldImg,
-  projectFereshteh: projectFereshtehImg,
-  projectLobbyHotel: projectLobbyHotelImg,
-  projectMosqueDome: projectMosqueDomeImg,
-  projectRoyalRestaurant: projectRoyalRestaurantImg,
-  projectDuplexVilla: projectDuplexVillaImg,
-  storyPortraitRustic: storyPortraitRusticImg,
-  storyPortraitAtrium: storyPortraitAtriumImg,
-  storyPortraitPalace: storyPortraitPalaceImg,
+  heroBanner: '/assets/images/hero_chandelier_banner_1790646227735.jpg',
+  shahMalakeh: '/assets/images/chandelier_shah_malakeh_1790646240589.jpg',
+  shakheh12: '/assets/images/chandelier_12_shakheh_1790646251083.jpg',
+  ristani: '/assets/images/chandelier_ristani_1790646262438.jpg',
+  resansRoses: '/assets/images/chandelier_resans_roses_1790647324596.jpg',
+  crystaliCherub: '/assets/images/chandelier_crystali_cherub_1790647334691.jpg',
+  crystaliGold: '/assets/images/chandelier_crystali_1790646272446.jpg',
+  projectFereshteh: '/assets/images/project_fereshteh_interior_1790646283141.jpg',
+  projectLobbyHotel: '/assets/images/project_lobby_hotel_1790681398126.jpg',
+  projectMosqueDome: '/assets/images/project_mosque_dome_1790681415301.jpg',
+  projectRoyalRestaurant: '/assets/images/project_royal_restaurant_1790681438681.jpg',
+  projectDuplexVilla: '/assets/images/project_duplex_villa_1790681451000.jpg',
+  storyPortraitRustic: '/assets/images/story_portrait_rustic_1790682028851.jpg',
+  storyPortraitAtrium: '/assets/images/story_portrait_atrium_1790682040988.jpg',
+  storyPortraitPalace: '/assets/images/story_portrait_palace_1790682052291.jpg',
 };
 
 export type StoryCategoryType =

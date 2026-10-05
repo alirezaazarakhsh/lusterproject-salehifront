@@ -44,8 +44,8 @@ import {
 import { ProjectContentSection } from '../project';
 import { ProductContentSection } from '../product';
 import { AdminPanelSection } from '../admin';
-import { NotFoundContentSection } from '../not-found';
-import { ServerErrorContentSection } from '../server-error';
+import { NotFoundContentSection } from '../components/sections/NotFoundContentSection';
+import { ServerErrorContentSection } from '../components/sections/ServerErrorContentSection';
 import { PagePreloader } from '../components/PagePreloader';
 import {
   AppRoute,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { navigateToRoute } from '../utils/navigation';
+import { navigateToRoute } from '../../utils/navigation';
 
 interface NotFoundContentSectionProps {
   onBackToHome?: () => void;

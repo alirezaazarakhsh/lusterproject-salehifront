@@ -18,40 +18,40 @@ let seedPromise: Promise<void> | null = null;
 let hasSeededProjects = false;
 
 export const ASSET_PATHS = {
-  heroBanner: '/src/assets/images/hero_chandelier_banner_1790646227735.jpg',
-  shahMalakeh: '/src/assets/images/chandelier_shah_malakeh_1790646240589.jpg',
-  shakheh12: '/src/assets/images/chandelier_12_shakheh_1790646251083.jpg',
-  ristani: '/src/assets/images/chandelier_ristani_1790646262438.jpg',
-  resansRoses: '/src/assets/images/chandelier_resans_roses_1790647324596.jpg',
+  heroBanner: '/assets/images/hero_chandelier_banner_1790646227735.jpg',
+  shahMalakeh: '/assets/images/chandelier_shah_malakeh_1790646240589.jpg',
+  shakheh12: '/assets/images/chandelier_12_shakheh_1790646251083.jpg',
+  ristani: '/assets/images/chandelier_ristani_1790646262438.jpg',
+  resansRoses: '/assets/images/chandelier_resans_roses_1790647324596.jpg',
   crystaliCherub:
-    '/src/assets/images/chandelier_crystali_cherub_1790647334691.jpg',
-  crystaliGold: '/src/assets/images/chandelier_crystali_1790646272446.jpg',
+    '/assets/images/chandelier_crystali_cherub_1790647334691.jpg',
+  crystaliGold: '/assets/images/chandelier_crystali_1790646272446.jpg',
   projectFereshteh:
-    '/src/assets/images/project_fereshteh_interior_1790646283141.jpg',
+    '/assets/images/project_fereshteh_interior_1790646283141.jpg',
   projectLobbyHotel:
-    '/src/assets/images/project_lobby_hotel_1790681398126.jpg',
+    '/assets/images/project_lobby_hotel_1790681398126.jpg',
   projectMosqueDome:
-    '/src/assets/images/project_mosque_dome_1790681415301.jpg',
+    '/assets/images/project_mosque_dome_1790681415301.jpg',
   projectRoyalRestaurant:
-    '/src/assets/images/project_royal_restaurant_1790681438681.jpg',
+    '/assets/images/project_royal_restaurant_1790681438681.jpg',
   projectDuplexVilla:
-    '/src/assets/images/project_duplex_villa_1790681451000.jpg',
+    '/assets/images/project_duplex_villa_1790681451000.jpg',
   storyPortraitRustic:
-    '/src/assets/images/story_portrait_rustic_1790682028851.jpg',
+    '/assets/images/story_portrait_rustic_1790682028851.jpg',
   storyPortraitAtrium:
-    '/src/assets/images/story_portrait_atrium_1790682040988.jpg',
+    '/assets/images/story_portrait_atrium_1790682040988.jpg',
   storyPortraitPalace:
-    '/src/assets/images/story_portrait_palace_1790682052291.jpg',
+    '/assets/images/story_portrait_palace_1790682052291.jpg',
   aboutShowroom:
-    '/src/assets/images/about_gallery_showroom_1790844789780.jpg',
+    '/assets/images/about_gallery_showroom_1790844789780.jpg',
   aboutEmeraldPalace:
-    '/src/assets/images/about_gallery_emerald_palace_1790844830735.jpg',
+    '/assets/images/about_gallery_emerald_palace_1790844830735.jpg',
   aboutGrandAtelier:
-    '/src/assets/images/about_gallery_grand_atelier_1790845407976.jpg',
+    '/assets/images/about_gallery_grand_atelier_1790845407976.jpg',
   aboutModernVilla:
-    '/src/assets/images/about_gallery_modern_villa_1790844817623.jpg',
+    '/assets/images/about_gallery_modern_villa_1790844817623.jpg',
   aboutRoyalStaircase:
-    '/src/assets/images/about_gallery_royal_staircase_1790845421517.jpg',
+    '/assets/images/about_gallery_royal_staircase_1790845421517.jpg',
 };
 
 const INITIAL_CATEGORIES_SEED = [

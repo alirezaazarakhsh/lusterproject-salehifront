@@ -1132,7 +1132,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
     setIsSubmittingLogin(true);
     try {
-      const data = await apiFetchWithFallback('/api/admin/login', {
+      const data = await apiFetchWithFallback('/api/auth/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2437,24 +2437,72 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     sub: 'سبدهای خرید ثبت‌شده',
                     tab: 'orders' as AdminTab,
                   },
+                  {
+                    title: 'محیط تست API (سواگر)',
+                    value: 'تست فنی',
+                    sub: 'مستندات و تست APIها',
+                    tab: 'dashboard' as AdminTab,
+                    isTechnical: true,
+                  },
+                  {
+                    title: 'پشتیبان‌گیری (JSON)',
+                    value: 'خروجی داده',
+                    sub: 'دریافت کل ساختار دیتابیس',
+                    tab: 'dashboard' as AdminTab,
+                    isBackup: true,
+                  },
                 ].map((stat, i) => (
                   <div
                     key={i}
-                    onClick={() => setActiveTab(stat.tab)}
-                    className="bg-white rounded-2xl border border-[#e5dfd3] p-5 hover:border-[#b59766] transition-colors cursor-pointer flex flex-col justify-between"
+                    onClick={() => {
+                      if ((stat as any).isTechnical) {
+                        window.open('/api-docs', '_blank');
+                      } else if ((stat as any).isBackup) {
+                        const data = {
+                          products: productsList,
+                          categories: categoriesList,
+                          projects: projectsList,
+                          stories: storiesList,
+                          articles: articlesList,
+                          orders: ordersList,
+                          messages: messagesList,
+                          exportedAt: new Date().toISOString()
+                        };
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `salehi_database_backup_${new Date().toISOString().split('T')[0]}.json`;
+                        a.click();
+                      } else {
+                        setActiveTab(stat.tab);
+                      }
+                    }}
+                    className={`bg-white rounded-2xl border p-5 transition-colors cursor-pointer flex flex-col justify-between ${
+                      (stat as any).isTechnical || (stat as any).isBackup
+                        ? 'border-[#3b82f6] bg-blue-50/30 hover:bg-blue-50/50'
+                        : 'border-[#e5dfd3] hover:border-[#b59766]'
+                    }`}
                   >
                     <div>
                       <p className="text-xs font-bold text-[#666]">
                         {stat.title}
                       </p>
-                      <p className="text-2xl sm:text-3xl font-black text-[#181818] tabular-nums mt-2">
-                        {stat.value.toLocaleString('fa-IR')}
-                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <p className={`font-black tabular-nums ${
+                          (stat as any).isTechnical ? 'text-lg text-[#3b82f6]' : 'text-2xl sm:text-3xl text-[#181818]'
+                        }`}>
+                          {typeof stat.value === 'number' ? stat.value.toLocaleString('fa-IR') : stat.value}
+                        </p>
+                        {(stat as any).isTechnical && <ExternalLink className="w-4 h-4 text-[#3b82f6]" />}
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-[#f2efe9] text-[11px]">
-                      <span className="text-[#888]">{stat.sub}</span>
-                      <span className="font-bold text-[#b59766]">
-                        مدیریت ←
+                    <div className={`flex items-center justify-between pt-3 mt-3 border-t text-[11px] ${
+                      (stat as any).isTechnical ? 'border-blue-100' : 'border-[#f2efe9]'
+                    }`}>
+                      <span className={ (stat as any).isTechnical ? 'text-blue-600' : 'text-[#888]'}>{stat.sub}</span>
+                      <span className={`font-bold ${ (stat as any).isTechnical ? 'text-blue-600' : 'text-[#b59766]'}`}>
+                        {(stat as any).isTechnical ? 'باز کردن محیط تست ←' : 'مدیریت ←'}
                       </span>
                     </div>
                   </div>

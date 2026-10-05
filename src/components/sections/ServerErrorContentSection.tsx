@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { navigateToRoute } from '../utils/navigation';
+import { navigateToRoute } from '../../utils/navigation';
 
 interface ServerErrorContentSectionProps {
   onRetry?: () => void;

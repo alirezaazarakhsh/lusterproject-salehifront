@@ -74,14 +74,36 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
+  app.use((req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+  });
+
+  app.use(express.json({ limit: '50mb' }));
+  
+  // CORS Fallback
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
   // Swagger Configuration
   const swaggerOptions = {
     definition: {
       openapi: '3.0.0',
       info: {
         title: 'گالری لوستر اکبر صالحی API',
-        version: '1.0.0',
-        description: 'مستندات APIهای پنل مدیریت و فروشگاه لوستر صالحی',
+        version: '1.2.0',
+        description: 'مستندات کامل و محیط تست APIهای پنل مدیریت و فروشگاه لوستر صالحی. این محیط مشابه Postman امکان تست مستقیم تمام فراخوانی‌ها را فراهم می‌کند.',
+        contact: {
+          name: 'تیم فنی صالحی',
+          url: 'https://lostersalehi.ir',
+        },
       },
       servers: [
         {
@@ -89,8 +111,8 @@ async function startServer() {
           description: 'سرور اصلی (Production)',
         },
         {
-          url: '/',
-          description: 'سرور فعلی (Default)',
+          url: `http://localhost:${PORT}`,
+          description: 'سرور محلی (Development)',
         },
       ],
       components: {
@@ -101,12 +123,132 @@ async function startServer() {
             bearerFormat: 'JWT',
           },
         },
+        schemas: {
+          Product: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              productKey: { type: 'string' },
+              name: { type: 'string' },
+              subtitle: { type: 'string' },
+              priceNumeric: { type: 'integer' },
+              priceFormatted: { type: 'string' },
+              image: { type: 'string', description: 'آدرس تصویر یا Base64' },
+              categorySlug: { type: 'string' },
+              description: { type: 'string' },
+              productCode: { type: 'string' },
+              modelType: { type: 'string' },
+              defaultFinish: { type: 'string' },
+              dimensions: { type: 'string' },
+              branchesCount: { type: 'string' },
+              bodyMaterial: { type: 'string' },
+              warranty: { type: 'string' },
+            },
+          },
+          Category: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              slug: { type: 'string' },
+              title: { type: 'string' },
+              filterKey: { type: 'string' },
+              sortOrder: { type: 'integer' },
+            },
+          },
+          Project: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              slug: { type: 'string' },
+              title: { type: 'string' },
+              subtitle: { type: 'string' },
+              mainImage: { type: 'string' },
+              likesCount: { type: 'integer' },
+              categoryTab: { type: 'string' },
+              district: { type: 'string' },
+              description: { type: 'string' },
+              galleryJson: { type: 'string' },
+              dateBadge: { type: 'string' },
+              ownerName: { type: 'string' },
+            },
+          },
+          Order: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              customerName: { type: 'string' },
+              customerPhone: { type: 'string' },
+              itemsJson: { type: 'string' },
+              totalPriceNumeric: { type: 'integer' },
+              totalPriceFormatted: { type: 'string' },
+              status: { type: 'string', enum: ['pending', 'processing', 'completed', 'cancelled'] },
+            },
+          },
+          Story: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              storyKey: { type: 'string' },
+              storyType: { type: 'string' },
+              title: { type: 'string' },
+              fullTitle: { type: 'string' },
+              subtitle: { type: 'string' },
+              image: { type: 'string' },
+              slidesJson: { type: 'string' },
+            },
+          },
+          Article: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              articleKey: { type: 'string' },
+              title: { type: 'string' },
+              excerpt: { type: 'string' },
+              content: { type: 'string' },
+              image: { type: 'string' },
+              publishDate: { type: 'string' },
+            },
+          },
+          ContactMessage: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              fullName: { type: 'string' },
+              phone: { type: 'string' },
+              subject: { type: 'string' },
+              message: { type: 'string' },
+              status: { type: 'string', enum: ['new', 'read'] },
+            },
+          },
+          User: {
+            type: 'object',
+            properties: {
+              id: { type: 'integer' },
+              uid: { type: 'string' },
+              phone: { type: 'string' },
+              displayName: { type: 'string' },
+              role: { type: 'string' },
+              email: { type: 'string' },
+            },
+          },
+        },
       },
     },
-    apis: ['./server.ts'], // مسیر فایل‌هایی که شامل کامنت‌های Swagger هستند
+    apis: [
+      path.join(process.cwd(), 'server.ts'),
+      './server.ts',
+      './src/db/*.ts'
+    ],
   };
 
-  const swaggerDocs = swaggerJsdoc(swaggerOptions);
+  let swaggerDocs;
+  try {
+    swaggerDocs = swaggerJsdoc(swaggerOptions);
+    console.log('✅ Swagger documentation generated successfully');
+  } catch (err) {
+    console.error('❌ Failed to generate Swagger docs:', err);
+    swaggerDocs = { openapi: '3.0.0', info: { title: 'Error' }, paths: {} };
+  }
   
   // تزریق فونت سایت به سواگر و اصلاح استایل لینک‌ها
   const swaggerCustomCss = `
@@ -124,18 +266,19 @@ async function startServer() {
       font-weight: bold;
       font-style: normal;
     }
-    .swagger-ui { font-family: 'IRANSansX', 'IranSansX', sans-serif !important; }
+    .swagger-ui { font-family: 'IRANSansX', 'IranSansX', sans-serif !important; direction: rtl !important; }
     .swagger-ui .topbar { display: none }
     .swagger-ui .info .title { color: #b08c57; font-family: 'IRANSansX', sans-serif !important; }
     .swagger-ui .opblock .opblock-summary-method { border-radius: 8px }
     .swagger-ui input, .swagger-ui select, .swagger-ui textarea { font-family: 'IRANSansX', sans-serif !important; }
     .swagger-ui .opblock .opblock-summary-path { font-weight: bold; color: #333; }
     .swagger-ui .opblock .opblock-summary-description { font-family: 'IRANSansX', sans-serif !important; margin-right: 10px; }
+    .swagger-ui .opblock .opblock-summary { flex-direction: row-reverse; }
   `;
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
     customCss: swaggerCustomCss,
-    customSiteTitle: "مستندات API لوستر صالحی"
+    customSiteTitle: "مستندات API لوستر صالحی (Postman-Like)"
   }));
   app.get('/api/docs.json', (_req, res) => {
     res.json(swaggerDocs);
@@ -149,6 +292,10 @@ async function startServer() {
     });
 
   app.use(express.json({ limit: '50mb' }));
+  
+  // Explicitly serve public assets in both dev and prod for robustness
+  app.use('/assets', express.static(path.join(process.cwd(), 'public/assets')));
+  app.use('/fonts', express.static(path.join(process.cwd(), 'public/fonts')));
 
   /**
    * @openapi
@@ -156,6 +303,17 @@ async function startServer() {
    *   get:
    *     summary: بررسی وضعیت سلامت سرور و دیتابیس
    *     tags: [System]
+   *     responses:
+   *       200:
+   *         description: وضعیت سلامت سیستم
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status: { type: 'string' }
+   *                 database: { type: 'object' }
+   *                 system: { type: 'object' }
    */
   app.get(['/health', '/api/health'], async (req, res) => {
     let dbStatus: 'connected' | 'disconnected' = 'connected';
@@ -300,9 +458,21 @@ async function startServer() {
    *     tags: [Public - عمومی]
    *     responses:
    *       200:
-   *         description: عملیات موفقیت‌آمیز - دریافت کل اطلاعات دیتابیس
+   *         description: کاتالوگ کامل دیتابیس
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 products: { type: 'array', items: { $ref: '#/components/schemas/Product' } }
+   *                 categories: { type: 'array', items: { $ref: '#/components/schemas/Category' } }
+   *                 projects: { type: 'array', items: { $ref: '#/components/schemas/Project' } }
+   *                 stories: { type: 'array', items: { $ref: '#/components/schemas/Story' } }
+   *                 articles: { type: 'array', items: { $ref: '#/components/schemas/Article' } }
+   *                 footerSettings: { type: 'object' }
+   *                 mainSettings: { type: 'object' }
    *       500:
-   *         description: خطای سرور در بازیابی اطلاعات
+   *         description: خطای سرور
    */
   app.get('/api/public/catalog', async (_req, res) => {
     try {
@@ -360,7 +530,26 @@ async function startServer() {
    * /api/contact:
    *   post:
    *     summary: ثبت پیام جدید در بخش تماس با ما
-   *     tags: [Public]
+   *     description: ارسال اطلاعات فرم تماس توسط مشتری برای ادمین.
+   *     tags: [Public - عمومی]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               fullName: { type: 'string' }
+   *               phone: { type: 'string' }
+   *               subject: { type: 'string' }
+   *               message: { type: 'string' }
+   *     responses:
+   *       201:
+   *         description: پیام با موفقیت ثبت شد
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ContactMessage'
    */
   app.post(['/api/contact', '/api/public/contact'], async (req, res) => {
     try {
@@ -395,7 +584,17 @@ async function startServer() {
    * /api/public/orders:
    *   post:
    *     summary: ثبت سفارش جدید توسط مشتری
-   *     tags: [Public]
+   *     description: ثبت اطلاعات خرید مشتری در دیتابیس برای پیگیری توسط ادمین.
+   *     tags: [Public - عمومی]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Order'
+   *     responses:
+   *       201:
+   *         description: سفارش با موفقیت ثبت شد
    */
   app.post('/api/public/orders', async (req, res) => {
     try {
@@ -461,12 +660,20 @@ async function startServer() {
    *     responses:
    *       200:
    *         description: ورود موفقیت‌آمیز و دریافت توکن
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 token: { type: 'string' }
+   *                 user: { $ref: '#/components/schemas/User' }
    *       401:
    *         description: شماره موبایل یا رمز عبور اشتباه است
    *       503:
    *         description: خطا در اتصال به سرویس احراز هویت
    */
-  app.post('/api/admin/login', async (req, res) => {
+  app.post(['/api/admin/login', '/api/auth/admin-login'], async (req, res) => {
+    console.log(`Login attempt for: ${req.body?.phone}`);
     try {
       const { phone, password } = req.body || {};
       const authResult = await authenticateAdminByPhoneAndPassword(
@@ -500,6 +707,12 @@ async function startServer() {
    *     responses:
    *       200:
    *         description: اطلاعات پروفایل با موفقیت دریافت شد
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 admin: { $ref: '#/components/schemas/User' }
    */
   app.get('/api/admin/me', requireAuth, async (req: AuthRequest, res) => {
     res.json({ admin: req.user, user: req.user });
@@ -516,7 +729,16 @@ async function startServer() {
    *       - bearerAuth: []
    *     responses:
    *       200:
-   *         description: آمار با موفقیت استخراج شد
+   *         description: آمار داشبورد
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 productsCount: { type: 'integer' }
+   *                 categoriesCount: { type: 'integer' }
+   *                 ordersCount: { type: 'integer' }
+   *                 messagesCount: { type: 'integer' }
    */
   app.get(
     ['/api/admin/summary', '/api/admin/dashboard'],
@@ -541,15 +763,32 @@ async function startServer() {
    *   get:
    *     summary: لیست ادمین‌های سیستم
    *     description: دریافت لیست تمامی مدیران سایت به همراه شماره تماس و نقش‌های آن‌ها.
-   *     tags: [Admin Users - ادمین‌ها]
+   *     tags: [Admin Users - مدیریت ادمین‌ها]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: لیست ادمین‌ها
    *   post:
    *     summary: ایجاد مدیر جدید
    *     description: ثبت یک حساب کاربری جدید برای دسترسی به پنل مدیریت با تعیین دسترسی‌های خاص.
-   *     tags: [Admin Users - ادمین‌ها]
+   *     tags: [Admin Users - مدیریت ادمین‌ها]
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               phone: { type: 'string' }
+   *               password: { type: 'string' }
+   *               displayName: { type: 'string' }
+   *               email: { type: 'string' }
+   *     responses:
+   *       201:
+   *         description: ادمین با موفقیت ایجاد شد
    */
   app.get('/api/admin/users', requireAuth, async (_req: AuthRequest, res) => {
     try {
@@ -638,18 +877,27 @@ async function startServer() {
    *   get:
    *     summary: لیست تمامی محصولات
    *     description: دریافت لیست کامل محصولات موجود در انبار برای نمایش در پنل مدیریت.
-   *     tags: [Admin Products - محصولات]
+   *     tags: [Admin Products - مدیریت محصولات]
    *     security:
    *       - bearerAuth: []
    *     responses:
    *       200:
-   *         description: لیست محصولات با موفقیت دریافت شد
+   *         description: لیست محصولات
    *   post:
    *     summary: افزودن محصول جدید
    *     description: ثبت یک محصول جدید شامل نام، قیمت، تصویر و سایر مشخصات فنی در دیتابیس.
-   *     tags: [Admin Products - محصولات]
+   *     tags: [Admin Products - مدیریت محصولات]
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Product'
+   *     responses:
+   *       201:
+   *         description: محصول با موفقیت ایجاد شد
    */
   app.get(
     '/api/admin/products',
@@ -685,8 +933,9 @@ async function startServer() {
    * @openapi
    * /api/admin/products/{id}:
    *   put:
-   *     summary: ویرایش محصول
-   *     tags: [Admin Products - محصولات]
+   *     summary: ویرایش محصول موجود
+   *     description: تغییر مشخصات، قیمت یا تصویر یک محصول ثبت شده با استفاده از شناسه آن.
+   *     tags: [Admin Products - مدیریت محصولات]
    *     parameters:
    *       - in: path
    *         name: id
@@ -695,9 +944,15 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Product'
    *   delete:
-   *     summary: حذف محصول
-   *     tags: [Admin Products - محصولات]
+   *     summary: حذف محصول از انبار
+   *     description: حذف دائمی رکورد یک محصول از دیتابیس.
+   *     tags: [Admin Products - مدیریت محصولات]
    *     parameters:
    *       - in: path
    *         name: id
@@ -744,14 +999,26 @@ async function startServer() {
    *   get:
    *     summary: لیست تمامی دسته‌بندی‌ها
    *     description: دریافت لیست دسته‌بندی‌های محصولات (لوستر، آباژور و غیره).
-   *     tags: [Admin Categories - دسته‌بندی‌ها]
+   *     tags: [Admin Categories - مدیریت دسته‌بندی‌ها]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: لیست دسته‌بندی‌ها
    *   post:
    *     summary: ایجاد دسته‌بندی جدید
-   *     tags: [Admin Categories - دسته‌بندی‌ها]
+   *     tags: [Admin Categories - مدیریت دسته‌بندی‌ها]
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Category'
+   *     responses:
+   *       201:
+   *         description: دسته‌بندی با موفقیت ایجاد شد
    */
   app.get(
     '/api/admin/categories',
@@ -852,14 +1119,26 @@ async function startServer() {
    *   get:
    *     summary: لیست تمامی پروژه‌های اجرایی
    *     description: دریافت لیست پروژه‌های بزرگ انجام شده توسط گالری صالحی برای مدیریت در پنل ادمین.
-   *     tags: [Admin Projects - پروژه‌ها]
+   *     tags: [Admin Projects - مدیریت پروژه‌ها]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: لیست پروژه‌ها
    *   post:
    *     summary: ثبت پروژه جدید
-   *     tags: [Admin Projects - پروژه‌ها]
+   *     tags: [Admin Projects - مدیریت پروژه‌ها]
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Project'
+   *     responses:
+   *       201:
+   *         description: پروژه با موفقیت ثبت شد
    */
   app.get(
     '/api/admin/projects',
@@ -896,7 +1175,7 @@ async function startServer() {
    * /api/admin/projects/{id}:
    *   put:
    *     summary: ویرایش پروژه اجرایی
-   *     tags: [Admin Projects - پروژه‌ها]
+   *     tags: [Admin Projects - مدیریت پروژه‌ها]
    *     parameters:
    *       - in: path
    *         name: id
@@ -905,9 +1184,21 @@ async function startServer() {
    *           type: string
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Project'
+   *     responses:
+   *       200:
+   *         description: پروژه با موفقیت ویرایش شد
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Project'
    *   delete:
    *     summary: حذف پروژه
-   *     tags: [Admin Projects - پروژه‌ها]
+   *     tags: [Admin Projects - مدیریت پروژه‌ها]
    *     parameters:
    *       - in: path
    *         name: id
@@ -916,6 +1207,9 @@ async function startServer() {
    *           type: string
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: پروژه حذف شد
    */
   app.put(
     '/api/admin/projects/:id',
@@ -956,6 +1250,14 @@ async function startServer() {
    *     summary: لیست پروژه‌های اجرایی (عمومی)
    *     description: دریافت لیست پروژه‌ها برای نمایش در گالری پروژه‌های سایت به مشتریان.
    *     tags: [Public - عمومی]
+   *     responses:
+   *       200:
+   *         description: لیست پروژه‌ها
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items: { $ref: '#/components/schemas/Project' }
    */
   // دریافت لیست پروژه‌ها (عمومی)
   app.get(['/api/projects', '/api/public/projects'], async (_req, res) => {
@@ -994,6 +1296,13 @@ async function startServer() {
    *     responses:
    *       200:
    *         description: لایک با موفقیت ثبت شد
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success: { type: 'boolean' }
+   *                 likesCount: { type: 'integer' }
    */
   // ثبت لایک یا برداشتن لایک پروژه
   app.post(
@@ -1079,14 +1388,20 @@ async function startServer() {
    *   get:
    *     summary: لیست استوری‌های سایت
    *     description: دریافت لیست استوری‌های دایره‌ای بالای صفحه اصلی.
-   *     tags: [Admin Stories - استوری‌ها]
+   *     tags: [Admin Stories - مدیریت استوری‌ها]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: لیست استوری‌ها
    *   post:
    *     summary: ایجاد استوری جدید
-   *     tags: [Admin Stories - استوری‌ها]
+   *     tags: [Admin Stories - مدیریت استوری‌ها]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       201:
+   *         description: استوری با موفقیت ایجاد شد
    */
   app.get(
     '/api/admin/stories',
@@ -1123,7 +1438,7 @@ async function startServer() {
    * /api/admin/stories/{id}:
    *   put:
    *     summary: ویرایش استوری
-   *     tags: [Admin Stories - استوری‌ها]
+   *     tags: [Admin Stories - مدیریت استوری‌ها]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1132,9 +1447,17 @@ async function startServer() {
    *           type: string
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Story'
+   *     responses:
+   *       200:
+   *         description: استوری ویرایش شد
    *   delete:
    *     summary: حذف استوری
-   *     tags: [Admin Stories - استوری‌ها]
+   *     tags: [Admin Stories - مدیریت استوری‌ها]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1143,6 +1466,9 @@ async function startServer() {
    *           type: string
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: استوری حذف شد
    */
   app.put(
     '/api/admin/stories/:id',
@@ -1185,14 +1511,20 @@ async function startServer() {
    *   get:
    *     summary: لیست مقالات مجله
    *     description: دریافت لیست مقالات و بلاگ‌های ثبت شده در بخش مجله سایت.
-   *     tags: [Admin Articles - مقالات]
+   *     tags: [Admin Articles - مدیریت مقالات]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: لیست مقالات
    *   post:
    *     summary: ایجاد مقاله جدید
-   *     tags: [Admin Articles - مقالات]
+   *     tags: [Admin Articles - مدیریت مقالات]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       201:
+   *         description: مقاله با موفقیت ثبت شد
    */
   app.get(
     '/api/admin/articles',
@@ -1227,7 +1559,7 @@ async function startServer() {
    * /api/admin/articles/{id}:
    *   put:
    *     summary: ویرایش مقاله
-   *     tags: [Admin Articles - مقالات]
+   *     tags: [Admin Articles - مدیریت مقالات]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1236,9 +1568,17 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Article'
+   *     responses:
+   *       200:
+   *         description: مقاله ویرایش شد
    *   delete:
    *     summary: حذف مقاله
-   *     tags: [Admin Articles - مقالات]
+   *     tags: [Admin Articles - مدیریت مقالات]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1247,6 +1587,9 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: مقاله حذف شد
    */
   app.put(
     '/api/admin/articles/:id',
@@ -1285,7 +1628,7 @@ async function startServer() {
    *   get:
    *     summary: لیست پیام‌های دریافتی
    *     description: دریافت تمامی پیام‌های ارسال شده توسط کاربران از طریق فرم تماس با ما.
-   *     tags: [Admin Messages - پیام‌ها]
+   *     tags: [Admin Messages - مدیریت پیام‌ها]
    *     security:
    *       - bearerAuth: []
    *     responses:
@@ -1311,7 +1654,7 @@ async function startServer() {
    * /api/admin/messages/{id}:
    *   put:
    *     summary: ویرایش کامل پیام
-   *     tags: [Admin Messages - پیام‌ها]
+   *     tags: [Admin Messages - مدیریت پیام‌ها]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1320,9 +1663,12 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: پیام ویرایش شد
    *   patch:
    *     summary: تغییر وضعیت پیام (خوانده شده/نشده)
-   *     tags: [Admin Messages - پیام‌ها]
+   *     tags: [Admin Messages - مدیریت پیام‌ها]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1331,9 +1677,12 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: وضعیت پیام تغییر کرد
    *   delete:
    *     summary: حذف پیام
-   *     tags: [Admin Messages - پیام‌ها]
+   *     tags: [Admin Messages - مدیریت پیام‌ها]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1342,6 +1691,9 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: پیام حذف شد
    */
   app.put(
     '/api/admin/messages/:id',
@@ -1400,7 +1752,7 @@ async function startServer() {
    *   get:
    *     summary: لیست سفارشات مشتریان
    *     description: مشاهده تمامی سفارشات ثبت شده در سایت به همراه جزییات محصولات و اطلاعات خریدار.
-   *     tags: [Admin Orders - سفارشات]
+   *     tags: [Admin Orders - مدیریت سفارشات]
    *     security:
    *       - bearerAuth: []
    *     responses:
@@ -1422,7 +1774,7 @@ async function startServer() {
    * /api/admin/orders/{id}:
    *   put:
    *     summary: ویرایش کامل سفارش
-   *     tags: [Admin Orders - سفارشات]
+   *     tags: [Admin Orders - مدیریت سفارشات]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1431,9 +1783,17 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/Order'
+   *     responses:
+   *       200:
+   *         description: سفارش ویرایش شد
    *   patch:
    *     summary: تغییر وضعیت سفارش (تکمیل شده/در حال پردازش)
-   *     tags: [Admin Orders - سفارشات]
+   *     tags: [Admin Orders - مدیریت سفارشات]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1442,9 +1802,12 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: وضعیت سفارش تغییر کرد
    *   delete:
    *     summary: حذف سفارش
-   *     tags: [Admin Orders - سفارشات]
+   *     tags: [Admin Orders - مدیریت سفارشات]
    *     parameters:
    *       - in: path
    *         name: id
@@ -1453,6 +1816,9 @@ async function startServer() {
    *           type: integer
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: سفارش حذف شد
    */
   app.put(
     '/api/admin/orders/:id',
@@ -1504,19 +1870,19 @@ async function startServer() {
     }
   );
 
-  // مدیریت تنظیمات فوتر سایت
   /**
    * @openapi
    * /api/admin/settings/footer:
    *   get:
    *     summary: دریافت تنظیمات فوتر
    *     description: دریافت لینک‌ها، متون و اطلاعات تماس موجود در بخش فوتر سایت.
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
    *   put:
    *     summary: بروزرسانی تنظیمات فوتر
-   *     tags: [Admin Settings - تنظیمات]
+   *     description: ویرایش اطلاعات تماس، شبکه‌های اجتماعی و کپی‌رایت فوتر.
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
    */
@@ -1559,14 +1925,20 @@ async function startServer() {
    *   get:
    *     summary: تنظیمات صفحه تماس با ما
    *     description: دریافت آدرس شعبات، لوکیشن‌ها و شماره تماس‌های نمایش داده شده در صفحه تماس با ما.
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات تماس با ما دریافت شد
    *   put:
    *     summary: بروزرسانی تنظیمات تماس با ما
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات بروزرسانی شد
    */
   app.get(
     '/api/admin/settings/contact-us',
@@ -1618,14 +1990,20 @@ async function startServer() {
    *   get:
    *     summary: تنظیمات صفحه درباره ما
    *     description: دریافت متون معرفی گالری، تصاویر نمایشگاه و کاتالوگ‌های قابل دانلود.
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات درباره ما دریافت شد
    *   put:
    *     summary: بروزرسانی تنظیمات درباره ما
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات بروزرسانی شد
    */
   app.get(
     '/api/admin/settings/about-us',
@@ -1678,14 +2056,20 @@ async function startServer() {
    *   get:
    *     summary: تنظیمات اسلایدر بنر
    *     description: دریافت لیست اسلایدها، متون و تصاویر متحرک بنر اصلی صفحه اول.
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات اسلایدر دریافت شد
    *   put:
    *     summary: بروزرسانی اسلایدر
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: اسلایدر بروزرسانی شد
    */
   app.get(
     '/api/admin/settings/hero-slider',
@@ -1726,14 +2110,20 @@ async function startServer() {
    *   get:
    *     summary: تنظیمات اصلی و هدر
    *     description: دریافت عنوان سایت، لوگو، منوهای هدر و تنظیمات شبکه‌های اجتماعی.
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات اصلی دریافت شد
    *   put:
    *     summary: بروزرسانی تنظیمات اصلی سایت
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات بروزرسانی شد
    */
   app.get(
     '/api/admin/settings/main',
@@ -1767,19 +2157,19 @@ async function startServer() {
     }
   );
 
-  // ۲. مدیریت تنظیمات پنل پیامک
   /**
    * @openapi
    * /api/admin/settings/sms:
    *   get:
    *     summary: تنظیمات پنل پیامک
-   *     description: دریافت وب‌سرویس پیامک، الگوهای ارسال پیامک به مشتری و ادمین برای سفارشات جدید.
-   *     tags: [Admin Settings - تنظیمات]
+   *     description: دریافت وب‌سرویس پیامک و الگوهای ارسال.
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
    *   put:
    *     summary: بروزرسانی تنظیمات پیامک
-   *     tags: [Admin Settings - تنظیمات]
+   *     description: تنظیم الگوهای اطلاع‌رسانی پیامکی به مدیر و مشتری.
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
    */
@@ -1822,14 +2212,20 @@ async function startServer() {
    *   get:
    *     summary: تنظیمات سوالات متداول
    *     description: دریافت لیست پرسش و پاسخ‌های متداول برای نمایش در صفحات راهنما و قوانین.
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات سوالات متداول دریافت شد
    *   put:
    *     summary: بروزرسانی سوالات متداول
-   *     tags: [Admin Settings - تنظیمات]
+   *     tags: [Admin Settings - مدیریت تنظیمات سایت]
    *     security:
    *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: تنظیمات بروزرسانی شد
    */
   app.get(
     '/api/admin/settings/faq',

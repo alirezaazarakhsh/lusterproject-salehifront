@@ -1339,7 +1339,7 @@ export async function apiFetchWithFallback(
     // Authentication errors (401, 403) should not trigger local fallback for mutations
     if (res.status === 401 || res.status === 403) {
       const errJson = await res.json().catch(() => ({}));
-      if (url === '/api/admin/login') {
+      if (url === '/api/admin/login' || url === '/api/auth/admin-login') {
          // Special case: allow default admin login if server fails
          const body = parseBody(options);
          if (normalizeAdminPhoneClient(body.phone) === DEFAULT_SUPER_ADMIN_PHONE && body.password === DEFAULT_SUPER_ADMIN_PASS) {

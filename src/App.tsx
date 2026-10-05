@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { HomePage } from './pages/HomePage';
 import { HeaderSection } from './components/sections/HeaderSection';
-import { ServerErrorContentSection } from './server-error';
+import { ServerErrorContentSection } from './components/sections/ServerErrorContentSection';
 import { navigateToRoute } from './utils/navigation';
 import { initFirestoreAutoSync } from './utils/localBackendFallback';
 import { initTheme } from './utils/theme';
