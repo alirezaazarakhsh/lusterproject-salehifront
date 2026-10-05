@@ -695,15 +695,9 @@ export const ContactUsContentSection: React.FC<
             {settings.branchLocations.map((branch, idx) => (
               <div
                 key={branch.id || `branch-${idx}`}
-                className={`${
-                  idx > 0 ? 'pt-5 md:pt-0' : ''
-                } ${
-                  idx < settings.branchLocations.length - 1
-                    ? 'pb-5 md:pb-0'
-                    : ''
-                } md:rounded-[16px] md:border md:border-[#eaeaea] md:bg-white md:px-6 md:py-5 md:min-h-[96px] flex flex-col md:flex-row md:items-center md:justify-between gap-4`}
+                className="md:rounded-[16px] md:border md:border-[#eaeaea] md:bg-white px-5 py-5 md:px-6 md:py-5 md:h-[96px] flex flex-col md:flex-row items-center justify-between gap-4 border-b border-[#efefef] last:border-b-0 md:border-b-0"
               >
-                <div className="flex items-start md:items-center justify-start gap-3.5 min-w-0">
+                <div className="flex items-center justify-start gap-3.5 min-w-0">
                   <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f4f1ea] text-[#a98552] flex items-center justify-center shrink-0">
                     <LocationTickVectorIcon className="w-[22px] h-[22px]" />
                   </div>
@@ -722,7 +716,7 @@ export const ContactUsContentSection: React.FC<
                   href={branch.neshanUrl || 'https://neshan.org'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="self-start md:self-center h-[44px] px-4 rounded-[10px] bg-[#f5f5f5] hover:bg-[#ebebeb] transition-colors flex items-center gap-2.5 shrink-0 cursor-pointer"
+                  className="h-[44px] px-4 rounded-[10px] bg-[#f5f5f5] hover:bg-[#ebebeb] transition-colors flex items-center gap-2.5 shrink-0 cursor-pointer"
                 >
                   <NeshanMapLogo className="w-[22px] h-[22px]" />
                   <span className="text-[12.5px] font-bold text-[#1e1e1e] whitespace-nowrap">
@@ -748,18 +742,20 @@ export const ContactUsContentSection: React.FC<
             {settings.branchPhones.map((item, idx) => (
               <div
                 key={item.id || `phone-${idx}`}
-                className="md:rounded-[16px] md:border md:border-[#eaeaea] md:bg-white md:px-6 md:py-5 md:min-h-[96px] flex items-center justify-start gap-3.5"
+                className="md:rounded-[16px] md:border md:border-[#eaeaea] md:bg-white md:px-6 md:py-5 md:h-[96px] flex flex-row items-center justify-between gap-3.5"
               >
-                <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f4f1ea] text-[#a98552] flex items-center justify-center shrink-0">
-                  <CallCallingVectorIcon className="w-[22px] h-[22px]" />
-                </div>
-                <div className="text-right min-w-0">
-                  <span className="block text-[12.5px] sm:text-[13px] font-semibold text-[#333333]">
-                    {item.title}
-                  </span>
-                  <span className="block text-[13px] sm:text-[13.5px] font-bold text-[#1e1e1e] mt-1.5 tabular-nums">
-                    {item.phone}
-                  </span>
+                <div className="flex items-center justify-start gap-3.5 min-w-0">
+                  <div className="w-[46px] h-[46px] rounded-[11px] bg-[#f4f1ea] text-[#a98552] flex items-center justify-center shrink-0">
+                    <CallCallingVectorIcon className="w-[22px] h-[22px]" />
+                  </div>
+                  <div className="text-right min-w-0">
+                    <span className="block text-[12.5px] sm:text-[13px] font-semibold text-[#333333]">
+                      {item.title}
+                    </span>
+                    <span className="block text-[13px] sm:text-[13.5px] font-bold text-[#1e1e1e] mt-0 tabular-nums">
+                      {item.phone}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -768,10 +764,9 @@ export const ContactUsContentSection: React.FC<
       </section>
 
       {/* ==================== ۴. بخش فرم «با ما در ارتباط باشید» ==================== */}
-      <section className="mt-12 sm:mt-16 bg-white rounded-[24px] border border-[#f0f0f0] p-6 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+      <section className="mt-12 sm:mt-16">
         <div className="text-right mb-8">
           <div className="flex items-center justify-start gap-3 mb-3">
-            <span className="w-8 h-[2px] bg-[#b08c57]" />
             <h3 className="text-[18px] sm:text-[22px] font-black text-[#1e1e1e]">
               با ما در ارتباط باشید
             </h3>
@@ -783,9 +778,8 @@ export const ContactUsContentSection: React.FC<
 
         <form onSubmit={handleSubmitForm}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
-            {/* ستون راست فرم (۴ فیلد ورودی روی هم در دسکتاپ و موبایل) */}
+            {/* ستون چپ (ورودی‌ها): قرارگیری در راست در دسکتاپ طبق عکس */}
             <div className="lg:col-span-4 flex flex-col gap-3.5 sm:gap-4">
-              {/* فیلد ۱: موضوع با بج شمارنده کاراکتر در سمت چپ */}
               <div className="w-full h-[50px] rounded-[12px] border border-[#2b2b2b] bg-white px-4 flex items-center justify-between gap-2.5 transition-colors">
                 <input
                   type="text"
@@ -798,8 +792,6 @@ export const ContactUsContentSection: React.FC<
                   {subjectCharCountDisplay}
                 </span>
               </div>
-
-              {/* فیلد ۲: نام و نام خانوادگی */}
               <input
                 type="text"
                 required
@@ -808,8 +800,6 @@ export const ContactUsContentSection: React.FC<
                 placeholder="* نام و نام خانوادگی خود را وارد نمایید"
                 className="w-full h-[50px] rounded-[12px] border border-[#eaeaea] focus:border-[#2b2b2b] bg-white px-4 text-right text-[13px] text-[#1e1e1e] placeholder:text-[#9a9a9a] focus:outline-none transition-colors"
               />
-
-              {/* فیلد ۳: شماره موبایل */}
               <input
                 type="tel"
                 required
@@ -818,8 +808,6 @@ export const ContactUsContentSection: React.FC<
                 placeholder="* شماره موبایل خود را وارد نمایید"
                 className="w-full h-[50px] rounded-[12px] border border-[#eaeaea] focus:border-[#2b2b2b] bg-white px-4 text-right text-[13px] text-[#1e1e1e] placeholder:text-[#9a9a9a] focus:outline-none transition-colors"
               />
-
-              {/* فیلد ۴: ایمیل */}
               <input
                 type="email"
                 value={email}
@@ -829,7 +817,7 @@ export const ContactUsContentSection: React.FC<
               />
             </div>
 
-            {/* ستون چپ فرم (باکس بزرگ متن پیام) */}
+            {/* ستون راست (متن): قرارگیری در چپ در دسکتاپ طبق عکس */}
             <div className="lg:col-span-8 flex">
               <textarea
                 value={messageText}
