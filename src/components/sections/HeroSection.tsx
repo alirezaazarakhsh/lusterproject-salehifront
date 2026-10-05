@@ -335,8 +335,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
               aria-label={`اسلاید ${dotIndex + 1}`}
               className={`rounded-full transition-all duration-500 ease-out cursor-pointer ${
                 activeDot === dotIndex
-                  ? 'w-3 h-3 bg-[#b59766] shadow-xs scale-105'
-                  : 'w-2 h-2 bg-[#d8d0c3] hover:bg-[#b59766]'
+                  ? 'w-3 h-3 bg-black shadow-xs scale-105'
+                  : 'w-2 h-2 bg-black/40 hover:bg-black'
               }`}
             />
           ))}
