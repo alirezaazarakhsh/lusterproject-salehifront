@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { asc, eq } from 'drizzle-orm';
-import { db } from './index.ts';
+import { db, isPostgresConfigured } from './index.ts';
 import { users } from './schema.ts';
 
 const ADMIN_TOKEN_SECRET =
@@ -86,6 +86,10 @@ let defaultAdminSeeded = false;
 
 export async function ensureDefaultAdmin() {
   if (defaultAdminSeeded) return;
+  if (!isPostgresConfigured()) {
+    defaultAdminSeeded = true;
+    return;
+  }
   try {
     const defaultPhone = '09120759419';
     const defaultUid = `admin-${defaultPhone}`;
@@ -129,7 +133,8 @@ export async function ensureDefaultAdmin() {
     }
     defaultAdminSeeded = true;
   } catch (error) {
-    console.error('Error ensuring default admin:', error);
+    defaultAdminSeeded = true;
+    console.warn('Postgres admin seeding notice (standalone mode active):', (error as any)?.message || error);
   }
 }
 

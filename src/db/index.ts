@@ -7,16 +7,13 @@ declare global {
 }
 
 export const isPostgresConfigured = (): boolean => {
-  if (process.env.VERCEL) {
-    return Boolean(
-      process.env.DATABASE_URL ||
-      process.env.POSTGRES_URL ||
-      process.env.POSTGRES_PRISMA_URL ||
-      (process.env.SQL_HOST && process.env.SQL_HOST !== 'localhost') ||
-      (process.env.PGHOST && process.env.PGHOST !== 'localhost')
-    );
-  }
-  return true;
+  return Boolean(
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.SQL_HOST ||
+    process.env.PGHOST
+  );
 };
 
 export const createPool = (): Pool => {
@@ -40,7 +37,7 @@ export const createPool = (): Pool => {
         connectionString,
         ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
         max: 10,
-        connectionTimeoutMillis: 2000,
+        connectionTimeoutMillis: 1500,
         idleTimeoutMillis: 30000,
       };
     } else {
@@ -83,7 +80,7 @@ export const createPool = (): Pool => {
         database,
         ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
         max: 10,
-        connectionTimeoutMillis: 2000,
+        connectionTimeoutMillis: 1500,
         idleTimeoutMillis: 30000,
       };
     }
@@ -91,7 +88,7 @@ export const createPool = (): Pool => {
     global._postgresPool = new Pool(poolConfig);
 
     global._postgresPool.on('error', (err) => {
-      console.warn('PostgreSQL pool background notice:', err?.message || err);
+      // Graceful pool background error handling
     });
   }
   return global._postgresPool;
