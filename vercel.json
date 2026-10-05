@@ -18,11 +18,7 @@
       "destination": "/api/index"
     },
     {
-      "source": "/((?!assets|fonts|favicon.ico|_next|static|api).*)/",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/((?!api/|assets/|fonts/|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/index.html"
     }
   ]

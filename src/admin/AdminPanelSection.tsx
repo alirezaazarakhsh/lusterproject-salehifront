@@ -9703,7 +9703,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                 servicesMainImage: e.target.value,
                               })
                             }
-                            placeholder="/src/assets/images/..."
+                            placeholder="/assets/images/..."
                             className="flex-1 h-10 rounded-lg border border-[#e0e0e0] px-3 text-[11px] font-mono focus:outline-none focus:border-[#b59766]"
                           />
                         </div>

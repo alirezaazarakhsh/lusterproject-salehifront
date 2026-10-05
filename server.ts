@@ -295,7 +295,10 @@ async function startServer() {
   
   // Explicitly serve public assets in both dev and prod for robustness
   app.use('/assets', express.static(path.join(process.cwd(), 'public/assets')));
+  app.use('/assets', express.static(path.join(process.cwd(), 'dist/assets')));
+  app.use('/assets', express.static(path.join(process.cwd(), 'src/assets')));
   app.use('/fonts', express.static(path.join(process.cwd(), 'public/fonts')));
+  app.use('/fonts', express.static(path.join(process.cwd(), 'dist/fonts')));
 
   /**
    * @openapi
