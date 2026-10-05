@@ -63,11 +63,20 @@ import {
   saveSmsSettings,
   getFaqSettings,
   saveFaqSettings,
+  ensureSeeded,
 } from './src/db/repository.ts';
+import { autoInitPostgresSchema } from './src/db/initSchema.ts';
 
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+
+  // مقداردهی و ایجاد خودکار جداول PostgreSQL و سیدینگ در لوکال هاست یا داکر
+  autoInitPostgresSchema(pool)
+    .then(() => ensureSeeded())
+    .catch((err) => {
+      console.warn('Postgres auto init notice:', err?.message || err);
+    });
 
   app.use(express.json({ limit: '50mb' }));
 

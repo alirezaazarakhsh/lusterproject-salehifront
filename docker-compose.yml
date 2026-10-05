@@ -1,0 +1,84 @@
+services:
+  # =========================================================
+  # 1. PostgreSQL Database Service
+  # =========================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: salehi_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${SQL_USER:-salehi_user}
+      POSTGRES_PASSWORD: ${SQL_PASSWORD:-salehi_secure_password_2026}
+      POSTGRES_DB: ${SQL_DB_NAME:-salehi_chandelier_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SQL_USER:-salehi_user} -d ${SQL_DB_NAME:-salehi_chandelier_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - salehi_network
+
+  # =========================================================
+  # 2. Node.js Full-Stack Application Service (Express + React)
+  # =========================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: salehi_app
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      SQL_HOST: postgres
+      SQL_PORT: 5432
+      SQL_USER: ${SQL_USER:-salehi_user}
+      SQL_PASSWORD: ${SQL_PASSWORD:-salehi_secure_password_2026}
+      SQL_DB_NAME: ${SQL_DB_NAME:-salehi_chandelier_db}
+      DOMAIN: ${DOMAIN:-localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - salehi_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # =========================================================
+  # 3. Nginx Reverse Proxy (Ports 80 & 443 with Gzip & SSL)
+  # =========================================================
+  nginx:
+    image: nginx:alpine
+    container_name: salehi_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_challenge:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
+    depends_on:
+      - app
+    networks:
+      - salehi_network
+
+networks:
+  salehi_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  certbot_challenge:
+    driver: local
+  certbot_certs:
+    driver: local
