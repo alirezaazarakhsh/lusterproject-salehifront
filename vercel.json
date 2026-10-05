@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/handler?route=health"
+    },
+    {
+      "source": "/api/:route*",
+      "destination": "/api/handler?route=:route*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
