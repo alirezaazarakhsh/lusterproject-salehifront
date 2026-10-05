@@ -224,6 +224,18 @@ html.dark .shadow-2xl {
   }
 }
 
+/* برای رفع موارد باقی‌مانده در فوتر و بخش‌ها */
+html.dark footer,
+html.dark section {
+  background-color: #121212 !important;
+}
+
+html.dark footer a,
+html.dark section h2,
+html.dark section h3 {
+  color: #e5e7eb !important;
+}
+
 /* انیمیشن پر شدن خط نوتیفیکیشن و دراور خطاها */
 @keyframes toastProgress {
   from {
