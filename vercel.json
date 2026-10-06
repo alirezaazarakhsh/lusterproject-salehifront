@@ -21,19 +21,19 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "/api/index"
+      "destination": "/api/index?path=/health"
     },
     {
       "source": "/api-docs",
-      "destination": "/api/index"
+      "destination": "/api/index?path=/api-docs/"
     },
     {
       "source": "/api-docs/:match*",
-      "destination": "/api/index"
+      "destination": "/api/index?path=/api-docs/:match*"
     },
     {
       "source": "/api/:match*",
-      "destination": "/api/index"
+      "destination": "/api/index?path=/api/:match*"
     },
     {
       "source": "/((?!api/|assets/|fonts/|.*\\.[a-zA-Z0-9]+$).*)",
