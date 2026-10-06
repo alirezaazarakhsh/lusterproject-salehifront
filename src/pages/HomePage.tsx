@@ -377,7 +377,7 @@ export const HomePage: React.FC = () => {
       }
 
       let currentProducts = SALEHI_COLLECTION_PRODUCTS;
-      if (Array.isArray(data.products) && data.products.length > 0) {
+      if (Array.isArray(data.products)) {
         const mappedProducts: ChandelierProduct[] = data.products.map(
           (row: any) => ({
             id: row.productKey || `db-prod-${row.id}`,
@@ -403,7 +403,7 @@ export const HomePage: React.FC = () => {
         setProductsList(mappedProducts);
       }
 
-      if (Array.isArray(data.categories) && data.categories.length > 0) {
+      if (Array.isArray(data.categories)) {
         const mappedCategories: CategoryItem[] = data.categories.map(
           (catRow: any, idx: number) => {
             const fallbackCat =
@@ -425,7 +425,7 @@ export const HomePage: React.FC = () => {
         setCategoriesList(mappedCategories);
       }
 
-      if (Array.isArray(data.projects) && data.projects.length > 0) {
+      if (Array.isArray(data.projects)) {
         const mappedProjects: ExecutedProject[] = data.projects.map(
           (projRow: any, idx: number) => {
             let parsedGallery: string[] = [];

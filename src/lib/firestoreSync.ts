@@ -33,15 +33,81 @@ export async function addMessageToFirestore(message: any): Promise<string | null
   }
 }
 
-export async function fetchAllDataFromFirestore(): Promise<any | null> {
+export async function fetchCollectionFromFirestore(collectionName: string): Promise<any[]> {
   try {
-    const docRef = doc(firestoreDb, SETTINGS_COLLECTION, FIRESTORE_STATE_DOC);
-    const snap = await getDoc(docRef);
-    if (snap.exists()) {
-      return snap.data();
+    const colRef = collection(firestoreDb, collectionName);
+    const snap = await getDocs(colRef);
+    if (!snap.empty) {
+      return snap.docs.map((d) => d.data());
     }
   } catch (err) {
-    console.warn('Could not fetch from Firestore global doc:', err);
+    console.warn(`Could not fetch collection ${collectionName} from Firestore:`, err);
+  }
+  return [];
+}
+
+export async function fetchAllDataFromFirestore(): Promise<any | null> {
+  try {
+    const [products, projects, categories, orders, articles, stories] = await Promise.all([
+      fetchCollectionFromFirestore('products'),
+      fetchCollectionFromFirestore('projects'),
+      fetchCollectionFromFirestore('categories'),
+      fetchCollectionFromFirestore('orders'),
+      fetchCollectionFromFirestore('articles'),
+      fetchCollectionFromFirestore('stories'),
+    ]);
+
+    const settingsKeys = [
+      'footerSettings', 'contactUsSettings', 'aboutUsSettings', 
+      'heroSliderSettings', 'mainSettings', 'smsSettings', 'faqSettings'
+    ];
+
+    const settingsObj: Record<string, any> = {};
+    await Promise.all(
+      settingsKeys.map(async (key) => {
+        const val = await getSettingFromFirestore(key);
+        if (val) {
+          settingsObj[key] = val;
+        }
+      })
+    );
+
+    let globalState: any = null;
+    try {
+      const docRef = doc(firestoreDb, SETTINGS_COLLECTION, FIRESTORE_STATE_DOC);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        globalState = snap.data();
+      }
+    } catch {}
+
+    const hasCollectionsData =
+      products.length > 0 ||
+      projects.length > 0 ||
+      categories.length > 0 ||
+      stories.length > 0 ||
+      articles.length > 0 ||
+      Object.keys(settingsObj).length > 0;
+
+    if (hasCollectionsData) {
+      return {
+        products: products.length > 0 ? products : globalState?.products,
+        projects: projects.length > 0 ? projects : globalState?.projects,
+        categories: categories.length > 0 ? categories : globalState?.categories,
+        orders: orders.length > 0 ? orders : globalState?.orders,
+        articles: articles.length > 0 ? articles : globalState?.articles,
+        stories: stories.length > 0 ? stories : globalState?.stories,
+        users: globalState?.users || [],
+        messages: globalState?.messages || [],
+        ...settingsObj,
+      };
+    }
+
+    if (globalState) {
+      return globalState;
+    }
+  } catch (err) {
+    console.warn('Could not fetch all data from Cloud Firestore:', err);
   }
   return null;
 }
