@@ -250,14 +250,20 @@ html.dark [class*='text-'] {
 /* اصلاح بک‌گراندها و بردرهای المان‌ها */
 html.dark section button,
 html.dark div[class*='bg-white'],
-html.dark div[class*='bg-['],
-html.dark span[class*='bg-['] {
+html.dark .bg-[#f4f4f4],
+html.dark .bg-[#f5f5f5],
+html.dark .bg-[#f6f1e7],
+html.dark .bg-[#faf9f6],
+html.dark .bg-[#ececec] {
   background-color: #262626 !important;
   border-color: #383838 !important;
 }
 
 /* اصلاح حالت‌های هاور */
-html.dark [class*='hover\\:bg-[']:hover {
+html.dark .hover\:bg-[#f5f5f5]:hover,
+html.dark .hover\:bg-[#f6f1e7]:hover,
+html.dark .hover\:bg-[#faf9f6]:hover,
+html.dark .hover\:bg-[#ececec]:hover {
   background-color: #373737 !important;
 }
 

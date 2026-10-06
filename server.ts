@@ -66,7 +66,6 @@ import {
   ensureSeeded,
 } from './src/db/repository.ts';
 import { autoInitPostgresSchema } from './src/db/initSchema.ts';
-import { completeSwaggerSpec, renderSwaggerHtml } from './src/utils/swaggerDocs.ts';
 
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
@@ -242,27 +241,13 @@ async function startServer() {
     ],
   };
 
-  let swaggerDocs: any = completeSwaggerSpec;
+  let swaggerDocs;
   try {
-    const generated: any = swaggerJsdoc(swaggerOptions);
-    if (generated && generated.paths && Object.keys(generated.paths).length > 0) {
-      swaggerDocs = {
-        ...completeSwaggerSpec,
-        ...generated,
-        paths: {
-          ...completeSwaggerSpec.paths,
-          ...generated.paths,
-        },
-        components: {
-          ...completeSwaggerSpec.components,
-          ...generated.components,
-        },
-      };
-    }
-    console.log('✅ Swagger documentation initialized successfully');
+    swaggerDocs = swaggerJsdoc(swaggerOptions);
+    console.log('✅ Swagger documentation generated successfully');
   } catch (err) {
-    console.warn('Swagger JSDoc fallback notice:', err);
-    swaggerDocs = completeSwaggerSpec;
+    console.error('❌ Failed to generate Swagger docs:', err);
+    swaggerDocs = { openapi: '3.0.0', info: { title: 'Error' }, paths: {} };
   }
   
   // تزریق فونت سایت به سواگر و اصلاح استایل لینک‌ها
@@ -291,19 +276,11 @@ async function startServer() {
     .swagger-ui .opblock .opblock-summary { flex-direction: row-reverse; }
   `;
 
-  // سرو مستقل HTML مستندات تعاملی API بدون وابستگی به فایل‌های محلی (سازگار کامل با ورسل، داکر، سرور ابری و محلی)
-  app.get(['/api-docs', '/api-docs/', '/docs', '/api/docs'], (_req, res) => {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.send(renderSwaggerHtml('/api/docs.json'));
-  });
-
-  // سرو استاندارد swagger-ui-express به عنوان Fallback
-  app.use('/api-docs-express', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
     customCss: swaggerCustomCss,
     customSiteTitle: "مستندات API لوستر صالحی (Postman-Like)"
   }));
-
-  app.get(['/api/docs.json', '/api-docs/swagger.json'], (_req, res) => {
+  app.get('/api/docs.json', (_req, res) => {
     res.json(swaggerDocs);
   });
 
@@ -317,16 +294,11 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   
   // Explicitly serve public assets in both dev and prod for robustness
-  app.use('/assets/images', express.static(path.join(process.cwd(), 'public/assets/images'), { maxAge: '7d' }));
-  app.use('/assets/images', express.static(path.join(process.cwd(), 'dist/assets/images'), { maxAge: '7d' }));
-  app.use('/assets/images', express.static(path.join(process.cwd(), 'src/assets/images'), { maxAge: '7d' }));
-  app.use('/assets', express.static(path.join(process.cwd(), 'public/assets'), { maxAge: '7d' }));
-  app.use('/assets', express.static(path.join(process.cwd(), 'dist/assets'), { maxAge: '7d' }));
-  app.use('/assets', express.static(path.join(process.cwd(), 'src/assets'), { maxAge: '7d' }));
-  app.use('/fonts', express.static(path.join(process.cwd(), 'public/fonts'), { maxAge: '30d' }));
-  app.use('/fonts', express.static(path.join(process.cwd(), 'dist/fonts'), { maxAge: '30d' }));
-  app.use(express.static(path.join(process.cwd(), 'public')));
-  app.use(express.static(path.join(process.cwd(), 'dist')));
+  app.use('/assets', express.static(path.join(process.cwd(), 'public/assets')));
+  app.use('/assets', express.static(path.join(process.cwd(), 'dist/assets')));
+  app.use('/assets', express.static(path.join(process.cwd(), 'src/assets')));
+  app.use('/fonts', express.static(path.join(process.cwd(), 'public/fonts')));
+  app.use('/fonts', express.static(path.join(process.cwd(), 'dist/fonts')));
 
   /**
    * @openapi
@@ -2328,17 +2300,4 @@ async function startServer() {
   return app;
 }
 
-export const appReady = startServer().catch((err) => {
-  console.error('Critical server start error:', err);
-  const fallbackApp = express();
-  fallbackApp.use(express.json());
-  fallbackApp.all('*', (req, res) => {
-    res.status(500).json({
-      error: 'خطای سرور',
-      message: err?.message || 'Server startup failed',
-      url: req.url,
-      timestamp: new Date().toISOString(),
-    });
-  });
-  return fallbackApp;
-});
+export const appReady = startServer();

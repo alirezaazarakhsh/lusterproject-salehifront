@@ -10,7 +10,6 @@ import {
   ExecutedProject,
 } from '../../data/chandelierData';
 import { buildProjectsForTabAndPage } from '../../project/ProjectContentSection';
-import { handleImgErrorFallback, resolveDirectImageUrl } from '../../utils/imageCdnHelper';
 
 interface ProjectsSectionProps {
   projects?: ExecutedProject[];
@@ -31,7 +30,6 @@ const AdaptiveGalleryImage: React.FC<{
   alt: string;
   isThumbnail?: boolean;
 }> = ({ src, alt, isThumbnail = false }) => {
-  const directUrl = resolveDirectImageUrl(src, { width: isThumbnail ? 250 : 1200, quality: 85 });
   const [isPortraitOrSquare, setIsPortraitOrSquare] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
@@ -48,19 +46,17 @@ const AdaptiveGalleryImage: React.FC<{
     <div className="relative w-full h-full overflow-hidden bg-[#f0f0f0] flex items-center justify-center">
       {isPortraitOrSquare && (
         <img
-          src={directUrl}
+          src={src}
           alt=""
           aria-hidden="true"
           referrerPolicy="no-referrer"
-          onError={(e) => handleImgErrorFallback(e)}
           className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-35 pointer-events-none"
         />
       )}
       <img
-        src={directUrl}
+        src={src}
         alt={alt}
         onLoad={handleLoad}
-        onError={(e) => handleImgErrorFallback(e)}
         referrerPolicy="no-referrer"
         loading="eager"
         decoding="async"

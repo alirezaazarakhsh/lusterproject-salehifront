@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { HeroTitleOrnament } from '../Ornaments';
 import { GENERATED_IMAGES } from '../../data/chandelierData';
-import { handleImgErrorFallback, resolveDirectImageUrl } from '../../utils/imageCdnHelper';
 
 export interface HeroSlideConfig {
   id: string;
@@ -266,12 +265,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
               >
                 {/* تصویر پس‌زمینه اسلاید با زوم نرم هنگام فعال شدن */}
                 <img
-                  src={resolveDirectImageUrl(imgUrl, { width: 1200, quality: 85 })}
+                  src={imgUrl}
                   alt={titleLine1 || titleLine2 || 'اسلایدر اصلی لوستر صالحی'}
-                  loading={idx === 0 ? 'eager' : 'lazy'}
-                  decoding="async"
                   referrerPolicy="no-referrer"
-                  onError={(e) => handleImgErrorFallback(e)}
                   className={`absolute inset-0 w-full h-full object-cover object-center transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                     isCurrent ? 'scale-100' : 'scale-110'
                   }`}
@@ -360,12 +356,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
             return (
               <img
                 key={`desktop-hero-slide-${slide.id || idx}`}
-                src={resolveDirectImageUrl(slide.imageUrl, { width: 1920, quality: 85 })}
+                src={slide.imageUrl}
                 alt={slide.titleLine1 || slide.titleLine2 || 'لوستر صالحی'}
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                decoding="async"
                 referrerPolicy="no-referrer"
-                onError={(e) => handleImgErrorFallback(e)}
                 className={`absolute inset-0 w-full h-full object-cover object-left transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] ${
                   isSelected
                     ? 'opacity-100 scale-100 translate-x-0 z-[1]'
