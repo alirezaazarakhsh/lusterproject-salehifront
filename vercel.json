@@ -20,6 +20,10 @@
   ],
   "rewrites": [
     {
+      "source": "/src/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
       "source": "/health",
       "destination": "/api/index?path=/health"
     },
