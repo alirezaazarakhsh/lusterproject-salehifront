@@ -79,6 +79,14 @@ async function startServer() {
     next();
   });
 
+  // Support pre-parsed body in Vercel Serverless environment to prevent body-parser stream hang
+  app.use((req: any, _res: any, next: any) => {
+    if (req.body && typeof req.body === 'object' && !req._body) {
+      req._body = true;
+    }
+    next();
+  });
+
   app.use(express.json({ limit: '50mb' }));
   
   // CORS Fallback
