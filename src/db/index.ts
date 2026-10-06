@@ -2,15 +2,6 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema.ts';
 
-if (process.env.VERCEL) {
-  const missing = ['SQL_HOST', 'SQL_USER', 'SQL_PASSWORD', 'SQL_DB_NAME'].filter(
-    (key) => !process.env[key]
-  );
-  if (missing.length > 0) {
-    throw new Error(`Missing PostgreSQL environment variables: ${missing.join(', ')}`);
-  }
-}
-
 declare global {
   var _postgresPool: Pool | undefined;
 }

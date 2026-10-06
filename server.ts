@@ -294,6 +294,8 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   
   // Explicitly serve public assets in both dev and prod for robustness
+  app.use(express.static(path.join(process.cwd(), 'public')));
+  app.use(express.static(path.join(process.cwd(), 'dist')));
   app.use('/assets', express.static(path.join(process.cwd(), 'public/assets')));
   app.use('/assets', express.static(path.join(process.cwd(), 'dist/assets')));
   app.use('/assets', express.static(path.join(process.cwd(), 'src/assets')));
