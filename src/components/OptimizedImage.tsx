@@ -17,11 +17,10 @@ export interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageEl
 
 /**
  * کامپوننت تصویر فوق‌العاده بهینه (OptimizedImage) با پشتیبانی از:
- * ۱. لودینگ مستقیم از CDN پرسرعت
- * ۲. بارگذاری تنبل پیشرفته (Lazy Loading) با Intersection Observer و Native decoding async
- * ۳. نمایش اسکلتون نرم / Placeholder هنگام لود
- * ۴. انیمیشن Fade-In بدون پرش المان‌ها (Cumulative Layout Shift - CLS 0)
- * ۵. فال‌بک خودکار و بدون شکست در تمام محیط‌ها (ورسل، هاست شخصی و AI Studio)
+ * ۱. لودینگ مستقیم از CDN پرسرعت و مسیرهای استاتیک
+ * ۲. بارگذاری تنبل پیشرفته (Lazy Loading) با Native decoding async
+ * ۳. نمایش فوری و بدون تاخیر (بدون پرش و بدون مخفی‌سازی opacity-0)
+ * ۴. فال‌بک خودکار و بدون شکست در تمام محیط‌ها (ورسل، هاست شخصی و AI Studio)
  */
 export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
@@ -32,7 +31,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   options,
   fallbackSrc,
   containerClassName = '',
-  showSkeleton = true,
+  showSkeleton = false,
   aspectRatioClass = '',
   onImageLoad,
   style,
@@ -40,20 +39,19 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
 }) => {
   const directSrc = resolveDirectImageUrl(src, options);
   const [currentSrc, setCurrentSrc] = useState<string>(directSrc);
-  const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [isLoaded, setIsLoaded] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const newDirect = resolveDirectImageUrl(src, options);
     setCurrentSrc(newDirect);
-    setIsLoaded(false);
+    setIsLoaded(true);
     setHasError(false);
   }, [src, JSON.stringify(options)]);
 
   return (
     <div className={`relative overflow-hidden ${aspectRatioClass} ${containerClassName}`}>
-      {/* اسکلتون شیمر زیبا حین بارگذاری تصویر */}
       {showSkeleton && !isLoaded && !hasError && (
         <div className="absolute inset-0 bg-[#f4f2ee] animate-pulse rounded-[inherit] z-0 flex items-center justify-center">
           <div className="w-8 h-8 rounded-full border-2 border-[#b08754]/20 border-t-[#b08754] animate-spin" />
@@ -78,9 +76,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         style={{
           ...style,
         }}
-        className={`${className} transition-opacity duration-500 ease-out ${
-          isLoaded ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`${className} opacity-100`}
         {...restProps}
       />
     </div>
