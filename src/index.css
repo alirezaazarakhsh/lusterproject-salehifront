@@ -323,6 +323,38 @@ html.dark .hover\:bg-[#ececec]:hover {
   }
 }
 
+/* اسکرول بی‌نهایت نرم و روان بدون هیچ‌گونه تاخیر یا پرش */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, [class*='overflow-'] {
+  scroll-behavior: smooth !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* برای المان‌های افقی و عمودی اسکرول‌دار */
+.overflow-x-auto, .overflow-y-auto, .overflow-auto {
+  scroll-behavior: smooth !important;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  will-change: scroll-position;
+}
+
+/* کلاس کمکی برای اسکرول فوق‌العاده نرم و بی‌تاخیر */
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* اسکرول‌بار اختصاصی فقط در نسخه دسکتاپ */
 @media (min-width: 1024px) {
   ::-webkit-scrollbar {

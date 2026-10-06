@@ -2,19 +2,19 @@ import 'dotenv/config';
 import fs from 'fs';
 import express from 'express';
 import path from 'path';
-import { pool } from './src/db/index.ts';
+import { pool } from './src/db/index';
 import {
   renderHealthHtmlPage,
   type HealthStatusData,
-} from './src/utils/healthPageTemplate.ts';
-import { requireAuth, type AuthRequest } from './src/middleware/auth.ts';
+} from './src/utils/healthPageTemplate';
+import { requireAuth, type AuthRequest } from './src/middleware/auth';
 import {
   authenticateAdminByPhoneAndPassword,
   createAdminUser,
   deleteAdminUser,
   getUsers,
   updateAdminUser,
-} from './src/db/users.ts';
+} from './src/db/users';
 import {
   getAllCategories,
   createCategory,
@@ -64,8 +64,8 @@ import {
   getFaqSettings,
   saveFaqSettings,
   ensureSeeded,
-} from './src/db/repository.ts';
-import { autoInitPostgresSchema } from './src/db/initSchema.ts';
+} from './src/db/repository';
+import { autoInitPostgresSchema } from './src/db/initSchema';
 
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
@@ -432,9 +432,32 @@ async function startServer() {
    */
   app.get('/api/realtime/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
+    res.setHeader('Cache-Control', 'no-cache, no-store, no-transform, must-revalidate');
+    res.setHeader('Connection', 'close');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    const isServerless = Boolean(
+      process.env.VERCEL ||
+      req.headers['x-vercel-id'] ||
+      req.headers['x-real-ip'] ||
+      req.headers['x-forwarded-proto'] ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME
+    );
+
+    res.status(200);
+    res.write(`data: ${JSON.stringify({ type: 'connected', mode: isServerless ? 'polling' : 'stream', timestamp: Date.now() })}\n\n`);
+
+    if (isServerless) {
+      return res.end();
+    }
+
+    try {
+      if (typeof (res as any).flushHeaders === 'function') {
+        (res as any).flushHeaders();
+      }
+    } catch {
+      // ignore
+    }
 
     sseClients.push(res);
 

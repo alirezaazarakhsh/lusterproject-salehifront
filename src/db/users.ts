@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { asc, eq } from 'drizzle-orm';
-import { db } from './index.ts';
-import { users } from './schema.ts';
+import { db } from './index';
+import { users } from './schema';
 
 const ADMIN_TOKEN_SECRET =
   process.env.ADMIN_TOKEN_SECRET || 'salehi-chandelier-postgres-admin-secret-2026';

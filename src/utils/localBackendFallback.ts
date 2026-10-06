@@ -1320,6 +1320,11 @@ export async function apiFetchWithFallback(
       // Update local cache with server data if it's the catalog
       if (url === '/api/public/catalog' && data) {
         const local = loadLocalDb();
+        if (Array.isArray(data.products)) local.products = data.products;
+        if (Array.isArray(data.categories)) local.categories = data.categories;
+        if (Array.isArray(data.projects)) local.projects = data.projects;
+        if (Array.isArray(data.stories)) local.stories = data.stories;
+        if (Array.isArray(data.articles)) local.articles = data.articles;
         if (data.footerSettings) local.footerSettings = data.footerSettings;
         if (data.contactUsSettings) local.contactUsSettings = data.contactUsSettings;
         if (data.aboutUsSettings) local.aboutUsSettings = data.aboutUsSettings;
@@ -1328,9 +1333,9 @@ export async function apiFetchWithFallback(
         if (data.smsSettings) local.smsSettings = data.smsSettings;
         if (data.faqSettings) local.faqSettings = data.faqSettings;
         
-        // Only save to localStorage, don't trigger firestore save back immediately to avoid loops
         try {
           localStorage.setItem(LOCAL_DB_STORAGE_KEY, JSON.stringify(local));
+          saveAllDataToFirestore(local).catch(() => {});
         } catch {}
       }
       return data;
@@ -1350,16 +1355,13 @@ export async function apiFetchWithFallback(
       throw new Error(errJson.error || 'دسترسی غیرمجاز یا نشست منقضی شده است.');
     }
 
-    // If server returns error, only fallback for GET requests or if it's a known environment issue
+    // If server returns error, fallback for GET requests or admin login
     if (res.status === 404 || res.status === 405 || res.status >= 500) {
-      if (!isMutation) {
+      if (!isMutation || url === '/api/admin/login' || url === '/api/auth/admin-login') {
         console.warn(`Server returned ${res.status} for ${url}. Falling back to local/cloud database.`);
         isCurrentlyUsingFallback = true;
         return await handleLocalApiRequest(url, options);
       } else {
-        // For mutations (POST/PUT/DELETE), we prefer to show the real server error 
-        // unless the user specifically wants local mode.
-        // But the user said "don't save in local backend", so we throw.
         const errText = await res.text().catch(() => '');
         throw new Error(`خطای سرور (${res.status}): ${errText.slice(0, 100)}`);
       }
@@ -1367,7 +1369,13 @@ export async function apiFetchWithFallback(
 
     throw new Error(`خطای ارتباط با سرور (${res.status})`);
   } catch (err: any) {
-    // Network errors or fetch failures
+    // Network errors or fetch failures (e.g. Failed to fetch)
+    if (url === '/api/admin/login' || url === '/api/auth/admin-login') {
+      console.warn(`Network error during login for ${url}. Falling back to local auth.`);
+      isCurrentlyUsingFallback = true;
+      return await handleLocalApiRequest(url, options);
+    }
+
     if (err.message?.includes('خطای سرور') || err.message?.includes('دسترسی')) {
       throw err;
     }

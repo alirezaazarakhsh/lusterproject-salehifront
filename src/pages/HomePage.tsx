@@ -103,6 +103,16 @@ export const HomePage: React.FC = () => {
 
     // راه‌اندازی ریل تایم با SSE برای به‌روزرسانی آنی صفحات سایت در هنگام هرگونه تغییر در ادمین
     let eventSource: EventSource | null = null;
+    let fallbackPollingTimer: number | null = null;
+
+    const setupPolling = () => {
+      if (!fallbackPollingTimer) {
+        fallbackPollingTimer = window.setInterval(() => {
+          fetchLiveCatalogFromDb();
+        }, 25000);
+      }
+    };
+
     try {
       eventSource = new EventSource('/api/realtime/stream');
       eventSource.onmessage = (event) => {
@@ -111,13 +121,29 @@ export const HomePage: React.FC = () => {
           if (parsed && parsed.type === 'catalog-updated') {
             console.log('Real-time database update event received:', parsed);
             window.dispatchEvent(new CustomEvent('app-catalog-updated'));
+          } else if (parsed && parsed.mode === 'polling') {
+            // در محیط Vercel برای جلوگیری از خطای ۵۰۰ و اسپم ریکوئست، اتصال بسته شده و پاتلینگ زمان‌بندی‌شده فعال می‌شود
+            if (eventSource) {
+              eventSource.close();
+              eventSource = null;
+            }
+            setupPolling();
           }
         } catch (e) {
           console.error('Failed to parse realtime event data:', e);
         }
       };
+      eventSource.onerror = () => {
+        // مدیریت نرم قطعی SSE
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+        setupPolling();
+      };
     } catch (e) {
       console.error('Failed to connect to realtime stream:', e);
+      setupPolling();
     }
 
     const unsubscribe = subscribeToRoute((nextRoute) => {
@@ -250,6 +276,9 @@ export const HomePage: React.FC = () => {
       }
       if (eventSource) {
         eventSource.close();
+      }
+      if (fallbackPollingTimer) {
+        window.clearInterval(fallbackPollingTimer);
       }
     };
   }, []);
