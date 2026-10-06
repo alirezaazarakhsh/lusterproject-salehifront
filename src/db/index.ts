@@ -8,6 +8,7 @@ declare global {
 
 export const createPool = () => {
   if (!global._postgresPool) {
+    const isVercel = Boolean(process.env.VERCEL);
     global._postgresPool = new Pool({
       host: process.env.SQL_HOST || 'localhost',
       port: process.env.SQL_PORT ? Number(process.env.SQL_PORT) : 5432,
@@ -15,12 +16,12 @@ export const createPool = () => {
       password: process.env.SQL_PASSWORD || '',
       database: process.env.SQL_DB_NAME || 'postgres',
       max: 10,
-      connectionTimeoutMillis: 20000,
-      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: isVercel ? 1500 : 5000,
+      idleTimeoutMillis: 10000,
       keepAlive: true,
     });
 
-    global._postgresPool.on('error', (err) => {
+    global._postgresPool.on('error', (_err) => {
       // Gracefully capture pool idle error without crashing
     });
   }

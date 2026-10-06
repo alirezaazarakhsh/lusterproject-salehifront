@@ -285,11 +285,13 @@ async function startServer() {
   });
 
   // مقداردهی و ایجاد خودکار جداول PostgreSQL و سیدینگ در لوکال هاست یا داکر
-  autoInitPostgresSchema(pool)
-    .then(() => ensureSeeded())
-    .catch((err) => {
-      console.warn('Postgres auto init notice:', err?.message || err);
-    });
+  if (!process.env.VERCEL || process.env.SQL_HOST) {
+    autoInitPostgresSchema(pool)
+      .then(() => ensureSeeded())
+      .catch((err) => {
+        console.warn('Postgres auto init notice:', err?.message || err);
+      });
+  }
 
   app.use(express.json({ limit: '50mb' }));
   
