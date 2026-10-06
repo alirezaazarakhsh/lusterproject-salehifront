@@ -20,6 +20,10 @@
   ],
   "rewrites": [
     {
+      "source": "/assets/:filename([\\w-]+)-:hash([\\w-]{8})\\.:ext([a-zA-Z0-9]+)",
+      "destination": "/assets/images/:filename.:ext"
+    },
+    {
       "source": "/src/assets/:path*",
       "destination": "/assets/:path*"
     },

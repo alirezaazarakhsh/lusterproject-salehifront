@@ -12,6 +12,12 @@ export function resolveDirectImageUrl(rawUrl: string, options?: ImageOptimizatio
     // Automatically normalize /src/assets/ or src/assets/ to /assets/ for production rendering
     url = url.replace(/^(https?:\/\/[^\/]+)?\/?src\/assets\//i, '$1/assets/');
 
+    // Vite-generated URLs may remain in database content after their hashed build assets expire.
+    url = url.replace(
+      /^(https?:\/\/[^/]+)?\/assets\/(?!images\/)([^/?#]+)-[A-Za-z0-9_-]{8}(\.[A-Za-z0-9]+)(?=[?#]|$)/i,
+      '$1/assets/images/$2$3',
+    );
+
     if (url.startsWith('data:') || url.startsWith('blob:')) {
       return url;
     }
