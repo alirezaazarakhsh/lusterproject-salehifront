@@ -4,7 +4,8 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "types": ["vite/client", "node"],
+    "types": ["node", "vite/client"],
+    "typeRoots": ["./types", "./node_modules/@types", "./node_modules/vite/types"],
     "resolveJsonModule": true,
     "lib": [
       "ES2022",
@@ -20,9 +21,16 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "vite/client": [
+        "./node_modules/vite/types/client.d.ts"
       ]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "types/**/*.ts",
+    "src/**/*"
+  ]
 }
