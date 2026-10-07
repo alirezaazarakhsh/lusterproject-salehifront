@@ -392,22 +392,43 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     subtitle: string,
     onComplete: () => Promise<void> | void
   ) => {
-    setProjectActionModal({ mode, title, subtitle, progress: 10 });
-    let currentProg = 10;
+    setProjectActionModal({ mode, title, subtitle, progress: 15 });
+    let isFinished = false;
+    let currentProg = 15;
+
     const intervalId = window.setInterval(() => {
-      currentProg = Math.min(100, currentProg + 18);
+      if (isFinished) {
+        window.clearInterval(intervalId);
+        setProjectActionModal((prev) => (prev ? { ...prev, progress: 100 } : null));
+        window.setTimeout(() => {
+          setProjectActionModal(null);
+        }, 180);
+        return;
+      }
+      currentProg = Math.min(90, currentProg + 25);
       setProjectActionModal((prev) =>
         prev ? { ...prev, progress: currentProg } : null
       );
-      if (currentProg >= 100) {
-        window.clearInterval(intervalId);
-        Promise.resolve(onComplete()).finally(() => {
-          window.setTimeout(() => {
-            setProjectActionModal(null);
-          }, 250);
-        });
-      }
-    }, 100);
+    }, 70);
+
+    const safetyTimeout = window.setTimeout(() => {
+      window.clearInterval(intervalId);
+      setProjectActionModal(null);
+    }, 1500);
+
+    Promise.resolve(onComplete())
+      .catch((err) => {
+        console.error('Project operation notice:', err);
+      })
+      .finally(() => {
+        isFinished = true;
+        window.clearTimeout(safetyTimeout);
+        setProjectActionModal((prev) => (prev ? { ...prev, progress: 100 } : null));
+        window.setTimeout(() => {
+          window.clearInterval(intervalId);
+          setProjectActionModal(null);
+        }, 180);
+      });
   };
 
   const [newGalleryImageUrl, setNewGalleryImageUrl] = useState<string>('');
@@ -656,22 +677,45 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     subtitle: string,
     onComplete: () => Promise<void> | void
   ) => {
-    setStoryActionModal({ mode, title, subtitle, progress: 8 });
-    let currentProg = 8;
+    setStoryActionModal({ mode, title, subtitle, progress: 15 });
+    let isFinished = false;
+    let currentProg = 15;
+
     const intervalId = window.setInterval(() => {
-      currentProg = Math.min(100, currentProg + 14);
+      if (isFinished) {
+        window.clearInterval(intervalId);
+        setStoryActionModal((prev) => (prev ? { ...prev, progress: 100 } : null));
+        window.setTimeout(() => {
+          setStoryActionModal(null);
+        }, 180);
+        return;
+      }
+      currentProg = Math.min(90, currentProg + 25);
       setStoryActionModal((prev) =>
         prev ? { ...prev, progress: currentProg } : null
       );
-      if (currentProg >= 100) {
-        window.clearInterval(intervalId);
-        Promise.resolve(onComplete()).finally(() => {
-          window.setTimeout(() => {
-            setStoryActionModal(null);
-          }, 260);
-        });
-      }
-    }, 120);
+    }, 70);
+
+    // Timeout safety: close after max 1.5 seconds under all circumstances
+    const safetyTimeout = window.setTimeout(() => {
+      window.clearInterval(intervalId);
+      setStoryActionModal(null);
+    }, 1500);
+
+    // Run action immediately in background without blocking
+    Promise.resolve(onComplete())
+      .catch((err) => {
+        console.error('Story operation notice:', err);
+      })
+      .finally(() => {
+        isFinished = true;
+        window.clearTimeout(safetyTimeout);
+        setStoryActionModal((prev) => (prev ? { ...prev, progress: 100 } : null));
+        window.setTimeout(() => {
+          window.clearInterval(intervalId);
+          setStoryActionModal(null);
+        }, 180);
+      });
   };
 
   const handleFileUploadToDataUrl = (
@@ -1814,21 +1858,40 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     );
   };
 
-  const handleDeleteStory = async (id: number) => {
+  const handleDeleteStory = (storyIdOrKey: number | string) => {
+    if (!storyIdOrKey && storyIdOrKey !== 0) return;
+    const targetIdStr = String(storyIdOrKey);
+    const targetIdNum = Number(storyIdOrKey);
+
+    // ۱. حذف آپتیمیستیک آنی از لیست استوری‌ها برای واکنش فوری و بدون معطلی UI
+    setStoriesList((prev) =>
+      prev.filter(
+        (s) =>
+          String(s.id) !== targetIdStr &&
+          s.storyKey !== targetIdStr &&
+          (isNaN(targetIdNum) || Number(s.id) !== targetIdNum)
+      )
+    );
+
     runStoryProgressModal(
       'delete',
       'استوری از وب‌سایت حذف شد',
-      'در حال حذف استوری از لیست و بروزرسانی نوار استوری‌های صفحه اصلی سایت...',
+      'در حال حذف استوری و بروزرسانی نوار استوری‌های صفحه اصلی سایت...',
       async () => {
         try {
-          await authFetch(`/api/admin/stories/${id}`, { method: 'DELETE' });
-          await loadAllAdminData();
+          await authFetch(
+            `/api/admin/stories/${encodeURIComponent(storyIdOrKey)}`,
+            { method: 'DELETE' }
+          );
+          showNotice('success', 'استوری با موفقیت از وب‌سایت حذف شد.');
           onCatalogUpdated?.();
           window.dispatchEvent(new CustomEvent('app-catalog-updated'));
           window.dispatchEvent(new CustomEvent('app-stories-updated'));
-          showNotice('success', 'استوری با موفقیت از وب‌سایت حذف شد.');
+          // بروزرسانی کلی در پس‌زمینه بدون بلاک کردن کاربر یا مودال
+          loadAllAdminData().catch(() => {});
         } catch (err: any) {
           showNotice('error', err?.message || 'خطا در حذف استوری از سایت');
+          loadAllAdminData().catch(() => {});
         }
       }
     );
@@ -6080,7 +6143,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteStory(st.id)}
+                                onClick={() => handleDeleteStory(st.id ?? st.storyKey)}
                                 className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -10591,11 +10654,24 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
       {/* مودال وضعیت انتشار یا حذف استوری در وب‌سایت همراه با نوار پیشرفت پرشونده */}
       {storyActionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4"
+          onClick={() => setStoryActionModal(null)}
+        >
           <div
-            className="w-full max-w-md rounded-[24px] bg-white border border-[#e7dfd1] p-6 shadow-2xl text-center space-y-4"
+            className="relative w-full max-w-md rounded-[24px] bg-white border border-[#e7dfd1] p-6 shadow-2xl text-center space-y-4"
             dir="rtl"
+            onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              onClick={() => setStoryActionModal(null)}
+              className="absolute top-4 left-4 w-8 h-8 rounded-full bg-[#f4efe6] hover:bg-[#eae2d3] text-[#777] hover:text-[#222] flex items-center justify-center cursor-pointer transition-colors"
+              aria-label="بستن پنجره"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             <div
               className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${
                 storyActionModal.mode === 'save'
