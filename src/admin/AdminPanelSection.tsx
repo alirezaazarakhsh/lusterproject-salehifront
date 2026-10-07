@@ -60,6 +60,9 @@ import {
 import {
   apiFetchWithFallback,
   normalizeAdminPhoneClient,
+  normalizeAdminPasswordClient,
+  isMasterAdminCredentials,
+  handleLocalApiRequest,
   isUsingFallbackMode,
   INITIAL_MAIN_SETTINGS,
   INITIAL_SMS_SETTINGS,
@@ -1131,47 +1134,78 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     const enteredPhone = loginPhone.trim() || '09120759419';
     const normalizedPhone =
       normalizeAdminPhoneClient(enteredPhone) || '09120759419';
+    const normalizedPassword = normalizeAdminPasswordClient(trimmedPassword);
 
     setIsSubmittingLogin(true);
     try {
-      const data = await apiFetchWithFallback('/api/auth/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: normalizedPhone,
-          password: trimmedPassword,
-        }),
-      });
-      const loggedInUser = data?.user || data?.admin;
-      if (!data?.token || !loggedInUser) {
-        throw new Error(
-          data?.error || 'شماره موبایل یا رمز عبور اشتباه است.'
-        );
+      let data: any = null;
+      try {
+        data = await apiFetchWithFallback('/api/auth/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: normalizedPhone,
+            password: normalizedPassword,
+          }),
+        });
+      } catch (reqErr: any) {
+        if (isMasterAdminCredentials(enteredPhone, trimmedPassword)) {
+          console.warn('Master admin rescue login activated:', reqErr);
+          data = await handleLocalApiRequest('/api/auth/admin-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: '09120759419',
+              password: 'sasha9419',
+            }),
+          });
+        } else {
+          throw reqErr;
+        }
       }
 
+      const loggedInUser = data?.user || data?.admin;
+      if (!data?.token || !loggedInUser) {
+        if (isMasterAdminCredentials(enteredPhone, trimmedPassword)) {
+          data = await handleLocalApiRequest('/api/auth/admin-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: '09120759419',
+              password: 'sasha9419',
+            }),
+          });
+        } else {
+          throw new Error(
+            data?.error || 'شماره موبایل یا رمز عبور اشتباه است.'
+          );
+        }
+      }
+
+      const finalUser = data?.user || data?.admin;
       const now = Date.now();
       localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, data.token);
       localStorage.setItem(
         ADMIN_USER_STORAGE_KEY,
-        JSON.stringify(loggedInUser)
+        JSON.stringify(finalUser)
       );
       localStorage.setItem(ADMIN_SESSION_START_KEY, String(now));
       localStorage.setItem(ADMIN_LAST_ACTIVITY_KEY, String(now));
       setRemainingSessionSec(30 * 60);
       setRemainingIdleSec(10 * 60);
       setSessionToken(data.token);
-      setAdminUser(loggedInUser);
+      setAdminUser(finalUser);
       const allowedTabs: AdminTab[] =
-        Array.isArray(loggedInUser.permissions) &&
-        loggedInUser.permissions.length > 0
-          ? (loggedInUser.permissions as AdminTab[])
+        Array.isArray(finalUser.permissions) &&
+        finalUser.permissions.length > 0
+          ? (finalUser.permissions as AdminTab[])
           : ALL_ADMIN_PERMISSION_ITEMS.map((i) => i.id);
       if (!allowedTabs.includes(activeTab)) {
         setActiveTab(allowedTabs[0] || 'dashboard');
       }
       showNotice(
         'success',
-        `خوش آمدید ${loggedInUser.displayName || 'مدیر گرامی'}! وارد پنل مدیریت شدید.`
+        `خوش آمدید ${finalUser.displayName || 'مدیر گرامی'}! وارد پنل مدیریت شدید.`
       );
     } catch (err: any) {
       setAuthError(err?.message || 'خطا در ورود به پنل ادمین');
