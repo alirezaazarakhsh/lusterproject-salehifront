@@ -676,14 +676,55 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
   const handleFileUploadToDataUrl = (
     file: File | undefined,
-    onResult: (dataUrl: string) => void
+    onResult: (dataUrl: string) => void,
+    maxDimension = 800
   ) => {
     if (!file) return;
+
+    // For non-image files like PDFs, use standard FileReader
+    if (!file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          onResult(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // For images, resize and compress via Canvas to guarantee tiny payload (<80KB)
     const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        onResult(reader.result);
-      }
+    reader.onload = (e) => {
+      const rawDataUrl = e.target?.result as string;
+      if (!rawDataUrl) return;
+      const img = new window.Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+          onResult(compressed);
+        } else {
+          onResult(rawDataUrl);
+        }
+      };
+      img.onerror = () => onResult(rawDataUrl);
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   };

@@ -1431,38 +1431,28 @@ export async function apiFetchWithFallback(
       throw new Error(errJson.error || 'شماره موبایل یا رمز عبور اشتباه است.');
     }
 
-    // If server returns error, fallback for GET requests or admin login
+    // If server returns error (e.g. 500 FUNCTION_INVOCATION_FAILED, 404, 502, 503, or non-JSON HTML),
+    // fallback gracefully to local storage and Cloud Firestore
     if (res.status === 404 || res.status === 405 || res.status >= 500 || !isJson) {
-      if (!isMutation || url === '/api/admin/login' || url === '/api/auth/admin-login') {
-        console.warn(`Server returned ${res.status} (json: ${isJson}) for ${url}. Falling back to local/cloud database.`);
-        isCurrentlyUsingFallback = true;
+      console.warn(`Server returned ${res.status} (json: ${isJson}) for ${url}. Gracefully falling back to local/cloud database.`);
+      isCurrentlyUsingFallback = true;
+      try {
         return await handleLocalApiRequest(url, options);
-      } else {
+      } catch (fallbackErr: any) {
         const errText = await res.text().catch(() => '');
-        throw new Error(`خطای سرور (${res.status}): ${errText.slice(0, 100)}`);
+        throw new Error(fallbackErr?.message || `خطای سرور (${res.status}): ${errText.slice(0, 100)}`);
       }
     }
 
     throw new Error(`خطای ارتباط با سرور (${res.status})`);
   } catch (err: any) {
     // Network errors or fetch failures (e.g. Failed to fetch)
-    if (url === '/api/admin/login' || url === '/api/auth/admin-login') {
-      const body = parseBody(options);
-      console.warn(`Network error during login for ${url}. Falling back to local auth.`);
-      isCurrentlyUsingFallback = true;
+    console.warn(`Network/Server error for ${url}. Falling back to local/cloud database.`, err);
+    isCurrentlyUsingFallback = true;
+    try {
       return await handleLocalApiRequest(url, options);
-    }
-
-    if (err.message?.includes('خطای سرور') || err.message?.includes('دسترسی')) {
+    } catch {
       throw err;
     }
-
-    if (!isMutation) {
-      console.warn(`Network error for ${url}. Falling back to Cloud Firestore.`);
-      isCurrentlyUsingFallback = true;
-      return await handleLocalApiRequest(url, options);
-    }
-    
-    throw err;
   }
 }
