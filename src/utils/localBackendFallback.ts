@@ -25,6 +25,9 @@ import { ALL_INITIAL_PROJECTS } from '../data/allDatabaseProjectsSeed';
 import {
   fetchAllDataFromFirestore,
   saveAllDataToFirestore,
+  deleteDocumentFromFirestore,
+  recordDeletedKeys,
+  isItemDeleted,
 } from '../lib/firestoreSync';
 
 const LOCAL_DB_STORAGE_KEY = 'salehi_cms_fallback_db_v2';
@@ -357,11 +360,11 @@ function createInitialLocalDb(): LocalDbSchema {
 
   return {
     users: [defaultAdmin],
-    products: seededProducts,
-    categories: seededCategories,
-    projects: seededProjects,
-    stories: seededStories,
-    articles: seededArticles,
+    products: seededProducts.filter((p) => !isItemDeleted(p)),
+    categories: seededCategories.filter((c) => !isItemDeleted(c)),
+    projects: seededProjects.filter((pr) => !isItemDeleted(pr)),
+    stories: seededStories.filter((s) => !isItemDeleted(s)),
+    articles: seededArticles.filter((a) => !isItemDeleted(a)),
     messages: [
       {
         id: 1,
@@ -420,26 +423,26 @@ function loadLocalDb(): LocalDbSchema {
       }
       return {
         users: usersList,
-        products:
-          Array.isArray(parsed.products)
-            ? parsed.products
-            : initial.products,
-        categories:
-          Array.isArray(parsed.categories)
-            ? parsed.categories
-            : initial.categories,
-        projects:
-          Array.isArray(parsed.projects)
-            ? parsed.projects
-            : initial.projects,
-        stories:
-          Array.isArray(parsed.stories)
-            ? parsed.stories
-            : initial.stories,
-        articles:
-          Array.isArray(parsed.articles)
-            ? parsed.articles
-            : initial.articles,
+        products: (Array.isArray(parsed.products)
+          ? parsed.products
+          : initial.products
+        ).filter((p: any) => !isItemDeleted(p)),
+        categories: (Array.isArray(parsed.categories)
+          ? parsed.categories
+          : initial.categories
+        ).filter((c: any) => !isItemDeleted(c)),
+        projects: (Array.isArray(parsed.projects)
+          ? parsed.projects
+          : initial.projects
+        ).filter((pr: any) => !isItemDeleted(pr)),
+        stories: (Array.isArray(parsed.stories)
+          ? parsed.stories
+          : initial.stories
+        ).filter((s: any) => !isItemDeleted(s)),
+        articles: (Array.isArray(parsed.articles)
+          ? parsed.articles
+          : initial.articles
+        ).filter((a: any) => !isItemDeleted(a)),
         messages: Array.isArray(parsed.messages)
           ? parsed.messages
           : initial.messages,
@@ -504,26 +507,26 @@ export async function syncFromFirestore(): Promise<void> {
           Array.isArray(cloudData.users)
             ? cloudData.users
             : current.users,
-        products:
-          Array.isArray(cloudData.products)
-            ? cloudData.products
-            : current.products,
-        categories:
-          Array.isArray(cloudData.categories)
-            ? cloudData.categories
-            : current.categories,
-        projects:
-          Array.isArray(cloudData.projects)
-            ? cloudData.projects
-            : current.projects,
-        stories:
-          Array.isArray(cloudData.stories)
-            ? cloudData.stories
-            : current.stories,
-        articles:
-          Array.isArray(cloudData.articles)
-            ? cloudData.articles
-            : current.articles,
+        products: (Array.isArray(cloudData.products)
+          ? cloudData.products
+          : current.products
+        ).filter((p: any) => !isItemDeleted(p)),
+        categories: (Array.isArray(cloudData.categories)
+          ? cloudData.categories
+          : current.categories
+        ).filter((c: any) => !isItemDeleted(c)),
+        projects: (Array.isArray(cloudData.projects)
+          ? cloudData.projects
+          : current.projects
+        ).filter((pr: any) => !isItemDeleted(pr)),
+        stories: (Array.isArray(cloudData.stories)
+          ? cloudData.stories
+          : current.stories
+        ).filter((s: any) => !isItemDeleted(s)),
+        articles: (Array.isArray(cloudData.articles)
+          ? cloudData.articles
+          : current.articles
+        ).filter((a: any) => !isItemDeleted(a)),
         messages: Array.isArray(cloudData.messages)
           ? cloudData.messages
           : current.messages,
@@ -875,8 +878,13 @@ export async function handleLocalApiRequest(
       if (dbState.users.length <= 1) {
         throw new Error('امکان حذف تنها ادمین باقی‌مانده وجود ندارد.');
       }
+      const u = dbState.users.find((x) => Number(x.id) === id);
+      if (u) {
+        recordDeletedKeys(id, u.phone);
+        await deleteDocumentFromFirestore('users', id).catch(() => {});
+      }
       dbState.users = dbState.users.filter((u) => Number(u.id) !== id);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, id };
     }
   }
@@ -896,7 +904,7 @@ export async function handleLocalApiRequest(
         productKey: body.productKey || `prod-custom-${nextId}`,
       };
       dbState.products.unshift(created);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return created;
     }
   }
@@ -906,13 +914,22 @@ export async function handleLocalApiRequest(
       const idx = dbState.products.findIndex((p) => Number(p.id) === id);
       if (idx !== -1) {
         dbState.products[idx] = { ...dbState.products[idx], ...body, id };
-        saveLocalDb(dbState);
+        await saveLocalDb(dbState);
         return dbState.products[idx];
       }
     }
     if (method === 'DELETE') {
+      const p = dbState.products.find((x) => Number(x.id) === id);
+      if (p) {
+        recordDeletedKeys(id, p.productKey);
+        await deleteDocumentFromFirestore('products', id).catch(() => {});
+        if (p.productKey)
+          await deleteDocumentFromFirestore('products', p.productKey).catch(
+            () => {}
+          );
+      }
       dbState.products = dbState.products.filter((p) => Number(p.id) !== id);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, id };
     }
   }
@@ -928,7 +945,7 @@ export async function handleLocalApiRequest(
         ) + 1;
       const created = { ...body, id: nextId };
       dbState.categories.push(created);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return created;
     }
   }
@@ -938,15 +955,24 @@ export async function handleLocalApiRequest(
       const idx = dbState.categories.findIndex((c) => Number(c.id) === id);
       if (idx !== -1) {
         dbState.categories[idx] = { ...dbState.categories[idx], ...body, id };
-        saveLocalDb(dbState);
+        await saveLocalDb(dbState);
         return dbState.categories[idx];
       }
     }
     if (method === 'DELETE') {
+      const c = dbState.categories.find((x) => Number(x.id) === id);
+      if (c) {
+        recordDeletedKeys(id, c.slug);
+        await deleteDocumentFromFirestore('categories', id).catch(() => {});
+        if (c.slug)
+          await deleteDocumentFromFirestore('categories', c.slug).catch(
+            () => {}
+          );
+      }
       dbState.categories = dbState.categories.filter(
         (c) => Number(c.id) !== id
       );
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, id };
     }
   }
@@ -968,7 +994,7 @@ export async function handleLocalApiRequest(
         likesCount: Math.max(0, Number(body.likesCount) || 0),
       };
       dbState.projects.unshift(created);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return created;
     }
   }
@@ -998,18 +1024,32 @@ export async function handleLocalApiRequest(
               ? Math.max(0, Number(body.likesCount) || 0)
               : (Number(dbState.projects[idx].likesCount) || 0),
         };
-        saveLocalDb(dbState);
+        await saveLocalDb(dbState);
         return dbState.projects[idx];
       }
     }
     if (method === 'DELETE') {
+      const pr = dbState.projects.find((p) => {
+        if (isNum && Number(p.id) === numId) return true;
+        if (String(p.id).toLowerCase() === rawParam.toLowerCase() || String(p.id).toLowerCase() === cleanParam) return true;
+        if (p.slug && (p.slug.toLowerCase() === rawParam.toLowerCase() || p.slug.toLowerCase() === cleanParam)) return true;
+        return false;
+      });
+      if (pr) {
+        recordDeletedKeys(pr.id, pr.slug);
+        await deleteDocumentFromFirestore('projects', pr.id).catch(() => {});
+        if (pr.slug)
+          await deleteDocumentFromFirestore('projects', pr.slug).catch(
+            () => {}
+          );
+      }
       dbState.projects = dbState.projects.filter((p) => {
         if (isNum && Number(p.id) === numId) return false;
         if (String(p.id).toLowerCase() === rawParam.toLowerCase() || String(p.id).toLowerCase() === cleanParam) return false;
         if (p.slug && (p.slug.toLowerCase() === rawParam.toLowerCase() || p.slug.toLowerCase() === cleanParam)) return false;
         return true;
       });
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, id: rawParam };
     }
   }
@@ -1037,7 +1077,7 @@ export async function handleLocalApiRequest(
       const cur = Number(dbState.projects[idx].likesCount) || 0;
       const nextLikes = inc ? cur + 1 : Math.max(0, cur - 1);
       dbState.projects[idx].likesCount = nextLikes;
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, likesCount: nextLikes, project: dbState.projects[idx] };
     }
   }
@@ -1058,7 +1098,7 @@ export async function handleLocalApiRequest(
     if (idx !== -1) {
       const nextLikes = Math.max(0, Number(body?.likesCount) || 0);
       dbState.projects[idx].likesCount = nextLikes;
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, likesCount: nextLikes, project: dbState.projects[idx] };
     }
   }
@@ -1109,6 +1149,19 @@ export async function handleLocalApiRequest(
       }
     }
     if (method === 'DELETE') {
+      const st = dbState.stories.find((s) => {
+        if (isNum && Number(s.id) === numId) return true;
+        if (String(s.id) === rawParam || s.storyKey === rawParam) return true;
+        return false;
+      });
+      if (st) {
+        recordDeletedKeys(st.id, st.storyKey);
+        await deleteDocumentFromFirestore('stories', st.id).catch(() => {});
+        if (st.storyKey)
+          await deleteDocumentFromFirestore('stories', st.storyKey).catch(
+            () => {}
+          );
+      }
       dbState.stories = dbState.stories.filter((s) => {
         if (isNum && Number(s.id) === numId) return false;
         if (String(s.id) === rawParam || s.storyKey === rawParam) return false;
@@ -1135,7 +1188,7 @@ export async function handleLocalApiRequest(
         slug: `mag-${nextId}`,
       };
       dbState.articles.unshift(created);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return created;
     }
   }
@@ -1145,13 +1198,22 @@ export async function handleLocalApiRequest(
       const idx = dbState.articles.findIndex((a) => Number(a.id) === id);
       if (idx !== -1) {
         dbState.articles[idx] = { ...dbState.articles[idx], ...body, id };
-        saveLocalDb(dbState);
+        await saveLocalDb(dbState);
         return dbState.articles[idx];
       }
     }
     if (method === 'DELETE') {
+      const a = dbState.articles.find((x) => Number(x.id) === id);
+      if (a) {
+        recordDeletedKeys(id, a.articleKey, a.slug);
+        await deleteDocumentFromFirestore('articles', id).catch(() => {});
+        if (a.articleKey)
+          await deleteDocumentFromFirestore('articles', a.articleKey).catch(
+            () => {}
+          );
+      }
       dbState.articles = dbState.articles.filter((a) => Number(a.id) !== id);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, id };
     }
   }
@@ -1166,13 +1228,15 @@ export async function handleLocalApiRequest(
       const idx = dbState.messages.findIndex((m) => Number(m.id) === id);
       if (idx !== -1) {
         dbState.messages[idx] = { ...dbState.messages[idx], ...body, id };
-        saveLocalDb(dbState);
+        await saveLocalDb(dbState);
         return dbState.messages[idx];
       }
     }
     if (method === 'DELETE') {
+      recordDeletedKeys(id);
+      await deleteDocumentFromFirestore('messages', id).catch(() => {});
       dbState.messages = dbState.messages.filter((m) => Number(m.id) !== id);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, id };
     }
   }
@@ -1187,13 +1251,15 @@ export async function handleLocalApiRequest(
       const idx = dbState.orders.findIndex((o) => Number(o.id) === id);
       if (idx !== -1) {
         dbState.orders[idx] = { ...dbState.orders[idx], ...body, id };
-        saveLocalDb(dbState);
+        await saveLocalDb(dbState);
         return dbState.orders[idx];
       }
     }
     if (method === 'DELETE') {
+      recordDeletedKeys(id);
+      await deleteDocumentFromFirestore('orders', id).catch(() => {});
       dbState.orders = dbState.orders.filter((o) => Number(o.id) !== id);
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return { success: true, id };
     }
   }
