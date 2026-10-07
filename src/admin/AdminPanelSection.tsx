@@ -263,7 +263,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   });
 
   // فرم ورود با شماره موبایل و رمز عبور
-  const [loginPhone, setLoginPhone] = useState<string>('');
+  const [loginPhone, setLoginPhone] = useState<string>('09120759419');
   const [loginPassword, setLoginPassword] = useState<string>('');
   const [showLoginPassword, setShowLoginPassword] = useState<boolean>(false);
   const [isSubmittingLogin, setIsSubmittingLogin] = useState<boolean>(false);
@@ -1123,12 +1123,14 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   const handlePhonePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
-    const normalizedPhone = normalizeAdminPhoneClient(loginPhone);
     const trimmedPassword = loginPassword.trim();
-    if (!normalizedPhone || !trimmedPassword) {
-      setAuthError('لطفاً شماره موبایل و رمز عبور ادمین را وارد کنید.');
+    if (!trimmedPassword) {
+      setAuthError('لطفاً رمز عبور مدیریت را وارد کنید.');
       return;
     }
+    const enteredPhone = loginPhone.trim() || '09120759419';
+    const normalizedPhone =
+      normalizeAdminPhoneClient(enteredPhone) || '09120759419';
 
     setIsSubmittingLogin(true);
     try {
@@ -2027,20 +2029,22 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
             <form onSubmit={handlePhonePasswordLogin} className="mt-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#2b2b2b] mb-2">
-                  شماره موبایل ادمین
+                  شماره موبایل یا نام کاربری مدیریت
                 </label>
                 <div className="relative">
                   <input
-                    type="tel"
+                    type="text"
                     dir="ltr"
-                    required
                     value={loginPhone}
                     onChange={(e) => setLoginPhone(e.target.value)}
-                    placeholder="شماره موبایل"
+                    placeholder="09120759419 یا admin"
                     className="w-full h-12 rounded-xl border border-[#dcd5c7] bg-white pl-4 pr-11 text-left text-sm font-bold tabular-nums text-[#181818] focus:outline-none focus:border-[#b59766] transition-colors"
                   />
                   <Phone className="w-4 h-4 text-[#8c734b] absolute right-4 top-1/2 -translate-y-1/2" />
                 </div>
+                <p className="text-[11px] text-[#777] text-right mt-1.5">
+                  شماره موبایل پیش‌فرض مدیریت: <span dir="ltr" className="font-bold text-[#1a1a1a]">09120759419</span> یا <span className="font-bold text-[#1a1a1a]">admin</span>
+                </p>
               </div>
 
               <div>

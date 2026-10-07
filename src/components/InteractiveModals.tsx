@@ -1006,12 +1006,16 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
 
   // غیرفعال کردن اسکرول کل سایت هنگام باز بودن استوری
   useEffect(() => {
+    if (!story) {
+      document.body.style.overflow = '';
+      return;
+    }
     const originalStyle = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = originalStyle;
+      document.body.style.overflow = originalStyle || '';
     };
-  }, []);
+  }, [story]);
 
   // مدیریت لود شدن استوری (نمایش کارت سفید لودینگ مطابق عکس اول)
   const [isMediaLoading, setIsMediaLoading] = useState<boolean>(true);

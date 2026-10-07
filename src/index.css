@@ -69,14 +69,17 @@
     font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', 'IRANSans', system-ui, -apple-system, sans-serif;
     scroll-behavior: smooth;
     direction: ltr !important;
-    overflow-x: hidden;
+    overflow-x: clip;
+    overflow-y: auto;
   }
 
   body {
     font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', 'IRANSans', system-ui, -apple-system, sans-serif;
     background-color: #fcfbf9;
     color: #1a1a1a;
-    overflow-x: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
+    min-height: 100vh;
     direction: ltr !important;
   }
 
@@ -328,20 +331,13 @@ html.dark .hover\:bg-[#ececec]:hover {
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body, [class*='overflow-'] {
-  scroll-behavior: smooth !important;
-  overscroll-behavior: contain;
+html, body {
   -webkit-overflow-scrolling: touch;
 }
 
 /* برای المان‌های افقی و عمودی اسکرول‌دار */
 .overflow-x-auto, .overflow-y-auto, .overflow-auto {
-  scroll-behavior: smooth !important;
-  overscroll-behavior-x: contain;
-  overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
-  will-change: scroll-position;
 }
 
 /* کلاس کمکی برای اسکرول فوق‌العاده نرم و بی‌تاخیر */

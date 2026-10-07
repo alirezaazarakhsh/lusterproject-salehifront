@@ -2630,45 +2630,19 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                 موردی یافت نشد!
               </p>
             ) : (
-              <div className="relative pl-3">
-                {filteredModelOptions.length > 5 && (
-                  <div
-                    onClick={(e) => {
-                      if (!modelListRef.current) return;
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const clickRatio = Math.max(
-                        0,
-                        Math.min(1, (e.clientY - rect.top) / rect.height)
-                      );
-                      const maxScroll =
-                        modelListRef.current.scrollHeight -
-                        modelListRef.current.clientHeight;
-                      modelListRef.current.scrollTo({
-                        top: clickRatio * maxScroll,
-                        behavior: 'smooth',
-                      });
-                    }}
-                    className="absolute left-0 top-1 bottom-1 w-[4px] rounded-full bg-[#efefef] overflow-hidden cursor-pointer"
-                  >
-                    <div
-                      style={{
-                        top: `${modelScrollRatio * 66}%`,
-                      }}
-                      className="absolute left-0 right-0 h-[34%] rounded-full bg-[#cfcfcf] transition-all duration-75"
-                    />
-                  </div>
-                )}
+              <div className="relative pl-1">
                 <div
                   ref={modelListRef}
-                  onScroll={(e) => {
-                    const el = e.currentTarget;
-                    const maxScroll = el.scrollHeight - el.clientHeight;
-                    setModelScrollRatio(
-                      maxScroll > 0 ? el.scrollTop / maxScroll : 0
-                    );
+                  onWheel={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const step = Math.sign(e.deltaY) * 38;
+                    e.currentTarget.scrollBy({
+                      top: step,
+                      behavior: 'smooth',
+                    });
                   }}
-                  className="max-h-[145px] overflow-y-auto overscroll-contain space-y-2.5 pr-0.5 [&::-webkit-scrollbar]:hidden"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
                 >
                   {filteredModelOptions.map((opt) => {
                     const isChecked = selectedFilters.includes(opt.id);
@@ -2829,45 +2803,19 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                 موردی یافت نشد!
               </p>
             ) : (
-              <div className="relative pl-3">
-                {filteredColorOptions.length > 5 && (
-                  <div
-                    onClick={(e) => {
-                      if (!colorListRef.current) return;
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const clickRatio = Math.max(
-                        0,
-                        Math.min(1, (e.clientY - rect.top) / rect.height)
-                      );
-                      const maxScroll =
-                        colorListRef.current.scrollHeight -
-                        colorListRef.current.clientHeight;
-                      colorListRef.current.scrollTo({
-                        top: clickRatio * maxScroll,
-                        behavior: 'smooth',
-                      });
-                    }}
-                    className="absolute left-0 top-1 bottom-1 w-[4px] rounded-full bg-[#efefef] overflow-hidden cursor-pointer"
-                  >
-                    <div
-                      style={{
-                        top: `${colorScrollRatio * 66}%`,
-                      }}
-                      className="absolute left-0 right-0 h-[34%] rounded-full bg-[#cfcfcf] transition-all duration-75"
-                    />
-                  </div>
-                )}
+              <div className="relative pl-1">
                 <div
                   ref={colorListRef}
-                  onScroll={(e) => {
-                    const el = e.currentTarget;
-                    const maxScroll = el.scrollHeight - el.clientHeight;
-                    setColorScrollRatio(
-                      maxScroll > 0 ? el.scrollTop / maxScroll : 0
-                    );
+                  onWheel={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const step = Math.sign(e.deltaY) * 38;
+                    e.currentTarget.scrollBy({
+                      top: step,
+                      behavior: 'smooth',
+                    });
                   }}
-                  className="max-h-[145px] overflow-y-auto overscroll-contain space-y-2.5 pr-0.5 [&::-webkit-scrollbar]:hidden"
-                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
                 >
                   {filteredColorOptions.map((opt) => {
                     const isChecked = selectedFilters.includes(opt.id);

@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "Message": {
+      "title": "Message",
+      "description": "Contact form and inquiry message",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "phone", "message"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Site setting or configuration document",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" }
+      }
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Chandelier or lighting product item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "productCode": { "type": "string" },
+        "price": { "type": "string" }
+      }
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Executed architectural project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" }
+      }
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+    "Story": {
+      "title": "Story",
+      "description": "Visual story showcase",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" }
+      }
+    },
+    "Article": {
+      "title": "Article",
+      "description": "Magazine or blog article",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" }
+      }
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "totalPrice": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/messages/{messageId}": {
+      "schema": { "$ref": "Message" },
+      "description": "Contact and customer inquiries"
+    },
+    "/salehi_settings/{settingId}": {
+      "schema": { "$ref": "Setting" },
+      "description": "Global and section settings for the application"
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "Product" },
+      "description": "Product catalog entries"
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "Project" },
+      "description": "Executed project showcase entries"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "Category" },
+      "description": "Catalog categories"
+    },
+    "/stories/{storyId}": {
+      "schema": { "$ref": "Story" },
+      "description": "Visual highlight stories"
+    },
+    "/articles/{articleId}": {
+      "schema": { "$ref": "Article" },
+      "description": "Magazine articles"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "Order" },
+      "description": "User customer orders"
+    }
+  }
+}

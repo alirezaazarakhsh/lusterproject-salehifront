@@ -32,7 +32,7 @@ class AppErrorBoundary extends React.Component<
       return (
         <div
           dir="rtl"
-          className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-hidden"
+          className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-clip"
         >
           {/* در دسکتاپ هدر دارد و در موبایل بدون هدر و بدون فوتر دقیقاً مانند ۴۰۴ */}
           <div className="hidden md:block">

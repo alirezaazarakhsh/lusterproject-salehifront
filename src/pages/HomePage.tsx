@@ -94,12 +94,25 @@ export const HomePage: React.FC = () => {
     // بارگذاری کامل اطلاعات از دیتابیس همزمان با نمایش پریلودر تا زمانی که لود کامل انجام شود
     const initApp = async () => {
       setIsPagePreloading(true);
-      await fetchLiveCatalogFromDb();
-      window.setTimeout(() => {
-        setIsPagePreloading(false);
-      }, 350);
+      try {
+        await fetchLiveCatalogFromDb();
+      } catch (err) {
+        console.warn('initApp error:', err);
+      } finally {
+        window.setTimeout(() => {
+          setIsPagePreloading(false);
+          document.body.style.overflow = '';
+        }, 350);
+      }
     };
     initApp();
+
+    // اطمینان از رفع هرگونه قفل ناخواسته اسکرول صفحه
+    document.body.style.overflow = '';
+    const safetyScrollTimer = window.setTimeout(() => {
+      setIsPagePreloading(false);
+      document.body.style.overflow = '';
+    }, 1500);
 
     // راه‌اندازی ریل تایم با SSE برای به‌روزرسانی آنی صفحات سایت در هنگام هرگونه تغییر در ادمین
     let eventSource: EventSource | null = null;
@@ -803,7 +816,7 @@ export const HomePage: React.FC = () => {
     <div
       id="top"
       dir="rtl"
-      className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-hidden"
+      className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-clip"
     >
       {/* ۱. هدر بالای صفحه (در پنل ادمین حذف شده و در صفحات 404 و 500 فقط در دسکتاپ نمایش داده می‌شود) */}
       {currentRoute !== 'admin' && (
@@ -994,13 +1007,15 @@ export const HomePage: React.FC = () => {
         )}
 
       {/* پنجره مودال استودیو سه‌بعدی و تغییر رنگ محصول */}
-      <ProductStudioModal
-        product={activeProductModal?.product || null}
-        initialFinish={activeProductModal?.finish || 'original'}
-        onClose={() => setActiveProductModal(null)}
-        onAddToCart={handleAddToCart}
-        initialTab="3d"
-      />
+      {activeProductModal && (
+        <ProductStudioModal
+          product={activeProductModal.product}
+          initialFinish={activeProductModal.finish || 'original'}
+          onClose={() => setActiveProductModal(null)}
+          onAddToCart={handleAddToCart}
+          initialTab="3d"
+        />
+      )}
 
       {/* پنجره مودال آپلود هر عکس جدید و تبدیل خودکار به مدل سه‌بعدی */}
       <CustomProduct3DModal
@@ -1009,19 +1024,23 @@ export const HomePage: React.FC = () => {
         onAddNewProduct={handleAddNewCustomProduct}
       />
 
-      <StorySpotlightModal
-        story={activeStoryModal}
-        stories={storiesList}
-        allProducts={productsList}
-        onClose={() => setActiveStoryModal(null)}
-        onSelectStory={(nextStory) => setActiveStoryModal(nextStory)}
-        onOpenProduct={(prod) => handleOpenProductModal(prod, 'original')}
-      />
+      {activeStoryModal && (
+        <StorySpotlightModal
+          story={activeStoryModal}
+          stories={storiesList}
+          allProducts={productsList}
+          onClose={() => setActiveStoryModal(null)}
+          onSelectStory={(nextStory) => setActiveStoryModal(nextStory)}
+          onOpenProduct={(prod) => handleOpenProductModal(prod, 'original')}
+        />
+      )}
 
-      <ArticleReaderModal
-        article={activeArticleModal}
-        onClose={() => setActiveArticleModal(null)}
-      />
+      {activeArticleModal && (
+        <ArticleReaderModal
+          article={activeArticleModal}
+          onClose={() => setActiveArticleModal(null)}
+        />
+      )}
 
       <CartDrawer
         isOpen={isCartOpen}

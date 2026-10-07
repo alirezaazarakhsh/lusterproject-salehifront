@@ -19,16 +19,27 @@ const MESSAGES_COLLECTION = 'messages';
  * حتی در صورت پاک کردن کش یا لوکال استوریج مرورگر
  */
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 3500, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
+  ]);
+}
+
 export async function addMessageToFirestore(message: any): Promise<string | null> {
   try {
     const colRef = collection(firestoreDb, MESSAGES_COLLECTION);
-    const docRef = await addDoc(colRef, {
-      ...message,
-      createdAt: message.createdAt || new Date().toISOString(),
-    });
-    return docRef.id;
+    const docRef = await withTimeout(
+      addDoc(colRef, {
+        ...message,
+        createdAt: message.createdAt || new Date().toISOString(),
+      }),
+      4000,
+      null as any
+    );
+    return docRef ? docRef.id : null;
   } catch (err) {
-    console.error('Error adding message to Cloud Firestore:', err);
+    console.warn('Could not add message to Cloud Firestore (offline fallback used):', err);
     return null;
   }
 }
@@ -36,9 +47,9 @@ export async function addMessageToFirestore(message: any): Promise<string | null
 export async function fetchCollectionFromFirestore(collectionName: string): Promise<any[]> {
   try {
     const colRef = collection(firestoreDb, collectionName);
-    const snap = await getDocs(colRef);
-    if (!snap.empty) {
-      return snap.docs.map((d) => d.data());
+    const snap = await withTimeout(getDocs(colRef), 3500, null as any);
+    if (snap && !snap.empty) {
+      return snap.docs.map((d: any) => d.data());
     }
   } catch (err) {
     console.warn(`Could not fetch collection ${collectionName} from Firestore:`, err);
@@ -75,8 +86,8 @@ export async function fetchAllDataFromFirestore(): Promise<any | null> {
     let globalState: any = null;
     try {
       const docRef = doc(firestoreDb, SETTINGS_COLLECTION, FIRESTORE_STATE_DOC);
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
+      const snap = await withTimeout(getDoc(docRef), 3000, null as any);
+      if (snap && snap.exists()) {
         globalState = snap.data();
       }
     } catch {}
@@ -180,8 +191,8 @@ export async function saveSettingToFirestore(key: string, value: any): Promise<b
 export async function getSettingFromFirestore(key: string): Promise<any | null> {
   try {
     const docRef = doc(firestoreDb, SETTINGS_COLLECTION, key);
-    const snap = await getDoc(docRef);
-    if (snap.exists()) {
+    const snap = await withTimeout(getDoc(docRef), 3000, null as any);
+    if (snap && snap.exists()) {
       return snap.data()?.data ?? snap.data();
     }
   } catch (err) {
