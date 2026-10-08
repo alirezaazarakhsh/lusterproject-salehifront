@@ -2134,6 +2134,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     finish: FinishType,
     isOut = false
   ) => {
+    console.log('handleViewAndBuyClick triggered for:', product.id);
     if (loadingMap[product.id]) return;
     setLoadingMap((prev) => ({ ...prev, [product.id]: true }));
     window.setTimeout(() => {
