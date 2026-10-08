@@ -761,8 +761,21 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-          const compressed = mimeType === 'image/png' ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85);
+          
+          // Basic background removal: set near-white pixels to transparent
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            // If pixel is very close to white (e.g., r,g,b > 240)
+            if (r > 240 && g > 240 && b > 240) {
+              data[i + 3] = 0; // Set alpha to transparent
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+
+          const mimeType = 'image/png';
+          const compressed = canvas.toDataURL('image/png');
           onResult(compressed);
         } else {
           onResult(rawDataUrl);
@@ -2178,14 +2191,11 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     dir="ltr"
                     value={loginPhone}
                     onChange={(e) => setLoginPhone(e.target.value)}
-                    placeholder="09120759419 یا admin"
+                    placeholder="شماره موبایل یا نام کاربری"
                     className="w-full h-12 rounded-xl border border-[#dcd5c7] bg-white pl-4 pr-11 text-left text-sm font-bold tabular-nums text-[#181818] focus:outline-none focus:border-[#b59766] transition-colors"
                   />
                   <Phone className="w-4 h-4 text-[#8c734b] absolute right-4 top-1/2 -translate-y-1/2" />
                 </div>
-                <p className="text-[11px] text-[#777] text-right mt-1.5">
-                  شماره موبایل پیش‌فرض مدیریت: <span dir="ltr" className="font-bold text-[#1a1a1a]">09120759419</span> یا <span className="font-bold text-[#1a1a1a]">admin</span>
-                </p>
               </div>
 
               <div>
