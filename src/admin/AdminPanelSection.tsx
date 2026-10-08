@@ -1466,6 +1466,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     try {
       const payload = {
         ...productForm,
+        image: productForm.image && productForm.image.trim() ? productForm.image : GENERATED_IMAGES.shakheh12,
         priceNumeric: Number(productForm.priceNumeric) || 0,
         priceFormatted: formatToman(Number(productForm.priceNumeric) || 0),
       };
@@ -2341,7 +2342,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       className="min-h-screen w-full bg-[#f3f1ec] flex flex-col lg:flex-row text-[#181818] font-sans"
     >
       {/* سایدبار اختصاصی تیره و سلطنتی در سمت راست (بدون هدر و فوتر سایت) */}
-      <aside className="w-full lg:w-[290px] xl:w-[305px] bg-[#151515] text-white shrink-0 lg:min-h-screen lg:sticky lg:top-0 flex flex-col justify-between p-5 border-b lg:border-b-0 lg:border-l border-white/10">
+      <aside className="w-full lg:w-[290px] xl:w-[305px] bg-[#151515] text-white shrink-0 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto flex flex-col justify-between p-5 border-b lg:border-b-0 lg:border-l border-white/10">
         <div className="space-y-5">
           {/* هدر بالای سایدبار با عکس بزرگ ادمین در باکس انتخاب‌شده (CSS selector 1) */}
           <div className="flex items-center justify-between pb-4 border-b border-white/10">
@@ -2915,41 +2916,10 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex-1 w-full">
                     <div>
                       <span className="block text-[11px] font-bold text-[#555] mb-1">
-                        انتخاب از تصاویر پرتره آماده:
-                      </span>
-                      <select
-                        value={
-                          PRESET_ADMIN_AVATARS.some(
-                            (a) => a.url === adminForm.avatarUrl
-                          )
-                            ? adminForm.avatarUrl
-                            : ''
-                        }
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            setAdminForm({
-                              ...adminForm,
-                              avatarUrl: e.target.value,
-                            });
-                          }
-                        }}
-                        className="w-full h-11 rounded-xl border border-[#dcd3c2] px-3 text-xs font-semibold bg-white"
-                      >
-                        <option value="">-- انتخاب عکس آماده ادمین --</option>
-                        {PRESET_ADMIN_AVATARS.map((av, idx) => (
-                          <option key={idx} value={av.url}>
-                            {av.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <span className="block text-[11px] font-bold text-[#555] mb-1">
-                        یا لینک مستقیم عکس ادمین (URL):
+                        لینک مستقیم عکس ادمین (URL):
                       </span>
                       <input
                         type="text"
