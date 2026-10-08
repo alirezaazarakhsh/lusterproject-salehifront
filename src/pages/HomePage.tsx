@@ -67,6 +67,7 @@ import {
   AppToastContainer,
   AppToast,
 } from '../components/InteractiveModals';
+import { PWAInstallPopup } from '../components/PWAInstallPopup';
 
 /**
  * کامپوننت صفحه اصلی (HomePage) و صفحه قوانین و مقررات (/rule)
@@ -818,14 +819,11 @@ export const HomePage: React.FC = () => {
       dir="rtl"
       className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-clip"
     >
+      <PWAInstallPopup />
       {/* ۱. هدر بالای صفحه (در پنل ادمین حذف شده و در صفحات 404 و 500 فقط در دسکتاپ نمایش داده می‌شود) */}
       {currentRoute !== 'admin' && (
         <div
-          className={
-            currentRoute === 'not-found' || currentRoute === 'server-error'
-              ? 'hidden md:block'
-              : ''
-          }
+          className="hidden"
         >
           <HeaderSection
             currentRoute={currentRoute}
