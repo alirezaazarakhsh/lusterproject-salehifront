@@ -453,41 +453,8 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
         {/* بخش توضیحات تکمیلی و مشخصات فنی (پایین عکس) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-14">
           
-          {/* توضیحات تکمیلی (Span 7) */}
-          <div className="lg:col-span-7 space-y-5">
-            <div className="bg-white rounded-[22px] border border-[#ece6da]/80 p-6 shadow-2xs">
-              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] border-b border-[#f5f5f5] pb-3 mb-4">
-                توضیحات تکمیلی
-              </h3>
-              <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify pl-1">
-                نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود،یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود،یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود،یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود،یکپارچگی محصولات روشنایی پروژه حفظ میشود.
-              </p>
-            </div>
-
-            {/* باکس بازه تحویل */}
-            <div className="bg-[#fcf8f0]/90 rounded-[20px] border border-[#e3d2b4]/50 p-4.5 flex items-center gap-3.5 shadow-2xs">
-              <div className="w-11 h-11 rounded-xl bg-[#b59766] text-white flex items-center justify-center shrink-0 shadow-2xs">
-                {/* Truck icon */}
-                <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="1" y="3" width="15" height="13" />
-                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                  <circle cx="5.5" cy="18.5" r="2.5" />
-                  <circle cx="18.5" cy="18.5" r="2.5" />
-                </svg>
-              </div>
-              <div className="text-right">
-                <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">
-                  بازه زمانی تحویل :
-                </span>
-                <span className="block text-[11.5px] text-[#6e675c] mt-1.5 tabular-nums">
-                  تاریخ حدود مرسوله (۲ مهر ۱۴۰۴ - ۷ مهر ۱۴۰۴) <span className="mx-2 text-[#ccc]">|</span> ساعت حدودی : ۱۲:۵۵ الی ۱۴:۴۵
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* جدول مشخصات فنی لوستر (Span 5) */}
-          <div className="lg:col-span-5 bg-white rounded-[22px] border border-[#ece6da]/80 p-6 shadow-2xs">
+          {/* جدول مشخصات فنی لوستر (Span 4) */}
+          <div className="lg:col-span-4 bg-white rounded-[22px] border border-[#ece6da]/80 p-6 shadow-2xs">
             <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] border-b border-[#f5f5f5] pb-3 mb-4">
               مشخصات فنی لوستر
             </h3>
@@ -521,6 +488,48 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
             >
               <span>۱۵ ویژگی محصول</span>
             </button>
+          </div>
+
+          {/* توضیحات تکمیلی (Span 8) */}
+          <div className="lg:col-span-8 space-y-5">
+            <div className="bg-white rounded-[22px] border border-[#d6cebe] p-6 shadow-2xs">
+              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] border-b border-[#d6cebe] pb-3 mb-4">
+                توضیحات تکمیلی
+              </h3>
+              <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify pl-1">
+                نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود،یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود،یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود،یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود،یکپارچگی محصولات روشنایی پروژه حفظ میشود.
+              </p>
+            </div>
+
+            {/* باکس بازه تحویل */}
+            <div className="bg-[#fcf8f0]/90 rounded-[20px] border border-[#d6cebe] p-4.5 flex items-center justify-between gap-3.5 shadow-2xs">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-[#b59766] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  {/* TruckFast SVG icon */}
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 17h2a2 2 0 1 0 4 0H8a2 2 0 1 0 4 0h5a2 2 0 1 0 4 0h1v-4a2 2 0 0 0-2-2h-3V7a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v10z"></path>
+                    <circle cx="6" cy="17" r="2"></circle>
+                    <circle cx="18" cy="17" r="2"></circle>
+                    <path d="M16 11h4l2 3v3h-1"></path>
+                    <path d="M2 9h9"></path>
+                    <path d="M2 13h5"></path>
+                  </svg>
+                </div>
+                <div className="text-right">
+                  <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">
+                    بازه زمانی تحویل :
+                  </span>
+                  <span className="block text-[11.5px] text-[#6e675c] mt-1 tabular-nums">
+                    تاریخ حدود مرسوله (۲ مهر ۱۴۰۴ - ۷ مهر ۱۴۰۴)
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white border border-[#d6cebe] px-3.5 py-2 rounded-xl shrink-0">
+                <span className="text-xs font-bold text-[#555]">ساعت حدودی : </span>
+                <span className="text-xs font-extrabold text-[#1a1a1a] tabular-nums">۱۲:۵۵ الی ۱۴:۴۵</span>
+              </div>
+            </div>
           </div>
 
         </div>

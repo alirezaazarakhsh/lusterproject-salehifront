@@ -182,16 +182,24 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
     product: ChandelierProduct,
     finish: FinishType
   ) => {
-    if (product.outOfStock) {
-      triggerTemporaryTooltip(product.id);
-      return;
-    }
     if (loadingMap[product.id]) return;
     setLoadingMap((prev) => ({ ...prev, [product.id]: true }));
     window.setTimeout(() => {
       setLoadingMap((prev) => ({ ...prev, [product.id]: false }));
-      onOpenProductModal(product, finish);
-    }, 520);
+      const targetUrl = `/product/${encodeURIComponent(product.id)}`;
+      try {
+        window.history.pushState(
+          { route: 'product', productCategorySlug: product.id },
+          '',
+          targetUrl
+        );
+      } catch {
+        window.location.hash = `#/product/${encodeURIComponent(product.id)}`;
+      }
+      window.dispatchEvent(
+        new CustomEvent('app-route-change', { detail: 'product' })
+      );
+    }, 400);
   };
 
   const handleAddClick = (product: ChandelierProduct) => {
@@ -412,23 +420,8 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
                   ) : (
                     <button
                       type="button"
-                      disabled={isOutOfStock}
                       onClick={() => handleViewAndBuyClick(product, currentFinish)}
-                      onMouseEnter={() => {
-                        if (isOutOfStock) {
-                          triggerTemporaryTooltip(product.id);
-                        }
-                      }}
-                      onMouseLeave={() => {
-                        if (isOutOfStock) {
-                          clearTemporaryTooltip(product.id);
-                        }
-                      }}
-                      className={`h-11 sm:h-12 min-w-[115px] sm:min-w-[142px] px-3.5 sm:px-6 rounded-[12px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap ${
-                        isOutOfStock
-                          ? 'bg-[#f3f3f3] text-[#222222] cursor-not-allowed'
-                          : 'bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer'
-                      }`}
+                      className="h-11 sm:h-12 min-w-[115px] sm:min-w-[142px] px-3.5 sm:px-6 rounded-[12px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer"
                     >
                       مشاهده و خرید
                     </button>

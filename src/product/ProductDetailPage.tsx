@@ -187,13 +187,17 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
     GENERATED_IMAGES.projectRoyalRestaurant,
   ];
 
-  // وقتی محصول عوض شد
+  // وقتی محصول عوض شد یا کامپوننت لود شد
   useEffect(() => {
     setSelectedFinish(product.defaultFinish || 'original');
     setActiveThumbIdx(0);
     setViewMode('photo');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [product.id]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
   // پالت‌های رنگی دایره‌ای روی کارت خرید
   const colorOptions: Array<{ finish: FinishType; hex: string; label: string }> = [
@@ -600,6 +604,40 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             بخش دوم: توضیحات تکمیلی + مشخصات فنی + بازه زمانی تحویل
         ======================================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+          {/* مشخصات فنی لوستر (کارت سمت راست) */}
+          <div className="lg:col-span-4 rounded-[22px] border border-[#ece8e0] bg-white p-6 flex flex-col justify-between shadow-2xs">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
+                <span className="font-bold text-[#777]">قطر لوستر :</span>
+                <span className="font-extrabold text-[#222] tabular-nums">سانتی‌متر ۳۵x۳۵x۳۰</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
+                <span className="font-bold text-[#777]">ارتفاع :</span>
+                <span className="font-extrabold text-[#222] tabular-nums">۳۰ سانتی‌متر</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
+                <span className="font-bold text-[#777]">وزن :</span>
+                <span className="font-extrabold text-[#222] tabular-nums">۲۸۰۰ گرم</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
+                <span className="font-bold text-[#777]">تعداد سرپیچ لامپ LED :</span>
+                <span className="font-extrabold text-[#222] tabular-nums">۶ عدد</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-[#777]">منبع برق :</span>
+                <span className="font-extrabold text-[#222]">برق شهری</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsFeaturesModalOpen(true)}
+              className="mt-6 w-full h-11 rounded-[14px] bg-[#b58c5e] hover:bg-[#9d784b] text-white text-xs font-extrabold transition-all cursor-pointer shadow-2xs hover:shadow-xs"
+            >
+              ۱۵ ویژگی محصول
+            </button>
+          </div>
+
           {/* توضیحات تکمیلی و بازه زمانی تحویل (سمت چپ) */}
           <div className="lg:col-span-8 flex flex-col justify-between space-y-4">
             <div className="rounded-[22px] border border-[#ece8e0] bg-white p-6 shadow-2xs">
@@ -634,40 +672,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
                 <span className="text-xs font-extrabold text-[#222] bg-white border border-[#e5e5e5] px-2 py-0.5 rounded-md tabular-nums">۱۴ : ۴۵</span>
               </div>
             </div>
-          </div>
-
-          {/* مشخصات فنی لوستر (کارت سمت راست) */}
-          <div className="lg:col-span-4 rounded-[22px] border border-[#ece8e0] bg-white p-6 flex flex-col justify-between shadow-2xs">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
-                <span className="font-bold text-[#777]">قطر لوستر :</span>
-                <span className="font-extrabold text-[#222] tabular-nums">سانتی‌متر ۳۵x۳۵x۳۰</span>
-              </div>
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
-                <span className="font-bold text-[#777]">ارتفاع :</span>
-                <span className="font-extrabold text-[#222] tabular-nums">۳۰ سانتی‌متر</span>
-              </div>
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
-                <span className="font-bold text-[#777]">وزن :</span>
-                <span className="font-extrabold text-[#222] tabular-nums">۲۸۰۰ گرم</span>
-              </div>
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
-                <span className="font-bold text-[#777]">تعداد سرپیچ لامپ LED :</span>
-                <span className="font-extrabold text-[#222] tabular-nums">۶ عدد</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-[#777]">منبع برق :</span>
-                <span className="font-extrabold text-[#222]">برق شهری</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsFeaturesModalOpen(true)}
-              className="mt-6 w-full h-11 rounded-[14px] bg-[#b58c5e] hover:bg-[#9d784b] text-white text-xs font-extrabold transition-all cursor-pointer shadow-2xs hover:shadow-xs"
-            >
-              ۱۵ ویژگی محصول
-            </button>
           </div>
         </div>
 

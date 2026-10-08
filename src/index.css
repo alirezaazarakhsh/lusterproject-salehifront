@@ -351,7 +351,7 @@ html, body {
   height: 0 !important;
 }
 
-/* اسکرول‌بار اختصاصی فقط در نسخه دسکتاپ */
+/* اسکرول‌بار سایت با رنگ و استایل قبلی */
 @media (min-width: 1024px) {
   ::-webkit-scrollbar {
     width: 8px;
@@ -361,11 +361,48 @@ html, body {
     background: #f6f5f0;
   }
   ::-webkit-scrollbar-thumb {
-    background: #cbb692;
+    background: #d1c7b7;
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #b59866;
+    background: #b89768;
+  }
+  html.dark ::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
+  html.dark ::-webkit-scrollbar-thumb {
+    background: #444;
+  }
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+
+  /* اسکرول‌بار ظریف و باریک مختص فیلترها با بک‌گراند track و thumb */
+  .filter-scroll-list::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .filter-scroll-list::-webkit-scrollbar-track {
+    background: #F6F6F6;
+    border-radius: 4px;
+  }
+  .filter-scroll-list::-webkit-scrollbar-thumb {
+    background: #D9D9D9;
+    border-radius: 4px;
+  }
+  .filter-scroll-list::-webkit-scrollbar-thumb:hover {
+    background: #bcbcbc;
+  }
+  html.dark .filter-scroll-list::-webkit-scrollbar-track {
+    background: #2a2a2a;
+    border-radius: 4px;
+  }
+  html.dark .filter-scroll-list::-webkit-scrollbar-thumb {
+    background: #555555;
+    border-radius: 4px;
+  }
+  html.dark .filter-scroll-list::-webkit-scrollbar-thumb:hover {
+    background: #777777;
   }
 }
 

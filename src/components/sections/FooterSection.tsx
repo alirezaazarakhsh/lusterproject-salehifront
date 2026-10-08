@@ -452,6 +452,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                               src={lic.imageUrl}
                               alt={lic.title || `مجوز ${licIdx + 2}`}
                               className="w-full h-full object-contain rounded-[6px]"
+                              style={{ mixBlendMode: 'screen' }}
                             />
                           </a>
                         ) : (
@@ -459,6 +460,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                             src={lic.imageUrl}
                             alt={lic.title || `مجوز ${licIdx + 2}`}
                             className="w-full h-full object-contain rounded-[6px]"
+                            style={{ mixBlendMode: 'screen' }}
                           />
                         )}
                       </div>

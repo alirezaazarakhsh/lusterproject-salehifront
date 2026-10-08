@@ -25,6 +25,7 @@ import { ALL_INITIAL_PROJECTS } from '../data/allDatabaseProjectsSeed';
 import {
   fetchAllDataFromFirestore,
   saveAllDataToFirestore,
+  saveSettingToFirestore,
   deleteDocumentFromFirestore,
   recordDeletedKeys,
   isItemDeleted,
@@ -405,7 +406,22 @@ function createInitialLocalDb(): LocalDbSchema {
 
 function loadLocalDb(): LocalDbSchema {
   try {
-    const raw = localStorage.getItem(LOCAL_DB_STORAGE_KEY);
+    let raw = localStorage.getItem(LOCAL_DB_STORAGE_KEY);
+    if (!raw) {
+      try {
+        raw = sessionStorage.getItem(LOCAL_DB_STORAGE_KEY);
+      } catch {}
+    }
+    if (!raw) {
+      try {
+        const match = document.cookie.match(
+          new RegExp('(^| )' + LOCAL_DB_STORAGE_KEY + '=([^;]+)')
+        );
+        if (match) {
+          raw = decodeURIComponent(match[2]);
+        }
+      } catch {}
+    }
     if (raw) {
       const parsed = JSON.parse(raw);
       const initial = createInitialLocalDb();
@@ -480,12 +496,31 @@ function loadLocalDb(): LocalDbSchema {
   } catch {
     // ignore storage errors
   }
-  return createInitialLocalDb();
+  const initDb = createInitialLocalDb();
+  return {
+    ...initDb,
+    products: initDb.products.filter((p) => !isItemDeleted(p)),
+    categories: initDb.categories.filter((c) => !isItemDeleted(c)),
+    projects: initDb.projects.filter((pr) => !isItemDeleted(pr)),
+    stories: initDb.stories.filter((s) => !isItemDeleted(s)),
+    articles: initDb.articles.filter((a) => !isItemDeleted(a)),
+  };
 }
 
 async function saveLocalDb(dbState: LocalDbSchema): Promise<void> {
   try {
-    localStorage.setItem(LOCAL_DB_STORAGE_KEY, JSON.stringify(dbState));
+    const jsonStr = JSON.stringify(dbState);
+    try {
+      localStorage.setItem(LOCAL_DB_STORAGE_KEY, jsonStr);
+    } catch {}
+    try {
+      sessionStorage.setItem(LOCAL_DB_STORAGE_KEY, jsonStr);
+    } catch {}
+    try {
+      document.cookie = `${LOCAL_DB_STORAGE_KEY}=${encodeURIComponent(
+        jsonStr
+      )}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch {}
   } catch {
     // ignore quota errors
   }
@@ -1275,6 +1310,7 @@ export async function handleLocalApiRequest(
         ...dbState.footerSettings,
         ...body,
       };
+      await saveSettingToFirestore('footerSettings', dbState.footerSettings);
       if (
         body.catalogTitle !== undefined ||
         body.catalogDescription !== undefined ||
@@ -1290,8 +1326,9 @@ export async function handleLocalApiRequest(
           catalogPageCount: body.catalogPageCount ?? dbState.aboutUsSettings.catalogPageCount,
           catalogDownloadUrl: body.catalogDownloadUrl ?? dbState.aboutUsSettings.catalogDownloadUrl,
         };
+        await saveSettingToFirestore('aboutUsSettings', dbState.aboutUsSettings);
       }
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return dbState.footerSettings;
     }
   }
@@ -1307,7 +1344,8 @@ export async function handleLocalApiRequest(
         ...dbState.contactUsSettings,
         ...body,
       };
-      saveLocalDb(dbState);
+      await saveSettingToFirestore('contactUsSettings', dbState.contactUsSettings);
+      await saveLocalDb(dbState);
       return dbState.contactUsSettings;
     }
   }
@@ -1330,6 +1368,7 @@ export async function handleLocalApiRequest(
             ? body.galleryImages
             : dbState.aboutUsSettings.galleryImages,
       };
+      await saveSettingToFirestore('aboutUsSettings', dbState.aboutUsSettings);
       if (
         body.catalogTitle !== undefined ||
         body.catalogDescription !== undefined ||
@@ -1345,8 +1384,9 @@ export async function handleLocalApiRequest(
           catalogPageCount: body.catalogPageCount ?? dbState.footerSettings.catalogPageCount,
           catalogDownloadUrl: body.catalogDownloadUrl ?? dbState.footerSettings.catalogDownloadUrl,
         };
+        await saveSettingToFirestore('footerSettings', dbState.footerSettings);
       }
-      saveLocalDb(dbState);
+      await saveLocalDb(dbState);
       return dbState.aboutUsSettings;
     }
   }
@@ -1369,7 +1409,8 @@ export async function handleLocalApiRequest(
             ? body.slides
             : dbState.heroSliderSettings.slides,
       };
-      saveLocalDb(dbState);
+      await saveSettingToFirestore('heroSliderSettings', dbState.heroSliderSettings);
+      await saveLocalDb(dbState);
       return dbState.heroSliderSettings;
     }
   }
@@ -1388,7 +1429,8 @@ export async function handleLocalApiRequest(
         ...dbState.mainSettings,
         ...body,
       };
-      saveLocalDb(dbState);
+      await saveSettingToFirestore('mainSettings', dbState.mainSettings);
+      await saveLocalDb(dbState);
       return dbState.mainSettings;
     }
   }
@@ -1404,7 +1446,8 @@ export async function handleLocalApiRequest(
         ...dbState.smsSettings,
         ...body,
       };
-      saveLocalDb(dbState);
+      await saveSettingToFirestore('smsSettings', dbState.smsSettings);
+      await saveLocalDb(dbState);
       return dbState.smsSettings;
     }
   }
@@ -1420,7 +1463,8 @@ export async function handleLocalApiRequest(
         ...dbState.faqSettings,
         ...body,
       };
-      saveLocalDb(dbState);
+      await saveSettingToFirestore('faqSettings', dbState.faqSettings);
+      await saveLocalDb(dbState);
       return dbState.faqSettings;
     }
   }

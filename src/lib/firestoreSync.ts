@@ -44,6 +44,20 @@ export function getDeletedKeys(): Set<string> {
       }
     }
   } catch {}
+  try {
+    const match = document.cookie.match(
+      new RegExp('(^| )' + TOMBSTONES_STORAGE_KEY + '=([^;]+)')
+    );
+    if (match) {
+      const decoded = decodeURIComponent(match[2]);
+      const arr = JSON.parse(decoded);
+      if (Array.isArray(arr)) {
+        arr.forEach((k) => {
+          if (k !== null && k !== undefined) set.add(String(k).trim());
+        });
+      }
+    }
+  } catch {}
   return set;
 }
 
@@ -64,11 +78,17 @@ export function recordDeletedKeys(
     }
     if (hasNew) {
       const arr = Array.from(current);
+      const jsonStr = JSON.stringify(arr);
       try {
-        localStorage.setItem(TOMBSTONES_STORAGE_KEY, JSON.stringify(arr));
+        localStorage.setItem(TOMBSTONES_STORAGE_KEY, jsonStr);
       } catch {}
       try {
-        sessionStorage.setItem(TOMBSTONES_STORAGE_KEY, JSON.stringify(arr));
+        sessionStorage.setItem(TOMBSTONES_STORAGE_KEY, jsonStr);
+      } catch {}
+      try {
+        document.cookie = `${TOMBSTONES_STORAGE_KEY}=${encodeURIComponent(
+          jsonStr
+        )}; path=/; max-age=31536000; SameSite=Lax`;
       } catch {}
       saveSettingToFirestore('tombstones_deleted_keys', arr).catch(() => {});
     }
@@ -102,6 +122,10 @@ export async function deleteDocumentFromFirestore(collectionName: string, docIdO
   if (!docIdOrKey && docIdOrKey !== 0) return false;
   const targetStr = String(docIdOrKey);
   recordDeletedKeys(targetStr);
+  try {
+    await saveSettingToFirestore('tombstones_deleted_keys', Array.from(getDeletedKeys()));
+  } catch {}
+
   try {
     // ۱. حذف مستقیم با شناسه سند
     const docRef = doc(firestoreDb, collectionName, targetStr);
@@ -161,8 +185,11 @@ export async function fetchCollectionFromFirestore(collectionName: string): Prom
         .map((d: any) => ({ ...d.data(), _firestoreDocId: d.id }))
         .filter((item: any) => !isItemDeleted(item));
     }
-  } catch (err) {
-    console.warn(`Could not fetch collection ${collectionName} from Firestore:`, err);
+  } catch (err: any) {
+    const msg = String(err?.message || '');
+    if (!msg.includes('unavailable') && !msg.includes('offline') && !msg.includes('network')) {
+      console.warn(`Notice fetching collection ${collectionName} from Firestore:`, err);
+    }
   }
   return [];
 }
@@ -287,8 +314,11 @@ export async function saveCollectionToFirestore(collectionName: string, items: a
     }
 
     return true;
-  } catch (err) {
-    console.error(`Error saving collection ${collectionName} to Cloud Firestore:`, err);
+  } catch (err: any) {
+    const msg = String(err?.message || '');
+    if (!msg.includes('unavailable') && !msg.includes('offline') && !msg.includes('network')) {
+      console.error(`Error saving collection ${collectionName} to Cloud Firestore:`, err);
+    }
     return false;
   }
 }
@@ -316,8 +346,11 @@ export async function saveAllDataToFirestore(data: any): Promise<boolean> {
     }
     
     return true;
-  } catch (err) {
-    console.error('Error saving all data to Cloud Firestore:', err);
+  } catch (err: any) {
+    const msg = String(err?.message || '');
+    if (!msg.includes('unavailable') && !msg.includes('offline') && !msg.includes('network')) {
+      console.error('Error saving all data to Cloud Firestore:', err);
+    }
     return false;
   }
 }
@@ -330,8 +363,11 @@ export async function saveSettingToFirestore(key: string, value: any): Promise<b
       updatedAt: new Date().toISOString(),
     }, { merge: true });
     return true;
-  } catch (err) {
-    console.error(`Error saving setting ${key} to Firestore:`, err);
+  } catch (err: any) {
+    const msg = String(err?.message || '');
+    if (!msg.includes('unavailable') && !msg.includes('offline') && !msg.includes('network')) {
+      console.error(`Error saving setting ${key} to Firestore:`, err);
+    }
     return false;
   }
 }
@@ -343,8 +379,11 @@ export async function getSettingFromFirestore(key: string): Promise<any | null> 
     if (snap && snap.exists()) {
       return snap.data()?.data ?? snap.data();
     }
-  } catch (err) {
-    console.warn(`Could not get setting ${key} from Firestore:`, err);
+  } catch (err: any) {
+    const msg = String(err?.message || '');
+    if (!msg.includes('unavailable') && !msg.includes('offline') && !msg.includes('network')) {
+      console.warn(`Could not get setting ${key} from Firestore:`, err);
+    }
   }
   return null;
 }

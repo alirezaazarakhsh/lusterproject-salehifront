@@ -1874,8 +1874,39 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       setActiveSlideIdx(0);
       setQty(1);
       setAddedToast(false);
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
   }, [selectedProduct]);
+
+  useEffect(() => {
+    const handleCategoryChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const slug = customEvent.detail;
+      if (!slug) {
+        setSelectedProduct(null);
+      } else {
+        const found = products.find((p) => p.id === slug || p.productCode === slug) || null;
+        setSelectedProduct(found);
+      }
+    };
+
+    const handlePopState = () => {
+      const slug = getProductCategorySlugFromLocation();
+      if (!slug) {
+        setSelectedProduct(null);
+      } else {
+        const found = products.find((p) => p.id === slug || p.productCode === slug) || null;
+        setSelectedProduct(found);
+      }
+    };
+
+    window.addEventListener('app-product-category-change', handleCategoryChange as EventListener);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('app-product-category-change', handleCategoryChange as EventListener);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [products]);
 
   const [openFilterGroups, setOpenFilterGroups] = useState<
     Record<string, boolean>
@@ -2101,10 +2132,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     finish: FinishType,
     isOut = false
   ) => {
-    if (isOut || product.outOfStock) {
-      triggerTemporaryTooltip(product.id);
-      return;
-    }
     if (loadingMap[product.id]) return;
     setLoadingMap((prev) => ({ ...prev, [product.id]: true }));
     window.setTimeout(() => {
@@ -2635,12 +2662,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   ref={modelListRef}
                   onWheel={(e) => {
                     e.stopPropagation();
-                    e.preventDefault();
-                    const step = Math.sign(e.deltaY) * 38;
-                    e.currentTarget.scrollBy({
-                      top: step,
-                      behavior: 'smooth',
-                    });
+                    e.currentTarget.scrollTop += e.deltaY;
                   }}
                   className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
                 >
@@ -2710,50 +2732,60 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
         </button>
 
         {openFilterGroups.material && (
-          <div className="pb-3.5 pt-0.5 space-y-2.5 pr-0.5">
-            {MATERIAL_FILTER_OPTIONS.map((opt) => {
-              const isChecked = selectedFilters.includes(opt.id);
-              return (
-                <label
-                  key={opt.id}
-                  onClick={() => toggleFilterOption(opt.id)}
-                  className="flex items-center justify-start gap-2.5 cursor-pointer group/opt select-none py-0.5"
-                >
-                  <span
-                    className={`w-[16px] h-[16px] rounded-[4px] flex items-center justify-center transition-colors shrink-0 ${
-                      isChecked
-                        ? 'bg-[#b89768] text-white'
-                        : 'bg-[#ededed] group-hover/opt:bg-[#e0e0e0]'
-                    }`}
-                  >
-                    {isChecked && (
-                      <svg
-                        viewBox="0 0 12 12"
-                        fill="none"
-                        className="w-2.5 h-2.5"
+          <div className="pb-3.5 pt-0.5">
+            <div className="relative pl-1">
+              <div
+                onWheel={(e) => {
+                  e.stopPropagation();
+                  e.currentTarget.scrollTop += e.deltaY;
+                }}
+                className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
+              >
+                {MATERIAL_FILTER_OPTIONS.map((opt) => {
+                  const isChecked = selectedFilters.includes(opt.id);
+                  return (
+                    <label
+                      key={opt.id}
+                      onClick={() => toggleFilterOption(opt.id)}
+                      className="flex items-center justify-start gap-2.5 cursor-pointer group/opt select-none py-0.5"
+                    >
+                      <span
+                        className={`w-[16px] h-[16px] rounded-[4px] flex items-center justify-center transition-colors shrink-0 ${
+                          isChecked
+                            ? 'bg-[#b89768] text-white'
+                            : 'bg-[#ededed] group-hover/opt:bg-[#e0e0e0]'
+                        }`}
                       >
-                        <path
-                          d="M2.3 6.2L4.8 8.6L9.7 3.5"
-                          stroke="currentColor"
-                          strokeWidth="1.9"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </span>
-                  <span
-                    className={`text-[12.5px] transition-colors ${
-                      isChecked
-                        ? 'font-bold text-[#1e1e1e]'
-                        : 'font-medium text-[#333333] group-hover/opt:text-[#111111]'
-                    }`}
-                  >
-                    {opt.label}
-                  </span>
-                </label>
-              );
-            })}
+                        {isChecked && (
+                          <svg
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            className="w-2.5 h-2.5"
+                          >
+                            <path
+                              d="M2.3 6.2L4.8 8.6L9.7 3.5"
+                              stroke="currentColor"
+                              strokeWidth="1.9"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </span>
+                      <span
+                        className={`text-[12.5px] transition-colors ${
+                          isChecked
+                            ? 'font-bold text-[#1e1e1e]'
+                            : 'font-medium text-[#333333] group-hover/opt:text-[#111111]'
+                        }`}
+                      >
+                        {opt.label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -2808,12 +2840,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   ref={colorListRef}
                   onWheel={(e) => {
                     e.stopPropagation();
-                    e.preventDefault();
-                    const step = Math.sign(e.deltaY) * 38;
-                    e.currentTarget.scrollBy({
-                      top: step,
-                      behavior: 'smooth',
-                    });
+                    e.currentTarget.scrollTop += e.deltaY;
                   }}
                   className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
                 >
@@ -3662,8 +3689,44 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
         {/* بخش دوم: توضیحات تکمیلی و مشخصات فنی (پایین عکس) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
           
-          {/* توضیحات تکمیلی و بازه زمانی تحویل (ستون چپ) - ۷ ستون */}
-          <div className="lg:col-span-7 space-y-5">
+          {/* جدول مشخصات فنی (ستون راست) - ۴ ستون */}
+          <div className="lg:col-span-4 flex flex-col justify-between h-full space-y-4">
+            <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs text-right">
+              <div className="divide-y divide-[#f5f5f5] text-xs sm:text-[13px]">
+                <div className="flex justify-between py-3">
+                  <span className="font-bold text-[#777777]">قطر لوستر :</span>
+                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۳۵×۳۵*۳۰ سانتی‌متر</span>
+                </div>
+                <div className="flex justify-between py-3">
+                  <span className="font-bold text-[#777777]">ارتفاع :</span>
+                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۳۰ سانتی‌متر</span>
+                </div>
+                <div className="flex justify-between py-3">
+                  <span className="font-bold text-[#777777]">وزن :</span>
+                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۲۸۰۰ گرم</span>
+                </div>
+                <div className="flex justify-between py-3">
+                  <span className="font-bold text-[#777777]">تعداد سرپیچ لامپ LED :</span>
+                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۶ عدد</span>
+                </div>
+                <div className="flex justify-between py-3">
+                  <span className="font-bold text-[#777777]">منبع برق :</span>
+                  <span className="font-extrabold text-[#1a1a1a]">برق شهری</span>
+                </div>
+              </div>
+            </div>
+
+            {/* دکمه عریض برنزی ویژگی‌ها */}
+            <button
+              type="button"
+              className="w-full py-3 bg-[#c8a97e] hover:bg-[#b59766] text-white text-xs sm:text-[13px] font-black rounded-xl text-center shadow-xs transition-colors cursor-pointer"
+            >
+              ۱۵ ویژگی محصول
+            </button>
+          </div>
+
+          {/* توضیحات تکمیلی و بازه زمانی تحویل (ستون چپ) - ۸ ستون */}
+          <div className="lg:col-span-8 space-y-5">
             <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs text-right">
               <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] border-b border-[#f5f5f5] pb-3 mb-4">
                 توضیحات تکمیلی
@@ -3698,42 +3761,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* جدول مشخصات فنی (ستون راست) - ۵ ستون */}
-          <div className="lg:col-span-5 flex flex-col justify-between h-full space-y-4">
-            <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs text-right">
-              <div className="divide-y divide-[#f5f5f5] text-xs sm:text-[13px]">
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">قطر لوستر :</span>
-                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۳۵×۳۵*۳۰ سانتی‌متر</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">ارتفاع :</span>
-                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۳۰ سانتی‌متر</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">وزن :</span>
-                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۲۸۰۰ گرم</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">تعداد سرپیچ لامپ LED :</span>
-                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۶ عدد</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">منبع برق :</span>
-                  <span className="font-extrabold text-[#1a1a1a]">برق شهری</span>
-                </div>
-              </div>
-            </div>
-
-            {/* دکمه عریض برنزی ویژگی‌ها */}
-            <button
-              type="button"
-              className="w-full py-3 bg-[#c8a97e] hover:bg-[#b59766] text-white text-xs sm:text-[13px] font-black rounded-xl text-center shadow-xs transition-colors cursor-pointer"
-            >
-              ۱۵ ویژگی محصول
-            </button>
           </div>
 
         </div>
@@ -4479,25 +4506,10 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                       ) : (
                         <button
                           type="button"
-                          disabled={isOutOfStock}
                           onClick={() =>
                             handleViewAndBuyClick(product, currentFinish)
                           }
-                          onMouseEnter={() => {
-                            if (isOutOfStock) {
-                              triggerTemporaryTooltip(product.id);
-                            }
-                          }}
-                          onMouseLeave={() => {
-                            if (isOutOfStock) {
-                              clearTemporaryTooltip(product.id);
-                            }
-                          }}
-                          className={`h-11 sm:h-12 min-w-[115px] sm:min-w-[132px] px-3.5 sm:px-5 rounded-[12px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap ${
-                            isOutOfStock
-                              ? 'bg-[#f3f3f3] text-[#222222] cursor-not-allowed'
-                              : 'bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer'
-                          }`}
+                          className="h-11 sm:h-12 min-w-[115px] sm:min-w-[132px] px-3.5 sm:px-5 rounded-[12px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer"
                         >
                           مشاهده و خرید
                         </button>

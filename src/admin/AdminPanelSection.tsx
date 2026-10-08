@@ -761,7 +761,8 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+          const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+          const compressed = mimeType === 'image/png' ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85);
           onResult(compressed);
         } else {
           onResult(rawDataUrl);
