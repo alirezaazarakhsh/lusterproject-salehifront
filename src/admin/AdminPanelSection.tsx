@@ -1503,9 +1503,19 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
       setEditingProductId(null);
       setProductForm({
-        ...productForm,
         name: '',
+        subtitle: '',
+        priceNumeric: 0,
         productCode: `${Math.floor(100000 + Math.random() * 900000).toLocaleString('fa-IR', { useGrouping: false })}`,
+        categorySlug: 'chandeliers',
+        image: '',
+        dimensions: '',
+        branchesCount: '',
+        bodyMaterial: '',
+        warranty: '',
+        description: '',
+        hasSnappPay: false,
+        outOfStock: false
       });
       await loadAllAdminData();
       onCatalogUpdated?.();
@@ -3227,18 +3237,71 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
                   <div>
                     <label className="block text-xs font-bold text-[#333] mb-1.5">
-                      کد محصول
+                      ابعاد (مثال: قطر ۳۵×۳۵×۳۰ سانتی‌متر)
                     </label>
                     <input
                       type="text"
-                      value={productForm.productCode}
+                      value={productForm.dimensions || ''}
                       onChange={(e) =>
-                        setProductForm({
-                          ...productForm,
-                          productCode: e.target.value,
-                        })
+                        setProductForm({ ...productForm, dimensions: e.target.value })
                       }
                       className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      تعداد شاخه‌ها
+                    </label>
+                    <input
+                      type="text"
+                      value={productForm.branchesCount || ''}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, branchesCount: e.target.value })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      جنس بدنه
+                    </label>
+                    <input
+                      type="text"
+                      value={productForm.bodyMaterial || ''}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, bodyMaterial: e.target.value })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      ضمانت
+                    </label>
+                    <input
+                      type="text"
+                      value={productForm.warranty || ''}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, warranty: e.target.value })
+                      }
+                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
+                    />
+                  </div>
+
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="block text-xs font-bold text-[#333] mb-1.5">
+                      توضیحات کامل محصول
+                    </label>
+                    <textarea
+                      value={productForm.description || ''}
+                      onChange={(e) =>
+                        setProductForm({ ...productForm, description: e.target.value })
+                      }
+                      rows={4}
+                      className="w-full rounded-xl border border-[#e0e0e0] p-3 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
                     />
                   </div>
 

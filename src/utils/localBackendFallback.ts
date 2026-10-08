@@ -1496,7 +1496,10 @@ export async function apiFetchWithFallback(
     // Ensure sync is initiated
     initFirestoreAutoSync();
 
-    const res = await fetch(url, options);
+    const fetchUrl = method === 'GET' 
+      ? `${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}` 
+      : url;
+    const res = await fetch(fetchUrl, options);
     const contentType = res.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
 

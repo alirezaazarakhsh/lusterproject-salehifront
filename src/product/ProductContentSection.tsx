@@ -1882,10 +1882,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     const handleCategoryChange = (e: Event) => {
       const customEvent = e as CustomEvent;
       const slug = customEvent.detail;
+      console.log('handleCategoryChange received slug:', slug);
       if (!slug) {
         setSelectedProduct(null);
       } else {
         const found = products.find((p) => p.id === slug || p.productCode === slug) || null;
+        console.log('handleCategoryChange found product:', found);
         setSelectedProduct(found);
       }
     };

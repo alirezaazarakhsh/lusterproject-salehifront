@@ -199,6 +199,9 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
       window.dispatchEvent(
         new CustomEvent('app-route-change', { detail: 'product' })
       );
+      window.dispatchEvent(
+        new CustomEvent('app-product-category-change', { detail: product.id })
+      );
     }, 400);
   };
 
