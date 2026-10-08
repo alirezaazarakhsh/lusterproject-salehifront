@@ -1507,15 +1507,19 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         subtitle: '',
         priceNumeric: 0,
         productCode: `${Math.floor(100000 + Math.random() * 900000).toLocaleString('fa-IR', { useGrouping: false })}`,
-        categorySlug: 'chandeliers',
         image: '',
+        modelType: 'crystali',
+        defaultFinish: 'gold-24k',
+        categorySlug: 'chandeliers',
+        outOfStock: false,
+        hasSnappPay: false,
+        isFeaturedSalehi: false,
+        isBestSeller: false,
         dimensions: '',
         branchesCount: '',
         bodyMaterial: '',
         warranty: '',
         description: '',
-        hasSnappPay: false,
-        outOfStock: false
       });
       await loadAllAdminData();
       onCatalogUpdated?.();

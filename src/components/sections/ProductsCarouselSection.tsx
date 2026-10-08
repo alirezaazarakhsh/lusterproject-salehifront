@@ -180,29 +180,25 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
 
   const handleViewAndBuyClick = (
     product: ChandelierProduct,
-    finish: FinishType
+    _finish: FinishType
   ) => {
-    if (loadingMap[product.id]) return;
-    setLoadingMap((prev) => ({ ...prev, [product.id]: true }));
-    window.setTimeout(() => {
-      setLoadingMap((prev) => ({ ...prev, [product.id]: false }));
-      const targetUrl = `/product/${encodeURIComponent(product.id)}`;
-      try {
-        window.history.pushState(
-          { route: 'product', productCategorySlug: product.id },
-          '',
-          targetUrl
-        );
-      } catch {
-        window.location.hash = `#/product/${encodeURIComponent(product.id)}`;
-      }
-      window.dispatchEvent(
-        new CustomEvent('app-route-change', { detail: 'product' })
+    const targetUrl = `/product/${encodeURIComponent(product.id)}`;
+    try {
+      window.history.pushState(
+        { route: 'product', productCategorySlug: product.id },
+        '',
+        targetUrl
       );
-      window.dispatchEvent(
-        new CustomEvent('app-product-category-change', { detail: product.id })
-      );
-    }, 400);
+    } catch {
+      window.location.hash = `#/product/${encodeURIComponent(product.id)}`;
+    }
+    window.dispatchEvent(
+      new CustomEvent('app-route-change', { detail: 'product' })
+    );
+    window.dispatchEvent(
+      new CustomEvent('app-product-category-change', { detail: product.id })
+    );
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleAddClick = (product: ChandelierProduct) => {

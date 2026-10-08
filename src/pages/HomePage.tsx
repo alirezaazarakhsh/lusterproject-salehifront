@@ -160,13 +160,22 @@ export const HomePage: React.FC = () => {
     }
 
     const unsubscribe = subscribeToRoute((nextRoute) => {
-      triggerPagePreloader(1000);
-      setCurrentRoute(nextRoute);
+      setCurrentRoute((prev) => {
+        if (prev !== nextRoute) {
+          triggerPagePreloader(800);
+        }
+        return nextRoute;
+      });
     });
     const syncRoute = (e?: Event) => {
       const customRoute = (e as CustomEvent<AppRoute>)?.detail;
-      triggerPagePreloader(1350);
-      setCurrentRoute(customRoute ?? getCurrentRoute());
+      const nextRoute = customRoute ?? getCurrentRoute();
+      setCurrentRoute((prev) => {
+        if (prev !== nextRoute) {
+          triggerPagePreloader(800);
+        }
+        return nextRoute;
+      });
     };
     window.addEventListener('popstate', syncRoute);
     window.addEventListener('hashchange', syncRoute);

@@ -2297,6 +2297,18 @@ async function startServer() {
     }
   );
 
+  // Service worker route to guarantee application/javascript MIME type
+  app.get('/sw.js', (_req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    const swPath = path.resolve(process.cwd(), 'public/sw.js');
+    if (fs.existsSync(swPath)) {
+      return res.sendFile(swPath);
+    }
+    return res.send(
+      'self.addEventListener("install",()=>self.skipWaiting());self.addEventListener("activate",(e)=>e.waitUntil(self.registration.unregister()));'
+    );
+  });
+
   // Vite middleware for development
   if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');

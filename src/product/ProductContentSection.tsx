@@ -15,6 +15,7 @@ import { AppToast } from '../components/InteractiveModals';
 import {
   ChandelierProduct,
   GENERATED_IMAGES,
+  SALEHI_COLLECTION_PRODUCTS,
 } from '../data/chandelierData';
 import {
   Chandelier3DViewer,
@@ -1813,13 +1814,54 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   );
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  const findProductBySlugOrCode = (
+    slug: string | null | undefined
+  ): ChandelierProduct | null => {
+    if (!slug) return null;
+    const clean = decodeURIComponent(slug).trim().toLowerCase();
+
+    // If it's a category slug, it's not a product
+    const isCategory =
+      PRODUCT_CATEGORY_TABS.some(
+        (cat) => cat.slug.toLowerCase() === clean
+      ) ||
+      clean === 'all' ||
+      clean === 'categories' ||
+      clean === 'category';
+    if (isCategory) return null;
+
+    // 1. Search in products prop
+    let found = products.find(
+      (p) =>
+        p.id?.toLowerCase() === clean ||
+        p.productCode?.toLowerCase() === clean ||
+        (p as any).slug?.toLowerCase() === clean
+    );
+    if (found) return found;
+
+    // 2. Search in SALEHI_COLLECTION_PRODUCTS
+    found = SALEHI_COLLECTION_PRODUCTS.find(
+      (p) =>
+        p.id?.toLowerCase() === clean ||
+        p.productCode?.toLowerCase() === clean ||
+        p.slug?.toLowerCase() === clean
+    );
+    return found || null;
+  };
+
   const [selectedProduct, setSelectedProduct] = useState<ChandelierProduct | null>(() => {
     const slug = getProductCategorySlugFromLocation();
-    if (!slug) return null;
-    return products.find((p) => p.id === slug || p.productCode === slug) || null;
+    return findProductBySlugOrCode(slug);
   });
 
   const navigateToProductDetail = (productId: string) => {
+    const found = findProductBySlugOrCode(productId);
+    if (found) {
+      setSelectedProduct(found);
+      setSelectedFinish(found.defaultFinish || 'original');
+      setActiveSlideIdx(0);
+      setQty(1);
+    }
     if (typeof window !== 'undefined') {
       const targetUrl = `/product/${encodeURIComponent(productId)}`;
       try {
@@ -1831,17 +1873,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       } catch {
         window.location.hash = `#/product/${encodeURIComponent(productId)}`;
       }
-      window.dispatchEvent(
-        new CustomEvent('app-route-change', { detail: 'product' })
-      );
-      window.dispatchEvent(
-        new CustomEvent('app-product-category-change', { detail: productId })
-      );
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const navigateBackToProducts = () => {
+    setSelectedProduct(null);
     if (typeof window !== 'undefined') {
       const targetUrl = '/product';
       try {
@@ -1853,12 +1890,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       } catch {
         window.location.hash = '#/product';
       }
-      window.dispatchEvent(
-        new CustomEvent('app-route-change', { detail: 'product' })
-      );
-      window.dispatchEvent(
-        new CustomEvent('app-product-category-change', { detail: null })
-      );
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -1878,37 +1909,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     }
   }, [selectedProduct]);
 
-  useEffect(() => {
-    const handleCategoryChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const slug = customEvent.detail;
-      console.log('handleCategoryChange received slug:', slug);
-      if (!slug) {
-        setSelectedProduct(null);
-      } else {
-        const found = products.find((p) => p.id === slug || p.productCode === slug) || null;
-        console.log('handleCategoryChange found product:', found);
-        setSelectedProduct(found);
-      }
-    };
 
-    const handlePopState = () => {
-      const slug = getProductCategorySlugFromLocation();
-      if (!slug) {
-        setSelectedProduct(null);
-      } else {
-        const found = products.find((p) => p.id === slug || p.productCode === slug) || null;
-        setSelectedProduct(found);
-      }
-    };
-
-    window.addEventListener('app-product-category-change', handleCategoryChange as EventListener);
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('app-product-category-change', handleCategoryChange as EventListener);
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [products]);
 
   const [openFilterGroups, setOpenFilterGroups] = useState<
     Record<string, boolean>
@@ -2004,12 +2005,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       setCurrentPage(1);
       syncPriceBoundsForCategory(resolved.slug);
 
-      if (slug) {
-        const found = products.find((p) => p.id === slug || p.productCode === slug);
-        setSelectedProduct(found || null);
-      } else {
-        setSelectedProduct(null);
-      }
+      const found = findProductBySlugOrCode(slug);
+      setSelectedProduct(found);
     };
 
     window.addEventListener('popstate', syncCategoryFromUrl);
@@ -2030,7 +2027,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
         window.clearTimeout(filterCalcTimeoutRef.current);
       }
     };
-  }, []);
+  }, [products]);
 
   useEffect(() => {
     if (isMobileFilterOpen) {
@@ -2131,16 +2128,32 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
   const handleViewAndBuyClick = (
     product: ChandelierProduct,
-    finish: FinishType,
-    isOut = false
+    finish?: FinishType,
+    _isOut = false
   ) => {
-    console.log('handleViewAndBuyClick triggered for:', product.id);
-    if (loadingMap[product.id]) return;
-    setLoadingMap((prev) => ({ ...prev, [product.id]: true }));
-    window.setTimeout(() => {
-      setLoadingMap((prev) => ({ ...prev, [product.id]: false }));
-      navigateToProductDetail(product.id);
-    }, 480);
+    setSelectedProduct(product);
+    if (finish) {
+      setSelectedFinish(finish);
+    } else if (product.defaultFinish) {
+      setSelectedFinish(product.defaultFinish);
+    }
+    setActiveSlideIdx(0);
+    setQty(1);
+    setAddedToast(false);
+
+    if (typeof window !== 'undefined') {
+      const targetUrl = `/product/${encodeURIComponent(product.id)}`;
+      try {
+        window.history.pushState(
+          { route: 'product', productCategorySlug: product.id },
+          '',
+          targetUrl
+        );
+      } catch {
+        window.location.hash = `#/product/${encodeURIComponent(product.id)}`;
+      }
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
   };
 
   const handleAddClick = (product: ChandelierProduct, isOut = false) => {
@@ -4161,11 +4174,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                         {/* سمت راست کارت موبایل: باکس مربع تصویر با پس‌زمینه خاکستری روشن و نشان Snapp! Pay */}
                         <div
                           onClick={() => {
-                            if (isOutOfStock) {
-                              triggerTemporaryTooltip(product.id);
-                              return;
-                            }
-                            onOpenProductModal(product, currentFinish);
+                            handleViewAndBuyClick(product, currentFinish);
                           }}
                           className={`relative w-[114px] xs:w-[126px] min-h-[118px] xs:min-h-[126px] rounded-[12px] bg-[#f5f5f5] shrink-0 flex items-center justify-center p-2 overflow-hidden ${
                             isOutOfStock
@@ -4188,13 +4197,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                           <div className="text-right">
                             <h3
                               onClick={() => {
-                                if (isOutOfStock) {
-                                  triggerTemporaryTooltip(product.id);
-                                                                return;
-                                }
-                                onOpenProductModal(product, currentFinish);
+                                handleViewAndBuyClick(product, currentFinish);
                               }}
-                              className="text-[14px] xs:text-[15px] font-extrabold text-[#1e1e1e] truncate cursor-pointer"
+                              className="text-[14px] xs:text-[15px] font-extrabold text-[#1e1e1e] truncate cursor-pointer hover:text-[#b59766] transition-colors"
                             >
                               {product.name}
                             </h3>
@@ -4209,31 +4214,19 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                           {/* ردیف پایین کارت موبایل: دکمه مشاهده و خرید در راست، دکمه سبد خرید در وسط و کد محصول در چپ */}
                           <div className="mt-3 flex flex-row items-center justify-between gap-1.5" dir="rtl">
                             <div className="flex items-center gap-1.5">
-                              {loadingMap[product.id] ? (
-                                <button
-                                  type="button"
-                                  disabled
-                                  className="h-[36px] xs:h-[38px] min-w-[82px] xs:min-w-[92px] px-3 rounded-[9px] bg-[#242424] text-white flex items-center justify-center gap-1.5 cursor-wait"
-                                >
-                                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                                  <span className="w-1.5 h-1.5 rounded-full bg-white/45 animate-pulse [animation-delay:160ms]" />
-                                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse [animation-delay:320ms]" />
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleViewAndBuyClick(
-                                      product,
-                                      currentFinish,
-                                      isOutOfStock
-                                    )
-                                  }
-                                  className="h-[36px] xs:h-[38px] px-2.5 xs:px-3.5 rounded-[9px] bg-[#f3f3f3] hover:bg-[#242424] active:bg-[#242424] text-[#222222] hover:text-white active:text-white text-[10.5px] xs:text-[11.5px] font-bold transition-colors whitespace-nowrap cursor-pointer"
-                                >
-                                  مشاهده و خرید
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleViewAndBuyClick(
+                                    product,
+                                    currentFinish,
+                                    isOutOfStock
+                                  )
+                                }
+                                className="h-[36px] xs:h-[38px] px-2.5 xs:px-3.5 rounded-[9px] bg-[#f3f3f3] hover:bg-[#242424] active:bg-[#242424] text-[#222222] hover:text-white active:text-white text-[10.5px] xs:text-[11.5px] font-bold transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
+                              >
+                                مشاهده و خرید
+                              </button>
 
                               {/* دکمه سبد خرید / مثبت طلایی / ناموجود صورتی به همراه تولتیپ */}
                               <div
@@ -4395,12 +4388,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   <div>
                     <div
                       onClick={() => {
-                        if (isOutOfStock) {
-                          triggerTemporaryTooltip(product.id);
-                          return;
-                        }
                         if (!isCard3D) {
-                          onOpenProductModal(product, currentFinish);
+                          handleViewAndBuyClick(product, currentFinish);
                         }
                       }}
                       className={`relative w-full h-56 sm:h-60 rounded-[12px] bg-[#f5f5f5] flex items-center justify-center overflow-hidden ${
@@ -4470,11 +4459,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                     <div className="mt-4 text-right px-1">
                       <h3
                         onClick={() => {
-                          if (isOutOfStock) {
-                            triggerTemporaryTooltip(product.id);
-                            return;
-                          }
-                          onOpenProductModal(product, currentFinish);
+                          handleViewAndBuyClick(product, currentFinish);
                         }}
                         className={`text-[15.5px] sm:text-[16.5px] font-bold text-[#1e1e1e] transition-colors leading-snug ${
                           isOutOfStock
