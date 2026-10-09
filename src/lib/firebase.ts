@@ -22,9 +22,7 @@ function createFirestoreInstance(): Firestore {
   try {
     return initializeFirestore(
       app,
-      {
-        experimentalForceLongPolling: true,
-      },
+      {},
       dbId
     );
   } catch {

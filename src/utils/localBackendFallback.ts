@@ -630,7 +630,7 @@ export async function handleLocalApiRequest(
 ): Promise<any> {
   const method = (options.method || 'GET').toUpperCase();
   const body = parseBody(options);
-  const dbState = loadLocalDb();
+  const dbState = (await fetchAllDataFromFirestore()) || loadLocalDb();
   const cleanUrl = url.split('?')[0];
 
   // ۱. ورود ادمین
@@ -641,20 +641,40 @@ export async function handleLocalApiRequest(
     const isSuperAdmin = isMasterAdminCredentials(body.phone, body.password);
 
     if (isSuperAdmin) {
-      const superAdminRecord = {
-        id: 1,
-        uid: `admin-${DEFAULT_SUPER_ADMIN_PHONE}`,
-        phone: DEFAULT_SUPER_ADMIN_PHONE,
-        password: DEFAULT_SUPER_ADMIN_PASS,
-        email: `${DEFAULT_SUPER_ADMIN_PHONE}@salehi-admin.local`,
-        displayName: 'اکبر صالحی (مدیر ارشد)',
-        role: 'super_admin',
-        avatarUrl:
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-        permissions: [...ALL_ADMIN_SECTIONS],
-        permissionsJson: JSON.stringify(ALL_ADMIN_SECTIONS),
-        createdAt: new Date().toISOString(),
-      };
+      const existingSuperAdmin = dbState.users.find(
+        (u) =>
+          normalizeAdminPhoneClient(u.phone) === DEFAULT_SUPER_ADMIN_PHONE ||
+          Number(u.id) === 1
+      );
+      const superAdminRecord = existingSuperAdmin
+        ? {
+            ...existingSuperAdmin,
+            displayName: existingSuperAdmin.displayName || 'اکبر صالحی (مدیر ارشد)',
+            avatarUrl: existingSuperAdmin.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+            role: 'super_admin',
+            permissions: Array.isArray(existingSuperAdmin.permissions) && existingSuperAdmin.permissions.length > 0
+              ? existingSuperAdmin.permissions
+              : [...ALL_ADMIN_SECTIONS],
+            permissionsJson: JSON.stringify(
+              Array.isArray(existingSuperAdmin.permissions) && existingSuperAdmin.permissions.length > 0
+                ? existingSuperAdmin.permissions
+                : ALL_ADMIN_SECTIONS
+            ),
+          }
+        : {
+            id: 1,
+            uid: `admin-${DEFAULT_SUPER_ADMIN_PHONE}`,
+            phone: DEFAULT_SUPER_ADMIN_PHONE,
+            password: DEFAULT_SUPER_ADMIN_PASS,
+            email: `${DEFAULT_SUPER_ADMIN_PHONE}@salehi-admin.local`,
+            displayName: 'اکبر صالحی (مدیر ارشد)',
+            role: 'super_admin',
+            avatarUrl:
+              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+            permissions: [...ALL_ADMIN_SECTIONS],
+            permissionsJson: JSON.stringify(ALL_ADMIN_SECTIONS),
+            createdAt: new Date().toISOString(),
+          };
       const tokenPayload = btoa(
         unescape(
           encodeURIComponent(
@@ -915,7 +935,7 @@ export async function handleLocalApiRequest(
       }
       const u = dbState.users.find((x) => Number(x.id) === id);
       if (u) {
-        recordDeletedKeys(id, u.phone);
+        await recordDeletedKeys(id, u.phone);
         await deleteDocumentFromFirestore('users', id).catch(() => {});
       }
       dbState.users = dbState.users.filter((u) => Number(u.id) !== id);
@@ -956,7 +976,7 @@ export async function handleLocalApiRequest(
     if (method === 'DELETE') {
       const p = dbState.products.find((x) => Number(x.id) === id);
       if (p) {
-        recordDeletedKeys(id, p.productKey);
+        await recordDeletedKeys(id, p.productKey);
         await deleteDocumentFromFirestore('products', id).catch(() => {});
         if (p.productKey)
           await deleteDocumentFromFirestore('products', p.productKey).catch(
@@ -997,7 +1017,7 @@ export async function handleLocalApiRequest(
     if (method === 'DELETE') {
       const c = dbState.categories.find((x) => Number(x.id) === id);
       if (c) {
-        recordDeletedKeys(id, c.slug);
+        await recordDeletedKeys(id, c.slug);
         await deleteDocumentFromFirestore('categories', id).catch(() => {});
         if (c.slug)
           await deleteDocumentFromFirestore('categories', c.slug).catch(
@@ -1071,7 +1091,7 @@ export async function handleLocalApiRequest(
         return false;
       });
       if (pr) {
-        recordDeletedKeys(pr.id, pr.slug);
+        await recordDeletedKeys(pr.id, pr.slug);
         await deleteDocumentFromFirestore('projects', pr.id).catch(() => {});
         if (pr.slug)
           await deleteDocumentFromFirestore('projects', pr.slug).catch(
@@ -1190,7 +1210,7 @@ export async function handleLocalApiRequest(
         return false;
       });
       if (st) {
-        recordDeletedKeys(st.id, st.storyKey);
+        await recordDeletedKeys(st.id, st.storyKey);
         await deleteDocumentFromFirestore('stories', st.id).catch(() => {});
         if (st.storyKey)
           await deleteDocumentFromFirestore('stories', st.storyKey).catch(
@@ -1240,7 +1260,7 @@ export async function handleLocalApiRequest(
     if (method === 'DELETE') {
       const a = dbState.articles.find((x) => Number(x.id) === id);
       if (a) {
-        recordDeletedKeys(id, a.articleKey, a.slug);
+        await recordDeletedKeys(id, a.articleKey, a.slug);
         await deleteDocumentFromFirestore('articles', id).catch(() => {});
         if (a.articleKey)
           await deleteDocumentFromFirestore('articles', a.articleKey).catch(
@@ -1268,7 +1288,7 @@ export async function handleLocalApiRequest(
       }
     }
     if (method === 'DELETE') {
-      recordDeletedKeys(id);
+      await recordDeletedKeys(id);
       await deleteDocumentFromFirestore('messages', id).catch(() => {});
       dbState.messages = dbState.messages.filter((m) => Number(m.id) !== id);
       await saveLocalDb(dbState);
@@ -1291,7 +1311,7 @@ export async function handleLocalApiRequest(
       }
     }
     if (method === 'DELETE') {
-      recordDeletedKeys(id);
+      await recordDeletedKeys(id);
       await deleteDocumentFromFirestore('orders', id).catch(() => {});
       dbState.orders = dbState.orders.filter((o) => Number(o.id) !== id);
       await saveLocalDb(dbState);
@@ -1505,8 +1525,19 @@ export async function apiFetchWithFallback(
 
     if (res.ok && isJson) {
       isCurrentlyUsingFallback = false;
-      const data = await res.json();
+      let data = await res.json();
       
+      // پاکسازی رکوردهای حذف‌شده از داده‌های بازگشتی سرور
+      if (Array.isArray(data)) {
+        data = data.filter((item: any) => !isItemDeleted(item));
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray(data.products)) data.products = data.products.filter((p: any) => !isItemDeleted(p));
+        if (Array.isArray(data.categories)) data.categories = data.categories.filter((c: any) => !isItemDeleted(c));
+        if (Array.isArray(data.projects)) data.projects = data.projects.filter((pr: any) => !isItemDeleted(pr));
+        if (Array.isArray(data.stories)) data.stories = data.stories.filter((s: any) => !isItemDeleted(s));
+        if (Array.isArray(data.articles)) data.articles = data.articles.filter((a: any) => !isItemDeleted(a));
+      }
+
       // Update local cache with server data if it's the catalog
       if (url === '/api/public/catalog' && data) {
         const local = loadLocalDb();

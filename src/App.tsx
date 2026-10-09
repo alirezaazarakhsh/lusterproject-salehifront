@@ -4,6 +4,7 @@ import { HeaderSection } from './components/sections/HeaderSection';
 import { ServerErrorContentSection } from './components/sections/ServerErrorContentSection';
 import { navigateToRoute } from './utils/navigation';
 import { initFirestoreAutoSync } from './utils/localBackendFallback';
+import { loadDeletedKeysFromFirestore } from './lib/firestoreSync';
 import { initTheme } from './utils/theme';
 
 interface AppErrorBoundaryState {
@@ -65,7 +66,11 @@ class AppErrorBoundary extends React.Component<
  */
 export function App() {
   useEffect(() => {
-    initFirestoreAutoSync();
+    async function init() {
+      await loadDeletedKeysFromFirestore();
+      initFirestoreAutoSync();
+    }
+    init();
   }, []);
 
   return (

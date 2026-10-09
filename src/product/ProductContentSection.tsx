@@ -41,6 +41,7 @@ import {
   SearchNormal,
   Share,
   BagTick,
+  TruckFast,
 } from 'iconsax-react';
 
 export type ProductCategorySlug =
@@ -758,6 +759,40 @@ interface ProductCardItem extends ChandelierProduct {
   cardFinishOverride?: FinishType;
 }
 
+export const isProductInProductCategory = (
+  p: ChandelierProduct,
+  categorySlug: string
+): boolean => {
+  const pCat = String(p.categoryKey || (p as any).categorySlug || (p as any).category || '').trim().toLowerCase();
+  const target = String(categorySlug || '').trim().toLowerCase();
+  if (!target || target === 'all') return true;
+  if (!pCat) return false;
+  if (pCat === target) return true;
+
+  if (target === 'chandeliers') {
+    return pCat === 'chandeliers' || pCat.includes('لوستر');
+  }
+  if (target === 'single-branch') {
+    return pCat === 'single-branch' || pCat === 'single' || pCat.includes('تک') || pCat.includes('شاخه');
+  }
+  if (target === 'mirror-console') {
+    return pCat === 'mirror-console' || pCat === 'mirror' || pCat === 'mirrors' || pCat.includes('آینه') || pCat.includes('کنسول');
+  }
+  if (target === 'abalour') {
+    return pCat === 'abalour' || pCat === 'lampshade' || pCat === 'abajour' || pCat.includes('آباژور');
+  }
+  if (target === 'shamdooni') {
+    return pCat === 'shamdooni' || pCat === 'shamdan' || pCat.includes('شمعدان');
+  }
+  if (target === 'table') {
+    return pCat === 'table' || pCat.includes('میز');
+  }
+  if (target === 'kenar-saloni') {
+    return pCat === 'kenar-saloni' || pCat.includes('کنار') || pCat.includes('سالن');
+  }
+  return false;
+};
+
 /**
  * تولید محصولات متنوع برای هر دسته‌بندی:
  * - دسته‌بندی «کلکسیون کنار سالونی» (kenar-saloni) بدون محصول (خالی) است تا صفحه «موردی یافت نشد!» نمایش داده شود
@@ -768,18 +803,14 @@ const buildCategoryPageProducts = (
   categorySlug: ProductCategorySlug,
   pageNumber: number
 ): ProductCardItem[] => {
-  // در صورتی که کاتالوگ کامل محصولات از دیتابیس PostgreSQL بارگذاری شده باشد، مستقیماً محصولات همان دسته از دیتابیس نمایش داده می‌شوند
-  if (baseProducts && baseProducts.length > 4) {
+  // ۱. بررسی وجود محصولات ثبت‌شده در دیتابیس برای این دسته‌بندی
+  if (baseProducts && baseProducts.length > 0) {
     const dbCategoryItems: ProductCardItem[] =
       categorySlug === 'all'
         ? baseProducts
-        : baseProducts.filter((p) => p.categoryKey === categorySlug);
+        : baseProducts.filter((p) => isProductInProductCategory(p, categorySlug));
 
-    if (dbCategoryItems.length === 0) {
-      return [];
-    }
-
-    const shift = ((pageNumber - 1) * 2) % dbCategoryItems.length;
+    const shift = dbCategoryItems.length > 0 ? ((pageNumber - 1) * 2) % dbCategoryItems.length : 0;
     return [
       ...dbCategoryItems.slice(shift),
       ...dbCategoryItems.slice(0, shift),
@@ -1753,6 +1784,10 @@ export const getCategoryProductCount = (
 ): number => {
   const resolvedTab = resolveProductCategoryBySlug(categorySlug);
   if (resolvedTab.slug === 'kenar-saloni') return 0;
+  if (baseProducts && baseProducts.length > 0) {
+    if (resolvedTab.slug === 'all') return baseProducts.length;
+    return baseProducts.filter((p) => isProductInProductCategory(p, resolvedTab.slug)).length;
+  }
   if (resolvedTab.slug === 'all') {
     const subSlugs: ProductCategorySlug[] = [
       'chandeliers',
@@ -3708,9 +3743,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           {/* جدول مشخصات فنی (ستون راست) - ۴ ستون */}
           <div className="lg:col-span-4 flex flex-col justify-between h-full space-y-4">
             <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs text-right">
-              <div className="divide-y divide-[#f5f5f5] text-xs sm:text-[13px]">
+              <div className="divide-y divide-[#d0d0d0] text-xs sm:text-[13px]">
                 <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">قطر لوستر :</span>
+                  <span className="font-bold text-[#555555]">قطر لوستر :</span>
                   <span className="font-extrabold text-[#1a1a1a] tabular-nums">۳۵×۳۵*۳۰ سانتی‌متر</span>
                 </div>
                 <div className="flex justify-between py-3">
@@ -3744,7 +3779,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           {/* توضیحات تکمیلی و بازه زمانی تحویل (ستون چپ) - ۸ ستون */}
           <div className="lg:col-span-8 space-y-5">
             <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs text-right">
-              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] border-b border-[#f5f5f5] pb-3 mb-4">
+              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] border-b-2 border-[#e0e0e0] pb-3 mb-4">
                 توضیحات تکمیلی
               </h3>
               <p className="text-xs sm:text-[13px] leading-7 text-[#777777] text-justify">
@@ -3757,18 +3792,14 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               <div className="flex items-center gap-3">
                 {/* آیکون کامیون باربری طلایی */}
                 <div className="w-10 h-10 rounded-full bg-[#fbf8f2] flex items-center justify-center shrink-0 border border-[#ebdcb9]/30">
-                  <svg className="w-5 h-5 text-[#b58c56]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="3" width="14" height="12" rx="2" />
-                    <path d="M16 8h4l3 3v4h-7V8z" />
-                    <circle cx="5.5" cy="18.5" r="2.5" />
-                    <circle cx="18.5" cy="18.5" r="2.5" />
-                  </svg>
+                  <TruckFast className="w-5 h-5 text-[#b58c56]" variant="Bulk" />
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-[#1a1a1a]">بازه زمانی تحویل :</span>
-                  <p className="text-[11.5px] sm:text-xs text-[#777777] font-semibold mt-1">
-                    تاریخ حدودی تحویل مرسوله (۲ مهر ۱۴۰۴ - ۷ مهر ۱۴۰۴)
-                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <div className="px-2 py-1 bg-[#fcf9f2] border border-[#ebdcb9] rounded-md text-[11px] font-bold">۲ مهر</div>
+                    <div className="px-2 py-1 bg-[#fcf9f2] border border-[#ebdcb9] rounded-md text-[11px] font-bold">۷ مهر</div>
+                  </div>
                 </div>
               </div>
               <div className="bg-[#fcf9f2] border border-[#ebdcb9]/60 px-3 py-1.5 rounded-lg shrink-0">

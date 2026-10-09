@@ -30,15 +30,44 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
   products = [],
 }) => {
   const getProductCountText = (catSlug: string) => {
-    let count = 40;
-    if (products && products.length > 4) {
+    const isMatchingCategory = (pCatRaw: string, targetSlug: string): boolean => {
+      const pCat = String(pCatRaw || '').trim().toLowerCase();
+      const target = String(targetSlug || '').trim().toLowerCase();
+      if (!pCat || !target) return false;
+      if (pCat === target) return true;
+
+      if (target === 'chandeliers' || target === 'all') {
+        return pCat === 'chandeliers' || pCat === 'all' || pCat.includes('لوستر');
+      }
+      if (target === 'single-branch') {
+        return pCat === 'single-branch' || pCat === 'single' || pCat.includes('تک') || pCat.includes('شاخه');
+      }
+      if (target === 'mirror-console') {
+        return pCat === 'mirror-console' || pCat === 'mirror' || pCat === 'mirrors' || pCat.includes('آینه') || pCat.includes('کنسول');
+      }
+      if (target === 'abalour') {
+        return pCat === 'abalour' || pCat === 'lampshade' || pCat === 'abajour' || pCat.includes('آباژور');
+      }
+      if (target === 'shamdooni') {
+        return pCat === 'shamdooni' || pCat === 'shamdan' || pCat.includes('شمعدان');
+      }
+      if (target === 'table') {
+        return pCat === 'table' || pCat.includes('میز');
+      }
+      if (target === 'kenar-saloni') {
+        return pCat === 'kenar-saloni' || pCat.includes('کنار') || pCat.includes('سالن');
+      }
+      return false;
+    };
+
+    let count = 0;
+    if (products && products.length > 0) {
       if (catSlug === 'all') {
         count = products.length;
       } else {
         const matching = products.filter((p) => {
-          const pCat = String(p.categoryKey || (p as any).categorySlug || '').toLowerCase();
-          const cSlug = String(catSlug || '').toLowerCase();
-          return pCat === cSlug;
+          const pCat = p.categoryKey || (p as any).categorySlug || (p as any).category || '';
+          return isMatchingCategory(pCat, catSlug);
         });
         count = matching.length;
       }
@@ -50,7 +79,9 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
       else if (catSlug === 'shamdooni') count = 9;
       else if (catSlug === 'table') count = 8;
       else if (catSlug === 'all') count = 71;
+      else count = 12;
     }
+
     const persianCount = String(count).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
     return `${persianCount} محصول`;
   };

@@ -10,99 +10,53 @@ import {
 } from 'firebase/firestore';
 import { firestoreDb } from './firebase';
 
-const FIRESTORE_STATE_DOC = 'global_state_v1';
 const SETTINGS_COLLECTION = 'salehi_settings';
 const MESSAGES_COLLECTION = 'messages';
-const TOMBSTONES_STORAGE_KEY = 'salehi_tombstones_deleted_keys_v2';
 
-/**
- * مدیریت رکوردهای پاک‌شده دائمی (Tombstones):
- * هر موردی که توسط کاربر حذف شود برای همیشه در این لیست ذخیره می‌شود
- * تا حتی با ۱۰۰۰ بار رفرش، ریست حافظه، یا لود مجدد کاتالوگ سرور، هرگز برنگردد.
- */
-export function getDeletedKeys(): Set<string> {
-  const set = new Set<string>();
+let inMemoryDeletedKeys: Set<string> = new Set();
+
+export async function loadDeletedKeysFromFirestore(): Promise<void> {
   try {
-    const raw = localStorage.getItem(TOMBSTONES_STORAGE_KEY);
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) {
-        arr.forEach((k) => {
-          if (k !== null && k !== undefined) set.add(String(k).trim());
-        });
-      }
+    // Wait briefly to allow Firestore to initialize
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const remoteTombstones = await getSettingFromFirestore('tombstones_deleted_keys');
+    if (Array.isArray(remoteTombstones)) {
+      inMemoryDeletedKeys = new Set(remoteTombstones.map((k: any) => String(k).trim()));
     }
-  } catch {}
-  try {
-    const sRaw = sessionStorage.getItem(TOMBSTONES_STORAGE_KEY);
-    if (sRaw) {
-      const arr = JSON.parse(sRaw);
-      if (Array.isArray(arr)) {
-        arr.forEach((k) => {
-          if (k !== null && k !== undefined) set.add(String(k).trim());
-        });
-      }
-    }
-  } catch {}
-  try {
-    const match = document.cookie.match(
-      new RegExp('(^| )' + TOMBSTONES_STORAGE_KEY + '=([^;]+)')
-    );
-    if (match) {
-      const decoded = decodeURIComponent(match[2]);
-      const arr = JSON.parse(decoded);
-      if (Array.isArray(arr)) {
-        arr.forEach((k) => {
-          if (k !== null && k !== undefined) set.add(String(k).trim());
-        });
-      }
-    }
-  } catch {}
-  return set;
+  } catch (err) {
+    console.warn('Tombstones not loaded from Firestore (will retry or use defaults):', err);
+  }
 }
 
-export function recordDeletedKeys(
+export function getDeletedKeys(): Set<string> {
+  return inMemoryDeletedKeys;
+}
+
+export async function recordDeletedKeys(
   ...keys: (string | number | undefined | null)[]
-): void {
-  try {
-    const current = getDeletedKeys();
-    let hasNew = false;
-    for (const k of keys) {
-      if (k !== undefined && k !== null) {
-        const str = String(k).trim();
-        if (str && !current.has(str)) {
-          current.add(str);
-          hasNew = true;
-        }
+): Promise<void> {
+  let hasNew = false;
+  for (const k of keys) {
+    if (k !== undefined && k !== null) {
+      const str = String(k).trim();
+      if (str && !inMemoryDeletedKeys.has(str)) {
+        inMemoryDeletedKeys.add(str);
+        hasNew = true;
       }
     }
-    if (hasNew) {
-      const arr = Array.from(current);
-      const jsonStr = JSON.stringify(arr);
-      try {
-        localStorage.setItem(TOMBSTONES_STORAGE_KEY, jsonStr);
-      } catch {}
-      try {
-        sessionStorage.setItem(TOMBSTONES_STORAGE_KEY, jsonStr);
-      } catch {}
-      try {
-        document.cookie = `${TOMBSTONES_STORAGE_KEY}=${encodeURIComponent(
-          jsonStr
-        )}; path=/; max-age=31536000; SameSite=Lax`;
-      } catch {}
-      saveSettingToFirestore('tombstones_deleted_keys', arr).catch(() => {});
-    }
-  } catch {}
+  }
+  if (hasNew) {
+    await saveSettingToFirestore('tombstones_deleted_keys', Array.from(inMemoryDeletedKeys)).catch(() => {});
+  }
 }
 
 export function isItemDeleted(item: any): boolean {
   if (!item) return true;
-  const deleted = getDeletedKeys();
-  if (item.id !== undefined && item.id !== null && deleted.has(String(item.id))) return true;
-  if (item.storyKey && deleted.has(String(item.storyKey))) return true;
-  if (item.productKey && deleted.has(String(item.productKey))) return true;
-  if (item.slug && deleted.has(String(item.slug))) return true;
-  if (item.key && deleted.has(String(item.key))) return true;
+  if (item.id !== undefined && item.id !== null && inMemoryDeletedKeys.has(String(item.id))) return true;
+  if (item.storyKey && inMemoryDeletedKeys.has(String(item.storyKey))) return true;
+  if (item.productKey && inMemoryDeletedKeys.has(String(item.productKey))) return true;
+  if (item.slug && inMemoryDeletedKeys.has(String(item.slug))) return true;
+  if (item.key && inMemoryDeletedKeys.has(String(item.key))) return true;
   return false;
 }
 

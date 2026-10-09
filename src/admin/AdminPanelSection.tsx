@@ -68,6 +68,7 @@ import {
   INITIAL_SMS_SETTINGS,
   INITIAL_FAQ_SETTINGS,
 } from '../utils/localBackendFallback';
+import { isItemDeleted, recordDeletedKeys } from '../lib/firestoreSync';
 
 interface AdminPanelSectionProps {
   onCatalogUpdated?: () => void;
@@ -992,14 +993,14 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
       setIsDemoMode(isUsingFallbackMode());
       setSummary(summaryRes);
-      setAdminsList(adminsRes);
-      setProductsList(productsRes);
-      setCategoriesList(categoriesRes);
-      setProjectsList(projectsRes);
-      setStoriesList(storiesRes);
-      setArticlesList(articlesRes);
-      setMessagesList(messagesRes);
-      setOrdersList(ordersRes);
+      setAdminsList(Array.isArray(adminsRes) ? adminsRes.filter((adm: any) => !isItemDeleted(adm)) : []);
+      setProductsList(Array.isArray(productsRes) ? productsRes.filter((p: any) => !isItemDeleted(p)) : []);
+      setCategoriesList(Array.isArray(categoriesRes) ? categoriesRes.filter((c: any) => !isItemDeleted(c)) : []);
+      setProjectsList(Array.isArray(projectsRes) ? projectsRes.filter((pr: any) => !isItemDeleted(pr)) : []);
+      setStoriesList(Array.isArray(storiesRes) ? storiesRes.filter((s: any) => !isItemDeleted(s)) : []);
+      setArticlesList(Array.isArray(articlesRes) ? articlesRes.filter((a: any) => !isItemDeleted(a)) : []);
+      setMessagesList(Array.isArray(messagesRes) ? messagesRes.filter((m: any) => !isItemDeleted(m)) : []);
+      setOrdersList(Array.isArray(ordersRes) ? ordersRes.filter((o: any) => !isItemDeleted(o)) : []);
       if (footerSettingsRes) {
         setFooterSettingsForm({
           ...INITIAL_FOOTER_SETTINGS,
@@ -1459,7 +1460,13 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   };
 
   const handleDeleteAdminUser = async (id: number) => {
+    if (adminsList.length <= 1) {
+      showNotice('error', 'امکان حذف تنها ادمین باقی‌مانده وجود ندارد.');
+      return;
+    }
     try {
+      recordDeletedKeys(id);
+      setAdminsList((prev) => prev.filter((adm) => adm.id !== id));
       await authFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
       showNotice('success', 'ادمین انتخاب‌شده از دیتابیس حذف شد.');
       await loadAllAdminData();
@@ -1530,10 +1537,14 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
   const handleDeleteProduct = async (id: number) => {
     try {
+      const targetProd = productsList.find((p) => p.id === id);
+      recordDeletedKeys(id, targetProd?.productKey);
+      setProductsList((prev) => prev.filter((p) => p.id !== id && p.productKey !== targetProd?.productKey));
       await authFetch(`/api/admin/products/${id}`, { method: 'DELETE' });
       showNotice('success', 'محصول از دیتابیس حذف شد.');
       await loadAllAdminData();
       onCatalogUpdated?.();
+      window.dispatchEvent(new CustomEvent('app-catalog-updated'));
     } catch (err: any) {
       showNotice('error', err?.message || 'خطا در حذف محصول');
     }
@@ -1576,10 +1587,14 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
   const handleDeleteCategory = async (id: number) => {
     try {
+      const targetCat = categoriesList.find((c) => c.id === id);
+      recordDeletedKeys(id, targetCat?.slug);
+      setCategoriesList((prev) => prev.filter((c) => c.id !== id && c.slug !== targetCat?.slug));
       await authFetch(`/api/admin/categories/${id}`, { method: 'DELETE' });
       showNotice('success', 'دسته‌بندی از دیتابیس حذف شد.');
       await loadAllAdminData();
       onCatalogUpdated?.();
+      window.dispatchEvent(new CustomEvent('app-catalog-updated'));
     } catch (err: any) {
       showNotice('error', err?.message || 'خطا در حذف دسته‌بندی');
     }
@@ -1684,6 +1699,9 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
   const handleDeleteProject = (id: number, title?: string) => {
     const displayTitle = title || 'پروژه اجرایی انتخاب‌شده';
+    const targetProj = projectsList.find((p) => p.id === id);
+    recordDeletedKeys(id, targetProj?.slug);
+    setProjectsList((prev) => prev.filter((p) => p.id !== id && p.slug !== targetProj?.slug));
     runProjectProgressModal(
       'delete',
       `در حال حذف پروژه «${displayTitle}»`,
@@ -1692,7 +1710,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         try {
           await authFetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
           showNotice('success', `پروژه «${displayTitle}» با موفقیت از دیتابیس حذف شد.`);
-          setProjectsList((prev) => prev.filter((p) => p.id !== id));
+          setProjectsList((prev) => prev.filter((p) => p.id !== id && p.slug !== targetProj?.slug));
           await loadAllAdminData();
           onCatalogUpdated?.();
           window.dispatchEvent(new CustomEvent('app-catalog-updated'));
