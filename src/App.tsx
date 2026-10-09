@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { HomePage } from './pages/HomePage';
 import { HeaderSection } from './components/sections/HeaderSection';
 import { ServerErrorContentSection } from './components/sections/ServerErrorContentSection';
 import { navigateToRoute } from './utils/navigation';
-import { initFirestoreAutoSync } from './utils/localBackendFallback';
+import { syncFromFirestore } from './utils/localBackendFallback';
 import { loadDeletedKeysFromFirestore } from './lib/firestoreSync';
+import { PagePreloader } from './components/PagePreloader';
 import { initTheme } from './utils/theme';
 
 interface AppErrorBoundaryState {
@@ -65,17 +66,26 @@ class AppErrorBoundary extends React.Component<
  * نقطه ورود اصلی اپلیکیشن گالری لوستر اکبر صالحی
  */
 export function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     async function init() {
-      await loadDeletedKeysFromFirestore();
-      initFirestoreAutoSync();
+      try {
+        await loadDeletedKeysFromFirestore();
+        await syncFromFirestore();
+      } catch (err) {
+        console.error('Failed to initialize app data:', err);
+      } finally {
+        setIsLoading(false);
+      }
     }
     init();
   }, []);
 
   return (
     <AppErrorBoundary>
-      <HomePage />
+      <PagePreloader isVisible={isLoading} />
+      {!isLoading && <HomePage />}
     </AppErrorBoundary>
   );
 }
