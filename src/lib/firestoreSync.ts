@@ -148,73 +148,78 @@ export async function fetchCollectionFromFirestore(collectionName: string): Prom
   return [];
 }
 
-export async function fetchAllDataFromFirestore(): Promise<any | null> {
-  try {
-    const remoteTombstones = await getSettingFromFirestore('tombstones_deleted_keys');
-    if (Array.isArray(remoteTombstones)) {
-      recordDeletedKeys(...remoteTombstones);
-    }
-
-    const [products, projects, categories, orders, articles, stories] = await Promise.all([
-      fetchCollectionFromFirestore('products'),
-      fetchCollectionFromFirestore('projects'),
-      fetchCollectionFromFirestore('categories'),
-      fetchCollectionFromFirestore('orders'),
-      fetchCollectionFromFirestore('articles'),
-      fetchCollectionFromFirestore('stories'),
-    ]);
-
-    const settingsKeys = [
-      'footerSettings', 'contactUsSettings', 'aboutUsSettings', 
-      'heroSliderSettings', 'mainSettings', 'smsSettings', 'faqSettings'
-    ];
-
-    const settingsObj: Record<string, any> = {};
-    await Promise.all(
-      settingsKeys.map(async (key) => {
-        const val = await getSettingFromFirestore(key);
-        if (val) {
-          settingsObj[key] = val;
-        }
-      })
-    );
-
-    let globalState: any = null;
+export async function fetchAllDataFromFirestore(retries = 3): Promise<any | null> {
+  for (let i = 0; i < retries; i++) {
     try {
-      const docRef = doc(firestoreDb, SETTINGS_COLLECTION, FIRESTORE_STATE_DOC);
-      const snap = await withTimeout(getDoc(docRef), 3000, null as any);
-      if (snap && snap.exists()) {
-        globalState = snap.data();
+      const remoteTombstones = await getSettingFromFirestore('tombstones_deleted_keys');
+      if (Array.isArray(remoteTombstones)) {
+        recordDeletedKeys(...remoteTombstones);
       }
-    } catch {}
 
-    const hasCollectionsData =
-      products.length > 0 ||
-      projects.length > 0 ||
-      categories.length > 0 ||
-      stories.length > 0 ||
-      articles.length > 0 ||
-      Object.keys(settingsObj).length > 0;
+      const [products, projects, categories, orders, articles, stories] = await Promise.all([
+        fetchCollectionFromFirestore('products'),
+        fetchCollectionFromFirestore('projects'),
+        fetchCollectionFromFirestore('categories'),
+        fetchCollectionFromFirestore('orders'),
+        fetchCollectionFromFirestore('articles'),
+        fetchCollectionFromFirestore('stories'),
+      ]);
 
-    if (hasCollectionsData) {
-      return {
-        products: products.length > 0 ? products : globalState?.products,
-        projects: projects.length > 0 ? projects : globalState?.projects,
-        categories: categories.length > 0 ? categories : globalState?.categories,
-        orders: orders.length > 0 ? orders : globalState?.orders,
-        articles: articles.length > 0 ? articles : globalState?.articles,
-        stories: stories.length > 0 ? stories : globalState?.stories,
-        users: globalState?.users || [],
-        messages: globalState?.messages || [],
-        ...settingsObj,
-      };
+      const settingsKeys = [
+        'footerSettings', 'contactUsSettings', 'aboutUsSettings', 
+        'heroSliderSettings', 'mainSettings', 'smsSettings', 'faqSettings'
+      ];
+
+      const settingsObj: Record<string, any> = {};
+      await Promise.all(
+        settingsKeys.map(async (key) => {
+          const val = await getSettingFromFirestore(key);
+          if (val) {
+            settingsObj[key] = val;
+          }
+        })
+      );
+
+      let globalState: any = null;
+      try {
+        const docRef = doc(firestoreDb, SETTINGS_COLLECTION, FIRESTORE_STATE_DOC);
+        const snap = await withTimeout(getDoc(docRef), 3000, null as any);
+        if (snap && snap.exists()) {
+          globalState = snap.data();
+        }
+      } catch {}
+
+      const hasCollectionsData =
+        products.length > 0 ||
+        projects.length > 0 ||
+        categories.length > 0 ||
+        stories.length > 0 ||
+        articles.length > 0 ||
+        Object.keys(settingsObj).length > 0;
+
+      if (hasCollectionsData) {
+        return {
+          products: products.length > 0 ? products : globalState?.products,
+          projects: projects.length > 0 ? projects : globalState?.projects,
+          categories: categories.length > 0 ? categories : globalState?.categories,
+          orders: orders.length > 0 ? orders : globalState?.orders,
+          articles: articles.length > 0 ? articles : globalState?.articles,
+          stories: stories.length > 0 ? stories : globalState?.stories,
+          users: globalState?.users || [],
+          messages: globalState?.messages || [],
+          ...settingsObj,
+        };
+      }
+
+      if (globalState) {
+        return globalState;
+      }
+    } catch (err) {
+      console.warn(`Could not fetch all data from Cloud Firestore (attempt ${i + 1}/${retries}):`, err);
+      if (i < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+      }
     }
-
-    if (globalState) {
-      return globalState;
-    }
-  } catch (err) {
-    console.warn('Could not fetch all data from Cloud Firestore:', err);
   }
   return null;
 }
