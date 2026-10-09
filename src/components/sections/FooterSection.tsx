@@ -431,10 +431,11 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                   <CalligraphyTrustBadge index={0} />
                 )}
 
-                {/* باکس‌های ۲، ۳ و ۴: سایر مجوزها (پشتیبانی از آپلود تصویر) */}
+                 {/* باکس‌های ۲، ۳ و ۴: سایر مجوزها (پشتیبانی از آپلود تصویر) */}
                 {[0, 1, 2].map((licIdx) => {
                   const lic = settings.otherLicenses?.[licIdx];
-                  if (lic && lic.imageUrl && lic.imageUrl.trim()) {
+                  // نمایش تصویر فقط در صورتی که URL معتبر باشد
+                  if (lic && lic.imageUrl && lic.imageUrl.trim() !== '' && lic.imageUrl.startsWith('data:image')) {
                     return (
                       <div
                         key={lic.id || `lic-${licIdx + 2}`}
@@ -452,6 +453,9 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                               src={lic.imageUrl}
                               alt={lic.title || `مجوز ${licIdx + 2}`}
                               className="w-full h-full object-contain rounded-[6px]"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
                             />
                           </a>
                         ) : (
@@ -459,11 +463,15 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                             src={lic.imageUrl}
                             alt={lic.title || `مجوز ${licIdx + 2}`}
                             className="w-full h-full object-contain rounded-[6px]"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
                           />
                         )}
                       </div>
                     );
                   }
+                  // اگر تصویر نیست یا نامعتبر است، نماد پیش‌فرض را نمایش بده
                   return (
                     <CalligraphyTrustBadge
                       key={`default-lic-${licIdx + 1}`}
