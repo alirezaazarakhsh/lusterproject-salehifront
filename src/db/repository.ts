@@ -2293,19 +2293,19 @@ export const DEFAULT_FOOTER_SETTINGS: FooterSettingsData = {
     {
       id: 'license-2',
       title: 'مجوز ساماندهی',
-      imageUrl: '',
+      imageUrl: '/assets/licenses/license-samandehi.png',
       linkUrl: '',
     },
     {
       id: 'license-3',
       title: 'مجوز اتحادیه لوستر',
-      imageUrl: '',
+      imageUrl: '/assets/licenses/license-ettehadieh.png',
       linkUrl: '',
     },
     {
       id: 'license-4',
       title: 'گواهی اصالت و ضمانت',
-      imageUrl: '',
+      imageUrl: '/assets/licenses/license-esalat.png',
       linkUrl: '',
     },
   ],

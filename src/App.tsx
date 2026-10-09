@@ -3,7 +3,7 @@ import { HomePage } from './pages/HomePage';
 import { HeaderSection } from './components/sections/HeaderSection';
 import { ServerErrorContentSection } from './components/sections/ServerErrorContentSection';
 import { navigateToRoute } from './utils/navigation';
-import { syncFromFirestore } from './utils/localBackendFallback';
+import { syncFromFirestore, apiFetchWithFallback } from './utils/localBackendFallback';
 import { loadDeletedKeysFromFirestore } from './lib/firestoreSync';
 import { PagePreloader } from './components/PagePreloader';
 import { initTheme } from './utils/theme';
@@ -72,6 +72,12 @@ export function App() {
     async function init() {
       try {
         await loadDeletedKeysFromFirestore();
+        // ابتدا کاتالوگ زنده سرور دریافت و کش می‌شود تا دیتای واقعی لود شود
+        try {
+          await apiFetchWithFallback('/api/public/catalog');
+        } catch (catErr) {
+          console.warn('Initial server catalog fetch notice:', catErr);
+        }
         await syncFromFirestore();
       } catch (err) {
         console.error('Failed to initialize app data:', err);

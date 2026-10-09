@@ -77,19 +77,19 @@ export const INITIAL_FOOTER_SETTINGS: FooterSettingsConfig = {
     {
       id: 'license-2',
       title: 'مجوز ساماندهی',
-      imageUrl: '',
+      imageUrl: '/assets/licenses/license-samandehi.png',
       linkUrl: '',
     },
     {
       id: 'license-3',
       title: 'مجوز اتحادیه لوستر',
-      imageUrl: '',
+      imageUrl: '/assets/licenses/license-ettehadieh.png',
       linkUrl: '',
     },
     {
       id: 'license-4',
       title: 'گواهی اصالت و ضمانت',
-      imageUrl: '',
+      imageUrl: '/assets/licenses/license-esalat.png',
       linkUrl: '',
     },
   ],
@@ -135,16 +135,31 @@ interface LicenseItemBoxProps {
   licIdx: number;
 }
 
+const DEFAULT_LICENSE_FALLBACKS = [
+  '/assets/licenses/license-samandehi.png',
+  '/assets/licenses/license-ettehadieh.png',
+  '/assets/licenses/license-esalat.png',
+];
+
 const LicenseItemBox: React.FC<LicenseItemBoxProps> = ({ lic, licIdx }) => {
   const [imageError, setImageError] = React.useState(false);
-  const hasValidImage =
-    Boolean(lic && lic.imageUrl && lic.imageUrl.trim() !== '' && !imageError);
 
-  if (hasValidImage && lic) {
+  React.useEffect(() => {
+    setImageError(false);
+  }, [lic?.imageUrl]);
+
+  const fallbackUrl = DEFAULT_LICENSE_FALLBACKS[licIdx] || '';
+  const currentSrc = (!imageError && lic?.imageUrl && lic.imageUrl.trim() !== '')
+    ? lic.imageUrl
+    : fallbackUrl;
+
+  const hasValidImage = Boolean(currentSrc && currentSrc.trim() !== '');
+
+  if (hasValidImage) {
     const imgElement = (
       <img
-        src={lic.imageUrl}
-        alt={lic.title || `مجوز ${licIdx + 2}`}
+        src={currentSrc}
+        alt={lic?.title || `مجوز شماره ${licIdx + 2}`}
         className="w-full h-full object-contain rounded-[6px]"
         onError={() => setImageError(true)}
       />
@@ -152,10 +167,10 @@ const LicenseItemBox: React.FC<LicenseItemBoxProps> = ({ lic, licIdx }) => {
 
     return (
       <div
-        title={lic.title || `مجوز شماره ${licIdx + 2}`}
+        title={lic?.title || `مجوز شماره ${licIdx + 2}`}
         className="aspect-square rounded-[10px] border border-[#e3e0d8] bg-white flex items-center justify-center p-1.5 shadow-2xs hover:border-[#b39561] transition-colors overflow-hidden"
       >
-        {lic.linkUrl && lic.linkUrl.trim() ? (
+        {lic?.linkUrl && lic.linkUrl.trim() ? (
           <a
             href={lic.linkUrl}
             target="_blank"

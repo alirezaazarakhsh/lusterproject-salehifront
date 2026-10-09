@@ -54,7 +54,7 @@ import {
   navigateToRoute,
   subscribeToRoute,
 } from '../utils/navigation';
-import { apiFetchWithFallback, INITIAL_MAIN_SETTINGS, INITIAL_FAQ_SETTINGS } from '../utils/localBackendFallback';
+import { apiFetchWithFallback, loadLocalDb, INITIAL_MAIN_SETTINGS, INITIAL_FAQ_SETTINGS } from '../utils/localBackendFallback';
 import {
   ProductStudioModal,
   CustomProduct3DModal,
@@ -304,13 +304,102 @@ export const HomePage: React.FC = () => {
       }
     };
   }, []);
-  const [productsList, setProductsList] = useState<ChandelierProduct[]>(
-    SALEHI_COLLECTION_PRODUCTS
-  );
-  const [categoriesList, setCategoriesList] =
-    useState<CategoryItem[]>(PRODUCT_CATEGORIES);
-  const [projectsList, setProjectsList] = useState<ExecutedProject[]>(() =>
-    ALL_INITIAL_PROJECTS.map((pr, idx) => ({
+  const [productsList, setProductsList] = useState<ChandelierProduct[]>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && Array.isArray(local.products) && local.products.length > 0) {
+        return local.products.map((row: any) => ({
+          id: row.productKey || `db-prod-${row.id}`,
+          name: row.name,
+          subtitle: row.subtitle,
+          priceFormatted: row.priceFormatted,
+          priceNumeric: Number(row.priceNumeric) || 0,
+          productCode: row.productCode,
+          image: row.image,
+          modelType: (row.modelType as any) || 'crystali',
+          defaultFinish: (row.defaultFinish as any) || 'gold-24k',
+          categoryKey: row.categorySlug || 'all',
+          outOfStock: Boolean(row.outOfStock),
+          hasSnappPay: Boolean(row.hasSnappPay),
+          dimensions: row.dimensions || '',
+          branchesCount: row.branchesCount || '',
+          bodyMaterial: row.bodyMaterial || '',
+          warranty: row.warranty || '',
+          description: row.description || '',
+        }));
+      }
+    } catch {}
+    return SALEHI_COLLECTION_PRODUCTS;
+  });
+
+  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && Array.isArray(local.categories) && local.categories.length > 0) {
+        return local.categories.map((catRow: any, idx: number) => {
+          const fallbackCat =
+            PRODUCT_CATEGORIES.find(
+              (c) => c.slug === catRow.slug || c.filterKey === catRow.slug
+            ) ||
+            PRODUCT_CATEGORIES[idx] ||
+            PRODUCT_CATEGORIES[0];
+          return {
+            id: `cat-${catRow.id || idx}`,
+            title: catRow.title || fallbackCat.title,
+            countText:
+              catRow.countLabel || catRow.countText || fallbackCat.countText,
+            filterKey: catRow.slug || fallbackCat.filterKey,
+            slug: catRow.slug || fallbackCat.slug,
+          };
+        });
+      }
+    } catch {}
+    return PRODUCT_CATEGORIES;
+  });
+
+  const [projectsList, setProjectsList] = useState<ExecutedProject[]>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && Array.isArray(local.projects) && local.projects.length > 0) {
+        return local.projects.map((projRow: any, idx: number) => {
+          let parsedGallery: string[] = [];
+          if (Array.isArray(projRow.galleryImages)) {
+            parsedGallery = projRow.galleryImages;
+          } else if (typeof projRow.galleryJson === 'string') {
+            try {
+              parsedGallery = JSON.parse(projRow.galleryJson);
+            } catch {
+              parsedGallery = [];
+            }
+          }
+          let parsedChs: any[] = [];
+          if (Array.isArray(projRow.chandeliersList) && projRow.chandeliersList.length > 0) {
+            parsedChs = projRow.chandeliersList;
+          }
+          return {
+            id: projRow.id ?? (projRow.slug ? `proj-${projRow.slug}` : `proj-${idx + 1}`),
+            slug: projRow.slug,
+            sampleCode: projRow.sampleCode || `نمونه ${idx + 1}`,
+            district: projRow.district || 'فرشته',
+            categoryTab: (projRow.categoryTab as any) || 'gov',
+            title: projRow.title,
+            description: projRow.description,
+            usedChandeliersText: projRow.usedChandeliersText || '',
+            chandeliersList: parsedChs,
+            usedProducts: parsedChs.map((ch: any, cIdx: number) => ({
+              id: `up-${projRow.id}-${cIdx + 1}`,
+              name: ch.name || 'لوستر سفارشی صالحی',
+              price: ch.price || '۱۲,۵۰۰,۰۰۰ تومان',
+              productId: ch.productId || 'prod-custom',
+            })),
+            mainImage: projRow.mainImage,
+            galleryImages: parsedGallery,
+            likesCount: Number(projRow.likesCount) || 0,
+          };
+        });
+      }
+    } catch {}
+    return ALL_INITIAL_PROJECTS.map((pr, idx) => ({
       id: String(idx + 1),
       slug: pr.slug,
       sampleCode: pr.sampleCode,
@@ -336,26 +425,106 @@ export const HomePage: React.FC = () => {
           productId: 'prod-4',
         },
       ],
-    }))
-  );
-  const [storiesList, setStoriesList] = useState<StoryItem[]>(STORY_ITEMS);
-  const [articlesList, setArticlesList] =
-    useState<MagazineArticle[]>(MAGAZINE_ARTICLES);
-  const [footerSettings, setFooterSettings] = useState<FooterSettingsConfig>(
-    INITIAL_FOOTER_SETTINGS
-  );
-  const [contactUsSettings, setContactUsSettings] =
-    useState<ContactUsSettingsConfig>(INITIAL_CONTACT_US_SETTINGS);
-  const [aboutUsSettings, setAboutUsSettings] =
-    useState<AboutUsSettingsConfig>(INITIAL_ABOUT_US_SETTINGS);
-  const [heroSliderSettings, setHeroSliderSettings] =
-    useState<HeroSliderSettingsConfig>(INITIAL_HERO_SLIDER_SETTINGS);
-  const [mainSettings, setMainSettings] = useState<any>(
-    INITIAL_MAIN_SETTINGS
-  );
-  const [faqSettings, setFaqSettings] = useState<any>(
-    INITIAL_FAQ_SETTINGS
-  );
+    }));
+  });
+
+  const [storiesList, setStoriesList] = useState<StoryItem[]>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && Array.isArray(local.stories) && local.stories.length > 0) {
+        return local.stories;
+      }
+    } catch {}
+    return STORY_ITEMS;
+  });
+
+  const [articlesList, setArticlesList] = useState<MagazineArticle[]>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && Array.isArray(local.articles) && local.articles.length > 0) {
+        return local.articles;
+      }
+    } catch {}
+    return MAGAZINE_ARTICLES;
+  });
+
+  const [footerSettings, setFooterSettings] = useState<FooterSettingsConfig>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && local.footerSettings) {
+        return {
+          ...INITIAL_FOOTER_SETTINGS,
+          ...local.footerSettings,
+        };
+      }
+    } catch {}
+    return INITIAL_FOOTER_SETTINGS;
+  });
+
+  const [contactUsSettings, setContactUsSettings] = useState<ContactUsSettingsConfig>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && local.contactUsSettings) {
+        return {
+          ...INITIAL_CONTACT_US_SETTINGS,
+          ...local.contactUsSettings,
+        };
+      }
+    } catch {}
+    return INITIAL_CONTACT_US_SETTINGS;
+  });
+
+  const [aboutUsSettings, setAboutUsSettings] = useState<AboutUsSettingsConfig>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && local.aboutUsSettings) {
+        return {
+          ...INITIAL_ABOUT_US_SETTINGS,
+          ...local.aboutUsSettings,
+        };
+      }
+    } catch {}
+    return INITIAL_ABOUT_US_SETTINGS;
+  });
+
+  const [heroSliderSettings, setHeroSliderSettings] = useState<HeroSliderSettingsConfig>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && local.heroSliderSettings) {
+        return {
+          ...INITIAL_HERO_SLIDER_SETTINGS,
+          ...local.heroSliderSettings,
+        };
+      }
+    } catch {}
+    return INITIAL_HERO_SLIDER_SETTINGS;
+  });
+
+  const [mainSettings, setMainSettings] = useState<any>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && local.mainSettings) {
+        return {
+          ...INITIAL_MAIN_SETTINGS,
+          ...local.mainSettings,
+        };
+      }
+    } catch {}
+    return INITIAL_MAIN_SETTINGS;
+  });
+
+  const [faqSettings, setFaqSettings] = useState<any>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && local.faqSettings) {
+        return {
+          ...INITIAL_FAQ_SETTINGS,
+          ...local.faqSettings,
+        };
+      }
+    } catch {}
+    return INITIAL_FAQ_SETTINGS;
+  });
 
   const fetchLiveCatalogFromDb = async () => {
     try {

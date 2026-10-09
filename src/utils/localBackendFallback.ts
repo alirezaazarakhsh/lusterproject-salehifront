@@ -404,7 +404,7 @@ function createInitialLocalDb(): LocalDbSchema {
   };
 }
 
-function loadLocalDb(): LocalDbSchema {
+export function loadLocalDb(): LocalDbSchema {
   try {
     let raw = localStorage.getItem(LOCAL_DB_STORAGE_KEY);
     if (!raw) {
@@ -569,8 +569,16 @@ export async function syncFromFirestore(): Promise<void> {
           ? cloudData.orders
           : current.orders,
         footerSettings: {
+          ...INITIAL_FOOTER_SETTINGS,
           ...current.footerSettings,
           ...(cloudData.footerSettings || {}),
+          otherLicenses:
+            Array.isArray(cloudData.footerSettings?.otherLicenses) &&
+            cloudData.footerSettings.otherLicenses.length > 0
+              ? cloudData.footerSettings.otherLicenses
+              : (current.footerSettings?.otherLicenses && current.footerSettings.otherLicenses.length > 0)
+                ? current.footerSettings.otherLicenses
+                : INITIAL_FOOTER_SETTINGS.otherLicenses,
         },
         contactUsSettings: {
           ...current.contactUsSettings,
@@ -630,7 +638,7 @@ export async function handleLocalApiRequest(
 ): Promise<any> {
   const method = (options.method || 'GET').toUpperCase();
   const body = parseBody(options);
-  const dbState = (await fetchAllDataFromFirestore()) || loadLocalDb();
+  const dbState: LocalDbSchema = (await fetchAllDataFromFirestore()) || loadLocalDb();
   const cleanUrl = url.split('?')[0];
 
   // ۱. ورود ادمین
@@ -1539,7 +1547,7 @@ export async function apiFetchWithFallback(
       }
 
       // Update local cache with server data if it's the catalog
-      if (url === '/api/public/catalog' && data) {
+      if ((url === '/api/public/catalog' || url.startsWith('/api/public/catalog')) && data) {
         const local = loadLocalDb();
         if (Array.isArray(data.products)) local.products = data.products;
         if (Array.isArray(data.categories)) local.categories = data.categories;

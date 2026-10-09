@@ -297,6 +297,55 @@ async function startServer() {
   if (!process.env.VERCEL || process.env.SQL_HOST) {
     autoInitPostgresSchema(pool)
       .then(() => ensureSeeded())
+      .then(async () => {
+        try {
+          const [
+            categoriesList,
+            productsList,
+            projectsList,
+            storiesList,
+            articlesList,
+            footerSettings,
+            contactUsSettings,
+            aboutUsSettings,
+            heroSliderSettings,
+            mainSettings,
+            smsSettings,
+            faqSettings,
+          ] = await Promise.all([
+            getAllCategories(),
+            getAllProducts(),
+            getAllProjects(),
+            getAllStories(),
+            getAllArticles(),
+            getFooterSettings(),
+            getContactUsSettings(),
+            getAboutUsSettings(),
+            getHeroSliderSettings(),
+            getMainSettings(),
+            getSmsSettings(),
+            getFaqSettings(),
+          ]);
+
+          await saveAllDataToFirestore({
+            categories: categoriesList,
+            products: productsList,
+            projects: projectsList,
+            stories: storiesList,
+            articles: articlesList,
+            footerSettings,
+            contactUsSettings,
+            aboutUsSettings,
+            heroSliderSettings,
+            mainSettings,
+            smsSettings,
+            faqSettings,
+          });
+          console.log('✅ Full database synchronized to Cloud Firestore successfully on startup.');
+        } catch (syncErr) {
+          console.warn('Initial Firestore sync notice:', syncErr);
+        }
+      })
       .catch((err) => {
         console.warn('Postgres auto init notice:', err?.message || err);
       });
