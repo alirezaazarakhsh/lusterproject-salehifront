@@ -12,13 +12,12 @@ import { firestoreDb } from './firebase';
 
 const SETTINGS_COLLECTION = 'salehi_settings';
 const MESSAGES_COLLECTION = 'messages';
+const FIRESTORE_STATE_DOC = 'global_state_v1';
 
 let inMemoryDeletedKeys: Set<string> = new Set();
 
 export async function loadDeletedKeysFromFirestore(): Promise<void> {
   try {
-    // Wait briefly to allow Firestore to initialize
-    await new Promise(resolve => setTimeout(resolve, 1000));
     const remoteTombstones = await getSettingFromFirestore('tombstones_deleted_keys');
     if (Array.isArray(remoteTombstones)) {
       inMemoryDeletedKeys = new Set(remoteTombstones.map((k: any) => String(k).trim()));

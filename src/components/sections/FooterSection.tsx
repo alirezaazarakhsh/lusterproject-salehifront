@@ -130,6 +130,50 @@ interface FooterSectionProps {
 /**
  * بخش فوتر دو رنگ تمام‌عرض (متصل به تنظیمات فوتر در پنل مدیریت)
  */
+interface LicenseItemBoxProps {
+  lic?: FooterLicenseConfig;
+  licIdx: number;
+}
+
+const LicenseItemBox: React.FC<LicenseItemBoxProps> = ({ lic, licIdx }) => {
+  const [imageError, setImageError] = React.useState(false);
+  const hasValidImage =
+    Boolean(lic && lic.imageUrl && lic.imageUrl.trim() !== '' && !imageError);
+
+  if (hasValidImage && lic) {
+    const imgElement = (
+      <img
+        src={lic.imageUrl}
+        alt={lic.title || `مجوز ${licIdx + 2}`}
+        className="w-full h-full object-contain rounded-[6px]"
+        onError={() => setImageError(true)}
+      />
+    );
+
+    return (
+      <div
+        title={lic.title || `مجوز شماره ${licIdx + 2}`}
+        className="aspect-square rounded-[10px] border border-[#e3e0d8] bg-white flex items-center justify-center p-1.5 shadow-2xs hover:border-[#b39561] transition-colors overflow-hidden"
+      >
+        {lic.linkUrl && lic.linkUrl.trim() ? (
+          <a
+            href={lic.linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full h-full flex items-center justify-center"
+          >
+            {imgElement}
+          </a>
+        ) : (
+          imgElement
+        )}
+      </div>
+    );
+  }
+
+  return <CalligraphyTrustBadge index={licIdx + 1} />;
+};
+
 export const FooterSection: React.FC<FooterSectionProps> = ({
   currentRoute,
   onNavigateRoute,
@@ -431,54 +475,14 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
                   <CalligraphyTrustBadge index={0} />
                 )}
 
-                 {/* باکس‌های ۲، ۳ و ۴: سایر مجوزها (پشتیبانی از آپلود تصویر) */}
-                {[0, 1, 2].map((licIdx) => {
-                  const lic = settings.otherLicenses?.[licIdx];
-                  // نمایش تصویر فقط در صورتی که URL معتبر باشد
-                  if (lic && lic.imageUrl && lic.imageUrl.trim() !== '' && lic.imageUrl.startsWith('data:image')) {
-                    return (
-                      <div
-                        key={lic.id || `lic-${licIdx + 2}`}
-                        title={lic.title || `مجوز شماره ${licIdx + 2}`}
-                        className="aspect-square rounded-[10px] border border-[#e3e0d8] bg-white flex items-center justify-center p-1.5 shadow-2xs hover:border-[#b39561] transition-colors overflow-hidden"
-                      >
-                        {lic.linkUrl && lic.linkUrl.trim() ? (
-                          <a
-                            href={lic.linkUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full h-full flex items-center justify-center"
-                          >
-                            <img
-                              src={lic.imageUrl}
-                              alt={lic.title || `مجوز ${licIdx + 2}`}
-                              className="w-full h-full object-contain rounded-[6px]"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          </a>
-                        ) : (
-                          <img
-                            src={lic.imageUrl}
-                            alt={lic.title || `مجوز ${licIdx + 2}`}
-                            className="w-full h-full object-contain rounded-[6px]"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        )}
-                      </div>
-                    );
-                  }
-                  // اگر تصویر نیست یا نامعتبر است، نماد پیش‌فرض را نمایش بده
-                  return (
-                    <CalligraphyTrustBadge
-                      key={`default-lic-${licIdx + 1}`}
-                      index={licIdx + 1}
-                    />
-                  );
-                })}
+                 {/* باکس‌های ۲، ۳ و ۴: سایر مجوزها (پشتیبانی از آپلود تصویر یا نماد پیش‌فرض) */}
+                {[0, 1, 2].map((licIdx) => (
+                  <LicenseItemBox
+                    key={settings.otherLicenses?.[licIdx]?.id || `lic-${licIdx + 2}`}
+                    lic={settings.otherLicenses?.[licIdx]}
+                    licIdx={licIdx}
+                  />
+                ))}
               </div>
 
               {/* بخش شبکه‌های اجتماعی: ردیف دوطرفه در موبایل و ساده در دسکتاپ */}

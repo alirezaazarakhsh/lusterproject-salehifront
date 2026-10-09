@@ -66,6 +66,7 @@ import {
   ensureSeeded,
 } from './src/db/repository';
 import { autoInitPostgresSchema } from './src/db/initSchema';
+import { saveAllDataToFirestore } from './src/lib/firestoreSync';
 
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
@@ -477,8 +478,58 @@ async function startServer() {
       const result = originalJson.call(this, body);
 
       if (isSuccess && (isAdminMutation || isPublicLikeMutation || isPublicContactMutation)) {
-        setTimeout(() => {
+        setTimeout(async () => {
           broadcastSseEvent({ type: 'catalog-updated', path: req.path, method: req.method, timestamp: Date.now() });
+
+          if (isAdminMutation) {
+            try {
+              const [
+                categoriesList,
+                productsList,
+                projectsList,
+                storiesList,
+                articlesList,
+                footerSettings,
+                contactUsSettings,
+                aboutUsSettings,
+                heroSliderSettings,
+                mainSettings,
+                smsSettings,
+                faqSettings,
+              ] = await Promise.all([
+                getAllCategories(),
+                getAllProducts(),
+                getAllProjects(),
+                getAllStories(),
+                getAllArticles(),
+                getFooterSettings(),
+                getContactUsSettings(),
+                getAboutUsSettings(),
+                getHeroSliderSettings(),
+                getMainSettings(),
+                getSmsSettings(),
+                getFaqSettings(),
+              ]);
+
+              await saveAllDataToFirestore({
+                categories: categoriesList,
+                products: productsList,
+                projects: projectsList,
+                stories: storiesList,
+                articles: articlesList,
+                footerSettings,
+                contactUsSettings,
+                aboutUsSettings,
+                heroSliderSettings,
+                mainSettings,
+                smsSettings,
+                faqSettings,
+              });
+              console.log('✅ Real-time Firestore sync completed after admin mutation:', req.path);
+            } catch (syncErr) {
+              console.warn('Background Firestore sync notice:', syncErr);
+            }
+          }
         }, 100);
       }
       return result;
