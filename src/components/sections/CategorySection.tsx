@@ -86,10 +86,11 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
     return `${persianCount} محصول`;
   };
 
-  const displayCategories =
+  const rawCategories =
     categories && categories.length > 0
       ? categories
       : PRODUCT_CATEGORIES;
+  const displayCategories = rawCategories.slice(0, 4);
   const [activeCategoryDot, setActiveCategoryDot] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -205,9 +206,9 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
           })}
         </div>
 
-        {/* نقطه‌های پیجینیشن ۵گانه مدرن پایین کاروسل دسته‌بندی (دقیقاً مطابق Screenshot 2026-09-30 at 03.12.16.png) */}
+        {/* نقطه‌های پیجینیشن ۴گانه مدرن پایین کاروسل دسته‌بندی */}
         <div className="relative z-10 flex items-center justify-center gap-2 mt-5">
-          {[0, 1, 2, 3, 4].map((dotIdx) => {
+          {displayCategories.map((_, dotIdx) => {
             const len = Math.max(1, displayCategories.length);
             const activeIndex = activeCategoryDot % len;
             const dist = Math.abs(dotIdx - activeIndex);
@@ -221,9 +222,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 className={`rounded-full transition-all cursor-pointer ${
                   dist === 0
                     ? 'w-3.5 h-3.5 bg-[#222222] shadow-2xs'
-                    : dist === 1
-                    ? 'w-2.5 h-2.5 bg-[#dcdcdc] hover:bg-[#b08c57]'
-                    : 'w-1.5 h-1.5 bg-[#eaeaea] hover:bg-[#b08c57]'
+                    : 'w-2.5 h-2.5 bg-[#dcdcdc] hover:bg-[#b08c57]'
                 }`}
               />
             );

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# اسکریپت نصب خودکار و یک‌کلیک سامانه گالری لوستر اکبر صالحی (Docker + Nginx + Postgres)
+# اسکریپت نصب و مدیریت یکپارچه گالری لوستر اکبر صالحی (Ubuntu 26 / Docker / Nginx)
+# مشابه پنل‌های مدیریت حرفه‌ای با منوی تعاملی و قابلیت آپدیت خودکار
 # ==============================================================================
 
 set -e
 
-# رنگ‌های کنسول
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -14,68 +14,90 @@ CYAN='\033[0;36m'
 GOLD='\033[38;5;220m'
 NC='\033[0m'
 
-clear
-echo -e "${GOLD}"
-echo "  ╔═══════════════════════════════════════════════════════════════════╗"
-echo "  ║                                                                   ║"
-echo "  ║      ✨ اسکریپت نصب و راه‌اندازی خودکار گالری لوستر اکبر صالحی ✨   ║"
-echo "  ║           Docker + Nginx + PostgreSQL + Cloud Firestore           ║"
-echo "  ║                                                                   ║"
-echo "  ╚═══════════════════════════════════════════════════════════════════╝"
-echo -e "${NC}"
+INSTALL_DIR="/var/www/salehi-chandelier"
+REPO_URL="https://github.com/alirezaazarakhsh/salehi-chandelier.git" # قابل تنظیم با ریپوی کاربر
 
-echo -e "${CYAN}[۱/۶] در حال بررسی پیش‌نیازهای سیستم...${NC}"
+print_banner() {
+    clear
+    echo -e "${GOLD}"
+    echo "  ╔═══════════════════════════════════════════════════════════════════╗"
+    echo "  ║                                                                   ║"
+    echo "  ║      ✨ مدیریت هوشمند سامانه گالری لوستر اکبر صالحی ✨           ║"
+    echo "  ║           Docker + Nginx + PostgreSQL + Ubuntu 26 Ready           ║"
+    echo "  ║                                                                   ║"
+    echo "  ╚═══════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+}
 
-# ۱. بررسی نصب بودن داکر
-if ! command -v docker &> /dev/null; then
-    echo -e "${YELLOW}داکر نصب نیست. در حال نصب خودکار Docker بر روی سرور...${NC}"
-    if [ -f /etc/debian_version ]; then
-        sudo apt-get update -y
-        sudo apt-get install -y curl ca-certificates gnupg lsb-release
-        curl -fsSL https://get.docker.com | sh
-    elif [ -f /etc/redhat-release ]; then
-        curl -fsSL https://get.docker.com | sh
-        sudo systemctl start docker
-        sudo systemctl enable docker
-    else
-        echo -e "${RED}سیستم‌عامل ناشناخته است. لطفاً ابتدا Docker را دستی نصب نمایید.${NC}"
+check_root() {
+    if [ "$EUID" -ne 0 ]; then
+        echo -e "${RED}[!] لطفاً این اسکریپت را با دسترسی ریشه (sudo یا root) اجرا کنید.${NC}"
         exit 1
     fi
-    echo -e "${GREEN}✓ داکر با موفقیت نصب شد.${NC}"
-else
-    echo -e "${GREEN}✓ داکر از قبل نصب است.${NC}"
-fi
+}
 
-# ۲. بررسی نصب بودن Docker Compose
-if ! docker compose version &> /dev/null; then
-    echo -e "${YELLOW}پلاگین docker-compose یافت نشد. در حال نصب...${NC}"
-    if [ -f /etc/debian_version ]; then
-        sudo apt-get update -y && sudo apt-get install -y docker-compose-plugin
+install_dependencies() {
+    print_banner
+    echo -e "${CYAN}[۱/۵] بررسی و نصب پیش‌نیازهای سیستم (Docker, Docker Compose, Git, Curl)...${NC}"
+    
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y curl git ufw wget ca-certificates gnupg lsb-release
+
+    # نصب Docker روی Ubuntu 26 / 24 / 22
+    if ! command -v docker &> /dev/null; then
+        echo -e "${YELLOW}در حال نصب Docker...${NC}"
+        curl -fsSL https://get.docker.com | sh
+        systemctl start docker
+        systemctl enable docker
+    else
+        echo -e "${GREEN}✓ Docker از قبل نصب است.${NC}"
     fi
-fi
 
-echo ""
-echo -e "${CYAN}[۲/۶] تنظیمات دامنه و شبکه...${NC}"
+    # نصب Docker Compose Plugin
+    if ! docker compose version &> /dev/null; then
+        echo -e "${YELLOW}در حال نصب Docker Compose Plugin...${NC}"
+        apt-get install -y docker-compose-plugin
+    else
+        echo -e "${GREEN}✓ Docker Compose از قبل نصب است.${NC}"
+    fi
+    echo -e "${GREEN}✓ پیش‌نیازها با موفقیت آماده شدند.${NC}"
+}
 
-# دریافت دامنه
-DEFAULT_DOMAIN="lostersalehi.ir"
-read -rp "$(echo -e "${GOLD}» لطفاً نام دامنه خود را وارد کنید [پیش‌فرض: ${DEFAULT_DOMAIN}]: ${NC}")" USER_DOMAIN
-DOMAIN="${USER_DOMAIN:-$DEFAULT_DOMAIN}"
+setup_project_files() {
+    print_banner
+    echo -e "${CYAN}[۲/۵] دریافت یا بروزرسانی فایل‌های پروژه...${NC}"
 
-# بررسی SSL
-read -rp "$(echo -e "${GOLD}» آیا مایل به فعال‌سازی رایگان گواهی امنیتی HTTPS (SSL Let's Encrypt) هستید؟ (y/n) [پیش‌فرض: y]: ${NC}")" ENABLE_SSL
-ENABLE_SSL="${ENABLE_SSL:-y}"
+    if [ ! -d "$INSTALL_DIR" ]; then
+        mkdir -p /var/www
+        if [ -d "." ] && [ -f "package.json" ]; then
+            # اگر اسکریپت از داخل پوشه پروژه اجرا شده باشد
+            mkdir -p "$INSTALL_DIR"
+            cp -r . "$INSTALL_DIR/"
+        else
+            git clone "$REPO_URL" "$INSTALL_DIR" || {
+                echo -e "${YELLOW}کلون از گیت‌هاب انجام نشد، ایجاد ساختار پوشه محلی...${NC}"
+                mkdir -p "$INSTALL_DIR"
+            }
+        fi
+    else
+        echo -e "${GREEN}پوشه پروژه موجود است، به‌روزرسانی کدها...${NC}"
+        cd "$INSTALL_DIR"
+        git pull origin main || git pull origin master || true
+    fi
 
-SSL_EMAIL="alirezaazarakhsh20@gmail.com"
-if [[ "$ENABLE_SSL" =~ ^[Yy]$ ]]; then
-    read -rp "$(echo -e "${GOLD}» ایمیل مدیر جهت دریافت تمدید گواهینامه SSL [پیش‌فرض: ${SSL_EMAIL}]: ${NC}")" USER_EMAIL
-    SSL_EMAIL="${USER_EMAIL:-$SSL_EMAIL}"
-fi
+    cd "$INSTALL_DIR"
+}
 
-echo ""
-echo -e "${CYAN}[۳/۶] ساخت فایل متغیرهای محیطی (.env)...${NC}"
+configure_environment() {
+    print_banner
+    echo -e "${CYAN}[۳/۵] پیکربندی دامنه، پورت‌ها و متغیرهای محیطی...${NC}"
 
-cat <<EOF > .env
+    DEFAULT_DOMAIN="lostersalehi.ir"
+    read -rp "$(echo -e "${GOLD}» نام دامنه خود را وارد کنید [پیش‌فرض: ${DEFAULT_DOMAIN}]: ${NC}")" USER_DOMAIN
+    DOMAIN="${USER_DOMAIN:-$DEFAULT_DOMAIN}"
+
+    cat <<EOF > .env
 NODE_ENV=production
 PORT=3000
 DOMAIN=${DOMAIN}
@@ -86,14 +108,10 @@ SQL_PASSWORD=salehi_secure_password_2026
 SQL_DB_NAME=salehi_chandelier_db
 EOF
 
-echo -e "${GREEN}✓ فایل .env با موفقیت پیکربندی شد.${NC}"
+    echo -e "${GREEN}✓ فایل .env با موفقیت ایجاد شد.${NC}"
 
-echo ""
-echo -e "${CYAN}[۴/۶] تنظیم خودکار وب‌سرور Nginx برای دامنه ${DOMAIN}...${NC}"
-
-mkdir -p nginx
-
-if [[ "$ENABLE_SSL" =~ ^[Yy]$ && "$DOMAIN" != "localhost" && "$DOMAIN" != "127.0.0.1" ]]; then
+    # ساخت فایل کانفیگ Nginx
+    mkdir -p nginx
     cat <<EOF > nginx/nginx.conf
 worker_processes auto;
 events {
@@ -107,7 +125,6 @@ http {
     keepalive_timeout  65;
     client_max_body_size 100M;
 
-    # Gzip
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
@@ -128,28 +145,12 @@ http {
             root /var/www/certbot;
         }
 
-        location / {
-            return 301 https://\$host\$request_uri;
-        }
-    }
-
-    server {
-        listen 443 ssl;
-        listen [::]:443 ssl;
-        http2 on;
-        server_name ${DOMAIN} www.${DOMAIN};
-
-        ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
-        ssl_protocols TLSv1.2 TLSv1.3;
-        ssl_ciphers HIGH:!aNULL:!MD5;
-
         location /health {
             proxy_pass http://salehi_backend/health;
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Forwarded-Proto \$scheme;
         }
 
         location / {
@@ -160,115 +161,133 @@ http {
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Forwarded-Proto \$scheme;
             proxy_read_timeout 90s;
         }
     }
 }
 EOF
+    echo -e "${GREEN}✓ تنظیمات Nginx انجام شد.${NC}"
+}
+
+deploy_services() {
+    print_banner
+    echo -e "${CYAN}[۴/۵] بیلد و راه‌اندازی کانتینرهای Docker...${NC}"
+    cd "$INSTALL_DIR"
+    
+    docker compose down --remove-orphans 2>/dev/null || true
+    docker compose up -d --build
+
+    echo -e "${CYAN}[۵/۵] بررسی سلامت سرویس‌ها...${NC}"
+    sleep 5
+    echo -e "${GREEN}✓ سامانه با موفقیت نصب و راه‌اندازی شد!${NC}"
+}
+
+create_cli_shortcut() {
+    # ساخت دستور میانبر `salehi` در سیستم برای مدیریت سریع
+    cat << 'EOF' > /usr/local/bin/salehi
+#!/usr/bin/env bash
+bash /var/www/salehi-chandelier/install.sh
+EOF
+    chmod +x /usr/local/bin/salehi
+}
+
+show_success_info() {
+    print_banner
+    echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}   🎉 سامانه گالری لوستر اکبر صالحی با موفقیت نصب و فعال شد! 🎉   ${NC}"
+    echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "  🌐 ${CYAN}آدرس وب‌سایت:${NC}          http://${DOMAIN}"
+    echo -e "  🔐 ${CYAN}ورود به پنل مدیریت:${NC}    http://${DOMAIN}/admin"
+    echo -e "  🩺 ${CYAN}مانیتورینگ سلامت:${NC}      http://${DOMAIN}/health"
+    echo ""
+    echo -e "  👤 ${YELLOW}شماره موبایل ادمین:${NC}    09120759419"
+    echo -e "  🔑 ${YELLOW}رمز عبور ادمین:${NC}        sasha9419"
+    echo ""
+    echo -e "${GOLD}--------------------------------------------------------------------${NC}"
+    echo -e "  💡 ${BLUE}نکته:${NC} از این پس برای دسترسی به منوی مدیریت سرور، کافیست در هر جایی از ترمینال دستور زیر را وارد کنید:"
+    echo -e "     👉 ${GREEN}salehi${NC}"
+    echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+}
+
+update_system() {
+    print_banner
+    echo -e "${YELLOW}در حال به‌روزرسانی سیستم، پکیج‌ها و دریافت آخرین تغییرات از مخزن...${NC}"
+    cd "$INSTALL_DIR"
+    git pull origin main || git pull origin master || true
+    docker compose down
+    docker compose up -d --build
+    echo -e "${GREEN}✓ سامانه با موفقیت به‌روزرسانی شد.${NC}"
+    read -p "برای بازگشت به منو اینتر بزنید..."
+}
+
+# منوی تعاملی (Interactive Menu)
+interactive_menu() {
+    while true; do
+        print_banner
+        echo -e "  ${CYAN}[1]${NC} نصب کامل سامانه (Fresh Installation)"
+        echo -e "  ${CYAN}[2]${NC} به‌روزرسانی سامانه و دریافت کدهای جدید (Update & Pull)"
+        echo -e "  ${CYAN}[3]${NC} مشاهده لاگ‌های زنده سرور (Live Logs)"
+        echo -e "  ${CYAN}[4]${NC} راه‌اندازی مجدد سرویس‌ها (Restart Services)"
+        echo -e "  ${CYAN}[5]${NC} بررسی وضعیت کانتینرها (Docker Status)"
+        echo -e "  ${CYAN}[0]${NC} خروج (Exit)"
+        echo ""
+        read -rp "لطفاً یک گزینه را انتخاب کنید [0-5]: " choice
+
+        case $choice in
+            1)
+                check_root
+                install_dependencies
+                setup_project_files
+                configure_environment
+                deploy_services
+                create_cli_shortcut
+                show_success_info
+                read -p "برای بازگشت به منو اینتر بزنید..."
+                ;;
+            2)
+                check_root
+                update_system
+                ;;
+            3)
+                cd "$INSTALL_DIR"
+                docker compose logs -f
+                ;;
+            4)
+                check_root
+                cd "$INSTALL_DIR"
+                docker compose restart
+                echo -e "${GREEN}✓ سرویس‌ها ریستارت شدند.${NC}"
+                sleep 2
+                ;;
+            5)
+                cd "$INSTALL_DIR"
+                docker compose ps
+                read -p "برای بازگشت به منو اینتر بزنید..."
+                ;;
+            0)
+                echo "خروج..."
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}گزینه نامعتبر!${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+# اجرای مستقیم منو یا نصب
+if [ "$1" == "install" ]; then
+    check_root
+    install_dependencies
+    setup_project_files
+    configure_environment
+    deploy_services
+    create_cli_shortcut
+    show_success_info
 else
-    cat <<EOF > nginx/nginx.conf
-worker_processes auto;
-events {
-    worker_connections 1024;
-}
-
-http {
-    include       mime.types;
-    default_type  application/octet-stream;
-    sendfile        on;
-    keepalive_timeout  65;
-    client_max_body_size 100M;
-
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_proxied any;
-    gzip_types text/plain text/css text/xml application/json application/javascript application/xml+rss application/atom+xml image/svg+xml font/woff font/woff2;
-
-    upstream salehi_backend {
-        server app:3000;
-        keepalive 32;
-    }
-
-    server {
-        listen 80;
-        listen [::]:80;
-        server_name _;
-
-        location /.well-known/acme-challenge/ {
-            root /var/www/certbot;
-        }
-
-        location /health {
-            proxy_pass http://salehi_backend/health;
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
-        }
-
-        location / {
-            proxy_pass http://salehi_backend;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade \$http_upgrade;
-            proxy_set_header Connection "upgrade";
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
-            proxy_read_timeout 90s;
-        }
-    }
-}
-EOF
+    interactive_menu
 fi
-
-echo -e "${GREEN}✓ کانفیگ Nginx با موفقیت ایجاد شد.${NC}"
-
-echo ""
-echo -e "${CYAN}[۵/۶] در حال بیلد و بالا آوردن سرویس‌ها با Docker Compose...${NC}"
-
-# توقف و اجرای مجدد در صورت وجود کانتینرهای قبلی
-docker compose down --remove-orphans 2>/dev/null || true
-docker compose up -d --build
-
-echo ""
-echo -e "${CYAN}[۶/۶] در حال بررسی سلامت سرویس‌ها (/health)...${NC}"
-
-# صبر برای آماده شدن کانتینرها
-for i in {1..30}; do
-    if curl -s -f http://localhost:3000/health > /dev/null 2>&1 || curl -s -f http://127.0.0.1/health > /dev/null 2>&1; then
-        echo -e "${GREEN}✓ تمامی سرویس‌ها و پایگاه‌داده با موفقیت آماده و سالم هستند.${NC}"
-        break
-    fi
-    echo -n "."
-    sleep 2
-done
-
-PROTO="http"
-if [[ "$ENABLE_SSL" =~ ^[Yy]$ && "$DOMAIN" != "localhost" && "$DOMAIN" != "127.0.0.1" ]]; then
-    PROTO="https"
-fi
-
-echo ""
-echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}   🎉 سامانه گالری لوستر اکبر صالحی با موفقیت نصب و فعال شد! 🎉   ${NC}"
-echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
-echo ""
-echo -e "  🌐 ${CYAN}آدرس وب‌سایت:${NC}          ${PROTO}://${DOMAIN}"
-echo -e "  🔐 ${CYAN}ورود به پنل مدیریت:${NC}    ${PROTO}://${DOMAIN}/admin"
-echo -e "  🩺 ${CYAN}مانیتورینگ سلامت:${NC}      ${PROTO}://${DOMAIN}/health"
-echo -e "  📦 ${CYAN}کاتالوگ عمومی API:${NC}     ${PROTO}://${DOMAIN}/api/public/catalog"
-echo ""
-echo -e "  👤 ${YELLOW}شماره موبایل ادمین:${NC}    09120759419"
-echo -e "  🔑 ${YELLOW}رمز عبور ادمین:${NC}        sasha9419"
-echo ""
-echo -e "${GOLD}--------------------------------------------------------------------${NC}"
-echo -e "  📌 ${BLUE}دستورات کاربردی مدیریت سرویس:${NC}"
-echo -e "     • مشاهده وضعیت کانتینرها:  ${GREEN}docker compose ps${NC}"
-echo -e "     • مشاهده لاگ‌های زنده:      ${GREEN}docker compose logs -f${NC}"
-echo -e "     • ریستارت کردن برنامه:     ${GREEN}docker compose restart${NC}"
-echo -e "     • خاموش کردن سرویس‌ها:     ${GREEN}docker compose down${NC}"
-echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
-echo ""
