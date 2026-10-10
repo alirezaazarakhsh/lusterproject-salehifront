@@ -146,9 +146,32 @@ export async function autoInitPostgresSchema(pool: Pool): Promise<void> {
         CREATE TABLE IF NOT EXISTS site_settings (
           id SERIAL PRIMARY KEY,
           setting_key TEXT NOT NULL UNIQUE,
-          setting_value TEXT NOT NULL,
+          setting_value_json TEXT NOT NULL DEFAULT '{}',
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        -- اطمینان از تطابق ستون‌های نسخه قبلی دیتابیس (Migration هوشمند)
+        DO $$
+        BEGIN
+          -- در صورت وجود setting_value تغییر نام به setting_value_json
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name='site_settings' AND column_name='setting_value'
+          ) AND NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name='site_settings' AND column_name='setting_value_json'
+          ) THEN
+            ALTER TABLE site_settings RENAME COLUMN setting_value TO setting_value_json;
+          END IF;
+
+          -- در صورت عدم وجود ستون setting_value_json اضافه کردن آن
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name='site_settings' AND column_name='setting_value_json'
+          ) THEN
+            ALTER TABLE site_settings ADD COLUMN setting_value_json TEXT NOT NULL DEFAULT '{}';
+          END IF;
+        END $$;
       `);
       console.log('✅ PostgreSQL database schema verified & ready.');
     } finally {
