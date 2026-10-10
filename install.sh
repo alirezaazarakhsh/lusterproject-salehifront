@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# اسکریپت نصب و مدیریت یکپارچه گالری لوستر اکبر صالحی (Ubuntu 26 / Docker / Nginx)
-# مشابه پنل‌های مدیریت حرفه‌ای با منوی تعاملی و قابلیت آپدیت خودکار
+# Salehi Luxury Chandelier Platform - Management & Installation Script
+# Built for Ubuntu 26 / 24 / 22 / Debian with Docker & Nginx
 # ==============================================================================
 
 set -e
@@ -15,73 +15,102 @@ GOLD='\033[38;5;220m'
 NC='\033[0m'
 
 INSTALL_DIR="/var/www/salehi-chandelier"
-REPO_URL="https://github.com/alirezaazarakhsh/salehi-chandelier.git" # قابل تنظیم با ریپوی کاربر
+REPO_URL="https://github.com/alirezaazarakhsh/lusterproject-salehifront.git"
+
+get_input() {
+    local prompt="$1"
+    local default_val="$2"
+    local var_name="$3"
+    local input=""
+
+    if [ -t 0 ]; then
+        read -rp "$(echo -e "$prompt")" input
+    elif [ -e /dev/tty ]; then
+        read -rp "$(echo -e "$prompt")" input < /dev/tty
+    else
+        input=""
+    fi
+
+    if [ -z "$input" ]; then
+        eval "$var_name=\"$default_val\""
+    else
+        eval "$var_name=\"$input\""
+    fi
+}
+
+pause_prompt() {
+    echo ""
+    if [ -t 0 ]; then
+        read -rp "Press [Enter] to return to the menu..." _dummy
+    elif [ -e /dev/tty ]; then
+        read -rp "Press [Enter] to return to the menu..." _dummy < /dev/tty
+    else
+        sleep 2
+    fi
+}
 
 print_banner() {
     clear
     echo -e "${GOLD}"
-    echo "  ╔═══════════════════════════════════════════════════════════════════╗"
-    echo "  ║                                                                   ║"
-    echo "  ║      ✨ مدیریت هوشمند سامانه گالری لوستر اکبر صالحی ✨           ║"
-    echo "  ║           Docker + Nginx + PostgreSQL + Ubuntu 26 Ready           ║"
-    echo "  ║                                                                   ║"
-    echo "  ╚═══════════════════════════════════════════════════════════════════╝"
+    echo "  +-------------------------------------------------------------+"
+    echo "  |                                                             |"
+    echo "  |       Salehi Luxury Chandelier Server Management Panel      |"
+    echo "  |          Docker + Nginx + PostgreSQL + Ubuntu Ready         |"
+    echo "  |                                                             |"
+    echo "  +-------------------------------------------------------------+"
     echo -e "${NC}"
 }
 
 check_root() {
     if [ "$EUID" -ne 0 ]; then
-        echo -e "${RED}[!] لطفاً این اسکریپت را با دسترسی ریشه (sudo یا root) اجرا کنید.${NC}"
+        echo -e "${RED}[Error] Please run this script as root (sudo bash install.sh)${NC}"
         exit 1
     fi
 }
 
 install_dependencies() {
     print_banner
-    echo -e "${CYAN}[۱/۵] بررسی و نصب پیش‌نیازهای سیستم (Docker, Docker Compose, Git, Curl)...${NC}"
+    echo -e "${CYAN}[1/5] Checking and installing system packages (Docker, Compose, Git)...${NC}"
     
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y
     apt-get install -y curl git ufw wget ca-certificates gnupg lsb-release
 
-    # نصب Docker روی Ubuntu 26 / 24 / 22
     if ! command -v docker &> /dev/null; then
-        echo -e "${YELLOW}در حال نصب Docker...${NC}"
+        echo -e "${YELLOW}Installing Docker Engine...${NC}"
         curl -fsSL https://get.docker.com | sh
         systemctl start docker
         systemctl enable docker
     else
-        echo -e "${GREEN}✓ Docker از قبل نصب است.${NC}"
+        echo -e "${GREEN}[OK] Docker is already installed.${NC}"
     fi
 
-    # نصب Docker Compose Plugin
     if ! docker compose version &> /dev/null; then
-        echo -e "${YELLOW}در حال نصب Docker Compose Plugin...${NC}"
+        echo -e "${YELLOW}Installing Docker Compose plugin...${NC}"
         apt-get install -y docker-compose-plugin
     else
-        echo -e "${GREEN}✓ Docker Compose از قبل نصب است.${NC}"
+        echo -e "${GREEN}[OK] Docker Compose is already installed.${NC}"
     fi
-    echo -e "${GREEN}✓ پیش‌نیازها با موفقیت آماده شدند.${NC}"
+    echo -e "${GREEN}[OK] Dependencies installed successfully.${NC}"
 }
 
 setup_project_files() {
     print_banner
-    echo -e "${CYAN}[۲/۵] دریافت یا بروزرسانی فایل‌های پروژه...${NC}"
+    echo -e "${CYAN}[2/5] Setting up project directory and pulling latest code...${NC}"
 
-    if [ ! -d "$INSTALL_DIR" ]; then
-        mkdir -p /var/www
+    mkdir -p /var/www
+    if [ ! -d "$INSTALL_DIR/.git" ]; then
         if [ -d "." ] && [ -f "package.json" ]; then
-            # اگر اسکریپت از داخل پوشه پروژه اجرا شده باشد
+            echo -e "${YELLOW}Copying current files into $INSTALL_DIR...${NC}"
             mkdir -p "$INSTALL_DIR"
-            cp -r . "$INSTALL_DIR/"
+            cp -r . "$INSTALL_DIR/" 2>/dev/null || true
         else
-            git clone "$REPO_URL" "$INSTALL_DIR" || {
-                echo -e "${YELLOW}کلون از گیت‌هاب انجام نشد، ایجاد ساختار پوشه محلی...${NC}"
-                mkdir -p "$INSTALL_DIR"
-            }
+            echo -e "${YELLOW}Cloning repository from GitHub...${NC}"
+            rm -rf "$INSTALL_DIR"
+            git clone "$REPO_URL" "$INSTALL_DIR"
         fi
     else
-        echo -e "${GREEN}پوشه پروژه موجود است، به‌روزرسانی کدها...${NC}"
+        echo -e "${GREEN}[OK] Project repository exists. Pulling latest commits...${NC}"
         cd "$INSTALL_DIR"
         git pull origin main || git pull origin master || true
     fi
@@ -91,11 +120,10 @@ setup_project_files() {
 
 configure_environment() {
     print_banner
-    echo -e "${CYAN}[۳/۵] پیکربندی دامنه، پورت‌ها و متغیرهای محیطی...${NC}"
+    echo -e "${CYAN}[3/5] Configuring domain, environment variables and Nginx...${NC}"
 
     DEFAULT_DOMAIN="lostersalehi.ir"
-    read -rp "$(echo -e "${GOLD}» نام دامنه خود را وارد کنید [پیش‌فرض: ${DEFAULT_DOMAIN}]: ${NC}")" USER_DOMAIN
-    DOMAIN="${USER_DOMAIN:-$DEFAULT_DOMAIN}"
+    get_input "${GOLD}>> Enter your domain name [default: ${DEFAULT_DOMAIN}]: ${NC}" "$DEFAULT_DOMAIN" DOMAIN
 
     cat <<EOF > .env
 NODE_ENV=production
@@ -108,9 +136,8 @@ SQL_PASSWORD=salehi_secure_password_2026
 SQL_DB_NAME=salehi_chandelier_db
 EOF
 
-    echo -e "${GREEN}✓ فایل .env با موفقیت ایجاد شد.${NC}"
+    echo -e "${GREEN}[OK] .env configuration generated.${NC}"
 
-    # ساخت فایل کانفیگ Nginx
     mkdir -p nginx
     cat <<EOF > nginx/nginx.conf
 worker_processes auto;
@@ -167,76 +194,77 @@ http {
     }
 }
 EOF
-    echo -e "${GREEN}✓ تنظیمات Nginx انجام شد.${NC}"
+    echo -e "${GREEN}[OK] Nginx reverse-proxy configured.${NC}"
 }
 
 deploy_services() {
     print_banner
-    echo -e "${CYAN}[۴/۵] بیلد و راه‌اندازی کانتینرهای Docker...${NC}"
+    echo -e "${CYAN}[4/5] Building and starting Docker containers...${NC}"
     cd "$INSTALL_DIR"
     
     docker compose down --remove-orphans 2>/dev/null || true
     docker compose up -d --build
 
-    echo -e "${CYAN}[۵/۵] بررسی سلامت سرویس‌ها...${NC}"
-    sleep 5
-    echo -e "${GREEN}✓ سامانه با موفقیت نصب و راه‌اندازی شد!${NC}"
+    echo -e "${CYAN}[5/5] Checking service health...${NC}"
+    sleep 6
+    echo -e "${GREEN}[OK] Platform deployed and running successfully!${NC}"
 }
 
 create_cli_shortcut() {
-    # ساخت دستور میانبر `salehi` در سیستم برای مدیریت سریع
     cat << 'EOF' > /usr/local/bin/salehi
 #!/usr/bin/env bash
-bash /var/www/salehi-chandelier/install.sh
+cd /var/www/salehi-chandelier
+bash install.sh
 EOF
     chmod +x /usr/local/bin/salehi
 }
 
 show_success_info() {
     print_banner
-    echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
-    echo -e "${GREEN}   🎉 سامانه گالری لوستر اکبر صالحی با موفقیت نصب و فعال شد! 🎉   ${NC}"
-    echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GOLD}===================================================================${NC}"
+    echo -e "${GREEN}   Salehi Luxury Chandelier Platform Successfully Installed!   ${NC}"
+    echo -e "${GOLD}===================================================================${NC}"
     echo ""
-    echo -e "  🌐 ${CYAN}آدرس وب‌سایت:${NC}          http://${DOMAIN}"
-    echo -e "  🔐 ${CYAN}ورود به پنل مدیریت:${NC}    http://${DOMAIN}/admin"
-    echo -e "  🩺 ${CYAN}مانیتورینگ سلامت:${NC}      http://${DOMAIN}/health"
+    echo -e "  [Website URL]      http://${DOMAIN}"
+    echo -e "  [Admin Panel]      http://${DOMAIN}/admin"
+    echo -e "  [Health Check]     http://${DOMAIN}/health"
     echo ""
-    echo -e "  👤 ${YELLOW}شماره موبایل ادمین:${NC}    09120759419"
-    echo -e "  🔑 ${YELLOW}رمز عبور ادمین:${NC}        sasha9419"
+    echo -e "  [Admin Phone]      09120759419"
+    echo -e "  [Admin Password]   sasha9419"
     echo ""
-    echo -e "${GOLD}--------------------------------------------------------------------${NC}"
-    echo -e "  💡 ${BLUE}نکته:${NC} از این پس برای دسترسی به منوی مدیریت سرور، کافیست در هر جایی از ترمینال دستور زیر را وارد کنید:"
-    echo -e "     👉 ${GREEN}salehi${NC}"
-    echo -e "${GOLD}════════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GOLD}-------------------------------------------------------------------${NC}"
+    echo -e "  [Tip] You can manage this server anytime by typing:"
+    echo -e "        ${GREEN}salehi${NC}"
+    echo -e "${GOLD}===================================================================${NC}"
     echo ""
 }
 
 update_system() {
     print_banner
-    echo -e "${YELLOW}در حال به‌روزرسانی سیستم، پکیج‌ها و دریافت آخرین تغییرات از مخزن...${NC}"
+    echo -e "${YELLOW}Pulling latest updates from GitHub and rebuilding containers...${NC}"
     cd "$INSTALL_DIR"
     git pull origin main || git pull origin master || true
     docker compose down
     docker compose up -d --build
-    echo -e "${GREEN}✓ سامانه با موفقیت به‌روزرسانی شد.${NC}"
-    read -p "برای بازگشت به منو اینتر بزنید..."
+    echo -e "${GREEN}[OK] System successfully updated to the latest version!${NC}"
+    pause_prompt
 }
 
-# منوی تعاملی (Interactive Menu)
 interactive_menu() {
     while true; do
         print_banner
-        echo -e "  ${CYAN}[1]${NC} نصب کامل سامانه (Fresh Installation)"
-        echo -e "  ${CYAN}[2]${NC} به‌روزرسانی سامانه و دریافت کدهای جدید (Update & Pull)"
-        echo -e "  ${CYAN}[3]${NC} مشاهده لاگ‌های زنده سرور (Live Logs)"
-        echo -e "  ${CYAN}[4]${NC} راه‌اندازی مجدد سرویس‌ها (Restart Services)"
-        echo -e "  ${CYAN}[5]${NC} بررسی وضعیت کانتینرها (Docker Status)"
-        echo -e "  ${CYAN}[0]${NC} خروج (Exit)"
+        echo -e "  ${CYAN}[1]${NC} Fresh / Full Installation"
+        echo -e "  ${CYAN}[2]${NC} Update & Pull Latest Code from GitHub"
+        echo -e "  ${CYAN}[3]${NC} View Live Server Logs"
+        echo -e "  ${CYAN}[4]${NC} Restart Services"
+        echo -e "  ${CYAN}[5]${NC} View Docker Services Status"
+        echo -e "  ${CYAN}[0]${NC} Exit"
         echo ""
-        read -rp "لطفاً یک گزینه را انتخاب کنید [0-5]: " choice
 
-        case $choice in
+        local choice=""
+        get_input "Please enter your choice [0-5]: " "" choice
+
+        case "$choice" in
             1)
                 check_root
                 install_dependencies
@@ -245,7 +273,7 @@ interactive_menu() {
                 deploy_services
                 create_cli_shortcut
                 show_success_info
-                read -p "برای بازگشت به منو اینتر بزنید..."
+                pause_prompt
                 ;;
             2)
                 check_root
@@ -259,27 +287,26 @@ interactive_menu() {
                 check_root
                 cd "$INSTALL_DIR"
                 docker compose restart
-                echo -e "${GREEN}✓ سرویس‌ها ریستارت شدند.${NC}"
+                echo -e "${GREEN}[OK] Services restarted successfully.${NC}"
                 sleep 2
                 ;;
             5)
                 cd "$INSTALL_DIR"
                 docker compose ps
-                read -p "برای بازگشت به منو اینتر بزنید..."
+                pause_prompt
                 ;;
             0)
-                echo "خروج..."
+                echo "Exiting..."
                 exit 0
                 ;;
             *)
-                echo -e "${RED}گزینه نامعتبر!${NC}"
-                sleep 1
+                echo -e "${RED}[Error] Invalid choice! Please select 0 to 5.${NC}"
+                sleep 1.5
                 ;;
         esac
     done
 }
 
-# اجرای مستقیم منو یا نصب
 if [ "$1" == "install" ]; then
     check_root
     install_dependencies
