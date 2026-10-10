@@ -1,0 +1,16 @@
+options {
+    directory "/var/cache/bind";
+
+    // Listen on both IPv4 and IPv6
+    listen-on { any; };
+    listen-on-v6 { any; };
+
+    // Allow DNS queries from anywhere worldwide
+    allow-query { any; };
+
+    // Authoritative only - disable recursion for security against DDoS/amplification attacks
+    recursion no;
+
+    dnssec-validation auto;
+    auth-nxdomain no;
+};

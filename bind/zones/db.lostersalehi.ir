@@ -1,0 +1,19 @@
+$TTL 86400
+@   IN  SOA ns1.lostersalehi.ir. admin.lostersalehi.ir. (
+            2026101001 ; Serial
+            3600       ; Refresh (1 hour)
+            1800       ; Retry (30 mins)
+            604800     ; Expire (1 week)
+            86400 )    ; Minimum TTL (1 day)
+
+; Name Servers
+@       IN  NS      ns1.lostersalehi.ir.
+@       IN  NS      ns2.lostersalehi.ir.
+
+; Name Server IPs (Glue Records)
+ns1     IN  A       127.0.0.1
+ns2     IN  A       127.0.0.1
+
+; Host Records
+@       IN  A       127.0.0.1
+www     IN  A       127.0.0.1

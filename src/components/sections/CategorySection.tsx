@@ -86,11 +86,58 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
     return `${persianCount} محصول`;
   };
 
+  // تشخیص و فیلتر کردن آیتم «کلیه دسته‌بندی‌ها» یا «کل دسته‌بندی»
+  const isAllCategoryItem = (cat: CategoryItem) => {
+    if (!cat) return false;
+    const title = String(cat.title || '').trim().toLowerCase();
+    const slug = String(cat.slug || '').trim().toLowerCase();
+    const filterKey = String(cat.filterKey || (cat as any).key || '').trim().toLowerCase();
+    const id = String(cat.id || '').trim().toLowerCase();
+
+    // بررسی عناوین مربوط به کلیه/همه دسته‌بندی‌ها
+    if (
+      title.includes('کلیه دسته‌بندی') ||
+      title.includes('کلیه دسته بندی') ||
+      title.includes('کل دسته‌بندی') ||
+      title.includes('کل دسته بندی') ||
+      title.includes('همه دسته‌بندی') ||
+      title.includes('همه دسته بندی') ||
+      title === 'همه' ||
+      title === 'کلیه' ||
+      title === 'کل'
+    ) {
+      return true;
+    }
+
+    if (id === 'cat-all' || id === 'all') {
+      return true;
+    }
+
+    // اگر اسلاگ یا فیلترکی all باشد و عنوان مربوط به کلکسیون لوستر نباشد
+    if ((slug === 'all' || filterKey === 'all') && !title.includes('لوستر')) {
+      return true;
+    }
+
+    return false;
+  };
+
   const rawCategories =
     categories && categories.length > 0
       ? categories
       : PRODUCT_CATEGORIES;
-  const displayCategories = rawCategories.slice(0, 4);
+
+  // حذف گزینه «کلیه دسته‌بندی‌ها» و اطمینان از نمایش ۴ دسته اول
+  const filteredCategories = rawCategories.filter((c) => !isAllCategoryItem(c));
+
+  // در صورت نیاز، دسته‌بندی‌های پیش‌فرض را برای تکمیل ۴ دسته‌بندی اضافه می‌کنیم
+  const baseCategories = PRODUCT_CATEGORIES.filter((c) => !isAllCategoryItem(c));
+  const mergedCategories = [
+    ...filteredCategories,
+    ...baseCategories.filter((bc) => !filteredCategories.some((fc) => fc.slug === bc.slug)),
+  ];
+
+  // دقیقاً ۴ تا از اولین دسته‌بندی‌ها (به جز کلیه دسته‌بندی‌ها)
+  const displayCategories = mergedCategories.slice(0, 4);
   const [activeCategoryDot, setActiveCategoryDot] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 

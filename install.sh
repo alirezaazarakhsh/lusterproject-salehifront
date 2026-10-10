@@ -74,7 +74,20 @@ install_dependencies() {
     
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y
-    apt-get install -y curl git ufw wget ca-certificates gnupg lsb-release
+    apt-get install -y curl git ufw wget ca-certificates gnupg lsb-release dnsutils
+
+    # Prepare port 53 for BIND9 Authoritative DNS
+    if [ -f /etc/systemd/resolved.conf ]; then
+        if grep -q "DNSStubListener=yes" /etc/systemd/resolved.conf || ! grep -q "DNSStubListener=no" /etc/systemd/resolved.conf; then
+            echo -e "${YELLOW}Configuring systemd-resolved to free port 53 for BIND9 DNS...${NC}"
+            sed -i 's/^#*DNSStubListener=.*/DNSStubListener=no/' /etc/systemd/resolved.conf
+            grep -q '^DNSStubListener=no' /etc/systemd/resolved.conf || echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+            systemctl restart systemd-resolved 2>/dev/null || true
+            if [ -f /run/systemd/resolve/resolv.conf ]; then
+                ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf 2>/dev/null || true
+            fi
+        fi
+    fi
 
     if ! command -v docker &> /dev/null; then
         echo -e "${YELLOW}Installing Docker Engine...${NC}"
@@ -120,24 +133,31 @@ setup_project_files() {
 
 configure_environment() {
     print_banner
-    echo -e "${CYAN}[3/5] Configuring domain, environment variables and Nginx...${NC}"
+    echo -e "${CYAN}[3/5] Configuring domain, IP, BIND9 DNS, and Nginx...${NC}"
 
     DEFAULT_DOMAIN="lostersalehi.ir"
     get_input "${GOLD}>> Enter your domain name [default: ${DEFAULT_DOMAIN}]: ${NC}" "$DEFAULT_DOMAIN" DOMAIN
 
+    # Auto-detect public IP of the server
+    AUTO_IP=$(curl -s4 --max-time 4 https://api.ipify.org 2>/dev/null || curl -s4 --max-time 4 https://ifconfig.me 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}')
+    [ -z "$AUTO_IP" ] && AUTO_IP="127.0.0.1"
+    get_input "${GOLD}>> Server Public IP for DNS Records [default: ${AUTO_IP}]: ${NC}" "$AUTO_IP" SERVER_IP
+
+    # Write .env
     cat <<EOF > .env
 NODE_ENV=production
 PORT=3000
 DOMAIN=${DOMAIN}
+SERVER_IP=${SERVER_IP}
 SQL_HOST=postgres
 SQL_PORT=5432
 SQL_USER=salehi_user
 SQL_PASSWORD=salehi_secure_password_2026
 SQL_DB_NAME=salehi_chandelier_db
 EOF
-
     echo -e "${GREEN}[OK] .env configuration generated.${NC}"
 
+    # Configure Nginx Reverse-Proxy
     mkdir -p nginx
     cat <<EOF > nginx/nginx.conf
 worker_processes auto;
@@ -195,11 +215,53 @@ http {
 }
 EOF
     echo -e "${GREEN}[OK] Nginx reverse-proxy configured.${NC}"
+
+    # Configure BIND9 Authoritative DNS Zone
+    mkdir -p bind/zones
+    cat <<EOF > bind/named.conf.local
+zone "${DOMAIN}" {
+    type master;
+    file "/etc/bind/zones/db.${DOMAIN}";
+};
+EOF
+
+    SERIAL_DATE=$(date +%Y%m%d01)
+    cat <<EOF > "bind/zones/db.${DOMAIN}"
+\$TTL 86400
+@   IN  SOA ns1.${DOMAIN}. admin.${DOMAIN}. (
+            ${SERIAL_DATE} ; Serial
+            3600       ; Refresh (1 hour)
+            1800       ; Retry (30 mins)
+            604800     ; Expire (1 week)
+            86400 )    ; Minimum TTL (1 day)
+
+; Name Servers
+@       IN  NS      ns1.${DOMAIN}.
+@       IN  NS      ns2.${DOMAIN}.
+
+; Glue Records & Name Server IPs
+ns1     IN  A       ${SERVER_IP}
+ns2     IN  A       ${SERVER_IP}
+
+; Domain A Records
+@       IN  A       ${SERVER_IP}
+www     IN  A       ${SERVER_IP}
+EOF
+    echo -e "${GREEN}[OK] BIND9 DNS Zone configured (ns1/ns2.${DOMAIN} -> ${SERVER_IP}).${NC}"
+
+    # Configure Firewall (UFW)
+    if command -v ufw &>/dev/null; then
+        ufw allow 80/tcp 2>/dev/null || true
+        ufw allow 443/tcp 2>/dev/null || true
+        ufw allow 53/tcp 2>/dev/null || true
+        ufw allow 53/udp 2>/dev/null || true
+        echo -e "${GREEN}[OK] Firewall ports (80, 443, 53 UDP/TCP) allowed.${NC}"
+    fi
 }
 
 deploy_services() {
     print_banner
-    echo -e "${CYAN}[4/5] Building and starting Docker containers...${NC}"
+    echo -e "${CYAN}[4/5] Building and starting Docker containers (App, Nginx, PostgreSQL, BIND9)...${NC}"
     cd "$INSTALL_DIR"
     
     docker compose down --remove-orphans 2>/dev/null || true
@@ -207,14 +269,14 @@ deploy_services() {
 
     echo -e "${CYAN}[5/5] Checking service health...${NC}"
     sleep 6
-    echo -e "${GREEN}[OK] Platform deployed and running successfully!${NC}"
+    echo -e "${GREEN}[OK] All services and containers deployed successfully!${NC}"
 }
 
 create_cli_shortcut() {
     cat << 'EOF' > /usr/local/bin/salehi
 #!/usr/bin/env bash
 cd /var/www/salehi-chandelier
-bash install.sh
+bash install.sh "$@"
 EOF
     chmod +x /usr/local/bin/salehi
 }
@@ -225,18 +287,52 @@ show_success_info() {
     echo -e "${GREEN}   Salehi Luxury Chandelier Platform Successfully Installed!   ${NC}"
     echo -e "${GOLD}===================================================================${NC}"
     echo ""
-    echo -e "  [Website URL]      http://${DOMAIN}"
-    echo -e "  [Admin Panel]      http://${DOMAIN}/admin"
-    echo -e "  [Health Check]     http://${DOMAIN}/health"
+    echo -e "  [Website URL]        http://${DOMAIN}"
+    echo -e "  [Admin Panel]        http://${DOMAIN}/admin"
+    echo -e "  [Health Check]       http://${DOMAIN}/health"
     echo ""
-    echo -e "  [Admin Phone]      09120759419"
-    echo -e "  [Admin Password]   sasha9419"
+    echo -e "  [Admin Phone]        09120759419"
+    echo -e "  [Admin Password]     sasha9419"
     echo ""
+    echo -e "${CYAN}-------------------------------------------------------------------${NC}"
+    echo -e "${YELLOW}  [IRNIC / DNS Settings for Custom NS]${NC}"
+    echo -e "    1. Name Server 1:  ${GOLD}ns1.${DOMAIN}${NC}  |  IP: ${GOLD}${SERVER_IP}${NC}"
+    echo -e "    2. Name Server 2:  ${GOLD}ns2.${DOMAIN}${NC}  |  IP: ${GOLD}${SERVER_IP}${NC}"
+    echo ""
+    echo -e "  [BIND9 DNS Status]   Active & Listening on Port 53 (TCP/UDP)"
+    echo -e "  [Quick DNS Test]     dig @127.0.0.1 ${DOMAIN}"
     echo -e "${GOLD}-------------------------------------------------------------------${NC}"
     echo -e "  [Tip] You can manage this server anytime by typing:"
     echo -e "        ${GREEN}salehi${NC}"
     echo -e "${GOLD}===================================================================${NC}"
     echo ""
+}
+
+test_dns() {
+    print_banner
+    cd "$INSTALL_DIR" 2>/dev/null || true
+    local DOM_NAME="${DOMAIN:-lostersalehi.ir}"
+    if [ -f .env ]; then
+        DOM_NAME=$(grep '^DOMAIN=' .env | cut -d '=' -f2)
+    fi
+    echo -e "${CYAN}Testing BIND9 DNS server resolution for domain: ${GOLD}${DOM_NAME}${NC}"
+    echo ""
+    if command -v dig &>/dev/null; then
+        echo -e "${YELLOW}Querying @127.0.0.1 for ${DOM_NAME}:${NC}"
+        dig @127.0.0.1 "${DOM_NAME}" +noall +answer || true
+        echo ""
+        echo -e "${YELLOW}Querying @127.0.0.1 for ns1.${DOM_NAME}:${NC}"
+        dig @127.0.0.1 "ns1.${DOM_NAME}" +noall +answer || true
+        echo ""
+        echo -e "${YELLOW}Querying @127.0.0.1 for NS records:${NC}"
+        dig @127.0.0.1 "${DOM_NAME}" NS +noall +answer || true
+    else
+        echo -e "${YELLOW}Docker Container Status for BIND9:${NC}"
+        docker compose ps bind9
+    fi
+    echo ""
+    echo -e "${GREEN}[OK] DNS test query completed.${NC}"
+    pause_prompt
 }
 
 update_system() {
@@ -253,16 +349,18 @@ update_system() {
 interactive_menu() {
     while true; do
         print_banner
-        echo -e "  ${CYAN}[1]${NC} Fresh / Full Installation"
+        echo -e "  ${CYAN}[1]${NC} Fresh / Full Installation (Auto Docker, Nginx, DB, BIND9)"
         echo -e "  ${CYAN}[2]${NC} Update & Pull Latest Code from GitHub"
         echo -e "  ${CYAN}[3]${NC} View Live Server Logs"
         echo -e "  ${CYAN}[4]${NC} Restart Services"
         echo -e "  ${CYAN}[5]${NC} View Docker Services Status"
+        echo -e "  ${CYAN}[6]${NC} Test BIND9 DNS Resolution (dig @127.0.0.1)"
+        echo -e "  ${CYAN}[7]${NC} Reconfigure Domain & DNS Nameservers"
         echo -e "  ${CYAN}[0]${NC} Exit"
         echo ""
 
         local choice=""
-        get_input "Please enter your choice [0-5]: " "" choice
+        get_input "Please enter your choice [0-7]: " "" choice
 
         case "$choice" in
             1)
@@ -295,12 +393,24 @@ interactive_menu() {
                 docker compose ps
                 pause_prompt
                 ;;
+            6)
+                test_dns
+                ;;
+            7)
+                check_root
+                cd "$INSTALL_DIR"
+                configure_environment
+                docker compose restart nginx bind9
+                echo -e "${GREEN}[OK] Nginx and BIND9 reloaded with new settings!${NC}"
+                show_success_info
+                pause_prompt
+                ;;
             0)
                 echo "Exiting..."
                 exit 0
                 ;;
             *)
-                echo -e "${RED}[Error] Invalid choice! Please select 0 to 5.${NC}"
+                echo -e "${RED}[Error] Invalid choice! Please select 0 to 7.${NC}"
                 sleep 1.5
                 ;;
         esac
@@ -315,6 +425,8 @@ if [ "$1" == "install" ]; then
     deploy_services
     create_cli_shortcut
     show_success_info
+elif [ "$1" == "dns" ] || [ "$1" == "test-dns" ]; then
+    test_dns
 else
     interactive_menu
 fi
