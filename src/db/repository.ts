@@ -1,6 +1,8 @@
 import { asc, desc, eq, or } from 'drizzle-orm';
 import { db } from './index';
 import { ensureDefaultAdmin } from './users';
+import fs from 'fs';
+import path from 'path';
 import {
   articles,
   categories,
@@ -13,6 +15,29 @@ import {
   users,
 } from './schema';
 import { ALL_INITIAL_PROJECTS } from '../data/allDatabaseProjectsSeed';
+
+const SERVER_DB_FILE = path.join(process.cwd(), 'server-database.json');
+
+export function loadServerJsonDb(): any {
+  try {
+    if (fs.existsSync(SERVER_DB_FILE)) {
+      const raw = fs.readFileSync(SERVER_DB_FILE, 'utf-8');
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.warn('Notice reading server-database.json:', err);
+  }
+  return null;
+}
+
+export function saveServerJsonDb(data: any): void {
+  try {
+    fs.writeFileSync(SERVER_DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Notice writing server-database.json:', err);
+  }
+}
+
 
 let seedPromise: Promise<void> | null = null;
 let hasSeededProjects = false;
