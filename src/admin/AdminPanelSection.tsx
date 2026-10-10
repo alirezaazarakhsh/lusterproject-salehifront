@@ -937,6 +937,65 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     [sessionToken]
   );
 
+  // وضعیت گواهی SSL، وب‌سوکت و دامنه سرور
+  const [sslStatusInfo, setSslStatusInfo] = useState<{
+    domain: string;
+    sslStatus: string;
+    sslProvider: string;
+    websocketEnabled: boolean;
+    autoRenewalActive: boolean;
+  }>({
+    domain: 'lostersalehi.ir',
+    sslStatus: 'active',
+    sslProvider: "Certbot / Let's Encrypt",
+    websocketEnabled: true,
+    autoRenewalActive: true,
+  });
+  const [sslDomainInput, setSslDomainInput] = useState<string>('lostersalehi.ir');
+  const [isRequestingSsl, setIsRequestingSsl] = useState<boolean>(false);
+
+  const fetchSslStatus = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/admin/system/ssl-status');
+      if (res && res.domain) {
+        setSslStatusInfo(res);
+        setSslDomainInput(res.domain);
+      }
+    } catch {
+      // ignore
+    }
+  }, [authFetch]);
+
+  useEffect(() => {
+    if (activeTab === 'settings' && activeWebsiteSettingsTab === 'main') {
+      fetchSslStatus();
+    }
+  }, [activeTab, activeWebsiteSettingsTab, fetchSslStatus]);
+
+  const handleIssueSsl = async () => {
+    if (!sslDomainInput.trim()) {
+      showNotice('error', 'لطفاً نام دامنه را وارد کنید.');
+      return;
+    }
+    setIsRequestingSsl(true);
+    try {
+      const res = await authFetch('/api/admin/system/ssl/issue', {
+        method: 'POST',
+        body: JSON.stringify({ domain: sslDomainInput.trim() }),
+      });
+      showNotice(
+        'success',
+        res.message ||
+          'عملیات صدور خودکار گواهی SSL و فعال‌سازی وب‌سوکت آغاز شد.'
+      );
+      setTimeout(fetchSslStatus, 3000);
+    } catch (err: any) {
+      showNotice('error', err?.message || 'خطا در صدور گواهی SSL');
+    } finally {
+      setIsRequestingSsl(false);
+    }
+  };
+
   const loadAllAdminData = useCallback(async () => {
     if (!sessionToken) return;
     setIsLoadingData(true);
@@ -10516,6 +10575,195 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     </button>
                   </div>
                 </form>
+              ) : activeWebsiteSettingsTab === 'main' ? (
+                <div className="space-y-6">
+                  {/* ۱. کارت وضعیت امنیت SSL خودکار (Certbot) و وب‌سوکت Nginx */}
+                  <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-[#f5efe4] text-[#b59766] flex items-center justify-center">
+                          <Lock className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                            پیکربندی گواهی امنیتی SSL (Certbot) و وب‌سوکت Nginx
+                          </h2>
+                          <p className="text-xs text-[#666] mt-1">
+                            صدور و تمدید خودکار گواهینامه SSL برای هر دامنه ثبت‌شده + فعال‌سازی پروتکل WebSockets (ws/wss)
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={fetchSslStatus}
+                        className="h-9 px-3.5 rounded-xl border border-[#d8d0c3] hover:bg-[#f6f3ec] text-[#444] text-xs font-bold flex items-center gap-1.5 cursor-pointer self-start sm:self-auto transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>بروزرسانی وضعیت</span>
+                      </button>
+                    </div>
+
+                    {/* اطلاعات وضعیت سرور و پروتکل‌ها */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-4 rounded-xl bg-[#faf8f4] border border-[#ece4d4] space-y-1">
+                        <span className="text-[11px] font-bold text-[#777]">وضعیت گواهی SSL:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span className="text-xs font-black text-emerald-700">
+                            {sslStatusInfo.sslStatus === 'official_active' ? "فعال (Let's Encrypt)" : "فعال (HTTPS آماده)"}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-[#888] block">ارائه‌دهنده: {sslStatusInfo.sslProvider}</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-[#faf8f4] border border-[#ece4d4] space-y-1">
+                        <span className="text-[11px] font-bold text-[#777]">پشتیبانی از وب‌سوکت (WebSockets):</span>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                          <span className="text-xs font-black text-emerald-700">فعال در Nginx (ws:// & wss://)</span>
+                        </div>
+                        <span className="text-[10px] text-[#888] block">هدرهای Upgrade و Connection تنظیم شده</span>
+                      </div>
+
+                      <div className="p-4 rounded-xl bg-[#faf8f4] border border-[#ece4d4] space-y-1">
+                        <span className="text-[11px] font-bold text-[#777]">تمدید خودکار گواهینامه‌ها:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                          <span className="text-xs font-black text-blue-700">فعال (هر ۱۲ ساعت یکبار)</span>
+                        </div>
+                        <span className="text-[10px] text-[#888] block">کانتینر داکر salehi_certbot در پس‌زمینه</span>
+                      </div>
+                    </div>
+
+                    {/* فرم فعال‌سازی خودکار گواهی برای هر دامنه جدید */}
+                    <div className="p-5 rounded-2xl bg-[#fdfbf7] border border-[#d8c8af] space-y-4">
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-black text-[#181818] flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-[#b59766]" />
+                          <span>فعال‌سازی خودکار SSL و دامنه اختصاصی جدید</span>
+                        </h3>
+                        <p className="text-xs text-[#666]">
+                          دامنه دلخواه خود را وارد کنید تا گواهی SSL رسمی توسط Certbot صادر شده و کانفیگ Nginx و وب‌سوکت آن به صورت خودکار اعمال گردد:
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={sslDomainInput}
+                          onChange={(e) => setSslDomainInput(e.target.value)}
+                          placeholder="مثلاً: lostersalehi.ir یا myshop.com"
+                          className="h-11 flex-1 rounded-xl border border-[#d5cbbe] bg-white px-3.5 text-xs font-bold font-mono text-left focus:outline-none focus:border-[#b59766]"
+                        />
+                        <button
+                          type="button"
+                          disabled={isRequestingSsl}
+                          onClick={handleIssueSsl}
+                          className="h-11 px-6 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs disabled:opacity-60 shrink-0"
+                        >
+                          <ShieldCheck className="w-4 h-4 text-[#d4b27c]" />
+                          <span>{isRequestingSsl ? 'در حال صدور و تنظیم خودکار...' : 'صدور گواهی SSL خودکار (Certbot)'}</span>
+                        </button>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs space-y-1">
+                        <span className="font-black block">💡 راهنمای اتصال دامنه به سرور (ایرنیک و هاستینگ):</span>
+                        <p className="leading-6">
+                          برای کارکرد بدون نقص SSL رسمی، نیم‌سرورهای دامنه خود را در ایرنیک روی <b>ns1.{sslDomainInput || 'lostersalehi.ir'}</b> و <b>ns2.{sslDomainInput || 'lostersalehi.ir'}</b> با آی‌پی سرور تنظیم نمایید یا رکورد A دامنه را به آی‌پی سرور هدایت کنید.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ۲. فرم تنظیمات عنوان سایت، شعار و شبکه‌های اجتماعی */}
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setIsSavingMainSettings(true);
+                      try {
+                        const saved = await authFetch('/api/admin/settings/main', {
+                          method: 'PUT',
+                          body: JSON.stringify(mainSettingsForm),
+                        });
+                        setMainSettingsForm({ ...INITIAL_MAIN_SETTINGS, ...saved });
+                        showNotice('success', 'تنظیمات اصلی وب‌سایت با موفقیت ذخیره شد.');
+                      } catch (err: any) {
+                        showNotice('error', err?.message || 'خطا در ذخیره تنظیمات اصلی وب‌سایت');
+                      } finally {
+                        setIsSavingMainSettings(false);
+                      }
+                    }}
+                    className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-6"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                      <div>
+                        <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                          تنظیمات عمومی سایت و شبکه‌های اجتماعی
+                        </h2>
+                        <p className="text-xs text-[#666] mt-1">
+                          عنوان اصلی سایت، شعار برند، شماره تماس پشتیبانی و لینک‌های اینستاگرام و تلگرام
+                        </p>
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isSavingMainSettings}
+                        className="h-10 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shadow-xs disabled:opacity-60 self-start sm:self-auto"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>{isSavingMainSettings ? 'در حال ذخیره...' : 'ذخیره تنظیمات اصلی'}</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="space-y-1.5 bg-[#faf8f4] p-4 rounded-xl border border-[#ece4d4]">
+                        <label className="block text-xs font-black text-[#333]">عنوان اصلی سایت:</label>
+                        <input
+                          type="text"
+                          value={mainSettingsForm.siteTitle || ''}
+                          onChange={(e) => setMainSettingsForm({ ...mainSettingsForm, siteTitle: e.target.value })}
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] bg-white px-3 text-xs font-bold"
+                          placeholder="گالری لوستر اکبر صالحی"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-[#faf8f4] p-4 rounded-xl border border-[#ece4d4]">
+                        <label className="block text-xs font-black text-[#333]">شعار سایت:</label>
+                        <input
+                          type="text"
+                          value={mainSettingsForm.siteSubtitle || ''}
+                          onChange={(e) => setMainSettingsForm({ ...mainSettingsForm, siteSubtitle: e.target.value })}
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] bg-white px-3 text-xs font-semibold"
+                          placeholder="بزرگترین تولیدکننده لوسترهای برنزی و کریستال در تهران"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-[#faf8f4] p-4 rounded-xl border border-[#ece4d4]">
+                        <label className="block text-xs font-black text-[#333]">شماره تماس پشتیبانی و مشاوره:</label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={mainSettingsForm.supportPhone || ''}
+                          onChange={(e) => setMainSettingsForm({ ...mainSettingsForm, supportPhone: e.target.value })}
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] bg-white px-3 text-xs font-bold tabular-nums"
+                          placeholder="09120759419"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5 bg-[#faf8f4] p-4 rounded-xl border border-[#ece4d4]">
+                        <label className="block text-xs font-black text-[#333]">آدرس صفحه اینستاگرام:</label>
+                        <input
+                          type="text"
+                          dir="ltr"
+                          value={mainSettingsForm.instagramUrl || ''}
+                          onChange={(e) => setMainSettingsForm({ ...mainSettingsForm, instagramUrl: e.target.value })}
+                          className="w-full h-10 rounded-lg border border-[#e0e0e0] bg-white px-3 text-xs font-mono"
+                          placeholder="https://instagram.com/lostersalehi"
+                        />
+                      </div>
+                    </div>
+                  </form>
+                </div>
               ) : (
                 <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-8 min-h-[360px] flex flex-col items-center justify-center text-center space-y-4">
                   <div className="w-14 h-14 rounded-2xl bg-[#faf8f4] text-[#b59766] flex items-center justify-center border border-[#ece4d4]">

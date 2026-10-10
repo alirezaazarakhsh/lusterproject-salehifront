@@ -194,8 +194,15 @@ SQL_DB_NAME=salehi_chandelier_db
 EOF
     echo -e "${GREEN}[OK] .env configuration generated.${NC}"
 
-    # Configure Nginx Reverse-Proxy
-    mkdir -p nginx
+    # Configure Nginx Reverse-Proxy & SSL Folders
+    mkdir -p nginx/ssl nginx/conf.d scripts
+    if [ ! -f nginx/ssl/default.crt ] || [ ! -f nginx/ssl/default.key ]; then
+        openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+            -keyout nginx/ssl/default.key \
+            -out nginx/ssl/default.crt \
+            -subj "/CN=salehi-chandelier-default/O=Salehi Chandelier/C=IR" 2>/dev/null || true
+    fi
+
     cat <<EOF > nginx/nginx.conf
 worker_processes auto;
 events {
@@ -213,20 +220,28 @@ http {
     gzip_vary on;
     gzip_min_length 1024;
     gzip_proxied any;
-    gzip_types text/plain text/css text/xml application/json application/javascript application/xml+rss application/atom+xml image/svg+xml font/woff font/woff2;
+    gzip_types text/plain text/css text/xml application/json application/javascript application/xml+rss application/atom+xml image/svg+xml font/woff font/woff2 image/jpeg image/png image/webp;
+
+    # WebSocket connection upgrade mapping
+    map \$http_upgrade \$connection_upgrade {
+        default upgrade;
+        ''      close;
+    }
 
     upstream salehi_backend {
         server app:3000;
         keepalive 32;
     }
 
+    # Port 80: ACME Webroot challenge & WebSocket reverse-proxy
     server {
-        listen 80;
-        listen [::]:80;
-        server_name ${DOMAIN} www.${DOMAIN};
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        server_name _;
 
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
+            try_files \$uri =404;
         }
 
         location /health {
@@ -241,17 +256,62 @@ http {
             proxy_pass http://salehi_backend;
             proxy_http_version 1.1;
             proxy_set_header Upgrade \$http_upgrade;
-            proxy_set_header Connection "upgrade";
+            proxy_set_header Connection \$connection_upgrade;
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto \$scheme;
-            proxy_read_timeout 90s;
+            proxy_read_timeout 86400s;
+            proxy_send_timeout 86400s;
         }
     }
+
+    # Port 443: SSL Reverse-Proxy with WebSockets
+    server {
+        listen 443 ssl default_server;
+        listen [::]:443 ssl default_server;
+        server_name _;
+
+        ssl_certificate /etc/nginx/ssl/default.crt;
+        ssl_certificate_key /etc/nginx/ssl/default.key;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers off;
+        ssl_session_timeout 1d;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_tickets off;
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+            try_files \$uri =404;
+        }
+
+        location /health {
+            proxy_pass http://salehi_backend/health;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+        }
+
+        location / {
+            proxy_pass http://salehi_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Connection \$connection_upgrade;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_read_timeout 86400s;
+            proxy_send_timeout 86400s;
+        }
+    }
+
+    include /etc/nginx/conf.d/*.conf;
 }
 EOF
-    echo -e "${GREEN}[OK] Nginx reverse-proxy configured.${NC}"
+    echo -e "${GREEN}[OK] Nginx reverse-proxy & WebSocket configuration generated.${NC}"
 
     # Configure BIND9 Authoritative DNS Zone
     mkdir -p bind/zones
@@ -299,16 +359,23 @@ EOF
 
 deploy_services() {
     print_banner
-    echo -e "${CYAN}[4/5] Building and starting Docker containers (App, Nginx, PostgreSQL, BIND9)...${NC}"
+    echo -e "${CYAN}[4/5] Building and starting Docker containers (App, Nginx, PostgreSQL, BIND9, Certbot)...${NC}"
     cd "$INSTALL_DIR"
     
     free_port_53
     docker compose down --remove-orphans 2>/dev/null || true
-    docker rm -f salehi_nginx salehi_app salehi_postgres salehi_bind9 2>/dev/null || true
+    docker rm -f salehi_nginx salehi_app salehi_postgres salehi_bind9 salehi_certbot 2>/dev/null || true
     docker compose up -d --build
 
-    echo -e "${CYAN}[5/5] Checking service health...${NC}"
+    echo -e "${CYAN}[5/5] Checking service health & issuing SSL certificate...${NC}"
     sleep 6
+
+    # Automatically issue Let's Encrypt SSL certificate & configure WebSockets
+    if [ -f scripts/auto-ssl.sh ]; then
+        chmod +x scripts/auto-ssl.sh 2>/dev/null || true
+        bash scripts/auto-ssl.sh "${DOMAIN}" || true
+    fi
+
     echo -e "${GREEN}[OK] All services and containers deployed successfully!${NC}"
 }
 
@@ -319,6 +386,13 @@ cd /var/www/salehi-chandelier
 bash install.sh "$@"
 EOF
     chmod +x /usr/local/bin/salehi
+
+    cat << 'EOF' > /usr/local/bin/salehi-ssl
+#!/usr/bin/env bash
+cd /var/www/salehi-chandelier
+bash scripts/auto-ssl.sh "$@"
+EOF
+    chmod +x /usr/local/bin/salehi-ssl
 }
 
 show_success_info() {
@@ -327,14 +401,22 @@ show_success_info() {
     echo -e "${GREEN}   Salehi Luxury Chandelier Platform Successfully Installed!   ${NC}"
     echo -e "${GOLD}===================================================================${NC}"
     echo ""
-    echo -e "  [Website URL]        http://${DOMAIN}"
-    echo -e "  [Admin Panel]        http://${DOMAIN}/admin"
-    echo -e "  [Health Check]       http://${DOMAIN}/health"
+    echo -e "  [Website HTTPS URL]  ${GOLD}https://${DOMAIN}${NC}"
+    echo -e "  [Website HTTP URL]   http://${DOMAIN}  (or http://${SERVER_IP})"
+    echo -e "  [Port 3000 Direct]   http://${SERVER_IP}:3000"
+    echo -e "  [Admin Panel]        https://${DOMAIN}/admin"
+    echo -e "  [Health Check]       https://${DOMAIN}/health"
     echo ""
     echo -e "  [Admin Phone]        09120759419"
     echo -e "  [Admin Password]     sasha9419"
     echo ""
     echo -e "${CYAN}-------------------------------------------------------------------${NC}"
+    echo -e "${YELLOW}  [Nginx, SSL & WebSocket Status]${NC}"
+    echo -e "    * Nginx Proxy:     Active on Ports 80 & 443"
+    echo -e "    * WebSockets:      Fully Supported (ws:// and wss://)"
+    echo -e "    * Certbot SSL:     Automated Renewal Active (every 12h)"
+    echo -e "    * Issue New SSL:   ${GREEN}salehi ssl <any-domain>${NC}"
+    echo ""
     echo -e "${YELLOW}  [IRNIC / DNS Settings for Custom NS]${NC}"
     echo -e "    1. Name Server 1:  ${GOLD}ns1.${DOMAIN}${NC}  |  IP: ${GOLD}${SERVER_IP}${NC}"
     echo -e "    2. Name Server 2:  ${GOLD}ns2.${DOMAIN}${NC}  |  IP: ${GOLD}${SERVER_IP}${NC}"
@@ -346,6 +428,18 @@ show_success_info() {
     echo -e "        ${GREEN}salehi${NC}"
     echo -e "${GOLD}===================================================================${NC}"
     echo ""
+}
+
+manage_ssl() {
+    print_banner
+    cd "$INSTALL_DIR"
+    local DOM_NAME="${DOMAIN:-lostersalehi.ir}"
+    if [ -f .env ]; then
+        DOM_NAME=$(grep '^DOMAIN=' .env | cut -d '=' -f2)
+    fi
+    get_input "${GOLD}>> Enter domain to issue/renew Let's Encrypt SSL [default: ${DOM_NAME}]: ${NC}" "$DOM_NAME" TARGET_DOM
+    bash scripts/auto-ssl.sh "${TARGET_DOM}"
+    pause_prompt
 }
 
 test_dns() {
@@ -402,11 +496,12 @@ interactive_menu() {
         echo -e "  ${CYAN}[6]${NC} Test BIND9 DNS Resolution (dig @127.0.0.1)"
         echo -e "  ${CYAN}[7]${NC} Reconfigure Domain & DNS Nameservers"
         echo -e "  ${CYAN}[8]${NC} Free Port 53 & Start BIND9 Container"
+        echo -e "  ${CYAN}[9]${NC} Issue / Renew Let's Encrypt SSL & WebSockets (Certbot)"
         echo -e "  ${CYAN}[0]${NC} Exit"
         echo ""
 
         local choice=""
-        get_input "Please enter your choice [0-8]: " "" choice
+        get_input "Please enter your choice [0-9]: " "" choice
 
         case "$choice" in
             1)
@@ -459,12 +554,16 @@ interactive_menu() {
                 echo -e "${GREEN}[OK] Port 53 freed and BIND9 container started!${NC}"
                 pause_prompt
                 ;;
+            9)
+                check_root
+                manage_ssl
+                ;;
             0)
                 echo "Exiting..."
                 exit 0
                 ;;
             *)
-                echo -e "${RED}[Error] Invalid choice! Please select 0 to 8.${NC}"
+                echo -e "${RED}[Error] Invalid choice! Please select 0 to 9.${NC}"
                 sleep 1.5
                 ;;
         esac
@@ -479,6 +578,10 @@ if [ "$1" == "install" ]; then
     deploy_services
     create_cli_shortcut
     show_success_info
+elif [ "$1" == "ssl" ] || [ "$1" == "auto-ssl" ] || [ "$1" == "certbot" ]; then
+    check_root
+    cd "$INSTALL_DIR"
+    bash scripts/auto-ssl.sh "$2" "$3"
 elif [ "$1" == "dns" ] || [ "$1" == "test-dns" ]; then
     test_dns
 elif [ "$1" == "fix-dns" ] || [ "$1" == "free-53" ]; then

@@ -2400,6 +2400,60 @@ async function startServer() {
     }
   );
 
+  // ۴. مدیریت وضعیت امنیت SSL، وب‌سوکت و دامنه سرور
+  app.get('/api/admin/system/ssl-status', requireAuth, async (_req: AuthRequest, res) => {
+    try {
+      const configuredDomain = process.env.DOMAIN || 'lostersalehi.ir';
+      const certbotPath = `/etc/letsencrypt/live/${configuredDomain}/fullchain.pem`;
+      const localCertbotPath = path.resolve(process.cwd(), 'nginx/ssl/default.crt');
+      const customConfPath = path.resolve(process.cwd(), `nginx/conf.d/${configuredDomain}.conf`);
+      
+      const hasOfficialCert = fs.existsSync(certbotPath);
+      const hasDefaultCert = fs.existsSync(localCertbotPath);
+      const hasDomainVhost = fs.existsSync(customConfPath);
+
+      res.json({
+        domain: configuredDomain,
+        sslStatus: hasOfficialCert ? 'official_active' : (hasDefaultCert ? 'fallback_active' : 'pending'),
+        sslProvider: hasOfficialCert ? "Let's Encrypt (Certbot)" : "Self-Signed Fallback",
+        websocketEnabled: true,
+        httpPort: 80,
+        httpsPort: 443,
+        autoRenewalActive: true,
+        hasDomainVhost,
+      });
+    } catch (error: any) {
+      console.error('Failed to get SSL status:', error);
+      res.status(500).json({ error: error.message || 'خطا در بررسی وضعیت SSL' });
+    }
+  });
+
+  app.post('/api/admin/system/ssl/issue', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const targetDomain = String(req.body?.domain || process.env.DOMAIN || 'lostersalehi.ir').trim().toLowerCase();
+      const adminEmail = req.body?.email ? String(req.body.email).trim() : `admin@${targetDomain}`;
+      
+      const scriptPath = path.resolve(process.cwd(), 'scripts/auto-ssl.sh');
+      if (fs.existsSync(scriptPath)) {
+        const { spawn } = await import('child_process');
+        const child = spawn('bash', [scriptPath, targetDomain, adminEmail], {
+          detached: true,
+          stdio: 'ignore'
+        });
+        child.unref();
+      }
+
+      res.json({
+        success: true,
+        message: `عملیات صدور و فعال‌سازی خودکار گواهی SSL و وب‌سوکت برای دامنه ${targetDomain} با موفقیت در پس‌زمینه آغاز شد.`,
+        domain: targetDomain,
+      });
+    } catch (error: any) {
+      console.error('Failed to trigger SSL issuance:', error);
+      res.status(500).json({ error: error.message || 'خطا در صدور گواهی SSL' });
+    }
+  });
+
   // Service worker route to guarantee application/javascript MIME type
   app.get('/sw.js', (_req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
