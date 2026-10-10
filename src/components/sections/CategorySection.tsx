@@ -88,7 +88,7 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
 
   const displayCategories =
     categories && categories.length > 0
-      ? categories.slice(0, 4)
+      ? categories
       : PRODUCT_CATEGORIES;
   const [activeCategoryDot, setActiveCategoryDot] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
