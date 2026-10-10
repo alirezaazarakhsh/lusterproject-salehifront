@@ -40,6 +40,8 @@ services:
       SQL_PASSWORD: ${SQL_PASSWORD:-salehi_secure_password_2026}
       SQL_DB_NAME: ${SQL_DB_NAME:-salehi_chandelier_db}
       DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy

@@ -290,9 +290,10 @@ EOF
     if command -v ufw &>/dev/null; then
         ufw allow 80/tcp 2>/dev/null || true
         ufw allow 443/tcp 2>/dev/null || true
+        ufw allow 3000/tcp 2>/dev/null || true
         ufw allow 53/tcp 2>/dev/null || true
         ufw allow 53/udp 2>/dev/null || true
-        echo -e "${GREEN}[OK] Firewall ports (80, 443, 53 UDP/TCP) allowed.${NC}"
+        echo -e "${GREEN}[OK] Firewall ports (80, 443, 3000, 53 UDP/TCP) allowed.${NC}"
     fi
 }
 
