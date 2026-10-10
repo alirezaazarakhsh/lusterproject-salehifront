@@ -495,8 +495,8 @@ interactive_menu() {
         echo -e "  ${CYAN}[5]${NC} View Docker Services Status"
         echo -e "  ${CYAN}[6]${NC} Test BIND9 DNS Resolution (dig @127.0.0.1)"
         echo -e "  ${CYAN}[7]${NC} Reconfigure Domain & DNS Nameservers"
-        echo -e "  ${CYAN}[8]${NC} Free Port 53 & Start BIND9 Container"
-        echo -e "  ${CYAN}[9]${NC} Issue / Renew Let's Encrypt SSL & WebSockets (Certbot)"
+        echo -e "  ${CYAN}[8]${NC} Issue / Generate Let's Encrypt SSL & WebSockets (Certbot)"
+        echo -e "  ${CYAN}[9]${NC} Free Port 53 & Start BIND9 Container"
         echo -e "  ${CYAN}[0]${NC} Exit"
         echo ""
 
@@ -548,15 +548,15 @@ interactive_menu() {
                 ;;
             8)
                 check_root
+                manage_ssl
+                ;;
+            9)
+                check_root
                 free_port_53
                 cd "$INSTALL_DIR"
                 docker compose up -d bind9 nginx
                 echo -e "${GREEN}[OK] Port 53 freed and BIND9 container started!${NC}"
                 pause_prompt
-                ;;
-            9)
-                check_root
-                manage_ssl
                 ;;
             0)
                 echo "Exiting..."
@@ -570,7 +570,7 @@ interactive_menu() {
     done
 }
 
-if [ "$1" == "install" ]; then
+if [ "$1" == "install" ] || [ "$1" == "1" ]; then
     check_root
     install_dependencies
     setup_project_files
@@ -578,13 +578,38 @@ if [ "$1" == "install" ]; then
     deploy_services
     create_cli_shortcut
     show_success_info
-elif [ "$1" == "ssl" ] || [ "$1" == "auto-ssl" ] || [ "$1" == "certbot" ]; then
+elif [ "$1" == "update" ] || [ "$1" == "2" ]; then
+    check_root
+    update_system
+elif [ "$1" == "logs" ] || [ "$1" == "3" ]; then
+    cd "$INSTALL_DIR"
+    docker compose logs -f
+elif [ "$1" == "restart" ] || [ "$1" == "4" ]; then
     check_root
     cd "$INSTALL_DIR"
-    bash scripts/auto-ssl.sh "$2" "$3"
-elif [ "$1" == "dns" ] || [ "$1" == "test-dns" ]; then
+    docker compose restart
+    echo -e "${GREEN}[OK] Services restarted successfully.${NC}"
+elif [ "$1" == "ps" ] || [ "$1" == "status" ] || [ "$1" == "5" ]; then
+    cd "$INSTALL_DIR"
+    docker compose ps
+elif [ "$1" == "dns" ] || [ "$1" == "test-dns" ] || [ "$1" == "6" ]; then
     test_dns
-elif [ "$1" == "fix-dns" ] || [ "$1" == "free-53" ]; then
+elif [ "$1" == "config" ] || [ "$1" == "reconfig" ] || [ "$1" == "7" ]; then
+    check_root
+    cd "$INSTALL_DIR"
+    configure_environment
+    docker compose restart nginx bind9
+    echo -e "${GREEN}[OK] Nginx and BIND9 reloaded with new settings!${NC}"
+    show_success_info
+elif [ "$1" == "ssl" ] || [ "$1" == "auto-ssl" ] || [ "$1" == "certbot" ] || [ "$1" == "8" ]; then
+    check_root
+    cd "$INSTALL_DIR"
+    if [ -n "$2" ]; then
+        bash scripts/auto-ssl.sh "$2" "$3"
+    else
+        manage_ssl
+    fi
+elif [ "$1" == "fix-dns" ] || [ "$1" == "free-53" ] || [ "$1" == "9" ]; then
     check_root
     free_port_53
     cd "$INSTALL_DIR"
