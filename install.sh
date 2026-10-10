@@ -68,26 +68,60 @@ check_root() {
     fi
 }
 
+free_port_53() {
+    echo -e "${YELLOW}Ensuring Port 53 is free for BIND9 Authoritative DNS...${NC}"
+    # Stop native DNS daemons that may conflict on port 53
+    systemctl stop named 2>/dev/null || true
+    systemctl disable named 2>/dev/null || true
+    systemctl stop bind9 2>/dev/null || true
+    systemctl disable bind9 2>/dev/null || true
+    systemctl stop dnsmasq 2>/dev/null || true
+    systemctl disable dnsmasq 2>/dev/null || true
+
+    # Disable systemd-resolved DNSStubListener (which listens on 127.0.0.53:53)
+    if [ -f /etc/systemd/resolved.conf ]; then
+        sed -i 's/^#*DNSStubListener=.*/DNSStubListener=no/' /etc/systemd/resolved.conf
+        grep -q '^DNSStubListener=no' /etc/systemd/resolved.conf || echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
+    fi
+
+    # Create persistent systemd-resolved drop-in override
+    mkdir -p /etc/systemd/resolved.conf.d 2>/dev/null || true
+    cat << 'EOF' > /etc/systemd/resolved.conf.d/disable-stub.conf
+[Resolve]
+DNSStubListener=no
+EOF
+
+    systemctl restart systemd-resolved 2>/dev/null || true
+
+    # Maintain host DNS resolution by setting public DNS in resolv.conf
+    rm -f /etc/resolv.conf 2>/dev/null || true
+    cat << 'EOF' > /etc/resolv.conf
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+nameserver 4.2.2.4
+EOF
+
+    # Terminate any lingering host processes holding port 53
+    if command -v fuser &>/dev/null; then
+        fuser -k 53/tcp 2>/dev/null || true
+        fuser -k 53/udp 2>/dev/null || true
+    fi
+
+    # Remove previous failed or dead salehi_bind9 container
+    docker rm -f salehi_bind9 2>/dev/null || true
+    echo -e "${GREEN}[OK] Port 53 is clear and ready for BIND9.${NC}"
+}
+
 install_dependencies() {
     print_banner
     echo -e "${CYAN}[1/5] Checking and installing system packages (Docker, Compose, Git)...${NC}"
     
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y
-    apt-get install -y curl git ufw wget ca-certificates gnupg lsb-release dnsutils
+    apt-get install -y curl git ufw wget ca-certificates gnupg lsb-release dnsutils psmisc
 
-    # Prepare port 53 for BIND9 Authoritative DNS
-    if [ -f /etc/systemd/resolved.conf ]; then
-        if grep -q "DNSStubListener=yes" /etc/systemd/resolved.conf || ! grep -q "DNSStubListener=no" /etc/systemd/resolved.conf; then
-            echo -e "${YELLOW}Configuring systemd-resolved to free port 53 for BIND9 DNS...${NC}"
-            sed -i 's/^#*DNSStubListener=.*/DNSStubListener=no/' /etc/systemd/resolved.conf
-            grep -q '^DNSStubListener=no' /etc/systemd/resolved.conf || echo "DNSStubListener=no" >> /etc/systemd/resolved.conf
-            systemctl restart systemd-resolved 2>/dev/null || true
-            if [ -f /run/systemd/resolve/resolv.conf ]; then
-                ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf 2>/dev/null || true
-            fi
-        fi
-    fi
+    # Free port 53 for BIND9 container
+    free_port_53
 
     if ! command -v docker &> /dev/null; then
         echo -e "${YELLOW}Installing Docker Engine...${NC}"
@@ -125,7 +159,10 @@ setup_project_files() {
     else
         echo -e "${GREEN}[OK] Project repository exists. Pulling latest commits...${NC}"
         cd "$INSTALL_DIR"
-        git pull origin main || git pull origin master || true
+        [ -f .env ] && cp .env /tmp/salehi_env_backup 2>/dev/null || true
+        git fetch origin || true
+        git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || git pull origin main || true
+        [ -f /tmp/salehi_env_backup ] && cp /tmp/salehi_env_backup .env 2>/dev/null || true
     fi
 
     cd "$INSTALL_DIR"
@@ -264,7 +301,9 @@ deploy_services() {
     echo -e "${CYAN}[4/5] Building and starting Docker containers (App, Nginx, PostgreSQL, BIND9)...${NC}"
     cd "$INSTALL_DIR"
     
+    free_port_53
     docker compose down --remove-orphans 2>/dev/null || true
+    docker rm -f salehi_nginx salehi_app salehi_postgres salehi_bind9 2>/dev/null || true
     docker compose up -d --build
 
     echo -e "${CYAN}[5/5] Checking service health...${NC}"
@@ -339,8 +378,13 @@ update_system() {
     print_banner
     echo -e "${YELLOW}Pulling latest updates from GitHub and rebuilding containers...${NC}"
     cd "$INSTALL_DIR"
-    git pull origin main || git pull origin master || true
-    docker compose down
+    [ -f .env ] && cp .env /tmp/salehi_env_backup 2>/dev/null || true
+    git fetch origin || true
+    git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || git pull origin main || true
+    [ -f /tmp/salehi_env_backup ] && cp /tmp/salehi_env_backup .env 2>/dev/null || true
+    free_port_53
+    docker compose down --remove-orphans 2>/dev/null || true
+    docker rm -f salehi_nginx salehi_app salehi_postgres salehi_bind9 2>/dev/null || true
     docker compose up -d --build
     echo -e "${GREEN}[OK] System successfully updated to the latest version!${NC}"
     pause_prompt
@@ -356,11 +400,12 @@ interactive_menu() {
         echo -e "  ${CYAN}[5]${NC} View Docker Services Status"
         echo -e "  ${CYAN}[6]${NC} Test BIND9 DNS Resolution (dig @127.0.0.1)"
         echo -e "  ${CYAN}[7]${NC} Reconfigure Domain & DNS Nameservers"
+        echo -e "  ${CYAN}[8]${NC} Free Port 53 & Start BIND9 Container"
         echo -e "  ${CYAN}[0]${NC} Exit"
         echo ""
 
         local choice=""
-        get_input "Please enter your choice [0-7]: " "" choice
+        get_input "Please enter your choice [0-8]: " "" choice
 
         case "$choice" in
             1)
@@ -405,12 +450,20 @@ interactive_menu() {
                 show_success_info
                 pause_prompt
                 ;;
+            8)
+                check_root
+                free_port_53
+                cd "$INSTALL_DIR"
+                docker compose up -d bind9 nginx
+                echo -e "${GREEN}[OK] Port 53 freed and BIND9 container started!${NC}"
+                pause_prompt
+                ;;
             0)
                 echo "Exiting..."
                 exit 0
                 ;;
             *)
-                echo -e "${RED}[Error] Invalid choice! Please select 0 to 7.${NC}"
+                echo -e "${RED}[Error] Invalid choice! Please select 0 to 8.${NC}"
                 sleep 1.5
                 ;;
         esac
@@ -427,6 +480,12 @@ if [ "$1" == "install" ]; then
     show_success_info
 elif [ "$1" == "dns" ] || [ "$1" == "test-dns" ]; then
     test_dns
+elif [ "$1" == "fix-dns" ] || [ "$1" == "free-53" ]; then
+    check_root
+    free_port_53
+    cd "$INSTALL_DIR"
+    docker compose up -d bind9 nginx
+    echo -e "${GREEN}[OK] Port 53 freed and containers started!${NC}"
 else
     interactive_menu
 fi

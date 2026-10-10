@@ -35,11 +35,6 @@ export default defineConfig(() => {
     css: {
       devSourcemap: false,
     },
-    optimizeDeps: {
-      rolldownOptions: {
-        minify: true,
-      },
-    },
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, '.'),

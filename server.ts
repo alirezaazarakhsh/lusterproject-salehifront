@@ -73,7 +73,10 @@ import swaggerJsdoc from 'swagger-jsdoc';
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  // Dev server in AI Studio and Docker Nginx proxy must listen on port 3000.
+  // Note: Cloud Run container environment sets PORT=8080 for its internal proxy.
+  // Express must bind to 3000 so the internal proxy can forward traffic to it.
+  const PORT = Number(process.env.APP_PORT) || (process.env.PORT && process.env.PORT !== '8080' ? Number(process.env.PORT) : 3000);
 
   app.use((req, _res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -2439,8 +2442,11 @@ async function startServer() {
   }
 
   if (!process.env.VERCEL) {
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT}`);
+    });
+    server.on('error', (err: any) => {
+      console.error('Server listen error:', err);
     });
   }
 
