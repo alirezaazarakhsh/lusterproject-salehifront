@@ -627,7 +627,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                   <span className="font-bold text-[#555]">وضعیت محصول</span>
                   <span className="font-black text-[#1a1a1a] tabular-nums">۴.۵</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden" dir="ltr">
                   <div className="h-full bg-[#2b2b2b] rounded-full" style={{ width: '90%' }} />
                 </div>
               </div>
@@ -638,7 +638,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                   <span className="font-bold text-[#555]">موقعیت مکانی و دسترسی</span>
                   <span className="font-black text-[#1a1a1a] tabular-nums">۴.۲</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden" dir="ltr">
                   <div className="h-full bg-[#2b2b2b] rounded-full" style={{ width: '84%' }} />
                 </div>
               </div>
@@ -649,7 +649,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                   <span className="font-bold text-[#555]">امکانات کالا</span>
                   <span className="font-black text-[#1a1a1a] tabular-nums">۳.۷</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden" dir="ltr">
                   <div className="h-full bg-[#2b2b2b] rounded-full" style={{ width: '74%' }} />
                 </div>
               </div>
@@ -660,7 +660,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                   <span className="font-bold text-[#555]">رعایت پروتکل های بسته بندی</span>
                   <span className="font-black text-[#1a1a1a] tabular-nums">۴.۹</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden" dir="ltr">
                   <div className="h-full bg-[#2b2b2b] rounded-full" style={{ width: '98%' }} />
                 </div>
               </div>
@@ -671,7 +671,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                   <span className="font-bold text-[#555]">به موقع رساندن کالا</span>
                   <span className="font-black text-[#1a1a1a] tabular-nums">۴.۸</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden" dir="ltr">
                   <div className="h-full bg-[#2b2b2b] rounded-full" style={{ width: '96%' }} />
                 </div>
               </div>
@@ -682,7 +682,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                   <span className="font-bold text-[#555]">کیفیت ارسال کالا</span>
                   <span className="font-black text-[#1a1a1a] tabular-nums">۳.۳</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden" dir="ltr">
                   <div className="h-full bg-[#2b2b2b] rounded-full" style={{ width: '66%' }} />
                 </div>
               </div>
@@ -693,7 +693,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                   <span className="font-bold text-[#555]">خدمات سرویس دهی</span>
                   <span className="font-black text-[#1a1a1a] tabular-nums">۴.۴</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-[#f2f2f2] overflow-hidden" dir="ltr">
                   <div className="h-full bg-[#2b2b2b] rounded-full" style={{ width: '88%' }} />
                 </div>
               </div>

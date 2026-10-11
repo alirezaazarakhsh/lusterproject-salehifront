@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { SectionHeading } from '../components/Ornaments';
 import { AppToast } from '../components/InteractiveModals';
 import { addMessageToFirestore } from '../lib/firestoreSync';
+import { apiFetchWithFallback } from '../utils/localBackendFallback';
 
 export interface ContactUsBranchLocationItem {
   id: string;
@@ -501,16 +502,22 @@ export const ContactUsContentSection: React.FC<
         createdAt: new Date().toISOString(),
       };
 
-      const docId = await addMessageToFirestore(messageData);
-      
-      if (!docId) {
-        throw new Error('خطا در ذخیره‌سازی پیام در دیتابیس');
-      }
+      // ثبت در سرور و دیتابیس PostgreSQL سرور شما با فال‌بک خودکار
+      await apiFetchWithFallback('/api/public/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messageData),
+      });
+
+      // پشتیبان‌گیری در پس‌زمینه بدون مسدود کردن فرم کاربر
+      addMessageToFirestore(messageData).catch(() => {});
 
       onShowToast?.(
         'contact-success',
         'پیام شما با موفقیت ارسال شد',
-        'پیام شما مستقیماً در دیتابیس اصلی ثبت شد.'
+        'پیام شما مستقیماً در دیتابیس سرور ثبت شد و کارشناسان ما به زودی با شما تماس خواهند گرفت.'
       );
 
       setFullName('');

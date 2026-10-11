@@ -114,11 +114,11 @@ EOF
 
 install_dependencies() {
     print_banner
-    echo -e "${CYAN}[1/5] Checking and installing system packages (Docker, Compose, Git)...${NC}"
+    echo -e "${CYAN}[1/5] Checking and installing system packages (Docker, Compose, Git, Security)...${NC}"
     
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y
-    apt-get install -y curl git ufw wget ca-certificates gnupg lsb-release dnsutils psmisc
+    apt-get install -y curl git ufw fail2ban iptables wget ca-certificates gnupg lsb-release dnsutils psmisc
 
     # Free port 53 for BIND9 container
     free_port_53
@@ -252,6 +252,27 @@ http {
             proxy_set_header X-Forwarded-Proto \$scheme;
         }
 
+        # Security: Block hidden files (.env, .git, etc.)
+        location ~ /\. {
+            deny all;
+            access_log off;
+            log_not_found off;
+        }
+
+        # Security: Drop common vulnerability scanner probes (.php, .asp, etc.)
+        location ~* \.(php|asp|aspx|jsp|cgi|env|git|bak|sql|yaml|yml)$ {
+            return 404;
+            access_log off;
+            log_not_found off;
+        }
+
+        # Security: Block common scanner paths
+        location ~* ^/(wp-|manager/|cgi-bin|_next/turbopack|boaform|shell|adminer|pma|myadmin) {
+            return 404;
+            access_log off;
+            log_not_found off;
+        }
+
         location / {
             proxy_pass http://salehi_backend;
             proxy_http_version 1.1;
@@ -281,6 +302,12 @@ http {
         ssl_session_cache shared:SSL:10m;
         ssl_session_tickets off;
 
+        # Security Headers
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
             try_files \$uri =404;
@@ -292,6 +319,27 @@ http {
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto https;
+        }
+
+        # Security: Block hidden files (.env, .git, etc.)
+        location ~ /\. {
+            deny all;
+            access_log off;
+            log_not_found off;
+        }
+
+        # Security: Drop common vulnerability scanner probes (.php, .asp, etc.)
+        location ~* \.(php|asp|aspx|jsp|cgi|env|git|bak|sql|yaml|yml)$ {
+            return 404;
+            access_log off;
+            log_not_found off;
+        }
+
+        # Security: Block common scanner paths
+        location ~* ^/(wp-|manager/|cgi-bin|_next/turbopack|boaform|shell|adminer|pma|myadmin) {
+            return 404;
+            access_log off;
+            log_not_found off;
         }
 
         location / {
@@ -345,16 +393,94 @@ ns2     IN  A       ${SERVER_IP}
 www     IN  A       ${SERVER_IP}
 EOF
     echo -e "${GREEN}[OK] BIND9 DNS Zone configured (ns1/ns2.${DOMAIN} -> ${SERVER_IP}).${NC}"
+}
 
-    # Configure Firewall (UFW)
+configure_server_security() {
+    print_banner
+    echo -e "${CYAN}===================================================================${NC}"
+    echo -e "${GOLD}  Configuring Server Security, Firewall & Anti-Scan Protection...  ${NC}"
+    echo -e "${CYAN}===================================================================${NC}"
+
+    # 1. Linux Kernel Network Hardening (Anti-SYN Flood & Anti-Spoofing)
+    echo -e "${YELLOW}[1/4] Applying Kernel TCP/IP Security Hardening...${NC}"
+    mkdir -p /etc/sysctl.d 2>/dev/null || true
+    cat << 'EOF' > /etc/sysctl.d/99-salehi-security.conf
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv4.tcp_max_syn_backlog = 4096
+EOF
+    sysctl --system &>/dev/null || true
+    echo -e "${GREEN}[OK] Kernel Anti-SYN Flood & Spoof protections applied.${NC}"
+
+    # 2. Configure UFW Firewall (Shielding Database and Backend from Internet)
+    echo -e "${YELLOW}[2/4] Configuring UFW Firewall Rules (Shielding Database & Internal Ports)...${NC}"
     if command -v ufw &>/dev/null; then
-        ufw allow 80/tcp 2>/dev/null || true
-        ufw allow 443/tcp 2>/dev/null || true
-        ufw allow 3000/tcp 2>/dev/null || true
-        ufw allow 53/tcp 2>/dev/null || true
-        ufw allow 53/udp 2>/dev/null || true
-        echo -e "${GREEN}[OK] Firewall ports (80, 443, 3000, 53 UDP/TCP) allowed.${NC}"
+        # Detect active SSH port to ensure root never gets locked out
+        local SSH_PORT
+        SSH_PORT=$(grep -E '^[# ]*Port ' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -n1 || true)
+        [ -z "$SSH_PORT" ] && SSH_PORT=22
+
+        ufw default deny incoming &>/dev/null || true
+        ufw default allow outgoing &>/dev/null || true
+
+        ufw allow "${SSH_PORT}/tcp" comment 'SSH Admin Port' &>/dev/null || true
+        ufw allow 80/tcp comment 'HTTP Web' &>/dev/null || true
+        ufw allow 443/tcp comment 'HTTPS Web' &>/dev/null || true
+        ufw allow 53/tcp comment 'BIND9 DNS' &>/dev/null || true
+        ufw allow 53/udp comment 'BIND9 DNS' &>/dev/null || true
+
+        # Ensure internal ports (Postgres 5432 & Node 3000) are NOT open from public internet
+        ufw delete allow 3000/tcp &>/dev/null || true
+        ufw delete allow 5432/tcp &>/dev/null || true
+
+        echo "y" | ufw enable &>/dev/null || true
+        echo -e "${GREEN}[OK] Firewall Active: Only SSH (${SSH_PORT}), 80, 443, 53 allowed. Database & Port 3000 fully shielded.${NC}"
     fi
+
+    # 3. Configure Fail2ban against Exploit Scanners & Brute-Force Bots
+    echo -e "${YELLOW}[3/4] Configuring Fail2ban Automatic Scanner Blocker...${NC}"
+    if command -v fail2ban-client &>/dev/null; then
+        mkdir -p /etc/fail2ban/filter.d /etc/fail2ban/jail.d 2>/dev/null || true
+
+        cat << 'EOF' > /etc/fail2ban/filter.d/salehi-scan-bots.conf
+[Definition]
+failregex = ^<HOST> -.*"(GET|POST|HEAD) \/(wp-|\.env|\.git|boaform|cgi-bin|_next\/turbopack|manager\/html|shell|phpmyadmin|adminer).*HTTP.*" (404|403|400)
+ignoreregex =
+EOF
+
+        cat << 'EOF' > /etc/fail2ban/jail.d/salehi-security.local
+[DEFAULT]
+bantime  = 86400
+findtime = 600
+maxretry = 5
+
+[sshd]
+enabled  = true
+port     = ssh
+maxretry = 4
+
+[salehi-scan-bots]
+enabled  = true
+port     = http,https
+filter   = salehi-scan-bots
+logpath  = /var/log/nginx/access.log
+maxretry = 3
+bantime  = 86400
+EOF
+        systemctl enable fail2ban &>/dev/null || true
+        systemctl restart fail2ban &>/dev/null || true
+        echo -e "${GREEN}[OK] Fail2ban Active: Scanner bots and brute-forcers will be banned automatically for 24 hours.${NC}"
+    fi
+
+    # 4. Nginx Anti-Exploit Rules
+    echo -e "${YELLOW}[4/4] Nginx Anti-Exploit Armor applied (.env, wp-login, script probes blocked instantly).${NC}"
+    echo -e "${GREEN}[OK] Server security hardening configured successfully!${NC}"
 }
 
 deploy_services() {
@@ -497,11 +623,12 @@ interactive_menu() {
         echo -e "  ${CYAN}[7]${NC} Reconfigure Domain & DNS Nameservers"
         echo -e "  ${CYAN}[8]${NC} Issue / Generate Let's Encrypt SSL & WebSockets (Certbot)"
         echo -e "  ${CYAN}[9]${NC} Free Port 53 & Start BIND9 Container"
+        echo -e "  ${CYAN}[10]${NC} Configure Server Security & Anti-Scan Armor (Fail2ban, UFW, Nginx)"
         echo -e "  ${CYAN}[0]${NC} Exit"
         echo ""
 
         local choice=""
-        get_input "Please enter your choice [0-9]: " "" choice
+        get_input "Please enter your choice [0-10]: " "" choice
 
         case "$choice" in
             1)
@@ -509,6 +636,7 @@ interactive_menu() {
                 install_dependencies
                 setup_project_files
                 configure_environment
+                configure_server_security
                 deploy_services
                 create_cli_shortcut
                 show_success_info
@@ -558,12 +686,19 @@ interactive_menu() {
                 echo -e "${GREEN}[OK] Port 53 freed and BIND9 container started!${NC}"
                 pause_prompt
                 ;;
+            10)
+                check_root
+                cd "$INSTALL_DIR"
+                configure_server_security
+                docker compose restart nginx 2>/dev/null || true
+                pause_prompt
+                ;;
             0)
                 echo "Exiting..."
                 exit 0
                 ;;
             *)
-                echo -e "${RED}[Error] Invalid choice! Please select 0 to 9.${NC}"
+                echo -e "${RED}[Error] Invalid choice! Please select 0 to 10.${NC}"
                 sleep 1.5
                 ;;
         esac
@@ -575,6 +710,7 @@ if [ "$1" == "install" ] || [ "$1" == "1" ]; then
     install_dependencies
     setup_project_files
     configure_environment
+    configure_server_security
     deploy_services
     create_cli_shortcut
     show_success_info
@@ -615,6 +751,11 @@ elif [ "$1" == "fix-dns" ] || [ "$1" == "free-53" ] || [ "$1" == "9" ]; then
     cd "$INSTALL_DIR"
     docker compose up -d bind9 nginx
     echo -e "${GREEN}[OK] Port 53 freed and containers started!${NC}"
+elif [ "$1" == "security" ] || [ "$1" == "firewall" ] || [ "$1" == "10" ]; then
+    check_root
+    cd "$INSTALL_DIR"
+    configure_server_security
+    docker compose restart nginx 2>/dev/null || true
 else
     interactive_menu
 fi

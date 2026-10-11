@@ -807,16 +807,17 @@ export async function handleLocalApiRequest(
   }
 
   // ۴. ثبت پیام تماس با ما عمومی
-  if (cleanUrl === '/api/public/contact' && method === 'POST') {
+  if ((cleanUrl === '/api/public/contact' || cleanUrl === '/api/contact') && method === 'POST') {
     const nextId =
       dbState.messages.reduce((max, m) => Math.max(max, Number(m.id) || 0), 0) +
       1;
     const created = {
       id: nextId,
       fullName: String(body.fullName || 'مشتری گالری'),
-      phone: String(body.phone || ''),
+      phone: String(body.phone || body.mobilePhone || ''),
+      email: String(body.email || ''),
       subject: String(body.subject || 'مشاوره خرید'),
-      message: String(body.message || ''),
+      message: String(body.message || body.messageText || ''),
       status: 'new',
       createdAt: new Date().toISOString(),
     };

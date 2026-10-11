@@ -155,6 +155,28 @@ server {
     add_header X-Frame-Options SAMEORIGIN always;
     add_header X-Content-Type-Options nosniff always;
     add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # Security: Block hidden files (.env, .git, etc.)
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Security: Drop common vulnerability scanner probes (.php, .asp, etc.)
+    location ~* \.(php|asp|aspx|jsp|cgi|env|git|bak|sql)$ {
+        return 404;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Security: Block common scanner paths
+    location ~* ^/(wp-|manager/|cgi-bin|_next/turbopack|boaform|shell) {
+        return 404;
+        access_log off;
+        log_not_found off;
+    }
 
     # Let's Encrypt ACME Challenge
     location /.well-known/acme-challenge/ {

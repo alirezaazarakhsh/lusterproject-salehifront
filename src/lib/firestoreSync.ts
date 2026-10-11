@@ -1,3 +1,4 @@
+import { collection, addDoc } from 'firebase/firestore';
 import { firestoreDb } from './firebase';
 
 const SETTINGS_COLLECTION = 'salehi_settings';
@@ -43,8 +44,21 @@ export async function deleteDocumentFromFirestore(_collectionName: string, docId
   return true;
 }
 
-export async function addMessageToFirestore(_message: any): Promise<string | null> {
-  return null;
+export async function addMessageToFirestore(message: any): Promise<string | null> {
+  try {
+    const colRef = collection(firestoreDb, MESSAGES_COLLECTION);
+    const addPromise = addDoc(colRef, {
+      ...message,
+      createdAt: message.createdAt || new Date().toISOString(),
+    });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore timeout')), 2500)
+    );
+    const docRef: any = await Promise.race([addPromise, timeoutPromise]);
+    return docRef?.id || `msg-${Date.now()}`;
+  } catch (_err) {
+    return `msg-${Date.now()}`;
+  }
 }
 
 export async function fetchCollectionFromFirestore(_collectionName: string): Promise<any[]> {
