@@ -3779,7 +3779,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           {/* توضیحات تکمیلی و بازه زمانی تحویل (ستون چپ) - ۸ ستون */}
           <div className="lg:col-span-8 space-y-5">
             <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs text-right">
-              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] border-b-2 border-[#e0e0e0] pb-3 mb-4">
+              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] mb-4">
                 توضیحات تکمیلی
               </h3>
               <p className="text-xs sm:text-[13px] leading-7 text-[#777777] text-justify">
@@ -3788,24 +3788,24 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
             </div>
 
             {/* بازه زمانی تحویل با کامیون طلایی */}
-            <div className="bg-white rounded-[16px] border border-[#ebdcb9]/40 p-4 shadow-2xs flex items-center justify-between text-right gap-4">
+            <div className="bg-white rounded-[16px] border border-[#ebdcb9]/40 p-4 shadow-2xs flex items-center justify-between text-right gap-4 mt-[2px]">
               <div className="flex items-center gap-3">
                 {/* آیکون کامیون باربری طلایی */}
-                <div className="w-10 h-10 rounded-full bg-[#fbf8f2] flex items-center justify-center shrink-0 border border-[#ebdcb9]/30">
-                  <TruckFast className="w-5 h-5 text-[#b58c56]" variant="Bulk" />
+                <div className="w-12 h-12 rounded-[12px] bg-[#fbf8f2] flex items-center justify-center shrink-0 border border-[#ebdcb9]/30">
+                  <TruckFast size="24" color="#b58c56" />
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-[#1a1a1a]">بازه زمانی تحویل :</span>
-                  <div className="flex gap-2 mt-2">
-                    <div className="px-2 py-1 bg-[#fcf9f2] border border-[#ebdcb9] rounded-md text-[11px] font-bold">۲ مهر</div>
-                    <div className="px-2 py-1 bg-[#fcf9f2] border border-[#ebdcb9] rounded-md text-[11px] font-bold">۷ مهر</div>
+                  <div className="mt-2">
+                    <span className="text-[11px] font-bold text-[#555]">تاریخ حدودی تحویل مرسوله (۲ مهر ۱۴۰۴ - ۷ مهر ۱۴۰۴)</span>
                   </div>
                 </div>
               </div>
-              <div className="bg-[#fcf9f2] border border-[#ebdcb9]/60 px-3 py-1.5 rounded-lg shrink-0">
-                <span className="text-[11.5px] font-bold text-[#b58c56] tabular-nums">
-                  ساعت حدودی : ۱۲:۵۵ الی ۱۴:۴۵
-                </span>
+              <div className="flex items-center gap-2 bg-[#fcf9f2] border border-[#ebdcb9]/60 px-3.5 py-2 rounded-xl">
+                <span className="text-xs font-bold text-[#555]">ساعت حدودی :</span>
+                <span className="text-xs font-extrabold text-[#222] bg-white border border-[#ebdcb9]/60 px-2.5 py-0.5 rounded-md tabular-nums">۱۲ : ۵۵</span>
+                <span className="text-xs font-bold text-[#888]">الی</span>
+                <span className="text-xs font-extrabold text-[#222] bg-white border border-[#ebdcb9]/60 px-2.5 py-0.5 rounded-md tabular-nums">۱۴ : ۴۵</span>
               </div>
             </div>
           </div>
@@ -3814,8 +3814,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
         {/* بخش سوم: نظرات کاربران درباره این محصول */}
         <div className="border-t border-[#ebdcb9]/30 pt-8 mt-10 text-right">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-baseline gap-2.5">
+          <div className="flex items-center justify-between mb-6 mt-4">
+            <div className="flex flex-col gap-1">
               <h3 className="text-lg sm:text-xl font-black text-[#1a1a1a]">
                 نظرات کاربران درباره این محصول
               </h3>
@@ -3824,84 +3824,27 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                <button type="button" className="w-8 h-8 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronRight className="w-4 h-4" /></button>
+                <button type="button" className="w-8 h-8 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronLeft className="w-4 h-4" /></button>
+              </div>
+              
+              <div className="w-px h-6 border-r border-dashed border-[#ebdcb9]" />
+
               <button
                 type="button"
                 className="h-8 px-4 border border-[#ebdcb9] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
               >
                 + افزودن نظر
               </button>
-              <div className="flex gap-1">
-                <button type="button" className="w-8 h-8 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronRight className="w-4 h-4" /></button>
-                <button type="button" className="w-8 h-8 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronLeft className="w-4 h-4" /></button>
-              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            {/* لیست کامنت‌ها (سمت چپ) - ۷ ستون */}
-            <div className="lg:col-span-7 space-y-4">
-              
-              {/* کامنت ۱ */}
-              <div className="bg-white rounded-[20px] border border-[#ebdcb9]/40 p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {/* شبیه‌ساز آواتار کاربر */}
-                    <div className="w-10 h-10 rounded-full bg-[#ebdcb9]/30 flex items-center justify-center text-[#b58c56] font-bold text-sm">
-                      س‌آ
-                    </div>
-                    <div>
-                      <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">ساشا آذرخش آلوچه</span>
-                      <span className="block text-[10.5px] text-[#777777] font-semibold mt-1">تاریخ نظر دهی : ۱۳ شهریور ماه ۱۴۰۳</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="bg-[#b59766] text-white px-2.5 py-1 rounded-lg text-[11px] font-bold tabular-nums">
-                      ۴.۳ ★
-                    </span>
-                    <span className="bg-[#f6f6f5] text-gray-600 border border-[#e5e5e4] px-2.5 py-1 rounded-lg text-[10.5px] font-bold tabular-nums">
-                      ساعت ۱۴:۲۵
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify">
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است.
-                </p>
-              </div>
-
-              {/* کامنت ۲ */}
-              <div className="bg-white rounded-[20px] border border-[#ebdcb9]/40 p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#ebdcb9]/30 flex items-center justify-center text-[#b58c56] font-bold text-sm">
-                      پ‌ر
-                    </div>
-                    <div>
-                      <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">پرهام رحیمی</span>
-                      <span className="block text-[10.5px] text-[#777777] font-semibold mt-1">تاریخ نظر دهی : ۲۴ آبان ماه ۱۴۰۳</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="bg-[#b59766] text-white px-2.5 py-1 rounded-lg text-[11px] font-bold tabular-nums">
-                      ۴.۳ ★
-                    </span>
-                    <span className="bg-[#f6f6f5] text-gray-600 border border-[#e5e5e4] px-2.5 py-1 rounded-lg text-[10.5px] font-bold tabular-nums">
-                      ساعت ۱۴:۲۵
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify">
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است.
-                </p>
-              </div>
-
-            </div>
-
-            {/* کارت میانگین امتیازات (سمت راست) - ۵ ستون */}
-            <div className="lg:col-span-5">
+            {/* کارت میانگین امتیازات (سمت راست) - ۴ ستون */}
+            <div className="lg:col-span-4">
               <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs space-y-5">
                 {/* هدر امتیاز */}
                 <div className="flex items-center justify-between border-b border-[#f5f5f5] pb-3.5">
@@ -3940,6 +3883,66 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               </div>
             </div>
 
+            {/* لیست کامنت‌ها (سمت چپ) - ۸ ستون */}
+            <div className="lg:col-span-8 space-y-4">
+              
+              {/* کامنت ۱ */}
+              <div className="bg-white rounded-[20px] border border-[#ebdcb9]/40 p-5 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-[#b59766] text-white px-2.5 py-1 rounded-lg text-[11px] font-bold tabular-nums">
+                      ۴.۳ ★
+                    </span>
+                    <span className="bg-[#f6f6f5] text-gray-600 border border-[#e5e5e4] px-2.5 py-1 rounded-lg text-[10.5px] font-bold tabular-nums">
+                      ساعت ۱۴:۲۵
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">ساشا آذرخش آلوچه</span>
+                      <span className="block text-[10.5px] text-[#777777] font-semibold mt-1">تاریخ نظر دهی : ۱۳ شهریور ماه ۱۴۰۳</span>
+                    </div>
+                    {/* شبیه‌ساز آواتار کاربر */}
+                    <div className="w-10 h-10 rounded-full bg-[#ebdcb9]/30 flex items-center justify-center text-[#b58c56] font-bold text-sm">
+                      س‌آ
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify">
+                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است.
+                </p>
+              </div>
+
+              {/* کامنت ۲ */}
+              <div className="bg-white rounded-[20px] border border-[#ebdcb9]/40 p-5 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-[#b59766] text-white px-2.5 py-1 rounded-lg text-[11px] font-bold tabular-nums">
+                      ۴.۳ ★
+                    </span>
+                    <span className="bg-[#f6f6f5] text-gray-600 border border-[#e5e5e4] px-2.5 py-1 rounded-lg text-[10.5px] font-bold tabular-nums">
+                      ساعت ۱۴:۲۵
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">پرهام رحیمی</span>
+                      <span className="block text-[10.5px] text-[#777777] font-semibold mt-1">تاریخ نظر دهی : ۲۴ آبان ماه ۱۴۰۳</span>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-[#ebdcb9]/30 flex items-center justify-center text-[#b58c56] font-bold text-sm">
+                      پ‌ر
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify">
+                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است.
+                </p>
+              </div>
+
+            </div>
+
           </div>
         </div>
 
@@ -3954,13 +3957,13 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               <button
                 type="button"
                 onClick={() => navigateBackToProducts()}
-                className="h-8 px-4 border border-[#ebdcb9] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                className="h-10 px-6 border border-[#b58c5e] hover:bg-[#b58c5e] text-[#b58c56] hover:text-white rounded-lg text-sm font-bold transition-colors cursor-pointer"
               >
                 مشاهده محصولات
               </button>
               <div className="flex gap-1">
-                <button type="button" className="w-8 h-8 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronRight className="w-4 h-4" /></button>
-                <button type="button" className="w-8 h-8 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronLeft className="w-4 h-4" /></button>
+                <button type="button" className="w-10 h-10 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronRight className="w-4 h-4" /></button>
+                <button type="button" className="w-10 h-10 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronLeft className="w-4 h-4" /></button>
               </div>
             </div>
           </div>
@@ -3972,28 +3975,28 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               return (
                 <div
                   key={`sim-${simProd.id}`}
-                  className="bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 pb-4 flex flex-col justify-between hover:shadow-[0_12px_30px_rgba(0,0,0,0.05)] transition-all duration-300"
+                  className="group bg-white rounded-[16px] border border-[#e5e5e5] p-4 pb-5 flex flex-col justify-between hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300"
                 >
                   <div
                     onClick={() => navigateToProductDetail(simProd.id)}
-                    className="relative w-full h-44 rounded-xl bg-[#f5f5f5] flex items-center justify-center overflow-hidden cursor-pointer"
+                    className="relative w-full h-52 rounded-[12px] bg-[#f5f5f5] flex items-center justify-center overflow-hidden cursor-pointer group-hover:scale-[1.02] transition-transform duration-300"
                   >
                     <TransparentProductImage
                       src={simProd.image}
                       alt={simProd.name}
-                      className="w-full h-full max-h-[140px] object-contain transition-transform duration-300 hover:scale-105"
+                      className="w-full h-full max-h-[160px] object-contain"
                     />
                   </div>
 
-                  <div className="mt-3 text-right">
+                  <div className="mt-4 text-right">
                     <h4
                       onClick={() => navigateToProductDetail(simProd.id)}
-                      className="text-[14px] sm:text-[15px] font-extrabold text-[#1a1a1a] hover:text-[#b59766] cursor-pointer truncate"
+                      className="text-[16px] font-extrabold text-[#1a1a1a] hover:text-[#b59766] cursor-pointer truncate"
                     >
                       {simProd.name}
                     </h4>
-                    <p className="text-[11px] text-[#757575] font-semibold mt-1 truncate">{simProd.subtitle}</p>
-                    <p className="text-xs sm:text-[13px] font-black text-[#1a1a1a] mt-2 tabular-nums">
+                    <p className="text-[12px] text-[#757575] font-semibold mt-2 truncate">{simProd.subtitle}</p>
+                    <p className="text-[14px] font-black text-[#1a1a1a] mt-3 tabular-nums">
                       {toPersianDigits(simProd.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان')}
                     </p>
                   </div>

@@ -1,3 +1,4 @@
+import { TruckFast } from 'iconsax-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { navigateToRoute } from '../utils/navigation';
 import {
@@ -493,7 +494,7 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
           {/* توضیحات تکمیلی (Span 8) */}
           <div className="lg:col-span-8 space-y-5">
             <div className="bg-white rounded-[22px] border border-[#d6cebe] p-6 shadow-2xs">
-              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] border-b border-[#d6cebe] pb-3 mb-4">
+              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] mb-4">
                 توضیحات تکمیلی
               </h3>
               <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify pl-1">
@@ -502,32 +503,22 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
             </div>
 
             {/* باکس بازه تحویل */}
-            <div className="bg-[#fcf8f0]/90 rounded-[20px] border border-[#d6cebe] p-4.5 flex items-center justify-between gap-3.5 shadow-2xs">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#b59766] text-white flex items-center justify-center shrink-0 shadow-2xs">
-                  {/* TruckFast SVG icon */}
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2 17h2a2 2 0 1 0 4 0H8a2 2 0 1 0 4 0h5a2 2 0 1 0 4 0h1v-4a2 2 0 0 0-2-2h-3V7a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v10z"></path>
-                    <circle cx="6" cy="17" r="2"></circle>
-                    <circle cx="18" cy="17" r="2"></circle>
-                    <path d="M16 11h4l2 3v3h-1"></path>
-                    <path d="M2 9h9"></path>
-                    <path d="M2 13h5"></path>
-                  </svg>
-                </div>
-                <div className="text-right">
-                  <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">
-                    بازه زمانی تحویل :
-                  </span>
-                  <span className="block text-[11.5px] text-[#6e675c] mt-1 tabular-nums">
-                    تاریخ حدود مرسوله (۲ مهر ۱۴۰۴ - ۷ مهر ۱۴۰۴)
-                  </span>
+            {/* باکس بازه تحویل */}
+            <div className="bg-[#fcf8f0]/90 rounded-[24px] border border-[#d6cebe] p-5 flex items-center justify-between gap-6 shadow-2xs">
+              <div className="text-right">
+                <span className="block text-[15px] sm:text-[16px] font-black text-[#1a1a1a]">
+                  بازه زمانی تحویل :
+                </span>
+                <span className="block text-[13px] sm:text-[14px] text-[#6e675c] mt-2 font-medium">
+                  تاریخ حدود مرسوله (۲ مهر ۱۴۰۴ - ۷ مهر ۱۴۰۴)
+                </span>
+                <div className="block text-[13px] sm:text-[14px] text-[#6e675c] mt-1 font-medium tabular-nums" dir="ltr">
+                  12:55 - 14:45 :ساعت حدودی
                 </div>
               </div>
 
-              <div className="bg-white border border-[#d6cebe] px-3.5 py-2 rounded-xl shrink-0">
-                <span className="text-xs font-bold text-[#555]">ساعت حدودی : </span>
-                <span className="text-xs font-extrabold text-[#1a1a1a] tabular-nums">۱۲:۵۵ الی ۱۴:۴۵</span>
+              <div className="w-16 h-16 rounded-[16px] bg-white border border-[#e3dcd0] text-[#b59766] flex items-center justify-center shrink-0 shadow-sm">
+                <TruckFast size={32} variant="Bulk" />
               </div>
             </div>
           </div>
