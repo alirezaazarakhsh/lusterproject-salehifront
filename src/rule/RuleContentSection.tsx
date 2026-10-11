@@ -1,69 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { SectionHeading } from '../components/Ornaments';
-
-interface RuleFaqItem {
-  id: number;
-  numFa: string;
-  question: string;
-}
-
-const RULE_FAQ_ITEMS: RuleFaqItem[] = [
-  {
-    id: 1,
-    numFa: '۱',
-    question: 'پشتیبانی لوستر صالحی به چه صورت است ؟',
-  },
-  {
-    id: 2,
-    numFa: '۲',
-    question: 'همکاری در فروش چه شرایطی لازم است ؟',
-  },
-  {
-    id: 3,
-    numFa: '۳',
-    question: 'مواد اولیه لوستر از کجا تامین میشود؟',
-  },
-  {
-    id: 4,
-    numFa: '۴',
-    question: 'پیاده سازی عملکرد آبکاری لوستر صالحی به چه صورتی است ؟',
-  },
-  {
-    id: 5,
-    numFa: '۵',
-    question: 'پشتیبانی لوستر صالحی به چه صورت است ؟',
-  },
-  {
-    id: 6,
-    numFa: '۶',
-    question: 'همکاری در فروش چه شرایطی لازم است ؟',
-  },
-  {
-    id: 7,
-    numFa: '۷',
-    question: 'مواد اولیه لوستر از کجا تامین میشود؟',
-  },
-  {
-    id: 8,
-    numFa: '۸',
-    question: 'پیاده سازی عملکرد آبکاری لوستر صالحی به چه صورتی است ؟',
-  },
-];
+import { INITIAL_FAQ_SETTINGS, INITIAL_RULE_SETTINGS, apiFetchWithFallback } from '../utils/localBackendFallback';
 
 interface RuleContentSectionProps {
   faqSettings?: any;
+  ruleSettings?: any;
 }
 
 /**
  * بخش محتوای میانی صفحه قوانین و مقررات (/rule)
  * دقیقاً مطابق طرح دسکتاپ و موبایل و حالت باز شدن آکاردئون (Screenshot 2026-09-30 at 23.50.37.png)
  */
-export const RuleContentSection = ({ faqSettings = { faqs: { about: [], rules: [] } } }: RuleContentSectionProps) => {
+export const RuleContentSection = ({ faqSettings: propFaqSettings = { faqs: { about: [], rules: [] } }, ruleSettings: propRuleSettings }: RuleContentSectionProps) => {
   const [openFaqId, setOpenFaqId] = useState<number | string | null>(null);
   const [showMoreMobileFaq, setShowMoreMobileFaq] = useState(false);
+  const [liveFaq, setLiveFaq] = useState<any>(propFaqSettings);
+  const [liveRule, setLiveRule] = useState<any>(propRuleSettings);
 
-  const effectiveRuleFaqs = faqSettings?.faqs?.rules || [];
+  useEffect(() => {
+    if (propFaqSettings) setLiveFaq(propFaqSettings);
+  }, [propFaqSettings]);
+
+  useEffect(() => {
+    if (propRuleSettings) setLiveRule(propRuleSettings);
+  }, [propRuleSettings]);
+
+  useEffect(() => {
+    const handleUpdate = async () => {
+      try {
+        const data = await apiFetchWithFallback('/api/public/catalog');
+        if (data?.faqSettings) setLiveFaq(data.faqSettings);
+        if (data?.ruleSettings) setLiveRule(data.ruleSettings);
+      } catch {}
+    };
+    window.addEventListener('app-catalog-updated', handleUpdate);
+    return () => window.removeEventListener('app-catalog-updated', handleUpdate);
+  }, []);
+
+  const faqSettings = liveFaq || propFaqSettings;
+  const ruleSettings = liveRule || propRuleSettings || INITIAL_RULE_SETTINGS;
+
+  const effectiveRuleTitle = ruleSettings?.ruleTitle || INITIAL_RULE_SETTINGS.ruleTitle;
+  const effectiveRuleDesc = ruleSettings?.ruleDescription || INITIAL_RULE_SETTINGS.ruleDescription;
+  const effectiveRuleMobileDesc = ruleSettings?.ruleMobileDescription || INITIAL_RULE_SETTINGS.ruleMobileDescription;
+  const effectiveDeliveryTitle = ruleSettings?.deliveryTitle || INITIAL_RULE_SETTINGS.deliveryTitle;
+  const effectiveDeliveryItems = Array.isArray(ruleSettings?.deliveryItems) && ruleSettings.deliveryItems.length > 0
+    ? ruleSettings.deliveryItems
+    : INITIAL_RULE_SETTINGS.deliveryItems;
+
+  const effectiveRuleFaqs =
+    Array.isArray(faqSettings?.faqs?.rules) && faqSettings.faqs.rules.length > 0
+      ? faqSettings.faqs.rules
+      : INITIAL_FAQ_SETTINGS.faqs.rules;
 
   const toggleFaq = (id: number | string) => {
     setOpenFaqId((prev) => (prev === id ? null : id));
@@ -148,10 +137,10 @@ export const RuleContentSection = ({ faqSettings = { faqs: { about: [], rules: [
 
   return (
     <main className="w-full max-w-[1800px] mx-auto px-5 sm:px-8 lg:px-14 xl:px-20 pt-8 sm:pt-12 pb-12 sm:pb-20">
-      {/* ==================== ۱. بخش «قوانین و مقرارت لوستر صالحی» ==================== */}
+      {/* ==================== ۱. بخش «قوانین و مقرارت» ==================== */}
       <section>
         <SectionHeading
-          title="قوانین و مقرارت لوستر صالحی"
+          title={effectiveRuleTitle}
           className="mb-7 sm:mb-10"
         />
 
@@ -160,103 +149,52 @@ export const RuleContentSection = ({ faqSettings = { faqs: { about: [], rules: [
           className="hidden md:block text-[15px] lg:text-[16px] leading-[2.45] text-[#444444] text-justify"
           style={{ textAlignLast: 'right' }}
         >
-          لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.
+          {effectiveRuleDesc}
         </p>
 
-        {/* متن موبایل مطابق عکس دوم */}
+        {/* متن موبایل */}
         <p
           className="block md:hidden text-[14px] sm:text-[14.5px] leading-[2.3] text-[#444444] text-justify"
           style={{ textAlignLast: 'right' }}
         >
-          لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است قرار گیرد.
+          {effectiveRuleMobileDesc}
         </p>
       </section>
 
-      {/* ==================== ۲. بخش «شرایط تحویل محصولات» ==================== */}
+      {/* ==================== ۲. بخش «شرایط تحویل محصولات» با اقلام دینامیک ==================== */}
       <section className="mt-12 sm:mt-16">
         <SectionHeading
-          title="شرایط تحویل محصولات"
+          title={effectiveDeliveryTitle}
           className="mb-8 sm:mb-12"
         />
 
         <div className="space-y-9 sm:space-y-11">
-          {/* مورد ۱: بسته‌بندی دقیق و ایمن لوستر شما */}
-          <div>
-            <div className="flex items-center justify-start gap-2.5 mb-3.5">
-              <span className="w-[3.5px] h-5.5 sm:h-6 rounded-full bg-[#b08c57] shrink-0" />
-              <h3 className="text-[16.5px] sm:text-[18px] lg:text-[19px] font-bold text-[#1e1e1e]">
-                بسته‌بندی دقیق و ایمن لوستر شما
-              </h3>
+          {effectiveDeliveryItems.map((item: any, idx: number) => (
+            <div key={item.id || idx}>
+              <div className="flex items-center justify-start gap-2.5 mb-3.5">
+                <span className="w-[3.5px] h-5.5 sm:h-6 rounded-full bg-[#b08c57] shrink-0" />
+                <h3 className="text-[16.5px] sm:text-[18px] lg:text-[19px] font-bold text-[#1e1e1e]">
+                  {item.title}
+                </h3>
+              </div>
+
+              {/* متن دسکتاپ */}
+              <p
+                className="hidden md:block text-[15px] lg:text-[16px] leading-[2.45] text-[#444444] text-justify"
+                style={{ textAlignLast: 'right' }}
+              >
+                {item.description}
+              </p>
+
+              {/* متن موبایل */}
+              <p
+                className="block md:hidden text-[14px] sm:text-[14.5px] leading-[2.3] text-[#444444] text-justify"
+                style={{ textAlignLast: 'right' }}
+              >
+                {item.mobileDescription || item.description}
+              </p>
             </div>
-
-            {/* متن دسکتاپ با عبارت طلایی «شرایط فعلی تکنولوژی» */}
-            <p
-              className="hidden md:block text-[15px] lg:text-[16px] leading-[2.45] text-[#444444] text-justify"
-              style={{ textAlignLast: 'right' }}
-            >
-              لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای{' '}
-              <span className="text-[#b08c57] font-medium">
-                شرایط فعلی تکنولوژی
-              </span>{' '}
-              مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده است.
-            </p>
-
-            {/* متن موبایل مطابق عکس دوم */}
-            <p
-              className="block md:hidden text-[14px] sm:text-[14.5px] leading-[2.3] text-[#444444] text-justify"
-              style={{ textAlignLast: 'right' }}
-            >
-              گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به متر 12 . محدوده نصب خدمات تهران، کرج، لواسانات را برای شما مشتریان عزیز انجام میدهد. لوستر صالحی با بیش از 18 سال سابقه کاری در صنعت لوستر ایران دارای رزومه کاری فرودگاه امام خمینی ، مسجد فخر آباد مسجد چهارده معصوم و انواع مساجد سینما آستارای تجریش و غیره آماده ارائه خدمات برای شما مشتریان عزیز می باشد.
-            </p>
-          </div>
-
-          {/* مورد ۲: شاهکار لوستر دست زمان میبرد */}
-          <div>
-            <div className="flex items-center justify-start gap-2.5 mb-3.5">
-              <span className="w-[3.5px] h-5.5 sm:h-6 rounded-full bg-[#b08c57] shrink-0" />
-              <h3 className="text-[16.5px] sm:text-[18px] lg:text-[19px] font-bold text-[#1e1e1e]">
-                شاهکار لوستر دست زمان میبرد
-              </h3>
-            </div>
-
-            <p
-              className="hidden md:block text-[15px] lg:text-[16px] leading-[2.45] text-[#444444] text-justify"
-              style={{ textAlignLast: 'right' }}
-            >
-              لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.
-            </p>
-
-            <p
-              className="block md:hidden text-[14px] sm:text-[14.5px] leading-[2.3] text-[#444444] text-justify"
-              style={{ textAlignLast: 'right' }}
-            >
-              گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز میباشد.
-            </p>
-          </div>
-
-          {/* مورد ۳: خدمات استثنایی، در هر قدم از پیاده سازی */}
-          <div>
-            <div className="flex items-center justify-start gap-2.5 mb-3.5">
-              <span className="w-[3.5px] h-5.5 sm:h-6 rounded-full bg-[#b08c57] shrink-0" />
-              <h3 className="text-[16.5px] sm:text-[18px] lg:text-[19px] font-bold text-[#1e1e1e]">
-                خدمات استثنایی، در هر قدم از پیاده سازی
-              </h3>
-            </div>
-
-            <p
-              className="hidden md:block text-[15px] lg:text-[16px] leading-[2.45] text-[#444444] text-justify"
-              style={{ textAlignLast: 'right' }}
-            >
-              لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.
-            </p>
-
-            <p
-              className="block md:hidden text-[14px] sm:text-[14.5px] leading-[2.3] text-[#444444] text-justify"
-              style={{ textAlignLast: 'right' }}
-            >
-              گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز میباشد.
-            </p>
-          </div>
+          ))}
         </div>
       </section>
 

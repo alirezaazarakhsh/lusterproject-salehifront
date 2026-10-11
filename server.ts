@@ -63,6 +63,8 @@ import {
   saveSmsSettings,
   getFaqSettings,
   saveFaqSettings,
+  getRuleSettings,
+  saveRuleSettings,
   ensureSeeded,
 } from './src/db/repository';
 import { autoInitPostgresSchema } from './src/db/initSchema';
@@ -630,6 +632,7 @@ async function startServer() {
         mainSettings,
         smsSettings,
         faqSettings,
+        ruleSettings,
       ] = await Promise.all([
         getAllCategories(),
         getAllProducts(),
@@ -643,6 +646,7 @@ async function startServer() {
         getMainSettings(),
         getSmsSettings(),
         getFaqSettings(),
+        getRuleSettings(),
       ]);
       res.json({
         categories: categoriesList,
@@ -657,6 +661,7 @@ async function startServer() {
         mainSettings,
         smsSettings,
         faqSettings,
+        ruleSettings,
       });
     } catch (error: any) {
       console.error('Failed to load public catalog:', error);
@@ -893,6 +898,90 @@ async function startServer() {
         res
           .status(500)
           .json({ error: error.message || 'خطا در دریافت آمار داشبورد' });
+      }
+    }
+  );
+
+  /**
+   * @openapi
+   * /api/admin/bootstrap:
+   *   get:
+   *     summary: بارگذاری فوق‌سریع و یکپارچه کل داده‌های پنل مدیریت
+   *     description: دریافت تمام اطلاعات داشبورد، محصولات، دسته‌بندی‌ها، سفارش‌ها، پیام‌ها و تنظیمات در یک درخواست واحد جهت حذف کامل تاخیر.
+   *     tags: [Admin Dashboard - داشبورد]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: کلیه داده‌های پنل مدیریت
+   */
+  app.get(
+    ['/api/admin/bootstrap', '/api/admin/init-data'],
+    requireAuth,
+    async (_req: AuthRequest, res) => {
+      try {
+        const [
+          summary,
+          admins,
+          products,
+          categories,
+          projects,
+          stories,
+          articles,
+          messages,
+          orders,
+          footerSettings,
+          contactUsSettings,
+          aboutUsSettings,
+          heroSliderSettings,
+          mainSettings,
+          smsSettings,
+          faqSettings,
+          ruleSettings,
+        ] = await Promise.all([
+          getDashboardSummary(),
+          getUsers(),
+          getAllProducts(),
+          getAllCategories(),
+          getAllProjects(),
+          getAllStories(),
+          getAllArticles(),
+          getAllContactMessages(),
+          getAllOrders(),
+          getFooterSettings(),
+          getContactUsSettings(),
+          getAboutUsSettings(),
+          getHeroSliderSettings(),
+          getMainSettings(),
+          getSmsSettings(),
+          getFaqSettings(),
+          getRuleSettings(),
+        ]);
+
+        res.json({
+          summary,
+          admins,
+          products,
+          categories,
+          projects,
+          stories,
+          articles,
+          messages,
+          orders,
+          footerSettings,
+          contactUsSettings,
+          aboutUsSettings,
+          heroSliderSettings,
+          mainSettings,
+          smsSettings,
+          faqSettings,
+          ruleSettings,
+        });
+      } catch (error: any) {
+        console.error('Failed to fetch bootstrap admin data:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در بارگذاری سریع داده‌های پنل مدیریت' });
       }
     }
   );
@@ -2347,6 +2436,18 @@ async function startServer() {
   );
 
   // ۳. مدیریت تنظیمات سوالات متداول صفحات
+  app.get('/api/public/settings/faq', async (_req, res) => {
+    try {
+      const settings = await getFaqSettings();
+      res.json(settings);
+    } catch (error: any) {
+      console.error('Failed to fetch public faq settings:', error);
+      res
+        .status(500)
+        .json({ error: error.message || 'خطا در دریافت سوالات متداول' });
+    }
+  });
+
   /**
    * @openapi
    * /api/admin/settings/faq:
@@ -2396,6 +2497,51 @@ async function startServer() {
         res
           .status(500)
           .json({ error: error.message || 'خطا در ذخیره تنظیمات سوالات متداول صفحات' });
+      }
+    }
+  );
+
+  // مدیریت تنظیمات صفحه قوانین و شرایط تحویل (Rule & Delivery Settings)
+  app.get('/api/public/settings/rule', async (_req, res) => {
+    try {
+      const settings = await getRuleSettings();
+      res.json(settings);
+    } catch (error: any) {
+      console.error('Failed to fetch public rule settings:', error);
+      res
+        .status(500)
+        .json({ error: error.message || 'خطا در دریافت تنظیمات صفحه قوانین' });
+    }
+  });
+
+  app.get(
+    '/api/admin/settings/rule',
+    requireAuth,
+    async (_req: AuthRequest, res) => {
+      try {
+        const settings = await getRuleSettings();
+        res.json(settings);
+      } catch (error: any) {
+        console.error('Failed to fetch rule settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در دریافت تنظیمات صفحه قوانین و شرایط تحویل' });
+      }
+    }
+  );
+
+  app.put(
+    '/api/admin/settings/rule',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveRuleSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save rule settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات صفحه قوانین و شرایط تحویل' });
       }
     }
   );

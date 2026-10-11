@@ -117,6 +117,7 @@ interface LocalDbSchema {
   mainSettings: any;
   smsSettings: any;
   faqSettings: any;
+  ruleSettings: any;
 }
 
 export const INITIAL_MAIN_SETTINGS = {
@@ -234,6 +235,33 @@ export const INITIAL_FAQ_SETTINGS = {
       },
     ],
   },
+};
+
+export const INITIAL_RULE_SETTINGS = {
+  ruleTitle: 'قوانین و مقرارت لوستر صالحی',
+  ruleDescription: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.',
+  ruleMobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به متر 12 . محدوده نصب خدمات تهران، کرج، لواسانات را برای شما مشتریان عزیز انجام میدهد. لوستر صالحی با بیش از 18 سال سابقه کاری در صنعت لوستر ایران دارای رزومه کاری فرودگاه امام خمینی ، مسجد فخر آباد مسجد چهارده معصوم و انواع مساجد سینما آستارای تجریش و غیره آماده ارائه خدمات برای شما مشتریان عزیز می باشد.',
+  deliveryTitle: 'شرایط تحویل محصولات',
+  deliveryItems: [
+    {
+      id: 'rule-del-1',
+      title: 'بسته‌بندی دقیق و ایمن لوستر شما',
+      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد...',
+      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر...'
+    },
+    {
+      id: 'rule-del-2',
+      title: 'شاهکار لوستر دست زمان میبرد',
+      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است...',
+      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر...'
+    },
+    {
+      id: 'rule-del-3',
+      title: 'خدمات استثنایی، در هر قدم از پیاده سازی',
+      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است...',
+      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر...'
+    }
+  ]
 };
 
 function createInitialLocalDb(): LocalDbSchema {
@@ -401,6 +429,7 @@ function createInitialLocalDb(): LocalDbSchema {
     mainSettings: INITIAL_MAIN_SETTINGS,
     smsSettings: INITIAL_SMS_SETTINGS,
     faqSettings: INITIAL_FAQ_SETTINGS,
+    ruleSettings: INITIAL_RULE_SETTINGS,
   };
 }
 
@@ -490,6 +519,10 @@ export function loadLocalDb(): LocalDbSchema {
         faqSettings: {
           ...INITIAL_FAQ_SETTINGS,
           ...(parsed.faqSettings || {}),
+        },
+        ruleSettings: {
+          ...INITIAL_RULE_SETTINGS,
+          ...(parsed.ruleSettings || {}),
         },
       };
     }
@@ -603,6 +636,10 @@ export async function syncFromFirestore(): Promise<void> {
         faqSettings: {
           ...current.faqSettings,
           ...(cloudData.faqSettings || {}),
+        },
+        ruleSettings: {
+          ...current.ruleSettings,
+          ...(cloudData.ruleSettings || {}),
         },
       };
       try {
@@ -803,7 +840,48 @@ export async function handleLocalApiRequest(
       mainSettings: dbState.mainSettings,
       smsSettings: dbState.smsSettings,
       faqSettings: dbState.faqSettings,
+      ruleSettings: dbState.ruleSettings,
     };
+  }
+
+  // ۳.۱. بارگذاری یکپارچه سریع داده‌های پنل مدیریت
+  if ((cleanUrl === '/api/admin/bootstrap' || cleanUrl === '/api/admin/init-data') && method === 'GET') {
+    return {
+      summary: {
+        productsCount: dbState.products.length,
+        categoriesCount: dbState.categories.length,
+        projectsCount: dbState.projects.length,
+        storiesCount: dbState.stories.length,
+        articlesCount: dbState.articles.length,
+        messagesCount: dbState.messages.length,
+        ordersCount: dbState.orders.length,
+        usersCount: dbState.users.length,
+      },
+      admins: dbState.users,
+      products: dbState.products,
+      categories: dbState.categories,
+      projects: dbState.projects,
+      stories: dbState.stories,
+      articles: dbState.articles,
+      messages: dbState.messages,
+      orders: dbState.orders,
+      footerSettings: dbState.footerSettings,
+      contactUsSettings: dbState.contactUsSettings,
+      aboutUsSettings: dbState.aboutUsSettings,
+      heroSliderSettings: dbState.heroSliderSettings,
+      mainSettings: dbState.mainSettings,
+      smsSettings: dbState.smsSettings,
+      faqSettings: dbState.faqSettings,
+      ruleSettings: dbState.ruleSettings,
+    };
+  }
+
+  if (cleanUrl === '/api/public/settings/faq' && method === 'GET') {
+    return dbState.faqSettings;
+  }
+
+  if (cleanUrl === '/api/public/settings/rule' && method === 'GET') {
+    return dbState.ruleSettings;
   }
 
   // ۴. ثبت پیام تماس با ما عمومی
@@ -1498,6 +1576,23 @@ export async function handleLocalApiRequest(
     }
   }
 
+  // ۲۲. تنظیمات صفحه قوانین و شرایط تحویل
+  if (cleanUrl === '/api/admin/settings/rule') {
+    if (method === 'GET') {
+      return dbState.ruleSettings;
+    }
+    if (method === 'PUT') {
+      dbState.ruleSettings = {
+        ...INITIAL_RULE_SETTINGS,
+        ...dbState.ruleSettings,
+        ...body,
+      };
+      await saveSettingToFirestore('ruleSettings', dbState.ruleSettings);
+      await saveLocalDb(dbState);
+      return dbState.ruleSettings;
+    }
+  }
+
   return {};
 }
 
@@ -1547,14 +1642,17 @@ export async function apiFetchWithFallback(
         if (Array.isArray(data.articles)) data.articles = data.articles.filter((a: any) => !isItemDeleted(a));
       }
 
-      // Update local cache with server data if it's the catalog
-      if ((url === '/api/public/catalog' || url.startsWith('/api/public/catalog')) && data) {
+      // Update local cache with server data if it's the catalog or admin bootstrap
+      if ((url === '/api/public/catalog' || url.startsWith('/api/public/catalog') || url === '/api/admin/bootstrap' || url.startsWith('/api/admin/bootstrap')) && data) {
         const local = loadLocalDb();
         if (Array.isArray(data.products)) local.products = data.products;
         if (Array.isArray(data.categories)) local.categories = data.categories;
         if (Array.isArray(data.projects)) local.projects = data.projects;
         if (Array.isArray(data.stories)) local.stories = data.stories;
         if (Array.isArray(data.articles)) local.articles = data.articles;
+        if (Array.isArray(data.messages)) local.messages = data.messages;
+        if (Array.isArray(data.orders)) local.orders = data.orders;
+        if (Array.isArray(data.admins)) local.users = data.admins;
         if (data.footerSettings) local.footerSettings = data.footerSettings;
         if (data.contactUsSettings) local.contactUsSettings = data.contactUsSettings;
         if (data.aboutUsSettings) local.aboutUsSettings = data.aboutUsSettings;
@@ -1562,11 +1660,36 @@ export async function apiFetchWithFallback(
         if (data.mainSettings) local.mainSettings = data.mainSettings;
         if (data.smsSettings) local.smsSettings = data.smsSettings;
         if (data.faqSettings) local.faqSettings = data.faqSettings;
+        if (data.ruleSettings) local.ruleSettings = data.ruleSettings;
         
         try {
           localStorage.setItem(LOCAL_DB_STORAGE_KEY, JSON.stringify(local));
           saveAllDataToFirestore(local).catch(() => {});
         } catch {}
+      }
+
+      // همگام‌سازی فوری لوکال استوریج در هنگام ویرایش تنظیمات درباره ما یا سوالات متداول
+      if (isMutation && data && typeof data === 'object') {
+        const local = loadLocalDb();
+        let changed = false;
+        if (url.includes('/api/admin/settings/about-us')) {
+          local.aboutUsSettings = { ...local.aboutUsSettings, ...data };
+          changed = true;
+        } else if (url.includes('/api/admin/settings/faq')) {
+          local.faqSettings = { ...local.faqSettings, ...data };
+          changed = true;
+        } else if (url.includes('/api/admin/settings/rule')) {
+          local.ruleSettings = { ...local.ruleSettings, ...data };
+          changed = true;
+        } else if (url.includes('/api/admin/settings/footer')) {
+          local.footerSettings = { ...local.footerSettings, ...data };
+          changed = true;
+        }
+        if (changed) {
+          try {
+            localStorage.setItem(LOCAL_DB_STORAGE_KEY, JSON.stringify(local));
+          } catch {}
+        }
       }
       return data;
     }

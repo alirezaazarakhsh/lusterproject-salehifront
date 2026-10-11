@@ -59,6 +59,7 @@ import {
 } from '../components/sections/HeroSection';
 import {
   apiFetchWithFallback,
+  loadLocalDb,
   normalizeAdminPhoneClient,
   normalizeAdminPasswordClient,
   isMasterAdminCredentials,
@@ -67,6 +68,7 @@ import {
   INITIAL_MAIN_SETTINGS,
   INITIAL_SMS_SETTINGS,
   INITIAL_FAQ_SETTINGS,
+  INITIAL_RULE_SETTINGS,
 } from '../utils/localBackendFallback';
 import { isItemDeleted, recordDeletedKeys } from '../lib/firestoreSync';
 
@@ -93,7 +95,8 @@ type WebsiteSettingsSubTab =
   | 'hero_slider'
   | 'about'
   | 'contact'
-  | 'footer';
+  | 'footer'
+  | 'rule';
 
 interface AdminSessionUser {
   id: number;
@@ -164,6 +167,7 @@ const WEBSITE_SETTINGS_SUBTABS: { id: WebsiteSettingsSubTab; label: string }[] =
   { id: 'about', label: 'تب تنظیم صفحه در باره ما' },
   { id: 'contact', label: 'تب تنظیم صفحه تماس با ما' },
   { id: 'footer', label: 'تب تنظیم فوتر سایت' },
+  { id: 'rule', label: 'تب تنظیم صفحه قوانین و شرایط تحویل' },
 ];
 
 const PRESET_PRODUCT_IMAGES = [
@@ -292,25 +296,98 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     messagesCount: number;
     ordersCount: number;
     usersCount: number;
-  }>({
-    productsCount: 0,
-    categoriesCount: 0,
-    projectsCount: 0,
-    storiesCount: 0,
-    articlesCount: 0,
-    messagesCount: 0,
-    ordersCount: 0,
-    usersCount: 0,
+  }>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local) {
+        return {
+          productsCount: local.products?.length || 0,
+          categoriesCount: local.categories?.length || 0,
+          projectsCount: local.projects?.length || 0,
+          storiesCount: local.stories?.length || 0,
+          articlesCount: local.articles?.length || 0,
+          messagesCount: local.messages?.length || 0,
+          ordersCount: local.orders?.length || 0,
+          usersCount: local.users?.length || 0,
+        };
+      }
+    } catch {}
+    return {
+      productsCount: 0,
+      categoriesCount: 0,
+      projectsCount: 0,
+      storiesCount: 0,
+      articlesCount: 0,
+      messagesCount: 0,
+      ordersCount: 0,
+      usersCount: 0,
+    };
   });
 
-  const [adminsList, setAdminsList] = useState<AdminSessionUser[]>([]);
-  const [productsList, setProductsList] = useState<any[]>([]);
-  const [categoriesList, setCategoriesList] = useState<any[]>([]);
-  const [projectsList, setProjectsList] = useState<any[]>([]);
-  const [storiesList, setStoriesList] = useState<any[]>([]);
-  const [articlesList, setArticlesList] = useState<any[]>([]);
-  const [messagesList, setMessagesList] = useState<any[]>([]);
-  const [ordersList, setOrdersList] = useState<any[]>([]);
+  const [adminsList, setAdminsList] = useState<AdminSessionUser[]>(() => {
+    try {
+      const local = loadLocalDb();
+      return Array.isArray(local?.users) ? local.users.filter((u: any) => !isItemDeleted(u)) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [productsList, setProductsList] = useState<any[]>(() => {
+    try {
+      const local = loadLocalDb();
+      return Array.isArray(local?.products) ? local.products.filter((p: any) => !isItemDeleted(p)) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [categoriesList, setCategoriesList] = useState<any[]>(() => {
+    try {
+      const local = loadLocalDb();
+      return Array.isArray(local?.categories) ? local.categories.filter((c: any) => !isItemDeleted(c)) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [projectsList, setProjectsList] = useState<any[]>(() => {
+    try {
+      const local = loadLocalDb();
+      return Array.isArray(local?.projects) ? local.projects.filter((pr: any) => !isItemDeleted(pr)) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [storiesList, setStoriesList] = useState<any[]>(() => {
+    try {
+      const local = loadLocalDb();
+      return Array.isArray(local?.stories) ? local.stories.filter((s: any) => !isItemDeleted(s)) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [articlesList, setArticlesList] = useState<any[]>(() => {
+    try {
+      const local = loadLocalDb();
+      return Array.isArray(local?.articles) ? local.articles.filter((a: any) => !isItemDeleted(a)) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [messagesList, setMessagesList] = useState<any[]>(() => {
+    try {
+      const local = loadLocalDb();
+      return Array.isArray(local?.messages) ? local.messages.filter((m: any) => !isItemDeleted(m)) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [ordersList, setOrdersList] = useState<any[]>(() => {
+    try {
+      const local = loadLocalDb();
+      return Array.isArray(local?.orders) ? local.orders.filter((o: any) => !isItemDeleted(o)) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // ۱. فرم مدیریت ادمین‌ها (نام ادمین، شماره موبایل، رمز عبور، عکس ادمین، و تیک دسترسی هر بخش)
   const [editingAdminId, setEditingAdminId] = useState<number | null>(null);
@@ -907,6 +984,10 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   const [faqSettingsForm, setFaqSettingsForm] = useState<any>(INITIAL_FAQ_SETTINGS);
   const [isSavingFaqSettings, setIsSavingFaqSettings] = useState<boolean>(false);
 
+  // تنظیمات صفحه قوانین و شرایط تحویل
+  const [ruleSettingsForm, setRuleSettingsForm] = useState<any>(INITIAL_RULE_SETTINGS);
+  const [isSavingRuleSettings, setIsSavingRuleSettings] = useState<boolean>(false);
+
   // ۸. فرم سفارش مشتریان
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [orderForm, setOrderForm] = useState({
@@ -1000,6 +1081,75 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     if (!sessionToken) return;
     setIsLoadingData(true);
     try {
+      // ۱. تلاش برای بارگذاری فوق‌سریع در یک درخواست واحد (Fast Bootstrap)
+      let bootstrapRes: any = null;
+      try {
+        bootstrapRes = await authFetch('/api/admin/bootstrap');
+      } catch {
+        bootstrapRes = null;
+      }
+
+      if (bootstrapRes && typeof bootstrapRes === 'object' && bootstrapRes.summary) {
+        setIsDemoMode(isUsingFallbackMode());
+        setSummary(bootstrapRes.summary);
+        setAdminsList(Array.isArray(bootstrapRes.admins) ? bootstrapRes.admins.filter((adm: any) => !isItemDeleted(adm)) : []);
+        setProductsList(Array.isArray(bootstrapRes.products) ? bootstrapRes.products.filter((p: any) => !isItemDeleted(p)) : []);
+        setCategoriesList(Array.isArray(bootstrapRes.categories) ? bootstrapRes.categories.filter((c: any) => !isItemDeleted(c)) : []);
+        setProjectsList(Array.isArray(bootstrapRes.projects) ? bootstrapRes.projects.filter((pr: any) => !isItemDeleted(pr)) : []);
+        setStoriesList(Array.isArray(bootstrapRes.stories) ? bootstrapRes.stories.filter((s: any) => !isItemDeleted(s)) : []);
+        setArticlesList(Array.isArray(bootstrapRes.articles) ? bootstrapRes.articles.filter((a: any) => !isItemDeleted(a)) : []);
+        setMessagesList(Array.isArray(bootstrapRes.messages) ? bootstrapRes.messages.filter((m: any) => !isItemDeleted(m)) : []);
+        setOrdersList(Array.isArray(bootstrapRes.orders) ? bootstrapRes.orders.filter((o: any) => !isItemDeleted(o)) : []);
+        if (bootstrapRes.footerSettings) {
+          setFooterSettingsForm({
+            ...INITIAL_FOOTER_SETTINGS,
+            ...bootstrapRes.footerSettings,
+            phones: Array.isArray(bootstrapRes.footerSettings.phones) && bootstrapRes.footerSettings.phones.length > 0 ? bootstrapRes.footerSettings.phones : INITIAL_FOOTER_SETTINGS.phones,
+            otherLicenses: Array.isArray(bootstrapRes.footerSettings.otherLicenses) && bootstrapRes.footerSettings.otherLicenses.length > 0 ? bootstrapRes.footerSettings.otherLicenses : INITIAL_FOOTER_SETTINGS.otherLicenses,
+          });
+        }
+        if (bootstrapRes.contactUsSettings) {
+          setContactUsSettingsForm({
+            ...INITIAL_CONTACT_US_SETTINGS,
+            ...bootstrapRes.contactUsSettings,
+            branchLocations: Array.isArray(bootstrapRes.contactUsSettings.branchLocations) && bootstrapRes.contactUsSettings.branchLocations.length > 0 ? bootstrapRes.contactUsSettings.branchLocations : INITIAL_CONTACT_US_SETTINGS.branchLocations,
+            branchPhones: Array.isArray(bootstrapRes.contactUsSettings.branchPhones) && bootstrapRes.contactUsSettings.branchPhones.length > 0 ? bootstrapRes.contactUsSettings.branchPhones : INITIAL_CONTACT_US_SETTINGS.branchPhones,
+          });
+        }
+        if (bootstrapRes.aboutUsSettings) {
+          setAboutUsSettingsForm({
+            ...INITIAL_ABOUT_US_SETTINGS,
+            ...bootstrapRes.aboutUsSettings,
+            galleryImages: Array.isArray(bootstrapRes.aboutUsSettings.galleryImages) && bootstrapRes.aboutUsSettings.galleryImages.length > 0 ? bootstrapRes.aboutUsSettings.galleryImages : INITIAL_ABOUT_US_SETTINGS.galleryImages,
+          });
+        }
+        if (bootstrapRes.heroSliderSettings) {
+          setHeroSliderSettingsForm({
+            ...INITIAL_HERO_SLIDER_SETTINGS,
+            ...bootstrapRes.heroSliderSettings,
+            slides: Array.isArray(bootstrapRes.heroSliderSettings.slides) && bootstrapRes.heroSliderSettings.slides.length > 0 ? bootstrapRes.heroSliderSettings.slides : INITIAL_HERO_SLIDER_SETTINGS.slides,
+          });
+        }
+        if (bootstrapRes.mainSettings) {
+          setMainSettingsForm({ ...INITIAL_MAIN_SETTINGS, ...bootstrapRes.mainSettings });
+        }
+        if (bootstrapRes.smsSettings) {
+          setSmsSettingsForm({ ...INITIAL_SMS_SETTINGS, ...bootstrapRes.smsSettings });
+        }
+        if (bootstrapRes.faqSettings) {
+          setFaqSettingsForm({ ...INITIAL_FAQ_SETTINGS, ...bootstrapRes.faqSettings });
+        }
+        if (bootstrapRes.ruleSettings) {
+          setRuleSettingsForm({
+            ...INITIAL_RULE_SETTINGS,
+            ...bootstrapRes.ruleSettings,
+            deliveryItems: Array.isArray(bootstrapRes.ruleSettings.deliveryItems) && bootstrapRes.ruleSettings.deliveryItems.length > 0 ? bootstrapRes.ruleSettings.deliveryItems : INITIAL_RULE_SETTINGS.deliveryItems,
+          });
+        }
+        return;
+      }
+
+      // ۲. در صورت در دسترس نبودن اندپوینت مجتمع، فال‌بک به فراخوانی چندگانه
       const [
         summaryRes,
         adminsRes,
@@ -1017,6 +1167,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         mainSettingsRes,
         smsSettingsRes,
         faqSettingsRes,
+        ruleSettingsRes,
       ] = await Promise.all([
         authFetch('/api/admin/dashboard'),
         authFetch('/api/admin/users'),
@@ -1047,6 +1198,9 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         ),
         authFetch('/api/admin/settings/faq').catch(
           () => INITIAL_FAQ_SETTINGS
+        ),
+        authFetch('/api/admin/settings/rule').catch(
+          () => INITIAL_RULE_SETTINGS
         ),
       ]);
 
@@ -1132,6 +1286,13 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
           ...faqSettingsRes,
         });
       }
+      if (ruleSettingsRes) {
+        setRuleSettingsForm({
+          ...INITIAL_RULE_SETTINGS,
+          ...ruleSettingsRes,
+          deliveryItems: Array.isArray(ruleSettingsRes.deliveryItems) && ruleSettingsRes.deliveryItems.length > 0 ? ruleSettingsRes.deliveryItems : INITIAL_RULE_SETTINGS.deliveryItems,
+        });
+      }
     } catch (err: any) {
       showNotice(
         'error',
@@ -1173,11 +1334,11 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   }, [sessionToken]);
 
   useEffect(() => {
-    if (sessionToken && adminUser) {
+    if (sessionToken) {
       loadAllAdminData();
     }
     const handleDataUpdated = () => {
-      if (sessionToken && adminUser) {
+      if (sessionToken) {
         loadAllAdminData();
       }
     };
@@ -1187,7 +1348,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       window.removeEventListener('app-contact-message-created', handleDataUpdated);
       window.removeEventListener('app-catalog-updated', handleDataUpdated);
     };
-  }, [sessionToken, adminUser, loadAllAdminData]);
+  }, [sessionToken, loadAllAdminData]);
 
   const performDirectLogout = useCallback((reasonMessage?: string) => {
     localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
@@ -9110,6 +9271,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                         }).catch(() => {});
                       }
                       onCatalogUpdated?.();
+                      window.dispatchEvent(new CustomEvent('app-catalog-updated'));
                       showNotice(
                         'success',
                         'تنظیمات صفحه درباره ما و گالری تصاویر با موفقیت در وب‌سایت ذخیره و اعمال شد.'
@@ -10446,6 +10608,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                         ...saved,
                       });
                       onCatalogUpdated?.();
+                      window.dispatchEvent(new CustomEvent('app-catalog-updated'));
                       showNotice(
                         'success',
                         'سوالات متداول صفحات با موفقیت ذخیره و در سایت اعمال شد.'
@@ -10572,6 +10735,241 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     >
                       <Save className="w-4 h-4" />
                       <span>{isSavingFaqSettings ? 'در حال ذخیره...' : 'ثبت و اعمال تغییرات'}</span>
+                    </button>
+                  </div>
+                </form>
+              ) : activeWebsiteSettingsTab === 'rule' ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingRuleSettings(true);
+                    try {
+                      const saved = await authFetch(
+                        '/api/admin/settings/rule',
+                        {
+                          method: 'PUT',
+                          body: JSON.stringify(ruleSettingsForm),
+                        }
+                      );
+                      setRuleSettingsForm({
+                        ...INITIAL_RULE_SETTINGS,
+                        ...saved,
+                        deliveryItems: Array.isArray(saved?.deliveryItems) && saved.deliveryItems.length > 0 ? saved.deliveryItems : INITIAL_RULE_SETTINGS.deliveryItems,
+                      });
+                      onCatalogUpdated?.();
+                      window.dispatchEvent(new CustomEvent('app-catalog-updated'));
+                      showNotice(
+                        'success',
+                        'تنظیمات صفحه قوانین و شرایط تحویل با موفقیت ذخیره و در سایت اعمال شد.'
+                      );
+                    } catch (err: any) {
+                      showNotice(
+                        'error',
+                        err?.message || 'خطا در ذخیره تنظیمات صفحه قوانین'
+                      );
+                    } finally {
+                      setIsSavingRuleSettings(false);
+                    }
+                  }}
+                  className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#efefef] pb-4">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
+                        تنظیمات صفحه قوانین و مقررات و شرایط تحویل (`/rule`)
+                      </h2>
+                      <p className="text-xs text-[#666] mt-1">
+                        ویرایش عنوان صفحه، توضیحات کلی و مدیریت شرایط تحویل محصولات با افزودن آیتم‌ها و زیرعنوان‌های دلخواه
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-xs font-bold text-[#333] mb-2">عنوان اصلی صفحه قوانین</label>
+                      <input
+                        type="text"
+                        value={ruleSettingsForm.ruleTitle || ''}
+                        onChange={(e) => setRuleSettingsForm({ ...ruleSettingsForm, ruleTitle: e.target.value })}
+                        className="w-full h-11 rounded-xl border border-[#e0e0e0] px-4 text-xs font-bold"
+                        placeholder="قوانین و مقرارت لوستر صالحی"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#333] mb-2">متن و توضیحات کامل صفحه (دسکتاپ)</label>
+                      <textarea
+                        rows={4}
+                        value={ruleSettingsForm.ruleDescription || ''}
+                        onChange={(e) => setRuleSettingsForm({ ...ruleSettingsForm, ruleDescription: e.target.value })}
+                        className="w-full rounded-xl border border-[#e0e0e0] p-3 text-xs font-medium leading-relaxed"
+                        placeholder="توضیحات دسکتاپ صفحه قوانین..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#333] mb-2">متن و توضیحات صفحه (موبایل)</label>
+                      <textarea
+                        rows={3}
+                        value={ruleSettingsForm.ruleMobileDescription || ''}
+                        onChange={(e) => setRuleSettingsForm({ ...ruleSettingsForm, ruleMobileDescription: e.target.value })}
+                        className="w-full rounded-xl border border-[#e0e0e0] p-3 text-xs font-medium leading-relaxed"
+                        placeholder="توضیحات موبایل صفحه قوانین..."
+                      />
+                    </div>
+
+                    <div className="pt-4 border-t border-[#eee]">
+                      <label className="block text-xs font-bold text-[#333] mb-2">عنوان بخش شرایط تحویل</label>
+                      <input
+                        type="text"
+                        value={ruleSettingsForm.deliveryTitle || ''}
+                        onChange={(e) => setRuleSettingsForm({ ...ruleSettingsForm, deliveryTitle: e.target.value })}
+                        className="w-full h-11 rounded-xl border border-[#e0e0e0] px-4 text-xs font-bold"
+                        placeholder="شرایط تحویل محصولات"
+                      />
+                    </div>
+
+                    {/* لیست آیتم‌های شرایط تحویل با قابلیت افزودن آیتم جدید و زیرعنوان */}
+                    <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4">
+                      <div className="flex items-center justify-between border-b border-[#ece2cf] pb-3">
+                        <div>
+                          <h3 className="text-sm font-black text-[#181818]">
+                            آیتم‌های شرایط تحویل محصولات
+                          </h3>
+                          <p className="text-[11px] text-[#777] mt-0.5">
+                            می‌توانید آیتم‌های جدید با عنوان و زیرعنوان اضافه کنید یا موارد قبلی را ویرایش/حذف کنید.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentItems = Array.isArray(ruleSettingsForm.deliveryItems) ? ruleSettingsForm.deliveryItems : [];
+                            const newItem = {
+                              id: `rule-del-${Date.now()}`,
+                              title: 'عنوان شرایط تحویل جدید',
+                              description: 'توضیحات و زیرعنوان کامل برای دسکتاپ...',
+                              mobileDescription: 'توضیحات کوتاه برای نسخه موبایل...',
+                            };
+                            setRuleSettingsForm({
+                              ...ruleSettingsForm,
+                              deliveryItems: [...currentItems, newItem],
+                            });
+                          }}
+                          className="h-9 px-4 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>افزودن آیتم تحویل جدید</span>
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        {(Array.isArray(ruleSettingsForm.deliveryItems) ? ruleSettingsForm.deliveryItems : []).map((delItem: any, dIdx: number) => (
+                          <div key={delItem.id || dIdx} className="p-4 rounded-xl bg-white border border-[#e7dfd1] space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-[#181818]">آیتم تحویل {(dIdx + 1).toLocaleString('fa-IR')}</span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={dIdx === 0}
+                                  onClick={() => {
+                                    if (dIdx === 0) return;
+                                    const updated = [...ruleSettingsForm.deliveryItems];
+                                    const temp = updated[dIdx];
+                                    updated[dIdx] = updated[dIdx - 1];
+                                    updated[dIdx - 1] = temp;
+                                    setRuleSettingsForm({ ...ruleSettingsForm, deliveryItems: updated });
+                                  }}
+                                  className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold cursor-pointer disabled:opacity-40"
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={dIdx === ruleSettingsForm.deliveryItems.length - 1}
+                                  onClick={() => {
+                                    if (dIdx === ruleSettingsForm.deliveryItems.length - 1) return;
+                                    const updated = [...ruleSettingsForm.deliveryItems];
+                                    const temp = updated[dIdx];
+                                    updated[dIdx] = updated[dIdx + 1];
+                                    updated[dIdx + 1] = temp;
+                                    setRuleSettingsForm({ ...ruleSettingsForm, deliveryItems: updated });
+                                  }}
+                                  className="w-7 h-7 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold cursor-pointer disabled:opacity-40"
+                                >
+                                  ↓
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = ruleSettingsForm.deliveryItems.filter((_: any, i: number) => i !== dIdx);
+                                    setRuleSettingsForm({ ...ruleSettingsForm, deliveryItems: next });
+                                  }}
+                                  className="w-7 h-7 rounded bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-[#555] mb-1">عنوان آیتم</label>
+                              <input
+                                type="text"
+                                value={delItem.title || ''}
+                                onChange={(e) => {
+                                  const next = [...ruleSettingsForm.deliveryItems];
+                                  next[dIdx] = { ...delItem, title: e.target.value };
+                                  setRuleSettingsForm({ ...ruleSettingsForm, deliveryItems: next });
+                                }}
+                                className="w-full h-10 rounded-lg border border-[#e0e0e0] px-3 text-xs font-semibold"
+                                placeholder="عنوان تحویل..."
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-[#555] mb-1">زیرعنوان / توضیحات کامل (دسکتاپ)</label>
+                              <textarea
+                                rows={2}
+                                value={delItem.description || ''}
+                                onChange={(e) => {
+                                  const next = [...ruleSettingsForm.deliveryItems];
+                                  next[dIdx] = { ...delItem, description: e.target.value };
+                                  setRuleSettingsForm({ ...ruleSettingsForm, deliveryItems: next });
+                                }}
+                                className="w-full rounded-lg border border-[#e0e0e0] p-2 text-xs font-medium leading-relaxed"
+                                placeholder="توضیحات دسکتاپ..."
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-[#555] mb-1">توضیحات نسخه موبایل</label>
+                              <textarea
+                                rows={2}
+                                value={delItem.mobileDescription || ''}
+                                onChange={(e) => {
+                                  const next = [...ruleSettingsForm.deliveryItems];
+                                  next[dIdx] = { ...delItem, mobileDescription: e.target.value };
+                                  setRuleSettingsForm({ ...ruleSettingsForm, deliveryItems: next });
+                                }}
+                                className="w-full rounded-lg border border-[#e0e0e0] p-2 text-xs font-medium leading-relaxed"
+                                placeholder="توضیحات موبایل..."
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* دکمه ذخیره پایانی */}
+                  <div className="flex items-center justify-end pt-2 border-t border-[#efefef]">
+                    <button
+                      type="submit"
+                      disabled={isSavingRuleSettings}
+                      className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-sm transition-colors disabled:opacity-60"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{isSavingRuleSettings ? 'در حال ذخیره...' : 'ثبت و اعمال تغییرات صفحه قوانین'}</span>
                     </button>
                   </div>
                 </form>

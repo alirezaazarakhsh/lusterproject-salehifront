@@ -2190,14 +2190,14 @@ export async function getDashboardSummary() {
       allOrders,
       allUsers,
     ] = await Promise.all([
-      db.select().from(products),
-      db.select().from(categories),
-      db.select().from(projects),
-      db.select().from(stories),
-      db.select().from(articles),
-      db.select().from(contactMessages),
-      db.select().from(orders),
-      db.select().from(users),
+      db.select({ id: products.id }).from(products),
+      db.select({ id: categories.id }).from(categories),
+      db.select({ id: projects.id }).from(projects),
+      db.select({ id: stories.id }).from(stories),
+      db.select({ id: articles.id }).from(articles),
+      db.select({ id: contactMessages.id }).from(contactMessages),
+      db.select({ id: orders.id }).from(orders),
+      db.select({ id: users.id }).from(users),
     ]);
 
     return {
@@ -2983,7 +2983,9 @@ export interface AboutUsSettingsData {
   storyDescription: string;
   galleryImages: string[];
   catalogTitle?: string;
+  catalogTitleColor?: string;
   catalogDescription?: string;
+  catalogDescriptionColor?: string;
   catalogCardTitle?: string;
   catalogPageCount?: string;
   catalogDownloadUrl?: string;
@@ -3002,8 +3004,10 @@ export const DEFAULT_ABOUT_US_SETTINGS: AboutUsSettingsData = {
     ASSET_PATHS.aboutEmeraldPalace,
   ],
   catalogTitle: 'فایل کاتالوگ محصولات',
+  catalogTitleColor: '#181818',
   catalogDescription:
     'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد.',
+  catalogDescriptionColor: '#777777',
   catalogCardTitle: 'کاتالوگ محصولات لوستر صالحی',
   catalogPageCount: '۱۲۶ صفحه',
   catalogDownloadUrl: '',
@@ -3040,10 +3044,18 @@ export async function getAboutUsSettings(): Promise<AboutUsSettingsData> {
         typeof parsed.catalogTitle === 'string'
           ? parsed.catalogTitle
           : DEFAULT_ABOUT_US_SETTINGS.catalogTitle,
+      catalogTitleColor:
+        typeof parsed.catalogTitleColor === 'string'
+          ? parsed.catalogTitleColor
+          : DEFAULT_ABOUT_US_SETTINGS.catalogTitleColor,
       catalogDescription:
         typeof parsed.catalogDescription === 'string'
           ? parsed.catalogDescription
           : DEFAULT_ABOUT_US_SETTINGS.catalogDescription,
+      catalogDescriptionColor:
+        typeof parsed.catalogDescriptionColor === 'string'
+          ? parsed.catalogDescriptionColor
+          : DEFAULT_ABOUT_US_SETTINGS.catalogDescriptionColor,
       catalogCardTitle:
         typeof parsed.catalogCardTitle === 'string'
           ? parsed.catalogCardTitle
@@ -3085,10 +3097,18 @@ export async function saveAboutUsSettings(
         data.catalogTitle !== undefined
           ? String(data.catalogTitle)
           : current.catalogTitle,
+      catalogTitleColor:
+        data.catalogTitleColor !== undefined
+          ? String(data.catalogTitleColor)
+          : current.catalogTitleColor,
       catalogDescription:
         data.catalogDescription !== undefined
           ? String(data.catalogDescription)
           : current.catalogDescription,
+      catalogDescriptionColor:
+        data.catalogDescriptionColor !== undefined
+          ? String(data.catalogDescriptionColor)
+          : current.catalogDescriptionColor,
       catalogCardTitle:
         data.catalogCardTitle !== undefined
           ? String(data.catalogCardTitle)
@@ -3678,10 +3698,17 @@ export async function getFaqSettings(): Promise<FaqSettingsData> {
     }
 
     const parsed = JSON.parse(rows[0].settingValueJson);
+    const aboutList = Array.isArray(parsed.faqs?.about) && parsed.faqs.about.length > 0
+      ? parsed.faqs.about
+      : DEFAULT_FAQ_SETTINGS.faqs.about;
+    const rulesList = Array.isArray(parsed.faqs?.rules) && parsed.faqs.rules.length > 0
+      ? parsed.faqs.rules
+      : DEFAULT_FAQ_SETTINGS.faqs.rules;
+
     return {
       faqs: {
-        about: Array.isArray(parsed.faqs?.about) ? parsed.faqs.about : DEFAULT_FAQ_SETTINGS.faqs.about,
-        rules: Array.isArray(parsed.faqs?.rules) ? parsed.faqs.rules : DEFAULT_FAQ_SETTINGS.faqs.rules,
+        about: aboutList,
+        rules: rulesList,
       },
     };
   } catch {
@@ -3728,3 +3755,120 @@ export async function saveFaqSettings(
     throw new Error('خطا در ذخیره تنظیمات سوالات متداول صفحات.', { cause: error });
   }
 }
+
+// ==================== تنظیمات صفحه قوانین و شرایط تحویل (Rule & Delivery Settings) ====================
+export interface RuleDeliveryItem {
+  id: string;
+  title: string;
+  description: string;
+  mobileDescription?: string;
+}
+
+export interface RuleSettingsData {
+  ruleTitle: string;
+  ruleDescription: string;
+  ruleMobileDescription: string;
+  deliveryTitle: string;
+  deliveryItems: RuleDeliveryItem[];
+}
+
+export const DEFAULT_RULE_SETTINGS: RuleSettingsData = {
+  ruleTitle: 'قوانین و مقرارت لوستر صالحی',
+  ruleDescription: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.',
+  ruleMobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به متر 12 . محدوده نصب خدمات تهران، کرج، لواسانات را برای شما مشتریان عزیز انجام میدهد. لوستر صالحی با بیش از 18 سال سابقه کاری در صنعت لوستر ایران دارای رزومه کاری فرودگاه امام خمینی ، مسجد فخر آباد مسجد چهارده معصوم و انواع مساجد سینما آستارای تجریش و غیره آماده ارائه خدمات برای شما مشتریان عزیز می باشد.',
+  deliveryTitle: 'شرایط تحویل محصولات',
+  deliveryItems: [
+    {
+      id: 'rule-del-1',
+      title: 'بسته‌بندی دقیق و ایمن لوستر شما',
+      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد...',
+      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز میباشد.'
+    },
+    {
+      id: 'rule-del-2',
+      title: 'شاهکار لوستر دست زمان میبرد',
+      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد...',
+      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول...'
+    },
+    {
+      id: 'rule-del-3',
+      title: 'خدمات استثنایی، در هر قدم از پیاده سازی',
+      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد...',
+      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری...'
+    }
+  ]
+};
+
+export async function getRuleSettings(): Promise<RuleSettingsData> {
+  try {
+    const rows = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'rule_settings'))
+      .limit(1);
+
+    if (rows.length === 0 || !rows[0].settingValueJson) {
+      return DEFAULT_RULE_SETTINGS;
+    }
+
+    const parsed = JSON.parse(rows[0].settingValueJson);
+    return {
+      ruleTitle: typeof parsed.ruleTitle === 'string' && parsed.ruleTitle.trim() ? parsed.ruleTitle : DEFAULT_RULE_SETTINGS.ruleTitle,
+      ruleDescription: typeof parsed.ruleDescription === 'string' && parsed.ruleDescription.trim() ? parsed.ruleDescription : DEFAULT_RULE_SETTINGS.ruleDescription,
+      ruleMobileDescription: typeof parsed.ruleMobileDescription === 'string' && parsed.ruleMobileDescription.trim() ? parsed.ruleMobileDescription : DEFAULT_RULE_SETTINGS.ruleMobileDescription,
+      deliveryTitle: typeof parsed.deliveryTitle === 'string' && parsed.deliveryTitle.trim() ? parsed.deliveryTitle : DEFAULT_RULE_SETTINGS.deliveryTitle,
+      deliveryItems: Array.isArray(parsed.deliveryItems) && parsed.deliveryItems.length > 0
+        ? parsed.deliveryItems.map((item: any, idx: number) => ({
+            id: String(item.id || `rule-del-${idx + 1}`),
+            title: String(item.title || ''),
+            description: String(item.description || ''),
+            mobileDescription: String(item.mobileDescription || item.description || ''),
+          }))
+        : DEFAULT_RULE_SETTINGS.deliveryItems,
+    };
+  } catch {
+    return DEFAULT_RULE_SETTINGS;
+  }
+}
+
+export async function saveRuleSettings(
+  data: Partial<RuleSettingsData>
+): Promise<RuleSettingsData> {
+  try {
+    const current = await getRuleSettings();
+    const merged: RuleSettingsData = {
+      ruleTitle: data.ruleTitle !== undefined ? String(data.ruleTitle) : current.ruleTitle,
+      ruleDescription: data.ruleDescription !== undefined ? String(data.ruleDescription) : current.ruleDescription,
+      ruleMobileDescription: data.ruleMobileDescription !== undefined ? String(data.ruleMobileDescription) : current.ruleMobileDescription,
+      deliveryTitle: data.deliveryTitle !== undefined ? String(data.deliveryTitle) : current.deliveryTitle,
+      deliveryItems: Array.isArray(data.deliveryItems) ? data.deliveryItems : current.deliveryItems,
+    };
+
+    const existing = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'rule_settings'))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(siteSettings)
+        .set({
+          settingValueJson: JSON.stringify(merged),
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.settingKey, 'rule_settings'));
+    } else {
+      await db.insert(siteSettings).values({
+        settingKey: 'rule_settings',
+        settingValueJson: JSON.stringify(merged),
+      });
+    }
+
+    return merged;
+  } catch (error) {
+    console.error('Database query failed in saveRuleSettings:', error);
+    throw new Error('خطا در ذخیره تنظیمات صفحه قوانین و شرایط تحویل.', { cause: error });
+  }
+}
+

@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, FileText, Download, 
 import { SectionHeading } from '../components/Ornaments';
 import { AppToast } from '../components/InteractiveModals';
 import { GENERATED_IMAGES } from '../data/chandelierData';
+import { INITIAL_FAQ_SETTINGS, apiFetchWithFallback } from '../utils/localBackendFallback';
 import aboutGalleryShowroomImg from '../assets/images/about_gallery_showroom_1790844789780.jpg';
 import aboutGalleryGrandAtelierImg from '../assets/images/about_gallery_grand_atelier_1790845407976.jpg';
 import aboutGalleryRoyalStaircaseImg from '../assets/images/about_gallery_royal_staircase_1790845421517.jpg';
@@ -403,11 +404,38 @@ const GALLERY_SLIDES = [
 
 export const AboutUsContentSection = (props: AboutUsContentSectionProps) => {
   const {
-    aboutUsSettings,
+    aboutUsSettings: propAboutUsSettings,
     footerSettings,
-    faqSettings = { faqs: { about: [], rules: [] } },
+    faqSettings: propFaqSettings,
     onShowToast,
   } = props;
+
+  const [liveAboutUs, setLiveAboutUs] = useState<AboutUsSettingsConfig | undefined>(propAboutUsSettings);
+  const [liveFaq, setLiveFaq] = useState<any>(propFaqSettings);
+
+  useEffect(() => {
+    if (propAboutUsSettings) setLiveAboutUs(propAboutUsSettings);
+  }, [propAboutUsSettings]);
+
+  useEffect(() => {
+    if (propFaqSettings) setLiveFaq(propFaqSettings);
+  }, [propFaqSettings]);
+
+  useEffect(() => {
+    const handleUpdate = async () => {
+      try {
+        const data = await apiFetchWithFallback('/api/public/catalog');
+        if (data?.aboutUsSettings) setLiveAboutUs(data.aboutUsSettings);
+        if (data?.faqSettings) setLiveFaq(data.faqSettings);
+      } catch {}
+    };
+    window.addEventListener('app-catalog-updated', handleUpdate);
+    return () => window.removeEventListener('app-catalog-updated', handleUpdate);
+  }, []);
+
+  const aboutUsSettings = liveAboutUs || propAboutUsSettings;
+  const faqSettings = liveFaq || propFaqSettings;
+
   const effectiveStoryTitle =
     aboutUsSettings?.storyTitle || INITIAL_ABOUT_US_SETTINGS.storyTitle;
   const effectiveCatalogTitle =
@@ -438,7 +466,10 @@ export const AboutUsContentSection = (props: AboutUsContentSectionProps) => {
       ? aboutUsSettings.galleryImages
       : GALLERY_SLIDES;
 
-  const effectiveAboutFaqs = faqSettings?.faqs?.about || [];
+  const effectiveAboutFaqs =
+    Array.isArray(faqSettings?.faqs?.about) && faqSettings.faqs.about.length > 0
+      ? faqSettings.faqs.about
+      : INITIAL_FAQ_SETTINGS.faqs.about;
 
   // اسلایدر عکس بخش اول (درباره لوستر صالحی)
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
