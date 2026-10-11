@@ -1,5 +1,15 @@
 import { ChandelierModelType, FinishType } from '../components/Chandelier3DViewer';
 
+export const CARD_PLATING_FINISHES: FinishType[] = [
+  'original',
+  'gold-24k',
+  'antique-bronze',
+  'dark-patina',
+  'royal-silver',
+  'champagne',
+  'rose-gold',
+];
+
 /**
  * مسیر تصاویر تولیدشده در پروژه (استفاده از مسیرهای استاتیک برای پایداری در تمامی محیط‌ها)
  */

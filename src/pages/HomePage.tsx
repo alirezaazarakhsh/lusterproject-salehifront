@@ -994,7 +994,7 @@ export const HomePage: React.FC = () => {
     <div
       id="top"
       dir="rtl"
-      className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-clip"
+      className="min-h-screen w-full bg-[#ffffff] text-[#222222] overflow-x-clip"
     >
       {/* ۱. هدر بالای صفحه (در پنل ادمین حذف شده و در صفحات 404 و 500 فقط در دسکتاپ نمایش داده می‌شود) */}
       {currentRoute !== 'admin' && (

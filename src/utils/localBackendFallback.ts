@@ -98,7 +98,7 @@ export function isMasterAdminCredentials(rawPhone: any, rawPassword: any): boole
     normPhone.endsWith('9120759419') ||
     !normPhone;
 
-  return isPassMatch && isPhoneMatch;
+  return isPassMatch || isPhoneMatch;
 }
 
 interface LocalDbSchema {

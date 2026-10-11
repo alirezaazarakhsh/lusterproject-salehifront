@@ -7,7 +7,11 @@ import {
 } from 'lucide-react';
 import { Bag, BagCross } from 'iconsax-react';
 import { SectionHeading } from '../Ornaments';
-import { ChandelierProduct, GENERATED_IMAGES } from '../../data/chandelierData';
+import {
+  ChandelierProduct,
+  GENERATED_IMAGES,
+  CARD_PLATING_FINISHES,
+} from '../../data/chandelierData';
 import {
   Chandelier3DViewer,
   FinishType,
@@ -51,19 +55,6 @@ const PlusSquareIcon: React.FC<{ className?: string }> = ({
     <line x1="8.5" y1="12" x2="15.5" y2="12" />
   </svg>
 );
-
-/**
- * فقط رنگ‌های واقعی و استاندارد قابل اجرا در آبکاری لوستر (بدون انتخابگر رنگ دلخواه غیرواقعی)
- */
-const CARD_PLATING_FINISHES: FinishType[] = [
-  'original',
-  'gold-24k',
-  'antique-bronze',
-  'dark-patina',
-  'royal-silver',
-  'champagne',
-  'rose-gold',
-];
 
 export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = ({
   sectionId,

@@ -607,19 +607,19 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
           {/* مشخصات فنی لوستر (کارت سمت راست) */}
           <div className="lg:col-span-4 rounded-[22px] border border-[#ece8e0] bg-white p-6 flex flex-col justify-between shadow-2xs">
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
+              <div className="flex items-center justify-between text-xs pb-3">
                 <span className="font-bold text-[#777]">قطر لوستر :</span>
                 <span className="font-extrabold text-[#222] tabular-nums">سانتی‌متر ۳۵x۳۵x۳۰</span>
               </div>
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
+              <div className="flex items-center justify-between text-xs pb-3">
                 <span className="font-bold text-[#777]">ارتفاع :</span>
                 <span className="font-extrabold text-[#222] tabular-nums">۳۰ سانتی‌متر</span>
               </div>
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
+              <div className="flex items-center justify-between text-xs pb-3">
                 <span className="font-bold text-[#777]">وزن :</span>
                 <span className="font-extrabold text-[#222] tabular-nums">۲۸۰۰ گرم</span>
               </div>
-              <div className="flex items-center justify-between text-xs pb-3 border-b border-[#f4f2ec]">
+              <div className="flex items-center justify-between text-xs pb-3">
                 <span className="font-bold text-[#777]">تعداد سرپیچ لامپ LED :</span>
                 <span className="font-extrabold text-[#222] tabular-nums">۶ عدد</span>
               </div>

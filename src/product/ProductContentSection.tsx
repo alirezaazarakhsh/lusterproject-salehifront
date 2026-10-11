@@ -16,6 +16,7 @@ import {
   ChandelierProduct,
   GENERATED_IMAGES,
   SALEHI_COLLECTION_PRODUCTS,
+  CARD_PLATING_FINISHES,
 } from '../data/chandelierData';
 import {
   Chandelier3DViewer,
@@ -42,7 +43,30 @@ import {
   Share,
   BagTick,
   TruckFast,
+  Bag,
+  BagCross,
 } from 'iconsax-react';
+
+/**
+ * آیکون مربع گوشه‌گرد با علامت بعلاوه (+)
+ */
+const PlusSquareIcon: React.FC<{ className?: string }> = ({
+  className = 'w-[22px] h-[22px]',
+}) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <rect x="3" y="3" width="18" height="18" rx="5.5" />
+    <line x1="12" y1="8.5" x2="12" y2="15.5" />
+    <line x1="8.5" y1="12" x2="15.5" y2="12" />
+  </svg>
+);
 
 export type ProductCategorySlug =
   | 'all'
@@ -474,35 +498,7 @@ const ShoppingBasketIcon: React.FC<{ className?: string }> = ({
   </svg>
 );
 
-/**
- * آیکون کادر مربع با علامت مثبت در وسط (برای حالت افزوده شده به سبد خرید)
- */
-const PlusSquareIcon: React.FC<{ className?: string }> = ({
-  className = 'w-5 h-5',
-}) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-  >
-    <rect
-      x="3.5"
-      y="3.5"
-      width="17"
-      height="17"
-      rx="5"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    />
-    <path
-      d="M12 8.5V15.5M8.5 12H15.5"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-    />
-  </svg>
-);
+
 
 /**
  * آیکون کیف خرید با ضربدر (برای حالت ناموجود در انبار - مطابق طراحی Figma با دسته‌های باز)
@@ -1848,6 +1844,13 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     () => resolveProductCategoryBySlug(getProductCategorySlugFromLocation())
   );
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [active3DCards, setActive3DCards] = useState<Record<string, boolean>>({});
+  const [cardFinishes, setCardFinishes] = useState<Record<string, FinishType>>({});
+
+  const toggleCard3D = (productId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActive3DCards((prev) => ({ ...prev, [productId]: !prev[productId] }));
+  };
 
   const findProductBySlugOrCode = (
     slug: string | null | undefined
@@ -1982,10 +1985,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     useState<boolean>(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
 
-  const [active3DCards, setActive3DCards] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [cardFinishes] = useState<Record<string, FinishType>>({});
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [justAddedMap, setJustAddedMap] = useState<Record<string, boolean>>({});
   const [recentTooltipId, setRecentTooltipId] = useState<string | null>(null);
@@ -2154,11 +2153,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       delete tooltipTimeoutRef.current[productId];
     }
     setRecentTooltipId((prev) => (prev === productId ? null : prev));
-  };
-
-  const toggleCard3D = (productId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActive3DCards((prev) => ({ ...prev, [productId]: !prev[productId] }));
   };
 
   const handleViewAndBuyClick = (
@@ -3873,7 +3867,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                         <span className="text-[#555555]">{row.label}</span>
                         <span className="text-[#1a1a1a] tabular-nums">{row.score.toLocaleString('fa-IR')}</span>
                       </div>
-                      <div className="w-full h-1.5 bg-[#f0f0ee] rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-[#f0f0ee] rounded-full overflow-hidden" dir="ltr">
                         <div className="h-full bg-[#2b2b2b] rounded-full" style={{ width: row.pct }} />
                       </div>
                     </div>
@@ -3971,61 +3965,198 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           {/* شبکه محصولات مشابه ۴ ستونه با دکمه و آیکون سبد خرید دقیقا مطابق طرح */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {similarProducts.map((simProd) => {
-              const simFinish = simProd.defaultFinish || 'original';
+              const isOutOfStock = Boolean(simProd.outOfStock);
+              const qtyInCart = cartQuantities[simProd.id] || 0;
+              const isHighlighted = !isOutOfStock && (qtyInCart > 0 || cartProductIds.includes(simProd.id));
+              const currentFinish = cardFinishes[simProd.id] || 'original';
+              const activeFinishPreset = FINISH_PRESETS[currentFinish];
+
               return (
                 <div
                   key={`sim-${simProd.id}`}
-                  className="group bg-white rounded-[16px] border border-[#e5e5e5] p-4 pb-5 flex flex-col justify-between hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300"
+                  data-carousel-card="true"
+                  className="group shrink-0 snap-start flex flex-col justify-between bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300"
                 >
-                  <div
-                    onClick={() => navigateToProductDetail(simProd.id)}
-                    className="relative w-full h-52 rounded-[12px] bg-[#f5f5f5] flex items-center justify-center overflow-hidden cursor-pointer group-hover:scale-[1.02] transition-transform duration-300"
-                  >
-                    <TransparentProductImage
-                      src={simProd.image}
-                      alt={simProd.name}
-                      className="w-full h-full max-h-[160px] object-contain"
-                    />
-                  </div>
-
-                  <div className="mt-4 text-right">
-                    <h4
-                      onClick={() => navigateToProductDetail(simProd.id)}
-                      className="text-[16px] font-extrabold text-[#1a1a1a] hover:text-[#b59766] cursor-pointer truncate"
-                    >
-                      {simProd.name}
-                    </h4>
-                    <p className="text-[12px] text-[#757575] font-semibold mt-2 truncate">{simProd.subtitle}</p>
-                    <p className="text-[14px] font-black text-[#1a1a1a] mt-3 tabular-nums">
-                      {toPersianDigits(simProd.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان')}
-                    </p>
-                  </div>
-
-                  <div className="mt-4 pt-2.5 border-t border-[#f5f5f5] flex items-center justify-between gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => navigateToProductDetail(simProd.id)}
-                      className="h-9 px-3 bg-[#f3f3f3] hover:bg-[#242424] text-[#222222] hover:text-white text-[11px] font-extrabold rounded-lg transition-colors cursor-pointer"
-                    >
-                      مشاهده و خرید
-                    </button>
-
-                    <button
-                      type="button"
+                  <div>
+                    <div
                       onClick={() => {
-                        onAddToCart(simProd);
-                        setAddedToast(true);
-                        setTimeout(() => setAddedToast(false), 2200);
+                        if (isOutOfStock) return;
+                        if (!active3DCards[simProd.id]) {
+                          navigateToProductDetail(simProd.id);
+                        }
                       }}
-                      className="w-9 h-9 bg-[#f3f3f3] hover:bg-[#b59766] text-[#222222] hover:text-white rounded-lg flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                      aria-label="افزودن به سبد خرید"
+                      className="relative w-full h-56 sm:h-60 rounded-[12px] bg-[#f5f5f5] flex items-center justify-center overflow-hidden cursor-pointer"
                     >
-                      <ShoppingBag className="w-4 h-4" />
-                    </button>
+                      {active3DCards[simProd.id] ? (
+                        <div
+                          className="w-full h-full rounded-[12px] overflow-hidden"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Chandelier3DViewer
+                            modelType={simProd.modelType}
+                            imageUrl={simProd.image}
+                            initialFinish={currentFinish}
+                            initialTheme="light"
+                            compact
+                            showControls={false}
+                            className="w-full h-full"
+                          />
+                        </div>
+                      ) : (
+                        <TransparentProductImage
+                          src={simProd.image}
+                          alt={simProd.name}
+                          filterCss={activeFinishPreset?.filterCss || 'none'}
+                          className="w-full h-full max-h-[205px] max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                        />
+                      )}
 
-                    <div className="text-[10px] leading-tight shrink-0 text-center font-bold">
-                      <span className="block text-[#a0a0a0]">کد محصول</span>
-                      <span className="block text-[#555555] mt-0.5 tabular-nums">{simProd.productCode}</span>
+                      {!isOutOfStock && (
+                        <button
+                          type="button"
+                          onClick={(e) => toggleCard3D(simProd.id, e)}
+                          title={
+                            active3DCards[simProd.id]
+                              ? 'بازگشت به تصویر محصول'
+                              : 'تبدیل فوری به مدل سه‌بعدی (3D)'
+                          }
+                          className={`absolute top-2.5 left-2.5 z-20 px-2.5 py-1 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
+                            active3DCards[simProd.id]
+                              ? 'bg-[#b59766] text-white opacity-100'
+                              : 'bg-white/95 hover:bg-[#262626] text-[#262626] hover:text-white border border-[#e5e5e5] opacity-0 group-hover:opacity-100'
+                          }`}
+                        >
+                          <Box className="w-3 h-3" />
+                          <span>{active3DCards[simProd.id] ? 'نمای 3D فعال' : '3D خودکار'}</span>
+                        </button>
+                      )}
+
+                      {!isOutOfStock && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute bottom-2.5 inset-x-2.5 z-20 flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-xs border border-[#e8e4dc] shadow-2xs transition-opacity ${
+                            currentFinish !== 'original' || active3DCards[simProd.id]
+                              ? 'opacity-100'
+                              : 'opacity-0 group-hover:opacity-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            {CARD_PLATING_FINISHES.map((finishKey) => {
+                              const preset = FINISH_PRESETS[finishKey];
+                              return (
+                                <button
+                                  key={finishKey}
+                                  type="button"
+                                  onClick={() =>
+                                    setCardFinishes((prev) => ({
+                                      ...prev,
+                                      [simProd.id]: finishKey,
+                                    }))
+                                  }
+                                  title={preset.label}
+                                  className={`w-4 h-4 rounded-full border transition-transform cursor-pointer ${
+                                    currentFinish === finishKey
+                                      ? 'scale-125 border-[#222222] ring-1 ring-[#b59766]'
+                                      : 'border-black/20 hover:scale-110'
+                                  }`}
+                                  style={{
+                                    background: preset.swatch,
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-medium text-[#666] truncate max-w-[90px]">
+                              {activeFinishPreset.label}
+                            </span>
+                            {currentFinish !== 'original' && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCardFinishes((prev) => ({
+                                    ...prev,
+                                    [simProd.id]: 'original',
+                                  }))
+                                }
+                                title="بازنشانی به رنگ اصلی"
+                                className="text-[10px] text-[#666] hover:text-[#222] flex items-center cursor-pointer"
+                              >
+                                <RotateCcw className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 px-1.5 text-right">
+                      <h4
+                        onClick={() => navigateToProductDetail(simProd.id)}
+                        className="text-[17.5px] sm:text-[18.5px] font-bold text-[#1f1f1f] hover:text-[#b59766] cursor-pointer truncate transition-colors"
+                      >
+                        {simProd.name}
+                      </h4>
+                      <p className="text-[12.5px] sm:text-[13px] text-[#757575] font-medium mt-2.5 truncate">{simProd.subtitle}</p>
+                      <p className="text-[14px] sm:text-[14.5px] font-semibold text-[#757575] mt-3.5 tabular-nums">
+                        {toPersianDigits(simProd.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 px-1.5 flex flex-row items-center justify-between gap-1.5" dir="rtl">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => navigateToProductDetail(simProd.id)}
+                        className="h-11 min-w-[100px] px-3 rounded-[12px] text-[12.5px] font-bold transition-colors whitespace-nowrap bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer ml-1"
+                      >
+                        مشاهده و خرید
+                      </button>
+
+                      <div className="relative shrink-0">
+                        {isOutOfStock ? (
+                          <button
+                            type="button"
+                            disabled
+                            aria-label="محصول در انبار وجود ندارد"
+                            className="w-11 h-11 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
+                          >
+                            <BagCross size="22" color="#ea1d2c" variant="Linear" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onAddToCart(simProd);
+                              setAddedToast(true);
+                              setTimeout(() => setAddedToast(false), 2200);
+                            }}
+                            aria-label="افزودن به سبد خرید"
+                            className={`w-11 h-11 rounded-[12px] flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                              isHighlighted
+                                ? 'bg-[#b59766] hover:bg-[#a38554] text-white'
+                                : 'bg-[#f3f3f3] hover:bg-[#b59766] text-[#222222] hover:text-white'
+                            }`}
+                          >
+                            {isHighlighted ? (
+                              <PlusSquareIcon className="w-[22px] h-[22px]" />
+                            ) : (
+                              <Bag size="22" color="currentColor" variant="Linear" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="text-center leading-tight shrink-0">
+                        <span className="block text-[13px] font-bold text-[#2b2b2b]">
+                            کد محصول
+                        </span>
+                        <span className="block text-[13px] font-normal text-[#9e9e9e] tabular-nums mt-0.5">
+                            {simProd.productCode}
+                        </span>
                     </div>
                   </div>
                 </div>
@@ -4489,6 +4620,37 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                         </button>
                       )}
                     </div>
+
+                    {/* پالت رنگی محصول (مشابه بخش محصولات مشابه) */}
+                    {!isOutOfStock && (
+                      <div className="mt-3 flex items-center justify-start gap-1.5 px-1">
+                        {CARD_PLATING_FINISHES.map((finishKey) => {
+                          const preset = FINISH_PRESETS[finishKey];
+                          return (
+                            <button
+                              key={finishKey}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCardFinishes((prev) => ({
+                                  ...prev,
+                                  [product.id]: finishKey,
+                                }));
+                              }}
+                              title={preset.label}
+                              className={`w-4 h-4 rounded-full border transition-transform cursor-pointer ${
+                                currentFinish === finishKey
+                                  ? 'scale-125 border-[#222222] ring-1 ring-[#b59766]'
+                                  : 'border-black/20 hover:scale-110'
+                              }`}
+                              style={{
+                                background: preset.swatch,
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
 
                     <div className="mt-4 text-right px-1">
                       <h3
