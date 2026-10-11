@@ -11,9 +11,9 @@ $TTL 86400
 @       IN  NS      ns2.lostersalehi.ir.
 
 ; Name Server IPs (Glue Records)
-ns1     IN  A       127.0.0.1
-ns2     IN  A       127.0.0.1
+ns1     IN  A       91.107.140.82
+ns2     IN  A       91.107.140.82
 
 ; Host Records
-@       IN  A       127.0.0.1
-www     IN  A       127.0.0.1
+@       IN  A       91.107.140.82
+www     IN  A       91.107.140.82
