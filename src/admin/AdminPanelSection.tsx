@@ -10195,7 +10195,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                             <div className="space-y-1">
                               <label className="block text-[11px] font-bold text-[#555]">
                                 عنوان منو:
@@ -10208,6 +10208,22 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                                   updated[mIdx].label = e.target.value;
                                   setMainSettingsForm({ ...mainSettingsForm, headerMenus: updated });
                                 }}
+                                className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="block text-[11px] font-bold text-[#555]">
+                                زیرنویس/توضیح کوتاه (نمایش در منوی موبایل):
+                              </label>
+                              <input
+                                type="text"
+                                value={menuItem.subtitle || ''}
+                                onChange={(e) => {
+                                  const updated = [...mainSettingsForm.headerMenus];
+                                  updated[mIdx].subtitle = e.target.value;
+                                  setMainSettingsForm({ ...mainSettingsForm, headerMenus: updated });
+                                }}
+                                placeholder="مثلاً: نمونه کار های انجام شده..."
                                 className="w-full h-9 rounded-lg border border-[#e0e0e0] px-2.5 text-xs font-semibold"
                               />
                             </div>

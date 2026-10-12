@@ -1041,29 +1041,96 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
       findProjectBySlug(getCurrentProjectSlug(), projects)
     );
   const [activeGalleryIdx, setActiveGalleryIdx] = useState<number>(0);
-  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const [likedMap, setLikedMap] = useState<Record<string, boolean>>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('app_user_liked_projects');
+        if (raw) return JSON.parse(raw);
+      }
+    } catch {}
+    return {};
+  });
   const [, setLikesUpdateTick] = useState<number>(0);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('app_project_likes_stats');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Object.values(parsed).some((v) => typeof v === 'number' && v > 500)) {
-          localStorage.removeItem('app_project_likes_stats');
-          setLikesUpdateTick((t) => t + 1);
+    const syncLikesFromStorage = () => {
+      try {
+        const userLikedRaw = localStorage.getItem('app_user_liked_projects');
+        if (userLikedRaw) {
+          setLikedMap(JSON.parse(userLikedRaw));
         }
+      } catch {}
+      setLikesUpdateTick((t) => t + 1);
+    };
+
+    syncLikesFromStorage();
+
+    // همگام‌سازی وضعیت لایک‌ها با دیتابیس سرور بر اساس شناسه پایدار کاربر (حتی اگر localStorage پاک شود)
+    const getPersistentId = () => {
+      if (typeof window === 'undefined') return '';
+      const cookieMatch = document.cookie.match(/(?:^|;\s*)salehi_client_id=([^;]+)/);
+      if (cookieMatch && cookieMatch[1]) {
+        const id = decodeURIComponent(cookieMatch[1]);
+        try { localStorage.setItem('salehi_client_id', id); } catch {}
+        return id;
       }
-    } catch {}
+      try {
+        const stored = localStorage.getItem('salehi_client_id');
+        if (stored) {
+          document.cookie = `salehi_client_id=${encodeURIComponent(stored)}; Max-Age=315360000; Path=/; SameSite=Lax`;
+          return stored;
+        }
+      } catch {}
+      const newId = 'usr_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+      try { localStorage.setItem('salehi_client_id', newId); } catch {}
+      document.cookie = `salehi_client_id=${encodeURIComponent(newId)}; Max-Age=315360000; Path=/; SameSite=Lax`;
+      return newId;
+    };
+
+    const cId = getPersistentId();
+    if (cId) {
+      fetch(`/api/projects/user-likes?clientId=${encodeURIComponent(cId)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.success && Array.isArray(data.likedSlugs)) {
+            setLikedMap((prev) => {
+              const next = { ...prev };
+              data.likedSlugs.forEach((slug: string) => {
+                next[slug] = true;
+                const clean = slug.replace(/^proj-/, '').replace(/-ref-\d+$/, '');
+                if (clean) next[clean] = true;
+                next[`proj-${slug}`] = true;
+              });
+              try {
+                localStorage.setItem('app_user_liked_projects', JSON.stringify(next));
+              } catch {}
+              return next;
+            });
+
+            if (data.likesStats && typeof data.likesStats === 'object') {
+              try {
+                const statsRaw = localStorage.getItem('app_project_likes_stats');
+                const currStats = statsRaw ? JSON.parse(statsRaw) : {};
+                const merged = { ...currStats, ...data.likesStats };
+                localStorage.setItem('app_project_likes_stats', JSON.stringify(merged));
+                setLikesUpdateTick((t) => t + 1);
+              } catch {}
+            }
+          }
+        })
+        .catch(() => {});
+    }
 
     const handleLikesUpdated = () => {
-      setLikesUpdateTick((t) => t + 1);
+      syncLikesFromStorage();
     };
     window.addEventListener('app-project-liked', handleLikesUpdated);
     window.addEventListener('app-projects-updated', handleLikesUpdated);
+    window.addEventListener('storage', handleLikesUpdated);
     return () => {
       window.removeEventListener('app-project-liked', handleLikesUpdated);
       window.removeEventListener('app-projects-updated', handleLikesUpdated);
+      window.removeEventListener('storage', handleLikesUpdated);
     };
   }, []);
   const [loadingDetailBtnId, setLoadingDetailBtnId] = useState<string | null>(
@@ -1308,35 +1375,87 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
   };
 
   const handleToggleLike = async (project: ProjectPageItem) => {
-    const currentlyLiked = Boolean(likedMap[project.id]);
-    const nextLiked = !currentlyLiked;
-    setLikedMap((prev) => ({ ...prev, [project.id]: nextLiked }));
+    const projId = String(project.id || '');
+    const projSlug = project.slug ? String(project.slug) : '';
+    const cleanSlug = projSlug.replace(/^proj-/, '').replace(/-ref-\d+$/, '');
+    const cleanId = projId.replace(/^proj-/, '').replace(/-pad-\d+$/, '');
 
-    const key = project.slug || project.id;
+    const currentlyLiked = Boolean(
+      (projId && likedMap[projId]) ||
+      (projSlug && likedMap[projSlug]) ||
+      (cleanSlug && likedMap[cleanSlug]) ||
+      (cleanId && likedMap[cleanId])
+    );
+
+    // هر کاربر فقط یک‌بار می‌تواند لایک کند (جلوگیری قطعی از لایک مجدد)
+    if (currentlyLiked) {
+      if (onShowToast) {
+        onShowToast(
+          'project-like-success',
+          'قبلاً لایک شده',
+          'شما قبلاً به این پروژه امتیاز داده‌اید.'
+        );
+      }
+      return;
+    }
+
+    const nextLiked = true;
+
+    // ۱. به‌روزرسانی آنی وضعیت لایک کاربر و ذخیره دائمی در localStorage
+    setLikedMap((prev) => {
+      const updated = { ...prev };
+      if (projId) updated[projId] = nextLiked;
+      if (projSlug) updated[projSlug] = nextLiked;
+      if (cleanSlug) updated[cleanSlug] = nextLiked;
+      if (cleanId) updated[cleanId] = nextLiked;
+      try {
+        localStorage.setItem('app_user_liked_projects', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    const key = projSlug || projId;
     let updatedCount = 0;
     try {
       const statsRaw = localStorage.getItem('app_project_likes_stats');
       const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
-      const prevCount = (stats[key] ?? Number(project.initialLikes)) || 0;
-      updatedCount = nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1);
+      const prevCount = (stats[key] ?? stats[projId] ?? stats[cleanSlug] ?? stats[cleanId] ?? Number(project.initialLikes)) || 0;
+      updatedCount = prevCount + 1;
       stats[key] = updatedCount;
-      if (project.id) stats[project.id] = updatedCount;
-      if (project.slug) stats[project.slug] = updatedCount;
+      if (projId) stats[projId] = updatedCount;
+      if (projSlug) stats[projSlug] = updatedCount;
+      if (cleanSlug) stats[cleanSlug] = updatedCount;
+      if (cleanId) stats[cleanId] = updatedCount;
       localStorage.setItem('app_project_likes_stats', JSON.stringify(stats));
       window.dispatchEvent(
         new CustomEvent('app-project-liked', {
-          detail: { projectId: project.id, slug: project.slug, count: updatedCount },
+          detail: { projectId: projId, slug: projSlug, count: updatedCount, isLiked: nextLiked },
         })
       );
     } catch {}
 
-    // ارسال درخواست به سرور و دیتابیس
+    // ۲. ارسال درخواست به سرور و دیتابیس برای ثبت دائمی به همراه شناسه کاربر
     try {
-      const target = project.slug || project.id;
+      const target = projSlug || projId;
+      const getPersistentId = () => {
+        if (typeof window === 'undefined') return '';
+        const cookieMatch = document.cookie.match(/(?:^|;\s*)salehi_client_id=([^;]+)/);
+        if (cookieMatch && cookieMatch[1]) return decodeURIComponent(cookieMatch[1]);
+        try {
+          const stored = localStorage.getItem('salehi_client_id');
+          if (stored) return stored;
+        } catch {}
+        return '';
+      };
+      const clientId = getPersistentId();
+
       const res = await fetch(`/api/projects/${target}/like`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ increment: nextLiked }),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Id': clientId,
+        },
+        body: JSON.stringify({ increment: true, clientId }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -1344,12 +1463,14 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
           const statsRaw = localStorage.getItem('app_project_likes_stats');
           const stats = statsRaw ? JSON.parse(statsRaw) : {};
           stats[key] = data.likesCount;
-          if (project.id) stats[project.id] = data.likesCount;
-          if (project.slug) stats[project.slug] = data.likesCount;
+          if (projId) stats[projId] = data.likesCount;
+          if (projSlug) stats[projSlug] = data.likesCount;
+          if (cleanSlug) stats[cleanSlug] = data.likesCount;
+          if (cleanId) stats[cleanId] = data.likesCount;
           localStorage.setItem('app_project_likes_stats', JSON.stringify(stats));
           window.dispatchEvent(
             new CustomEvent('app-project-liked', {
-              detail: { projectId: project.id, slug: project.slug, count: data.likesCount },
+              detail: { projectId: projId, slug: projSlug, count: data.likesCount, isLiked: true },
             })
           );
         }
@@ -1359,19 +1480,11 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     }
 
     if (onShowToast) {
-      if (nextLiked) {
-        onShowToast(
-          'project-like-success',
-          'با موفقیت لایک شد',
-          'مشتری عزیز از امتیاز دهی به پروژه ما متشکریم.'
-        );
-      } else {
-        onShowToast(
-          'project-dislike',
-          'لایک پروژه برداشته شد',
-          'مشتری عزیز امتیاز شما از این پروژه حذف گردید.'
-        );
-      }
+      onShowToast(
+        'project-like-success',
+        'با موفقیت لایک شد',
+        'مشتری عزیز از امتیاز دهی به پروژه ما متشکریم.'
+      );
     }
   };
 
@@ -1472,13 +1585,24 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
       activeSingleProject.galleryImages && activeSingleProject.galleryImages.length > 0
         ? activeSingleProject.galleryImages
         : (activeSingleProject.image ? [activeSingleProject.image] : [GENERATED_IMAGES.projectRoyalRestaurant]);
-    const isProjectLiked = Boolean(likedMap[activeSingleProject.id]);
+    const activeIdStr = String(activeSingleProject.id || '');
+    const activeSlugStr = String(activeSingleProject.slug || '');
+    const cleanSlug = activeSlugStr.replace(/^proj-/, '').replace(/-ref-\d+$/, '');
+    const cleanId = activeIdStr.replace(/^proj-/, '').replace(/-pad-\d+$/, '');
+    const isProjectLiked = Boolean(
+      (activeIdStr && likedMap[activeIdStr]) ||
+      (activeSlugStr && likedMap[activeSlugStr]) ||
+      (cleanSlug && likedMap[cleanSlug]) ||
+      (cleanId && likedMap[cleanId])
+    );
     const singleStatsRaw = typeof window !== 'undefined' ? localStorage.getItem('app_project_likes_stats') : null;
     const singleStats = singleStatsRaw ? JSON.parse(singleStatsRaw) : {};
     const singleKey = activeSingleProject.slug || activeSingleProject.id;
     const likeCount =
       (singleStats[singleKey] ??
-      singleStats[activeSingleProject.id] ??
+      singleStats[activeIdStr] ??
+      singleStats[cleanSlug] ??
+      singleStats[cleanId] ??
       Number(activeSingleProject.initialLikes)) ||
       0;
 
@@ -1605,11 +1729,12 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => handleToggleLike(activeSingleProject)}
-                  aria-label="لایک پروژه"
-                  className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
+                  aria-label={isProjectLiked ? 'پروژه لایک شده' : 'لایک پروژه'}
+                  title={isProjectLiked ? 'شما قبلاً این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
+                  className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all ${
                     isProjectLiked
-                      ? 'bg-[#a9895b] text-white shadow-xs'
-                      : 'bg-[#f5efe6] text-[#a68452] hover:bg-[#ece2d2]'
+                      ? 'bg-[#a9895b] text-white shadow-xs cursor-default'
+                      : 'bg-[#f5efe6] text-[#a68452] hover:bg-[#ece2d2] cursor-pointer'
                   }`}
                 >
                   <svg
@@ -1629,9 +1754,14 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => handleToggleLike(activeSingleProject)}
-                  className="h-[42px] px-4 rounded-[10px] bg-[#f4f4f4] hover:bg-[#eaeaea] text-[#222222] text-[13px] font-bold flex items-center justify-center transition-colors cursor-pointer whitespace-nowrap"
+                  title={isProjectLiked ? 'شما قبلاً این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
+                  className={`h-[42px] px-4 rounded-[10px] text-[13px] font-bold flex items-center justify-center transition-colors whitespace-nowrap ${
+                    isProjectLiked
+                      ? 'bg-[#f5efe6] text-[#a9895b] hover:bg-[#ede3d3] cursor-default'
+                      : 'bg-[#f4f4f4] hover:bg-[#eaeaea] text-[#222222] cursor-pointer'
+                  }`}
                 >
-                  {toPersianDigits(likeCount)} لایک کردن
+                  {toPersianDigits(likeCount)} {isProjectLiked ? 'لایک شده' : 'لایک کردن'}
                 </button>
               </div>
             </div>
@@ -1988,11 +2118,12 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               <button
                 type="button"
                 onClick={() => handleToggleLike(activeSingleProject)}
-                aria-label="لایک پروژه"
-                className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
+                aria-label={isProjectLiked ? 'پروژه لایک شده' : 'لایک پروژه'}
+                title={isProjectLiked ? 'شما قبلاً این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
+                className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-all ${
                   isProjectLiked
-                    ? 'bg-[#a9895b] text-white shadow-xs'
-                    : 'bg-[#f5efe6] text-[#a68452]'
+                    ? 'bg-[#a9895b] text-white shadow-xs cursor-default'
+                    : 'bg-[#f5efe6] text-[#a68452] cursor-pointer'
                 }`}
               >
                 <svg
@@ -2011,9 +2142,14 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               <button
                 type="button"
                 onClick={() => handleToggleLike(activeSingleProject)}
-                className="h-10 px-3.5 rounded-[10px] bg-[#f4f4f4] text-[#222222] text-[12px] font-bold flex items-center justify-center whitespace-nowrap cursor-pointer"
+                title={isProjectLiked ? 'شما قبلاً این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
+                className={`h-10 px-3.5 rounded-[10px] text-[12px] font-bold flex items-center justify-center whitespace-nowrap transition-colors ${
+                  isProjectLiked
+                    ? 'bg-[#f5efe6] text-[#a9895b] cursor-default'
+                    : 'bg-[#f4f4f4] text-[#222222] cursor-pointer'
+                }`}
               >
-                {toPersianDigits(likeCount)} لایک کردن
+                {toPersianDigits(likeCount)} {isProjectLiked ? 'لایک شده' : 'لایک کردن'}
               </button>
             </div>
           </div>
@@ -2747,12 +2883,12 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
             })}
           </div>
 
-          <div className="flex items-center shrink-0 pb-3">
+          <div className="flex items-center shrink-0 my-auto self-center py-1 sm:py-1.5">
             <button
               type="button"
               onClick={() => triggerProjectsLoading(450)}
               title={`مجموع ${toPersianDigits(rawTabProjects.length)} پروژه در دسته‌بندی ${activeTabInfo.label}`}
-              className="h-[38px] px-3.5 sm:px-4 rounded-[10px] border border-[#c8a878] bg-[#faf7f2] hover:bg-[#f4ede1] text-[#937242] text-[12px] sm:text-[12.5px] font-bold transition-all flex items-center justify-center cursor-pointer shadow-2xs whitespace-nowrap"
+              className="h-[38px] px-3.5 sm:px-4 rounded-[10px] border border-[#c8a878] bg-[#faf7f2] hover:bg-[#f4ede1] text-[#937242] text-[12px] sm:text-[12.5px] font-bold transition-all flex items-center justify-center cursor-pointer shadow-2xs whitespace-nowrap self-center my-auto"
             >
               {isTabLoading ? (
                 <span className="inline-flex items-center gap-1.5 py-1">
@@ -2786,10 +2922,25 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               const showImage = Boolean(project.image) && !forceNoImageMode;
               const isCardLoading = loadingProjectId === project.id;
 
-              const isLiked = Boolean(likedMap[project.id]);
+              const cardProjIdStr = String(project.id || '');
+              const cardProjSlugStr = String(project.slug || '');
+              const cleanCardSlug = cardProjSlugStr.replace(/^proj-/, '').replace(/-ref-\d+$/, '');
+              const cleanCardId = cardProjIdStr.replace(/^proj-/, '').replace(/-pad-\d+$/, '');
+              const isLiked = Boolean(
+                (cardProjIdStr && likedMap[cardProjIdStr]) ||
+                (cardProjSlugStr && likedMap[cardProjSlugStr]) ||
+                (cleanCardSlug && likedMap[cleanCardSlug]) ||
+                (cleanCardId && likedMap[cleanCardId])
+              );
               const statsRaw = typeof window !== 'undefined' ? localStorage.getItem('app_project_likes_stats') : null;
               const stats = statsRaw ? JSON.parse(statsRaw) : {};
-              const cardLikes = (stats[project.slug] ?? stats[project.id] ?? Number(project.initialLikes)) || 0;
+              const cardLikes =
+                (stats[project.slug] ??
+                stats[project.id] ??
+                stats[cleanCardSlug] ??
+                stats[cleanCardId] ??
+                Number(project.initialLikes)) ||
+                0;
 
               return (
                 <article
@@ -2824,7 +2975,8 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                         e.stopPropagation();
                         handleToggleLike(project);
                       }}
-                      aria-label="لایک این پروژه"
+                      aria-label={isLiked ? 'حذف لایک این پروژه' : 'لایک این پروژه'}
+                      title={isLiked ? 'شما این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
                       className={`absolute top-3 right-3 z-10 h-8 px-2.5 rounded-full backdrop-blur-md flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
                         isLiked
                           ? 'bg-[#b08c57] text-white shadow-xs'

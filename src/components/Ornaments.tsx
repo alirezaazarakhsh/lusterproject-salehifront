@@ -193,10 +193,14 @@ export const HeaderBrandLogo: React.FC = () => {
       <div className="flex flex-col items-end pr-3">
         <span
           className="text-[13px] sm:text-[14px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1.5"
+          style={{ fontFamily: "'Yekan Bakh Pro', 'Yekan Bakh', sans-serif" }}
         >
           Chandelier
         </span>
-        <span className="font-brand-serif text-[21px] sm:text-[26px] tracking-[0.04em] text-[#2b2b2b] font-normal uppercase leading-none">
+        <span
+          className="text-[21px] sm:text-[26px] tracking-[0.04em] text-[#2b2b2b] font-normal uppercase leading-none"
+          style={{ fontFamily: "'Hiragino Mincho ProN', 'Hiragino', serif" }}
+        >
           AKBAR SALEHI
         </span>
       </div>
@@ -263,7 +267,10 @@ export const FooterBrandLogo: React.FC = () => {
         >
           Chandelier
         </span>
-        <span className="font-brand-serif text-2xl sm:text-[26px] tracking-[0.05em] text-white font-normal uppercase leading-none">
+        <span
+          className="text-2xl sm:text-[26px] tracking-[0.05em] text-white font-normal uppercase leading-none"
+          style={{ fontFamily: "'Hiragino Mincho ProN', 'Hiragino', serif" }}
+        >
           AKBAR SALEHI
         </span>
       </div>
@@ -349,8 +356,38 @@ export const ArabesqueCornerPattern: React.FC<{
 );
 
 /**
- * نشان خوشنویسی «لوستر صالحی» در شبکه ۲×۲ فوتر
+ * آیکون لودینگ استوری (دقیقاً مطابق فایل image.png ارسالی کاربر)
+ * شامل خورشید دایره‌ای بالا چپ و کوه‌های دارای خطوط نرم و گوشه‌های راند
  */
+export const StoryLoadingImageIcon: React.FC<{
+  className?: string;
+  size?: number | string;
+  color?: string;
+  strokeWidth?: number;
+}> = ({
+  className = '',
+  size = 28,
+  color = '#1e1e1e',
+  strokeWidth = 1.65,
+}) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    className={`pointer-events-none select-none ${className}`}
+  >
+    <path
+      d="m21.68 16.96-3.13-7.31c-1.06-2.48-3.01-2.58-4.32-.22l-1.89 3.41c-.96 1.73-2.75 1.88-3.99.33l-.22-.28c-1.29-1.62-3.11-1.42-4.04.43l-1.72 3.45C1.16 19.17 2.91 22 5.59 22h12.76c2.6 0 4.35-2.65 3.33-5.04ZM6.97 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 export const CalligraphyTrustBadge: React.FC<{ index: number }> = ({ index }) => {
   return (
     <div

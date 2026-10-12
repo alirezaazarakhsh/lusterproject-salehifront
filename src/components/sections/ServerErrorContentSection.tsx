@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { navigateToRoute } from '../../utils/navigation';
 
+const ROBOT_IMAGE_URL = '/robote.png';
+
 interface ServerErrorContentSectionProps {
   onRetry?: () => void;
 }
@@ -382,6 +384,7 @@ export const ServerErrorContentSection: React.FC<
   ServerErrorContentSectionProps
 > = ({ onRetry }) => {
   const [isRetrying, setIsRetrying] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleRetryClick = () => {
     if (isRetrying) return;
@@ -399,9 +402,19 @@ export const ServerErrorContentSection: React.FC<
   return (
     <main className="w-full min-h-screen lg:min-h-[calc(100vh-89px)] flex flex-col items-center justify-center px-6 py-10 bg-[#fcfbf9] text-center select-none">
       <div className="w-full max-w-[560px] mx-auto flex flex-col items-center justify-center">
-        {/* تصویر ربات لامپی بالا (Error Lamp Robot 2.png) */}
+        {/* تصویر ربات لامپی بالا (robote.png) با fallback هوشمند */}
         <div className="w-[245px] xs:w-[265px] sm:w-[315px] lg:w-[345px] mb-5 sm:mb-7 flex items-center justify-center">
-          <ErrorLampRobotIllustration className="w-full h-auto" />
+          {!imageError ? (
+            <img
+              src={ROBOT_IMAGE_URL}
+              alt="خطای قطعی سرور"
+              onError={() => setImageError(true)}
+              className="w-full h-auto max-h-[380px] object-contain select-none pointer-events-none drop-shadow-sm"
+              draggable={false}
+            />
+          ) : (
+            <ErrorLampRobotIllustration className="w-full h-auto max-h-[380px]" />
+          )}
         </div>
 
         {/* عنوان اصلی */}

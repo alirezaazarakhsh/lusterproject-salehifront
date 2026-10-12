@@ -22,6 +22,7 @@ export interface HeaderMenuItem {
   id: string;
   label: string;
   href: string;
+  subtitle?: string;
   submenuItems?: HeaderSubmenuItem[];
 }
 
@@ -492,6 +493,74 @@ const DEFAULT_HEADER_MENUS: HeaderMenuItem[] = [
   },
 ];
 
+const getMobileMenuIcon = (menu: HeaderMenuItem) => {
+  const lbl = (menu?.label || '').toLowerCase();
+  const id = (menu?.id || '').toLowerCase();
+  if (lbl.includes('پروژه') || id.includes('project')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
+        <path d="M22 11v6c0 4-1 5-5 5H7c-4 0-5-1-5-5V7c0-4 1-5 5-5h1.5c1.5 0 1.83.44 2.4 1.2l1.5 2c.38.5.6.8 1.6.8h3c4 0 5 1 5 5Z" />
+      </svg>
+    );
+  }
+  if (lbl.includes('بلاگ') || lbl.includes('مجله') || lbl.includes('مقاله') || id.includes('blog') || id.includes('magazine')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
+        <path d="M22 16.74V4.67c0-1.2-.98-2.09-2.17-1.99h-.06c-2.1.18-5.29 1.25-7.07 2.37l-.17.11c-.29.18-.77.18-1.06 0l-.25-.15C9.44 3.9 6.26 2.84 4.16 2.67 2.97 2.57 2 3.47 2 4.66v12.08c0 .96.78 1.86 1.74 1.98l.29.04c2.17.29 5.52 1.39 7.44 2.44l.04.02c.27.15.7.15.96 0 1.92-1.06 5.28-2.17 7.46-2.46l.33-.04c.96-.12 1.74-1.02 1.74-1.98Z" />
+        <path d="M12 5.49v15" />
+        <path d="M7.75 8.49H5.5" />
+        <path d="M8.5 11.49h-3" />
+      </svg>
+    );
+  }
+  if (lbl.includes('تماس') || id.includes('contact')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
+        <path d="M21.97 18.33c0 .36-.08.73-.25 1.09-.17.36-.39.7-.68 1.02-.49.54-1.03.93-1.64 1.18-.6.25-1.25.38-1.95.38-1.02 0-2.11-.24-3.26-.73s-2.3-1.15-3.44-1.98a28.75 28.75 0 0 1-3.28-2.8 28.414 28.414 0 0 1-2.79-3.27c-.82-1.14-1.48-2.28-1.96-3.41-.48-1.13-.72-2.21-.72-3.24 0-.68.12-1.33.36-1.93.24-.61.62-1.17 1.15-1.67.64-.63 1.34-.94 2.08-.94.28 0 .56.06.81.18.26.12.49.3.67.56l2.32 3.27c.18.25.31.48.4.7.09.21.14.42.14.61 0 .24-.07.48-.21.71-.13.23-.32.47-.56.71l-.76.79c-.11.11-.16.24-.16.4 0 .08.01.15.03.23.03.08.06.14.08.2.18.33.49.76.93 1.28.45.52.93 1.05 1.45 1.58.54.53 1.06 1.02 1.59 1.47.52.44.95.74 1.29.92.05.02.11.05.18.08.08.03.16.04.25.04.17 0 .3-.06.41-.17l.76-.75c.25-.25.49-.44.72-.56.23-.14.46-.21.71-.21.19 0 .39.04.61.13.22.09.45.22.7.39l3.31 2.35c.26.18.44.39.55.64.1.25.16.5.16.78Z" />
+        <path d="M18.5 9c0-.6-.47-1.52-1.17-2.23-.64-.65-1.49-1.27-2.33-1.27" />
+        <path d="M22 9c0-3.87-3.13-7-7-7" />
+      </svg>
+    );
+  }
+  if (lbl.includes('درباره') || id.includes('about')) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
+        <path d="M8.67 14H4c-1.1 0-2 .9-2 2v6h6.67v-8Z" />
+        <path d="M13.33 10h-2.66c-1.1 0-2 .9-2 2v10h6.66V12c0-1.1-.9-2-2-2Z" />
+        <path d="M20 17h-4.67v5H22v-3c0-1.1-.9-2-2-2Z" />
+        <path d="M12.52 2.07l.53 1.06c.07.15.25.28.41.31l.96.16c.61.1.75.54.31.98l-.75.75c-.13.13-.2.37-.16.55l.21.92c.17.73-.22 1.02-.86.64l-.9-.53c-.16-.1-.43-.1-.59 0l-.9.53c-.64.38-1.03.09-.86-.64l.21-.92c.04-.18-.03-.42-.16-.55l-.75-.75c-.44-.44-.3-.88.31-.98l.96-.16c.16-.03.34-.16.41-.31l.53-1.06c.29-.58.76-.58 1.05 0Z" />
+      </svg>
+    );
+  }
+  // پیش‌فرض برای محصولات یا اسناد با گوشه تاخورده
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
+      <path d="M21 7v10c0 3-1.5 5-5 5H8c-3.5 0-5-2-5-5V7c0-3 1.5-5 5-5h8c3.5 0 5 2 5 5Z" />
+      <path d="M14.5 4.5v2c0 1.1.9 2 2 2h2" />
+      <path d="M8 13h4" />
+      <path d="M8 17h8" />
+    </svg>
+  );
+};
+
+const getMobileMenuSubtitle = (menu: HeaderMenuItem): string => {
+  if (menu?.subtitle && menu.subtitle.trim()) {
+    return menu.subtitle.trim();
+  }
+  const lbl = (menu?.label || '').toLowerCase();
+  const id = (menu?.id || '').toLowerCase();
+  if (lbl.includes('محصول') || id.includes('product')) return 'خدمات لوستر، آباژور، آینه و کنسول و...';
+  if (lbl.includes('پروژه') || id.includes('project')) return 'نمونه کار های انجام شده در سطح کل ایران!';
+  if (lbl.includes('بلاگ') || lbl.includes('مجله') || lbl.includes('مقاله') || id.includes('blog')) return 'مقاله های دانستنی و جذاب';
+  if (lbl.includes('تماس') || id.includes('contact')) return 'راه ارتباطی با مجموعه لوستر صالحی';
+  if (lbl.includes('درباره') || id.includes('about')) return 'داستان پیشرفت رشدی بی انتهای ما در ایران!';
+  if (lbl.includes('دیگر') || lbl.includes('سایر') || id.includes('more')) return 'مجوز و گواهی ها، قوانین و مقررات مجموعه';
+  if (Array.isArray(menu.submenuItems) && menu.submenuItems.length > 0) {
+    return `${menu.submenuItems.length} دسته‌بندی و بخش اختصاصی`;
+  }
+  return 'مشاهده بخش و بررسی اطلاعات';
+};
+
 /**
  * بخش هدر بالای صفحه (تمام‌عرض و سبک)
  * شامل لوگو و پترن Vector.png در لبه راست، منوی ناوبری در وسط و دکمه‌های زبان/سبد خرید/کاربر در چپ
@@ -528,6 +597,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => getInitialTheme());
   const closeTimeoutRef = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
+  const langDropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handleThemeChange = (e: any) => {
@@ -541,9 +611,22 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
     return () => window.removeEventListener('app-theme-changed', handleThemeChange);
   }, []);
 
-  const menusToRender = mainSettings?.headerMenus && mainSettings.headerMenus.length > 0
-    ? mainSettings.headerMenus
+  const rawMenus =
+    mainSettings?.headerMenus && mainSettings.headerMenus.length > 0
+      ? mainSettings.headerMenus
+      : DEFAULT_HEADER_MENUS;
+  const menusToRender: HeaderMenuItem[] = Array.isArray(rawMenus)
+    ? rawMenus.filter((m): m is HeaderMenuItem => Boolean(m && typeof m === 'object'))
     : DEFAULT_HEADER_MENUS;
+
+  const isMenuRouteActive = (menuHref?: string): boolean => {
+    if (!menuHref) return false;
+    const clean = menuHref.replace(/^\/+|\/+$/g, '').trim();
+    if (!clean || clean === '#' || clean === '#top') {
+      return activeRoute === 'home';
+    }
+    return activeRoute === clean;
+  };
 
   useEffect(() => {
     if (propCurrentRoute) {
@@ -596,7 +679,11 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (langDropdownRef.current && !langDropdownRef.current.contains(target)) {
+        setOpenSubmenu((prev) => (prev === 'lang' ? null : prev));
+      }
+      if (headerRef.current && !headerRef.current.contains(target)) {
         setOpenSubmenu(null);
       }
     };
@@ -641,10 +728,16 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             dir="ltr"
             aria-label="گالری لوستر اکبر صالحی"
           >
-            <span className="text-[14px] sm:text-[15.5px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1">
+            <span
+              className="text-[14px] sm:text-[15.5px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1"
+              style={{ fontFamily: "'Yekan Bakh Pro', 'Yekan Bakh', sans-serif" }}
+            >
               Chandelier
             </span>
-            <span className="font-brand-serif text-[23px] sm:text-[29px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none">
+            <span
+              className="text-[23px] sm:text-[29px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none"
+              style={{ fontFamily: "'Hiragino Mincho ProN', 'Hiragino', serif" }}
+            >
               AKBAR SALEHI
             </span>
           </a>
@@ -681,7 +774,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         <nav
           className={`${
             isErrorPage ? 'hidden md:flex' : 'hidden lg:flex'
-          } items-center gap-5 lg:gap-8 text-[13.5px] lg:text-[14px] font-medium text-[#2b2b2b]`}
+          } items-center gap-5 lg:gap-8 text-[13.5px] lg:text-[14px] font-semibold text-[#2b2b2b]`}
         >
           {menusToRender.map((menu) => {
             const hasSub = Array.isArray(menu.submenuItems) && menu.submenuItems.length > 0;
@@ -703,7 +796,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                       )
                     }
                     className={`flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
-                      activeRoute === menu.href.replace('/', '') || openSubmenu === menu.id
+                      isMenuRouteActive(menu.href) || openSubmenu === menu.id
                         ? 'text-[#b59766]'
                         : 'hover:text-[#b59766]'
                     }`}
@@ -711,7 +804,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                     <span>{menu.label}</span>
                     <ChevronDown
                       className={`w-4 h-4 stroke-[1.9] transition-transform duration-200 ${
-                        activeRoute === menu.href.replace('/', '')
+                        isMenuRouteActive(menu.href)
                           ? 'text-[#b59766]'
                           : 'text-[#2b2b2b]'
                       } ${openSubmenu === menu.id ? 'rotate-180' : ''}`}
@@ -727,8 +820,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                         const isLast = idx === (menu.submenuItems?.length || 0) - 1;
                         return (
                           <a
-                            key={item.id}
-                            href={item.href}
+                            key={item.id || `sub-${idx}`}
+                            href={item.href || '#'}
                             onClick={(e) => {
                               setOpenSubmenu(null);
                               navigateFromHref(item.href, e);
@@ -755,14 +848,14 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
 
             return (
               <a
-                key={menu.id}
-                href={menu.href}
+                key={menu.id || `menu-${menu.label}`}
+                href={menu.href || '#'}
                 onClick={(e) => {
                   setOpenSubmenu(null);
                   navigateFromHref(menu.href, e);
                 }}
                 className={`transition-colors whitespace-nowrap py-3 cursor-pointer ${
-                  activeRoute === menu.href.replace('/', '')
+                  isMenuRouteActive(menu.href)
                     ? 'text-[#b59766]'
                     : 'hover:text-[#b59766]'
                 }`}
@@ -778,9 +871,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           {/* ۱. دکمه و زیرمنوی تغییر زبان (فارسی / EN) - در سمت راست دکمه‌ها نزدیک لینک‌های منو */}
           {!mainSettings?.hideLanguageSelector && (
             <div
+              ref={langDropdownRef}
               className="relative"
-              onMouseEnter={() => handleMenuEnter('lang')}
-              onMouseLeave={handleMenuLeave}
             >
               <button
                 type="button"
@@ -789,7 +881,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 }
                 title="تغییر زبان"
                 dir="ltr"
-                className="h-12 px-4 rounded-[14px] bg-[#f4f4f4] hover:bg-[#ececec] flex items-center gap-2.5 text-[14px] font-bold text-[#292d32] transition-colors cursor-pointer whitespace-nowrap"
+                className="h-12 px-4 rounded-[9px] bg-[#f4f4f4] hover:bg-[#ececec] flex items-center gap-2.5 text-[14px] font-bold text-[#292d32] transition-colors cursor-pointer whitespace-nowrap"
               >
                 <ChevronDown
                   className={`w-4 h-4 text-[#292d32] stroke-[2] transition-transform duration-200 ${
@@ -866,7 +958,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             dir="ltr"
             className={`group h-12 ${
               totalCartCount > 0 ? 'px-3 gap-2.5' : 'w-12'
-            } rounded-[14px] bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer`}
+            } rounded-[9px] bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer`}
           >
             <HeaderBagIcon className="w-[22px] h-[22px] shrink-0 transition-colors" />
             {totalCartCount > 0 && (
@@ -904,7 +996,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
                 }
               }}
               aria-label="حساب کاربری"
-              className="w-12 h-12 rounded-[14px] bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer"
+              className="w-12 h-12 rounded-[9px] bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer"
             >
               <HeaderUserIcon className="w-[22px] h-[22px] transition-colors" />
             </button>
@@ -1155,309 +1247,127 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
             </div>
           </div>
 
-          {/* لیست کارت‌های دسته‌بندی موبایل دقیقاً مطابق عکس دوم */}
+          {/* لیست کارت‌های دسته‌بندی موبایل متصل به تنظیمات اصلی (mainSettings.headerMenus) */}
           <div className="px-5 py-5 space-y-3.5 flex-1">
-            {/* ۱. محصولات (آکاردئون با زیرمجموعه‌ها) */}
-            <div className="rounded-[18px] bg-white border border-[#e9e9e9] overflow-hidden transition-colors">
-              <button
-                type="button"
-                onClick={() =>
-                  setMobileAccordionOpen((prev) =>
-                    prev === 'products' ? null : 'products'
-                  )
-                }
-                className={`group w-full px-4 py-4 flex items-center justify-between cursor-pointer text-right transition-colors ${
-                  mobileAccordionOpen === 'products'
-                    ? 'bg-[#f5f5f5]'
-                    : 'bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5]'
-                }`}
-              >
-                <div className="flex items-center gap-3.5">
-                  <div
-                    className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 transition-colors ${
-                      mobileAccordionOpen === 'products'
-                        ? 'bg-[#b59766] text-white'
-                        : 'bg-[#f5f5f5] text-[#292d32] group-hover:bg-[#b59766] group-hover:text-white group-active:bg-[#b59766] group-active:text-white'
-                    }`}
-                  >
-                    {/* آیکون سند با گوشه تاخورده مطابق عکس دوم */}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
-                      <path d="M21 7v10c0 3-1.5 5-5 5H8c-3.5 0-5-2-5-5V7c0-3 1.5-5 5-5h8c3.5 0 5 2 5 5Z" />
-                      <path d="M14.5 4.5v2c0 1.1.9 2 2 2h2" />
-                      <path d="M8 13h4" />
-                      <path d="M8 17h8" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-[15px] font-bold text-[#1e1e1e]">
-                      محصولات
-                    </h4>
-                    <p className="text-[12px] text-[#7a7a7a] mt-1">
-                      خدمات لوستر، آباژور، آینه و کنسول و...
-                    </p>
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`w-5 h-5 text-[#292d32] stroke-[1.8] transition-transform duration-200 shrink-0 ${
-                    mobileAccordionOpen === 'products' ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
+            {menusToRender.map((menu, mIdx) => {
+              const hasSub = Array.isArray(menu.submenuItems) && menu.submenuItems.length > 0;
+              const isAccordionOpen = mobileAccordionOpen === menu.id;
 
-              {mobileAccordionOpen === 'products' && (
-                <div className="bg-white border-t border-[#efefef]">
-                  {PRODUCTS_SUBMENU_ITEMS.map((sub, idx) => {
-                    const isLast = idx === PRODUCTS_SUBMENU_ITEMS.length - 1;
-                    return (
-                      <a
-                        key={sub.id}
-                        href={sub.href}
-                        onClick={(e) => {
-                          setIsMobileCategoriesOpen(false);
-                          setActiveMobileTab('home');
-                          if (sub.categorySlug) {
-                            setActiveRoute('product');
-                            navigateToProductCategory(sub.categorySlug, e);
-                          }
-                        }}
-                        className="group/item block w-full px-4 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] active:bg-[#f6f1e7] active:text-[#b59766] transition-colors"
-                      >
-                        <span
-                          className={`block py-4 ${
-                            !isLast
-                              ? 'border-b border-[#efefef] group-hover/item:border-transparent'
-                              : ''
+              if (hasSub) {
+                return (
+                  <div
+                    key={menu.id}
+                    className="rounded-[18px] bg-white border border-[#e9e9e9] overflow-hidden transition-colors"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMobileAccordionOpen((prev) =>
+                          prev === menu.id ? null : menu.id
+                        )
+                      }
+                      className={`group w-full px-4 py-4 flex items-center justify-between cursor-pointer text-right transition-colors ${
+                        isAccordionOpen
+                          ? 'bg-[#f5f5f5]'
+                          : 'bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div
+                          className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 transition-colors ${
+                            isAccordionOpen
+                              ? 'bg-[#b59766] text-white'
+                              : 'bg-[#f5f5f5] text-[#292d32] group-hover:bg-[#b59766] group-hover:text-white group-active:bg-[#b59766] group-active:text-white'
                           }`}
                         >
-                          {sub.label}
-                        </span>
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                          {getMobileMenuIcon(menu)}
+                        </div>
+                        <div>
+                          <h4 className="text-[15px] font-bold text-[#1e1e1e]">
+                            {menu.label}
+                          </h4>
+                          <p className="text-[12px] text-[#7a7a7a] mt-1">
+                            {getMobileMenuSubtitle(menu)}
+                          </p>
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 text-[#292d32] stroke-[1.8] transition-transform duration-200 shrink-0 ${
+                          isAccordionOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
 
-            {/* ۲. پروژه ها */}
-            {/* ۲. پروژه ها */}
-            <a
-              href="/project"
-              onClick={(e) => {
-                e.preventDefault();
-                setIsMobileCategoriesOpen(false);
-                setActiveMobileTab('home');
-                triggerRouteNavigation('project');
-              }}
-              className="group block rounded-[18px] bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5] border border-[#e9e9e9] px-4 py-4 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-[14px] bg-[#f5f5f5] text-[#292d32] group-hover:bg-[#b59766] group-hover:text-white group-active:bg-[#b59766] group-active:text-white flex items-center justify-center shrink-0 transition-colors">
-                    {/* آیکون پوشه مطابق عکس دوم */}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
-                      <path d="M22 11v6c0 4-1 5-5 5H7c-4 0-5-1-5-5V7c0-4 1-5 5-5h1.5c1.5 0 1.83.44 2.4 1.2l1.5 2c.38.5.6.8 1.6.8h3c4 0 5 1 5 5Z" />
+                    {isAccordionOpen && (
+                      <div className="bg-white border-t border-[#efefef]">
+                        {menu.submenuItems?.map((sub, idx) => {
+                          const isLast = idx === (menu.submenuItems?.length || 0) - 1;
+                          return (
+                            <a
+                              key={sub.id || `mobile-sub-${idx}`}
+                              href={sub.href || '#'}
+                              onClick={(e) => {
+                                setIsMobileCategoriesOpen(false);
+                                setActiveMobileTab('home');
+                                if (sub.categorySlug) {
+                                  setActiveRoute('product');
+                                  navigateToProductCategory(sub.categorySlug, e);
+                                } else {
+                                  navigateFromHref(sub.href || '#', e);
+                                }
+                              }}
+                              className="group/item block w-full px-4 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] active:bg-[#f6f1e7] active:text-[#b59766] transition-colors"
+                            >
+                              <span
+                                className={`block py-4 ${
+                                  !isLast
+                                    ? 'border-b border-[#efefef] group-hover/item:border-transparent'
+                                    : ''
+                                }`}
+                              >
+                                {sub.label}
+                              </span>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <a
+                  key={menu.id || `mobile-menu-${mIdx}`}
+                  href={menu.href || '#'}
+                  onClick={(e) => {
+                    setIsMobileCategoriesOpen(false);
+                    setActiveMobileTab('home');
+                    navigateFromHref(menu.href || '#', e);
+                  }}
+                  className="group block rounded-[18px] bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5] border border-[#e9e9e9] px-4 py-4 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-[14px] bg-[#f5f5f5] text-[#292d32] group-hover:bg-[#b59766] group-hover:text-white group-active:bg-[#b59766] group-active:text-white flex items-center justify-center shrink-0 transition-colors">
+                        {getMobileMenuIcon(menu)}
+                      </div>
+                      <div>
+                        <h4 className="text-[15px] font-bold text-[#1e1e1e]">
+                          {menu.label}
+                        </h4>
+                        <p className="text-[12px] text-[#7a7a7a] mt-1">
+                          {getMobileMenuSubtitle(menu)}
+                        </p>
+                      </div>
+                    </div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-[#292d32] shrink-0">
+                      <path d="M9.57 5.93L3.5 12l6.07 6.07M20.5 12H3.67" />
                     </svg>
                   </div>
-                  <div>
-                    <h4 className="text-[15px] font-bold text-[#1e1e1e]">
-                      پروژه ها
-                    </h4>
-                    <p className="text-[12px] text-[#7a7a7a] mt-1">
-                      نمونه کار های انجام شده در سطح کل ایران!
-                    </p>
-                  </div>
-                </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-[#292d32] shrink-0">
-                  <path d="M9.57 5.93L3.5 12l6.07 6.07M20.5 12H3.67" />
-                </svg>
-              </div>
-            </a>
-
-            {/* ۳. بلاگ */}
-            <a
-              href="#magazine-section"
-              onClick={() => {
-                setIsMobileCategoriesOpen(false);
-                setActiveMobileTab('home');
-              }}
-              className="group block rounded-[18px] bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5] border border-[#e9e9e9] px-4 py-4 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-[14px] bg-[#f5f5f5] text-[#292d32] group-hover:bg-[#b59766] group-hover:text-white group-active:bg-[#b59766] group-active:text-white flex items-center justify-center shrink-0 transition-colors">
-                    {/* آیکون کتاب باز مطابق عکس دوم */}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
-                      <path d="M22 16.74V4.67c0-1.2-.98-2.09-2.17-1.99h-.06c-2.1.18-5.29 1.25-7.07 2.37l-.17.11c-.29.18-.77.18-1.06 0l-.25-.15C9.44 3.9 6.26 2.84 4.16 2.67 2.97 2.57 2 3.47 2 4.66v12.08c0 .96.78 1.86 1.74 1.98l.29.04c2.17.29 5.52 1.39 7.44 2.44l.04.02c.27.15.7.15.96 0 1.92-1.06 5.28-2.17 7.46-2.46l.33-.04c.96-.12 1.74-1.02 1.74-1.98Z" />
-                      <path d="M12 5.49v15" />
-                      <path d="M7.75 8.49H5.5" />
-                      <path d="M8.5 11.49h-3" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-[15px] font-bold text-[#1e1e1e]">
-                      بلاگ
-                    </h4>
-                    <p className="text-[12px] text-[#7a7a7a] mt-1">
-                      مقاله های دانستنی و جذاب
-                    </p>
-                  </div>
-                </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-[#292d32] shrink-0">
-                  <path d="M9.57 5.93L3.5 12l6.07 6.07M20.5 12H3.67" />
-                </svg>
-              </div>
-            </a>
-
-            {/* ۴. تماس با ما */}
-            <a
-              href="/contact-us"
-              onClick={(e) => {
-                e.preventDefault();
-                setIsMobileCategoriesOpen(false);
-                setActiveMobileTab('home');
-                triggerRouteNavigation('contact-us');
-              }}
-              className="group block rounded-[18px] bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5] border border-[#e9e9e9] px-4 py-4 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-[14px] bg-[#f5f5f5] text-[#292d32] group-hover:bg-[#b59766] group-hover:text-white group-active:bg-[#b59766] group-active:text-white flex items-center justify-center shrink-0 transition-colors">
-                    {/* آیکون تلفن در حال تماس مطابق عکس دوم */}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
-                      <path d="M21.97 18.33c0 .36-.08.73-.25 1.09-.17.36-.39.7-.68 1.02-.49.54-1.03.93-1.64 1.18-.6.25-1.25.38-1.95.38-1.02 0-2.11-.24-3.26-.73s-2.3-1.15-3.44-1.98a28.75 28.75 0 0 1-3.28-2.8 28.414 28.414 0 0 1-2.79-3.27c-.82-1.14-1.48-2.28-1.96-3.41-.48-1.13-.72-2.21-.72-3.24 0-.68.12-1.33.36-1.93.24-.61.62-1.17 1.15-1.67.64-.63 1.34-.94 2.08-.94.28 0 .56.06.81.18.26.12.49.3.67.56l2.32 3.27c.18.25.31.48.4.7.09.21.14.42.14.61 0 .24-.07.48-.21.71-.13.23-.32.47-.56.71l-.76.79c-.11.11-.16.24-.16.4 0 .08.01.15.03.23.03.08.06.14.08.2.18.33.49.76.93 1.28.45.52.93 1.05 1.45 1.58.54.53 1.06 1.02 1.59 1.47.52.44.95.74 1.29.92.05.02.11.05.18.08.08.03.16.04.25.04.17 0 .3-.06.41-.17l.76-.75c.25-.25.49-.44.72-.56.23-.14.46-.21.71-.21.19 0 .39.04.61.13.22.09.45.22.7.39l3.31 2.35c.26.18.44.39.55.64.1.25.16.5.16.78Z" />
-                      <path d="M18.5 9c0-.6-.47-1.52-1.17-2.23-.64-.65-1.49-1.27-2.33-1.27" />
-                      <path d="M22 9c0-3.87-3.13-7-7-7" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-[15px] font-bold text-[#1e1e1e]">
-                      تماس با ما
-                    </h4>
-                    <p className="text-[12px] text-[#7a7a7a] mt-1">
-                      راه ارتباطی با مجموعه لوستر صالحی
-                    </p>
-                  </div>
-                </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-[#292d32] shrink-0">
-                  <path d="M9.57 5.93L3.5 12l6.07 6.07M20.5 12H3.67" />
-                </svg>
-              </div>
-            </a>
-
-            {/* ۵. درباره ما */}
-            <a
-              href="/about-us"
-              onClick={(e) => {
-                e.preventDefault();
-                setIsMobileCategoriesOpen(false);
-                setActiveMobileTab('home');
-                triggerRouteNavigation('about-us');
-              }}
-              className="group block rounded-[18px] bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5] border border-[#e9e9e9] px-4 py-4 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-[14px] bg-[#f5f5f5] text-[#292d32] group-hover:bg-[#b59766] group-hover:text-white group-active:bg-[#b59766] group-active:text-white flex items-center justify-center shrink-0 transition-colors">
-                    {/* آیکون سکوی افتخار و ستاره مطابق عکس دوم */}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
-                      <path d="M8.67 14H4c-1.1 0-2 .9-2 2v6h6.67v-8Z" />
-                      <path d="M13.33 10h-2.66c-1.1 0-2 .9-2 2v10h6.66V12c0-1.1-.9-2-2-2Z" />
-                      <path d="M20 17h-4.67v5H22v-3c0-1.1-.9-2-2-2Z" />
-                      <path d="M12.52 2.07l.53 1.06c.07.15.25.28.41.31l.96.16c.61.1.75.54.31.98l-.75.75c-.13.13-.2.37-.16.55l.21.92c.17.73-.22 1.02-.86.64l-.9-.53c-.16-.1-.43-.1-.59 0l-.9.53c-.64.38-1.03.09-.86-.64l.21-.92c.04-.18-.03-.42-.16-.55l-.75-.75c-.44-.44-.3-.88.31-.98l.96-.16c.16-.03.34-.16.41-.31l.53-1.06c.29-.58.76-.58 1.05 0Z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-[15px] font-bold text-[#1e1e1e]">
-                      درباره ما
-                    </h4>
-                    <p className="text-[12px] text-[#7a7a7a] mt-1">
-                      داستان پیشرفت رشدی بی انتهای ما در ایران!
-                    </p>
-                  </div>
-                </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-[#292d32] shrink-0">
-                  <path d="M9.57 5.93L3.5 12l6.07 6.07M20.5 12H3.67" />
-                </svg>
-              </div>
-            </a>
-
-            {/* ۶. موارد دیگر */}
-            <div className="rounded-[18px] bg-white border border-[#e9e9e9] overflow-hidden transition-colors">
-              <button
-                type="button"
-                onClick={() =>
-                  setMobileAccordionOpen((prev) =>
-                    prev === 'more' ? null : 'more'
-                  )
-                }
-                className={`group w-full px-4 py-4 flex items-center justify-between cursor-pointer text-right transition-colors ${
-                  mobileAccordionOpen === 'more'
-                    ? 'bg-[#f5f5f5]'
-                    : 'bg-white hover:bg-[#f5f5f5] active:bg-[#f5f5f5]'
-                }`}
-              >
-                <div className="flex items-center gap-3.5">
-                  <div
-                    className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 transition-colors ${
-                      mobileAccordionOpen === 'more'
-                        ? 'bg-[#b59766] text-white'
-                        : 'bg-[#f5f5f5] text-[#292d32] group-hover:bg-[#b59766] group-hover:text-white group-active:bg-[#b59766] group-active:text-white'
-                    }`}
-                  >
-                    {/* آیکون سند با خطوط داخلی مطابق عکس دوم */}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className="w-[22px] h-[22px]">
-                      <path d="M21 7v10c0 3-1.5 5-5 5H8c-3.5 0-5-2-5-5V7c0-3 1.5-5 5-5h8c3.5 0 5 2 5 5Z" />
-                      <path d="M14.5 4.5v2c0 1.1.9 2 2 2h2" />
-                      <path d="M8 13h4" />
-                      <path d="M8 17h8" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="text-[15px] font-bold text-[#1e1e1e]">
-                      موارد دیگر
-                    </h4>
-                    <p className="text-[12px] text-[#7a7a7a] mt-1">
-                      مجوز و گواهی ها، قوانین و مقررات مجموعه
-                    </p>
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`w-5 h-5 text-[#292d32] stroke-[1.8] transition-transform duration-200 shrink-0 ${
-                    mobileAccordionOpen === 'more' ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-
-              {mobileAccordionOpen === 'more' && (
-                <div className="bg-white border-t border-[#efefef]">
-                  {MORE_SUBMENU_ITEMS.map((more, idx) => {
-                    const isLast = idx === MORE_SUBMENU_ITEMS.length - 1;
-                    return (
-                      <a
-                        key={more.id}
-                        href={more.href}
-                        onClick={(e) => {
-                          setIsMobileCategoriesOpen(false);
-                          setActiveMobileTab('home');
-                          navigateFromHref(more.href, e);
-                        }}
-                        className="group/item block w-full px-4 text-right text-[14px] font-medium text-[#1e1e1e] hover:bg-[#f6f1e7] hover:text-[#b59766] active:bg-[#f6f1e7] active:text-[#b59766] transition-colors"
-                      >
-                        <span
-                          className={`block py-4 ${
-                            !isLast
-                              ? 'border-b border-[#efefef] group-hover/item:border-transparent'
-                              : ''
-                          }`}
-                        >
-                          {more.label}
-                        </span>
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                </a>
+              );
+            })}
           </div>
         </div>
       )}

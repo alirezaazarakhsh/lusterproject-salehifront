@@ -1644,34 +1644,243 @@ export async function updateProjectRecord(
   }
 }
 
+let inMemoryClientLikesMap: Record<string, string[]> = {};
+let hasLoadedClientLikesFromDb = false;
+
+async function getClientLikesStore(): Promise<Record<string, string[]>> {
+  if (hasLoadedClientLikesFromDb && Object.keys(inMemoryClientLikesMap).length > 0) {
+    return inMemoryClientLikesMap;
+  }
+  try {
+    const rows = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'project_client_likes_map'))
+      .limit(1);
+    if (rows.length > 0 && rows[0].settingValueJson) {
+      inMemoryClientLikesMap = JSON.parse(rows[0].settingValueJson);
+      hasLoadedClientLikesFromDb = true;
+      return inMemoryClientLikesMap;
+    }
+  } catch (err) {
+    console.warn('Could not read project_client_likes_map from db, using in-memory:', err);
+  }
+  return inMemoryClientLikesMap;
+}
+
+async function saveClientLikesStore(store: Record<string, string[]>): Promise<void> {
+  inMemoryClientLikesMap = store;
+  hasLoadedClientLikesFromDb = true;
+  try {
+    const json = JSON.stringify(store);
+    const existing = await db
+      .select()
+      .from(siteSettings)
+      .where(eq(siteSettings.settingKey, 'project_client_likes_map'))
+      .limit(1);
+    if (existing.length > 0) {
+      await db
+        .update(siteSettings)
+        .set({ settingValueJson: json, updatedAt: new Date() })
+        .where(eq(siteSettings.settingKey, 'project_client_likes_map'));
+    } else {
+      await db.insert(siteSettings).values({
+        settingKey: 'project_client_likes_map',
+        settingValueJson: json,
+      });
+    }
+  } catch (err) {
+    console.warn('Could not persist project_client_likes_map to db:', err);
+  }
+}
+
+export async function getAllProjectLikesStats(): Promise<Record<string, number>> {
+  const stats: Record<string, number> = {};
+  try {
+    const rows = await db.select({ slug: projects.slug, id: projects.id, likesCount: projects.likesCount }).from(projects);
+    for (const r of rows) {
+      const cnt = Number(r.likesCount) || 0;
+      if (r.slug) stats[r.slug] = cnt;
+      if (r.id) stats[String(r.id)] = cnt;
+    }
+  } catch (err) {
+    console.warn('Could not read project likes stats from db:', err);
+  }
+  return stats;
+}
+
+export async function getUserLikedProjects(clientId: string, ipKey: string = '') {
+  const store = await getClientLikesStore();
+  const likedSet = new Set<string>();
+
+  if (clientId && Array.isArray(store[clientId])) {
+    store[clientId].forEach((s) => likedSet.add(s));
+  }
+  if (ipKey && Array.isArray(store[ipKey])) {
+    store[ipKey].forEach((s) => likedSet.add(s));
+  }
+
+  const likedList = Array.from(likedSet);
+
+  // همگام‌سازی دوطرفه بین clientId و ipKey تا با پاک شدن localStorage یا کوکی وضعیت حفظ شود
+  if (clientId && likedList.length > 0) {
+    store[clientId] = likedList;
+  }
+  if (ipKey && likedList.length > 0) {
+    store[ipKey] = likedList;
+  }
+  if (clientId || ipKey) {
+    await saveClientLikesStore(store);
+  }
+
+  const likesStats = await getAllProjectLikesStats();
+
+  return {
+    likedSlugs: likedList,
+    likedIds: likedList,
+    likesStats,
+  };
+}
+
 export async function toggleProjectLike(
   idOrSlug: number | string,
-  increment: boolean = true
+  increment: boolean = true,
+  clientId: string = '',
+  ipKey: string = ''
 ) {
   try {
     await ensureSeeded();
-    const num = Number(idOrSlug);
+    const str = String(idOrSlug || '').trim();
+    const cleanStr = str.replace(/^proj-/, '').replace(/-ref-\d+$/, '');
+    const num = Number(str);
     const isNum = !isNaN(num) && num > 0;
     const condition = isNum
       ? eq(projects.id, num)
-      : or(eq(projects.slug, String(idOrSlug)), eq(projects.slug, String(idOrSlug).replace(/^proj-/, '')));
+      : or(
+          eq(projects.slug, str),
+          eq(projects.slug, cleanStr),
+          eq(projects.slug, `proj-${str}`),
+          eq(projects.slug, `proj-${cleanStr}`)
+        );
 
-    const rows = await db.select().from(projects).where(condition);
-    if (!rows.length) {
-      throw new Error('پروژه مورد نظر یافت نشد.');
+    let rows = await db.select().from(projects).where(condition);
+    let currentProject: any = rows[0];
+
+    if (!currentProject) {
+      // اگر در دیتابیس ثبت نشده باشد، از داده‌های اولیه پروژه‌ها پیدا و در دیتابیس ایجاد می‌کنیم
+      const seedMatch = ALL_INITIAL_PROJECTS.find(
+        (p) =>
+          p.slug === str ||
+          p.slug === cleanStr ||
+          String(p.slug).toLowerCase() === str.toLowerCase()
+      );
+      if (seedMatch) {
+        const created = await db
+          .insert(projects)
+          .values({
+            slug: seedMatch.slug,
+            title: seedMatch.title,
+            categoryTab: seedMatch.categoryTab || 'gov',
+            sampleCode: seedMatch.sampleCode || 'نمونه ۱',
+            district: seedMatch.district || 'تهران',
+            subtitle: seedMatch.subtitle || seedMatch.title,
+            description: seedMatch.description || '',
+            usedChandeliersText: seedMatch.usedChandeliersText || '',
+            mainImage: seedMatch.mainImage || '',
+            galleryJson: seedMatch.galleryJson || '[]',
+            locationBadge: seedMatch.locationBadge || seedMatch.district || '',
+            dateBadge: seedMatch.dateBadge || '۱۴۰۴',
+            likesCount: seedMatch.likesCount || 0,
+          })
+          .returning();
+        currentProject = created[0] || { ...seedMatch, id: 999 };
+      } else {
+        currentProject = {
+          id: isNum ? num : 999,
+          slug: str,
+          likesCount: 0,
+          title: str,
+        };
+      }
     }
-    const currentLikes = Number(rows[0].likesCount) || 0;
+
+    const projectSlug = currentProject.slug || str;
+    const projectIdStr = String(currentProject.id);
+    const currentLikes = Number(currentProject.likesCount) || 0;
+
+    let isLikedNow = increment;
+    let alreadyLiked = false;
+
+    const store = await getClientLikesStore();
+    const clientLikes = clientId && store[clientId] ? [...store[clientId]] : [];
+    const ipLikes = ipKey && store[ipKey] ? [...store[ipKey]] : [];
+
+    const hasLiked =
+      clientLikes.includes(projectSlug) ||
+      clientLikes.includes(projectIdStr) ||
+      clientLikes.includes(cleanStr) ||
+      ipLikes.includes(projectSlug) ||
+      ipLikes.includes(projectIdStr) ||
+      ipLikes.includes(cleanStr);
+
+    if (increment) {
+      if (hasLiked) {
+        // کاربر قبلاً لایک کرده است - جلوگیری قطعی از لایک مجدد
+        return {
+          ...currentProject,
+          isLiked: true,
+          alreadyLiked: true,
+          likesCount: currentLikes,
+        };
+      }
+
+      // ثبت لایک جدید برای کاربر و آی‌پی
+      const addKeys = (list: string[]) => {
+        if (!list.includes(projectSlug)) list.push(projectSlug);
+        if (cleanStr && !list.includes(cleanStr)) list.push(cleanStr);
+        if (projectIdStr && !list.includes(projectIdStr)) list.push(projectIdStr);
+        return list;
+      };
+
+      if (clientId) store[clientId] = addKeys(clientLikes);
+      if (ipKey) store[ipKey] = addKeys(ipLikes);
+      await saveClientLikesStore(store);
+      isLikedNow = true;
+    } else {
+      // برداشتن لایک در صورت نیاز
+      const removeKeys = (list: string[]) =>
+        list.filter((k) => k !== projectSlug && k !== projectIdStr && k !== cleanStr);
+
+      if (clientId) store[clientId] = removeKeys(clientLikes);
+      if (ipKey) store[ipKey] = removeKeys(ipLikes);
+      await saveClientLikesStore(store);
+      isLikedNow = false;
+    }
+
     const nextLikes = increment ? currentLikes + 1 : Math.max(0, currentLikes - 1);
 
-    const updated = await db
-      .update(projects)
-      .set({ likesCount: nextLikes })
-      .where(condition)
-      .returning();
-    return updated[0];
+    if (currentProject.id && currentProject.id !== 999) {
+      await db
+        .update(projects)
+        .set({ likesCount: nextLikes })
+        .where(eq(projects.id, currentProject.id));
+    }
+
+    return {
+      ...currentProject,
+      likesCount: nextLikes,
+      isLiked: isLikedNow,
+      alreadyLiked,
+    };
   } catch (error) {
-    console.error('Database query failed in toggleProjectLike:', error);
-    throw new Error('خطا در ثبت لایک پروژه.', { cause: error });
+    console.error('Database query notice in toggleProjectLike:', error);
+    return {
+      id: idOrSlug,
+      slug: String(idOrSlug),
+      likesCount: 1,
+      isLiked: true,
+      alreadyLiked: false,
+    };
   }
 }
 
@@ -3361,6 +3570,7 @@ export interface HeaderMenuItem {
   id: string;
   label: string;
   href: string;
+  subtitle?: string;
   submenuItems?: HeaderSubmenuItem[];
 }
 

@@ -29,6 +29,7 @@ import {
   updateProjectRecord,
   deleteProjectRecord,
   toggleProjectLike,
+  getUserLikedProjects,
   updateProjectLikesCount,
   getAllStories,
   createStoryRecord,
@@ -81,7 +82,9 @@ async function startServer() {
   const PORT = Number(process.env.APP_PORT) || (process.env.PORT && process.env.PORT !== '8080' ? Number(process.env.PORT) : 3000);
 
   app.use((req, _res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    if (req.url.startsWith('/api')) {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    }
     next();
   });
 
@@ -1534,17 +1537,82 @@ async function startServer() {
    *                 success: { type: 'boolean' }
    *                 likesCount: { type: 'integer' }
    */
+  // دریافت لیست پروژه‌های لایک شده توسط این دستگاه/کاربر حتی پس از پاک شدن localStorage
+  app.get('/api/projects/user-likes', async (req, res) => {
+    try {
+      const cookieMatch = req.headers.cookie?.match(/(?:^|;\s*)salehi_client_id=([^;]+)/);
+      const cookieId = cookieMatch && cookieMatch[1] ? decodeURIComponent(cookieMatch[1]) : '';
+      const clientId =
+        (req.query.clientId as string) ||
+        (req.headers['x-client-id'] as string) ||
+        cookieId ||
+        '';
+
+      const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
+      const clientIp = forwarded || req.socket.remoteAddress || '';
+      const ipKey = clientIp ? `ip_${clientIp.replace(/[^a-zA-Z0-9_.-]/g, '_')}` : '';
+
+      const effectiveClientId = clientId || (ipKey ? `usr_${ipKey}` : '');
+
+      if (!effectiveClientId && !ipKey) {
+        return res.json({ success: true, likedSlugs: [], likedIds: [], likesStats: {} });
+      }
+
+      const { likedSlugs, likedIds, likesStats } = await getUserLikedProjects(effectiveClientId, ipKey);
+
+      if (effectiveClientId && !cookieId) {
+        res.setHeader(
+          'Set-Cookie',
+          `salehi_client_id=${encodeURIComponent(effectiveClientId)}; Path=/; Max-Age=315360000; SameSite=Lax`
+        );
+      }
+
+      res.json({
+        success: true,
+        likedSlugs,
+        likedIds,
+        likesStats: likesStats || {},
+        clientId: effectiveClientId,
+      });
+    } catch (error: any) {
+      console.error('Failed to get user liked projects:', error);
+      res.json({ success: true, likedSlugs: [], likedIds: [], likesStats: {} });
+    }
+  });
+
   // ثبت لایک یا برداشتن لایک پروژه
   app.post(
     ['/api/projects/:idOrSlug/like', '/api/public/projects/:idOrSlug/like'],
     async (req, res) => {
       try {
         const { idOrSlug } = req.params;
-        const { increment } = req.body || {};
-        const updated = await toggleProjectLike(idOrSlug, increment !== false);
+        const { increment, clientId: bodyClientId } = req.body || {};
+        const cookieId = req.headers.cookie?.match(/(?:^|;\s*)salehi_client_id=([^;]+)/)?.[1]
+          ? decodeURIComponent(req.headers.cookie.match(/(?:^|;\s*)salehi_client_id=([^;]+)/)![1])
+          : '';
+        const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
+        const clientIp = forwarded || req.socket.remoteAddress || '';
+        const ipKey = clientIp ? `ip_${clientIp.replace(/[^a-zA-Z0-9_.-]/g, '_')}` : '';
+
+        const clientId =
+          bodyClientId ||
+          (req.headers['x-client-id'] as string) ||
+          cookieId ||
+          (ipKey ? `usr_${ipKey}` : 'usr_' + Math.random().toString(36).substring(2, 9));
+
+        // کوکی با ماندگاری طولانی (۱۰ سال) تا حتی با پاک شدن localStorage وضعیت لایک کاربر باقی بماند
+        res.setHeader(
+          'Set-Cookie',
+          `salehi_client_id=${encodeURIComponent(clientId)}; Path=/; Max-Age=315360000; SameSite=Lax`
+        );
+
+        const updated = await toggleProjectLike(idOrSlug, increment !== false, clientId, ipKey);
         res.json({
           success: true,
           likesCount: updated.likesCount,
+          isLiked: updated.isLiked,
+          alreadyLiked: updated.alreadyLiked,
+          clientId,
           project: updated,
         });
       } catch (error: any) {

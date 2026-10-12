@@ -38,7 +38,7 @@ import {
   MagazineArticle,
   GENERATED_IMAGES,
 } from '../data/chandelierData';
-import { ExactPalmetteVector } from './Ornaments';
+import { ExactPalmetteVector, StoryLoadingImageIcon } from './Ornaments';
 import { handleImgErrorFallback, resolveDirectImageUrl } from '../utils/imageCdnHelper';
 import {
   Chandelier3DViewer,
@@ -1040,12 +1040,23 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
     return activeList[targetIdx];
   };
 
+  // زمان اختصاصی هر استوری / اسلاید - استاندارد ۱۰ ثانیه‌ای اینستاگرام (۱۰ ثانیه)
+  const slideDurationSeconds = 10;
+
   const handlePrevStory = () => {
+    setIsPaused(false);
+    setProgress(0);
+    setActiveSegment(0);
+    setRemainingSeconds(slideDurationSeconds);
     if (!onSelectStory || currentIndex < 0) return;
     onSelectStory(getStoryAtOffset(-1));
   };
 
   const handleNextStory = () => {
+    setIsPaused(false);
+    setProgress(0);
+    setActiveSegment(0);
+    setRemainingSeconds(slideDurationSeconds);
     if (!onSelectStory || currentIndex < 0) {
       onClose();
       return;
@@ -1080,6 +1091,9 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   }, [story]);
 
   const handlePrevSlideOrStory = () => {
+    setIsPaused(false);
+    setProgress(0);
+    setRemainingSeconds(slideDurationSeconds);
     if (activeSegment > 0) {
       setActiveSegment((seg) => seg - 1);
       return;
@@ -1088,6 +1102,9 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   };
 
   const handleNextSlideOrStory = () => {
+    setIsPaused(false);
+    setProgress(0);
+    setRemainingSeconds(slideDurationSeconds);
     if (activeSegment < effectiveSlides.length - 1) {
       setActiveSegment((seg) => seg + 1);
       return;
@@ -1095,31 +1112,106 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
     handleNextStory();
   };
 
+  // کنترل هوشمند Hover فقط برای موس، و Touch برای موبایل بدون متوقف ماندن تایمر
+  const longPressTimerRef = useRef<number | null>(null);
+  const touchStartXRef = useRef<number>(0);
+  const touchStartYRef = useRef<number>(0);
+  const touchStartTimeRef = useRef<number>(0);
+
+  const handleMouseEnter = () => {
+    // فقط برای نشانگر موس واقعی Hover فعال می‌شود (نه لمس موبایل)
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      setIsPaused(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsPaused(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+    touchStartTimeRef.current = Date.now();
+
+    // نگه داشتن طولانی انگشت استوری را مکث می‌کند (مانند اینستاگرام)
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+    }
+    longPressTimerRef.current = window.setTimeout(() => {
+      setIsPaused(true);
+    }, 250);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    // با برداشتن انگشت همیشه ادامه داده می‌شود
+    setIsPaused(false);
+
+    const touch = e.changedTouches[0];
+    const diffX = touch.clientX - touchStartXRef.current;
+    const diffY = touch.clientY - touchStartYRef.current;
+    const duration = Date.now() - touchStartTimeRef.current;
+
+    // تشخیص سوایپ سریع افقی در موبایل
+    if (Math.abs(diffX) > 45 && Math.abs(diffX) > Math.abs(diffY) * 1.4 && duration < 380) {
+      if (diffX < 0) {
+        // سوایپ به چپ -> رفتن به اسلاید یا استوری بعدی
+        handleNextSlideOrStory();
+      } else {
+        // سوایپ به راست -> رفتن به اسلاید یا استوری قبلی
+        handlePrevSlideOrStory();
+      }
+    }
+  };
+
+  const handleTouchCancel = () => {
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setIsPaused(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        window.clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
+
   // تعیین اسلاید فعال
   const currentSlide = effectiveSlides[activeSegment] || null;
 
-  // زمان اختصاصی هر استوری / اسلاید - استاندارد ۱۰ ثانیه‌ای اینستاگرام (۱۰ ثانیه)
-  const slideDurationSeconds = 10;
-
-  // ریست وضعیت و نمایش حالت لودینگ هنگام باز شدن یا عوض شدن استوری
+  // ریست وضعیت هنگام باز شدن یا عوض شدن استوری
   useEffect(() => {
     if (!story) return;
     setActiveSegment(0);
     setProgress(0);
-    const initialDur = 10;
-    setRemainingSeconds(initialDur);
+    setRemainingSeconds(slideDurationSeconds);
     setSelectedProductIdx(0);
     setShowAllMultiProducts(false);
     setIsVideoPlaying(true);
+    setIsPaused(false);
 
-    // نمایش استوری لودینگ مطابق عکس اول با زمان بیشتر هنگام باز شدن یا تعویض استوری
+    // نمایش همیشگی لودر اختصاصی استوری (کارت سفید فیگما با AKBAR SALEHI و در حال بارگذاری استوری) در موبایل و دسکتاپ
     setIsMediaLoading(true);
-    const loadDelay = story.simulateLoading ? 3800 : 2500;
+    let isCancelled = false;
     const t = window.setTimeout(() => {
-      setIsMediaLoading(false);
-    }, loadDelay);
-    return () => window.clearTimeout(t);
-  }, [story?.id]);
+      if (!isCancelled) {
+        setIsMediaLoading(false);
+      }
+    }, 850);
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [story?.id, slideDurationSeconds]);
 
   // به‌روزرسانی تایمر اختصاصی هنگام تغییر اسلاید در یک استوری
   useEffect(() => {
@@ -1128,6 +1220,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
     setRemainingSeconds(slideDurationSeconds);
     setSelectedProductIdx(0);
     setShowAllMultiProducts(false);
+    setIsPaused(false);
   }, [activeSegment, slideDurationSeconds]);
 
   const effectiveType: StorySlideType =
@@ -1266,7 +1359,8 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
       window.clearInterval(secTimer);
     };
   }, [
-    story,
+    story?.id,
+    activeSegment,
     isPaused,
     isMediaLoading,
     effectiveType,
@@ -1275,15 +1369,17 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
   ]);
 
   useEffect(() => {
-    if (progress >= 100 && story && !isMediaLoading) {
+    if (progress >= 100 && story && !isMediaLoading && !isPaused) {
       const maxSegments = effectiveSlides.length - 1;
       if (activeSegment < maxSegments) {
         setActiveSegment((seg) => seg + 1);
+        setProgress(0);
+        setRemainingSeconds(slideDurationSeconds);
       } else {
         handleNextStory();
       }
     }
-  }, [progress, activeSegment, isMediaLoading, effectiveSlides.length]);
+  }, [progress, activeSegment, isMediaLoading, isPaused, effectiveSlides.length, slideDurationSeconds]);
 
   if (!story) return null;
 
@@ -1357,7 +1453,10 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/75 to-transparent pointer-events-none" />
         {/* هدر بالا-راست کارت کناری: آواتار دایره‌ای تمام‌پر (عکس شاخص) + عنوان */}
         <div className="absolute top-3.5 right-3.5 left-3.5 flex items-center justify-start gap-2.5">
-          <div className="w-9 h-9 rounded-full p-[1.5px] border border-[#b59766] bg-white shrink-0 overflow-hidden">
+          <div className="relative w-9 h-9 rounded-full p-[1.5px] border border-[#b59766] bg-[#f4f4f4] shrink-0 overflow-hidden flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+              <StoryLoadingImageIcon size={18} color="#000000" />
+            </div>
             <img
               src={resolveDirectImageUrl(sideStory.thumbnailImage || sideStory.image, { width: 120, quality: 80 })}
               alt={sideStory.title}
@@ -1365,7 +1464,7 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
               decoding="async"
               referrerPolicy="no-referrer"
               onError={(e) => handleImgErrorFallback(e)}
-              className="w-full h-full rounded-full object-cover object-center"
+              className="relative z-10 w-full h-full rounded-full object-cover object-center"
             />
           </div>
           <span className="text-xs font-medium text-white/90 truncate">
@@ -1420,6 +1519,16 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
         {isMediaLoading ? (
           /* ==================== حالت لود شدن استوری (دقیقاً مطابق تصویر اول: کارت سفید با لوگوی AKBAR SALEHI و وکتورهای Vector2ltr و Vector2rtl) ==================== */
           <div className="relative w-full h-full sm:w-[375px] lg:w-[405px] sm:h-[620px] rounded-none sm:rounded-[22px] bg-white shadow-[0_25px_70px_rgba(0,0,0,0.55)] shrink-0 flex flex-col items-center justify-center p-6 text-center">
+            {/* دکمه بستن در موبایل هنگام لودینگ */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="sm:hidden absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/5 hover:bg-black/10 text-[#444] flex items-center justify-center transition-colors cursor-pointer"
+              aria-label="بستن استوری"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             <div className="flex flex-col items-center justify-center select-none" dir="ltr">
               <span
                 className="text-[12px] sm:text-[13px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1"
@@ -1466,8 +1575,11 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
         ) : (
           /* ==================== کارت استوری پس از بارگذاری ==================== */
           <div
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchCancel}
             className="relative w-full h-full sm:w-[375px] lg:w-[405px] sm:h-[620px] rounded-none sm:rounded-[22px] overflow-hidden bg-[#181614] shadow-[0_25px_70px_rgba(0,0,0,0.75)] shrink-0 flex flex-col justify-between"
           >
             {/* ۱. محتوای بصری استوری: ویدیو، عکس تک‌صفحه زیبا، یا تصویر کامل محصول */}
@@ -1554,13 +1666,18 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
               </div>
             ) : effectiveType === 'image-only' ? (
               /* ==================== استوری تک عکسی (تمام‌صفحه بدون نوار مشکی پایین) ==================== */
-              <img
-                src={resolveDirectImageUrl(activeMediaUrl, { width: 1000, quality: 85 })}
-                alt={story.fullTitle}
-                referrerPolicy="no-referrer"
-                onError={(e) => handleImgErrorFallback(e)}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+              <div className="absolute inset-0 w-full h-full bg-[#e5e5e5] flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+                  <StoryLoadingImageIcon size={56} color="#000000" className="opacity-80" />
+                </div>
+                <img
+                  src={resolveDirectImageUrl(activeMediaUrl, { width: 1000, quality: 85 })}
+                  alt={story.fullTitle}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => handleImgErrorFallback(e)}
+                  className="relative z-10 w-full h-full object-cover"
+                />
+              </div>
             ) : mainIsStudio ? (
               /* ==================== در صورت استفاده از عکس استودیویی به عنوان پس‌زمینه ==================== */
               <div className="absolute inset-0 w-full h-full bg-[#181614] overflow-hidden">
@@ -1572,26 +1689,34 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                   className="absolute inset-0 w-full h-full object-cover blur-2xl scale-125 brightness-[0.38] pointer-events-none"
                 />
                 <div className="relative z-10 w-full h-full flex items-center justify-center px-3.5 pt-18 pb-32">
-                  <div className="w-full h-full rounded-[18px] overflow-hidden flex items-center justify-center shadow-lg bg-[#f8f6f1] p-3 sm:p-4">
+                  <div className="relative w-full h-full rounded-[18px] overflow-hidden flex items-center justify-center shadow-lg bg-[#f8f6f1] p-3 sm:p-4">
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+                      <StoryLoadingImageIcon size={44} color="#000000" className="opacity-80" />
+                    </div>
                     <img
                       src={resolveDirectImageUrl(activeMediaUrl, { width: 900, quality: 85 })}
                       alt={story.fullTitle}
                       referrerPolicy="no-referrer"
                       onError={(e) => handleImgErrorFallback(e)}
-                      className="w-full h-full object-contain rounded-[12px] transition-all duration-300"
+                      className="relative z-10 w-full h-full object-contain rounded-[12px] transition-all duration-300"
                     />
                   </div>
                 </div>
               </div>
             ) : (
-              /* ==================== استوری محصول با تصویر تمام‌صفحه دقیقاً مطابق تصویر ۲ ==================== */
-              <img
-                src={resolveDirectImageUrl(activeMediaUrl, { width: 1000, quality: 85 })}
-                alt={story.fullTitle}
-                referrerPolicy="no-referrer"
-                onError={(e) => handleImgErrorFallback(e)}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+              /* ==================== استوری محصول با تصویر تمام‌صفحه با لودر کوه و خورشید مشکی ==================== */
+              <div className="absolute inset-0 w-full h-full bg-[#e5e5e5] flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+                  <StoryLoadingImageIcon size={56} color="#000000" className="opacity-80" />
+                </div>
+                <img
+                  src={resolveDirectImageUrl(activeMediaUrl, { width: 1000, quality: 85 })}
+                  alt={story.fullTitle}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => handleImgErrorFallback(e)}
+                  className="relative z-10 w-full h-full object-cover"
+                />
+              </div>
             )}
 
             {/* سایه ملایم بالا برای خوانایی خطوط پیشرفت و تایمر */}
@@ -1617,7 +1742,10 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                       key={idx}
                       onClick={(e) => {
                         e.stopPropagation();
+                        setIsPaused(false);
                         setActiveSegment(idx);
+                        setProgress(0);
+                        setRemainingSeconds(slideDurationSeconds);
                       }}
                       className="flex-1 h-[3.5px] rounded-full bg-white/30 overflow-hidden cursor-pointer"
                     >
@@ -1658,14 +1786,14 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
                   </div>
                 </div>
 
-                {/* چپ: دکمه کپسولی بستن صفحه مخصوص موبایل و دسکتاپ دقیقاً مطابق عکس دوم فیدما */}
+                {/* چپ: دکمه کپسولی بستن صفحه فقط مخصوص استوری موبایل (در دسکتاپ دکمه بیرونی در گوشه تصویر وجود دارد) */}
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     onClose();
                   }}
-                  className="h-8 px-4 rounded-full bg-black/40 hover:bg-black/60 text-white text-[11.5px] font-bold flex items-center justify-center backdrop-blur-xs transition-colors cursor-pointer border border-white/10 shadow-xs"
+                  className="sm:hidden h-8 px-4 rounded-full bg-black/40 hover:bg-black/60 text-white text-[11.5px] font-bold flex items-center justify-center backdrop-blur-xs transition-colors cursor-pointer border border-white/10 shadow-xs"
                 >
                   بستن صفحه
                 </button>
@@ -1675,13 +1803,19 @@ export const StorySpotlightModal: React.FC<StoryModalProps> = ({
             {/* نواحی کلیک چپ و راست روی عکس برای ورق زدن سریع */}
             <div className="relative z-10 flex-1 grid grid-cols-2">
               <div
-                onClick={handlePrevSlideOrStory}
-                className="h-full cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevSlideOrStory();
+                }}
+                className="h-full cursor-pointer select-none"
                 title="استوری قبلی"
               />
               <div
-                onClick={handleNextSlideOrStory}
-                className="h-full cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextSlideOrStory();
+                }}
+                className="h-full cursor-pointer select-none"
                 title="استوری بعدی"
               />
             </div>

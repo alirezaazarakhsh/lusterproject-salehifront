@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { SliderPhotoLoader } from '../SliderPhotoLoader';
 import { HeroTitleOrnament } from '../Ornaments';
 import { GENERATED_IMAGES } from '../../data/chandelierData';
 import { resolveDirectImageUrl, handleImgErrorFallback } from '../../utils/imageCdnHelper';
@@ -96,10 +97,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
   const heroImages = settings.slides.map((s) => s.imageUrl);
   const [activeDot, setActiveDot] = useState(2);
   const [isPaused, setIsPaused] = useState(false);
+  const [loadedSlides, setLoadedSlides] = useState<Record<string, boolean>>({});
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isProgrammaticScrollRef = useRef(false);
   const programmaticTimerRef = useRef<number | null>(null);
   const dragStartXRef = useRef<number | null>(null);
+
+  const handleSlideImageLoad = (slideKey: string) => {
+    setLoadedSlides((prev) => (prev[slideKey] ? prev : { ...prev, [slideKey]: true }));
+  };
 
   // اسکرول نرم و دقیق به اسلاید انتخابی در موبایل/تبلت با محاسبه اختلاف مرکز (سازگار با RTL)
   const scrollToSlide = useCallback((index: number, smooth = true) => {
@@ -254,74 +260,90 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
             const buttonUrl = slide.buttonUrl?.trim();
             const hasTitle = Boolean(titleLine1 || titleLine2);
 
+            const slideKey = `mobile-${slide.id || idx}`;
+            const isImageLoaded = loadedSlides[slideKey];
+
             return (
               <div
                 key={`mobile-hero-${slide.id || idx}`}
                 onClick={() => scrollToSlide(idx, true)}
-                className={`relative w-[84vw] max-w-[640px] shrink-0 snap-center rounded-[24px] sm:rounded-[30px] overflow-hidden h-[270px] xs:h-[300px] sm:h-[350px] bg-[#121110] shadow-[0_12px_36px_rgba(0,0,0,0.18)] flex flex-col justify-between transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
+                className={`relative w-[84vw] max-w-[640px] shrink-0 snap-center rounded-[24px] sm:rounded-[30px] overflow-hidden h-[270px] xs:h-[300px] sm:h-[350px] bg-[#f6f6f6] shadow-[0_12px_36px_rgba(0,0,0,0.18)] flex flex-col justify-between transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
                   isCurrent
-                    ? 'opacity-100 scale-100 ring-1 ring-white/15'
+                    ? 'opacity-100 scale-100 ring-1 ring-black/10'
                     : 'opacity-70 scale-[0.95]'
                 }`}
               >
+                {/* لودر اختصاصی فیگما برای زمانی که عکس هنوز لود نشده یا لود ناموفق بوده است */}
+                <SliderPhotoLoader
+                  compact
+                  className={`z-0 ${isImageLoaded ? 'opacity-0' : 'opacity-100'}`}
+                />
+
                 {/* تصویر پس‌زمینه اسلاید با زوم نرم هنگام فعال شدن */}
                 <img
                   src={resolveDirectImageUrl(imgUrl)}
                   alt={titleLine1 || titleLine2 || 'اسلایدر اصلی لوستر صالحی'}
                   referrerPolicy="no-referrer"
-                  onError={(e) => handleImgErrorFallback(e)}
-                  className={`absolute inset-0 w-full h-full object-cover object-center transition-transform duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                    isCurrent ? 'scale-100' : 'scale-110'
-                  }`}
+                  onLoad={() => handleSlideImageLoad(slideKey)}
+                  onError={(e) => {
+                    handleImgErrorFallback(e);
+                  }}
+                  className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    isImageLoaded ? 'opacity-100' : 'opacity-0'
+                  } ${isCurrent ? 'scale-100' : 'scale-110'}`}
                 />
 
-                {/* گرادینت تیره روی تصویر برای خوانایی کامل متن */}
-                <div className="absolute inset-0 bg-gradient-to-l from-black/85 via-black/65 to-black/30" />
+                {/* گرادینت تیره روی تصویر برای خوانایی کامل متن پس از بارگذاری تصویر */}
+                {isImageLoaded && (
+                  <div className="absolute inset-0 bg-gradient-to-l from-black/85 via-black/65 to-black/30 transition-opacity duration-700 pointer-events-none" />
+                )}
 
-                {/* محتوای متن و دکمه اسلاید (در صورت وجود) */}
-                <div
-                  className={`relative z-10 p-4 xs:p-5 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-4 pb-6 pr-5 xs:pr-6 sm:pr-8 pl-3 max-w-[90%] transition-all duration-700 ease-out ${
-                    isCurrent
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-80 translate-y-1'
-                  }`}
-                >
-                  {hasTitle && (
-                    <div className="flex items-center justify-start gap-1.5 xs:gap-2 mb-2">
-                      <HeroTitleOrnament flip className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
-                      <h1 className="text-right">
-                        {titleLine1 && (
-                          <span className="block text-sm xs:text-base sm:text-lg font-black text-white leading-tight tracking-tight whitespace-nowrap">
-                            {titleLine1}
-                          </span>
-                        )}
-                        {titleLine2 && (
-                          <span className="block text-[11px] xs:text-[12.5px] sm:text-[14px] font-bold text-white/95 mt-0.5 leading-tight whitespace-nowrap">
-                            {titleLine2}
-                          </span>
-                        )}
-                      </h1>
-                      <HeroTitleOrnament className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
-                    </div>
-                  )}
+                {/* محتوای متن و دکمه اسلاید (تنها در صورت لود شدن عکس نمایش داده می‌شود و در حالت لودینگ کاملاً مخفی است) */}
+                {isImageLoaded && (
+                  <div
+                    className={`relative z-10 p-4 xs:p-5 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-4 pb-6 pr-5 xs:pr-6 sm:pr-8 pl-3 max-w-[90%] transition-all duration-700 ease-out ${
+                      isCurrent
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-80 translate-y-1'
+                    }`}
+                  >
+                    {hasTitle && (
+                      <div className="flex items-center justify-start gap-1.5 xs:gap-2 mb-2">
+                        <HeroTitleOrnament flip className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
+                        <h1 className="text-right">
+                          {titleLine1 && (
+                            <span className="block text-sm xs:text-base sm:text-lg font-black text-white leading-tight tracking-tight whitespace-nowrap">
+                              {titleLine1}
+                            </span>
+                          )}
+                          {titleLine2 && (
+                            <span className="block text-[11px] xs:text-[12.5px] sm:text-[14px] font-bold text-white/95 mt-0.5 leading-tight whitespace-nowrap">
+                              {titleLine2}
+                            </span>
+                          )}
+                        </h1>
+                        <HeroTitleOrnament className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
+                      </div>
+                    )}
 
-                  {description && (
-                    <p className="text-[10px] xs:text-[11px] sm:text-[12.5px] text-[#e5e5e5] font-normal leading-relaxed mt-1 text-right max-w-[95%]">
-                      {description}
-                    </p>
-                  )}
+                    {description && (
+                      <p className="text-[10px] xs:text-[11px] sm:text-[12.5px] text-[#e5e5e5] font-normal leading-relaxed mt-1 text-right max-w-[95%]">
+                        {description}
+                      </p>
+                    )}
 
-                  {buttonText && (
-                    <div className="mt-3 sm:mt-4 text-right">
-                      <a
-                        href={buttonUrl || '#collection-salehi'}
-                        className="inline-flex items-center justify-center px-3.5 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 rounded-[10px] sm:rounded-[12px] bg-white hover:bg-[#f5f5f5] text-[#1e1e1e] text-[10.5px] xs:text-[11.5px] sm:text-xs font-bold shadow-md transition-colors whitespace-nowrap"
-                      >
-                        {buttonText}
-                      </a>
-                    </div>
-                  )}
-                </div>
+                    {buttonText && (
+                      <div className="mt-3 sm:mt-4 text-right">
+                        <a
+                          href={buttonUrl || '#collection-salehi'}
+                          className="inline-flex items-center justify-center px-3.5 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 rounded-[10px] sm:rounded-[12px] bg-white hover:bg-[#f5f5f5] text-[#1e1e1e] text-[10.5px] xs:text-[11.5px] sm:text-xs font-bold shadow-md transition-colors whitespace-nowrap"
+                        >
+                          {buttonText}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -349,21 +371,40 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
       <div
         onPointerDown={handleDesktopPointerDown}
         onPointerUp={handleDesktopPointerUp}
-        className="hidden lg:flex relative w-full rounded-[28px] overflow-hidden min-h-[480px] lg:min-h-[520px] 2xl:min-h-[550px] bg-[#121110] shadow-[0_18px_50px_rgba(0,0,0,0.14)] items-center justify-start select-none"
+        className="hidden lg:flex relative w-full rounded-[28px] overflow-hidden min-h-[480px] lg:min-h-[520px] 2xl:min-h-[550px] bg-[#f6f6f6] shadow-[0_18px_50px_rgba(0,0,0,0.14)] items-center justify-start select-none"
       >
+        {/* لودر اختصاصی فیگما برای اسلایدر دسکتاپ هنگام لود نشدن یا در حال بارگذاری بودن عکس */}
+        {(() => {
+          const currentSlide = settings.slides[activeDot] || settings.slides[0];
+          const currentSlideKey = `desktop-${currentSlide?.id || activeDot}`;
+          const isCurrentLoaded = loadedSlides[currentSlideKey];
+
+          return (
+            <SliderPhotoLoader
+              className={`z-0 ${isCurrentLoaded ? 'opacity-0' : 'opacity-100'}`}
+            />
+          );
+        })()}
+
         {/* تصاویر پس‌زمینه اسلایدر با انیمیشن نرم Crossfade و زوم/لایه سینمایی */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {settings.slides.map((slide, idx) => {
             const isSelected = activeDot === idx;
+            const slideKey = `desktop-${slide.id || idx}`;
+            const isImageLoaded = loadedSlides[slideKey];
+
             return (
               <img
                 key={`desktop-hero-slide-${slide.id || idx}`}
                 src={resolveDirectImageUrl(slide.imageUrl)}
                 alt={slide.titleLine1 || slide.titleLine2 || 'لوستر صالحی'}
                 referrerPolicy="no-referrer"
-                onError={(e) => handleImgErrorFallback(e)}
+                onLoad={() => handleSlideImageLoad(slideKey)}
+                onError={(e) => {
+                  handleImgErrorFallback(e);
+                }}
                 className={`absolute inset-0 w-full h-full object-cover object-left transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] ${
-                  isSelected
+                  isSelected && isImageLoaded
                     ? 'opacity-100 scale-100 translate-x-0 z-[1]'
                     : idx < activeDot
                       ? 'opacity-0 scale-[1.06] translate-x-5 z-0'
@@ -374,12 +415,29 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
           })}
         </div>
 
-        {/* گرادینت تیره سمت راست برای کنتراست کامل متن سفید راست‌چین */}
-        <div className="absolute inset-0 z-[2] bg-gradient-to-l from-black via-black/80 to-transparent pointer-events-none" />
-
-        {/* بلوک محتوای کاملاً راست‌چین با سایز فونت استاندارد دسکتاپ */}
+        {/* گرادینت تیره سمت راست برای کنتراست کامل متن سفید راست‌چین پس از لود تصویر */}
         {(() => {
           const currentSlide = settings.slides[activeDot] || settings.slides[0];
+          const currentSlideKey = `desktop-${currentSlide?.id || activeDot}`;
+          const isCurrentLoaded = loadedSlides[currentSlideKey];
+          if (!isCurrentLoaded) return null;
+          return (
+            <div
+              className="absolute inset-0 z-[2] bg-gradient-to-l from-black via-black/80 to-transparent pointer-events-none transition-opacity duration-700"
+            />
+          );
+        })()}
+
+        {/* بلوک محتوای کاملاً راست‌چین با سایز فونت استاندارد دسکتاپ (در حالت لودینگ مخفی است) */}
+        {(() => {
+          const currentSlide = settings.slides[activeDot] || settings.slides[0];
+          const currentSlideKey = `desktop-${currentSlide?.id || activeDot}`;
+          const isCurrentLoaded = loadedSlides[currentSlideKey];
+
+          if (!isCurrentLoaded) {
+            return null; // در حالت لودینگ هیچ متنی از اسلایدر نشان داده نمی‌شود
+          }
+
           const t1 = currentSlide?.titleLine1?.trim();
           const t2 = currentSlide?.titleLine2?.trim();
           const desc = currentSlide?.description?.trim();
@@ -392,7 +450,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
           }
 
           return (
-            <div className="relative z-10 w-full lg:w-[62%] pr-8 lg:pr-14 pl-6 py-12 flex flex-col items-start justify-center text-right transition-all duration-500">
+            <div
+              className="relative z-10 w-full lg:w-[62%] pr-8 lg:pr-14 pl-6 py-12 flex flex-col items-start justify-center text-right transition-all duration-700 opacity-100"
+            >
               {hasTitle && (
                 <div className="flex items-center justify-start gap-3">
                   <HeroTitleOrnament flip className="hidden sm:block" />
@@ -435,24 +495,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
         })()}
 
         {/* نقطه‌های عمودی اسلایدر در لبه چپ بنر (دسکتاپ) */}
-        <div className="absolute left-5 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2.5">
-          {settings.slides.map((_, dotIndex) => {
-            const isSelected = activeDot === dotIndex;
-            return (
-              <button
-                key={`dot-d-${dotIndex}`}
-                type="button"
-                onClick={() => setActiveDot(dotIndex)}
-                aria-label={`اسلاید ${dotIndex + 1}`}
-                className={`rounded-full transition-all duration-500 ease-out cursor-pointer ${
-                  isSelected
-                    ? 'w-3 h-3 bg-white shadow-xs scale-105'
-                    : 'w-1.5 h-1.5 bg-white/45 hover:bg-white/80'
-                }`}
-              />
-            );
-          })}
-        </div>
+        {(() => {
+          const currentSlide = settings.slides[activeDot] || settings.slides[0];
+          const currentSlideKey = `desktop-${currentSlide?.id || activeDot}`;
+          const isCurrentLoaded = loadedSlides[currentSlideKey];
+
+          return (
+            <div className="absolute left-5 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2.5">
+              {settings.slides.map((_, dotIndex) => {
+                const isSelected = activeDot === dotIndex;
+                return (
+                  <button
+                    key={`dot-d-${dotIndex}`}
+                    type="button"
+                    onClick={() => setActiveDot(dotIndex)}
+                    aria-label={`اسلاید ${dotIndex + 1}`}
+                    className={`rounded-full transition-all duration-500 ease-out cursor-pointer ${
+                      isSelected
+                        ? isCurrentLoaded
+                          ? 'w-3 h-3 bg-white shadow-xs scale-105'
+                          : 'w-3 h-3 bg-black shadow-xs scale-105'
+                        : isCurrentLoaded
+                          ? 'w-1.5 h-1.5 bg-white/45 hover:bg-white/80'
+                          : 'w-1.5 h-1.5 bg-black/35 hover:bg-black/70'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </section>
   );
