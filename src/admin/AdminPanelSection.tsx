@@ -1334,10 +1334,20 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         });
       }
     } catch (err: any) {
-      showNotice(
-        'error',
-        err?.message || 'خطا در دریافت اطلاعات از دیتابیس PostgreSQL'
-      );
+      console.warn('Admin loadAllAdminData notice:', err);
+      try {
+        const local = loadLocalDb();
+        if (local) {
+          if (Array.isArray(local.users)) setAdminsList(local.users.filter((adm: any) => adm && !isItemDeleted(adm)));
+          if (Array.isArray(local.products)) setProductsList(local.products.filter((p: any) => p && !isItemDeleted(p)));
+          if (Array.isArray(local.categories)) setCategoriesList(local.categories.filter((c: any) => c && !isItemDeleted(c)));
+          if (Array.isArray(local.projects)) setProjectsList(local.projects.filter((pr: any) => pr && !isItemDeleted(pr)));
+          if (Array.isArray(local.stories)) setStoriesList(local.stories.filter((s: any) => s && !isItemDeleted(s)));
+          if (Array.isArray(local.articles)) setArticlesList(local.articles.filter((a: any) => a && !isItemDeleted(a)));
+          if (Array.isArray(local.messages)) setMessagesList(local.messages.filter((m: any) => m && !isItemDeleted(m)));
+          if (Array.isArray(local.orders)) setOrdersList(local.orders.filter((o: any) => o && !isItemDeleted(o)));
+        }
+      } catch {}
     } finally {
       setIsLoadingData(false);
     }

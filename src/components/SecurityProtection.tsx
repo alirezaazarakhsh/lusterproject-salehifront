@@ -419,25 +419,6 @@ export const SecurityProtection: React.FC = () => {
       }
     };
 
-    // ۹. پایش مداوم focus سند در آیفون و اندروید جهت شناسایی Control Center و Quick Settings
-    const focusCheckInterval = setInterval(() => {
-      try {
-        if (!document.hasFocus() || document.hidden) {
-          document.documentElement.classList.add('protected-blackout-active');
-          document.body?.classList.add('protected-blackout-active');
-          const rootEl = document.getElementById('root');
-          if (rootEl) rootEl.classList.add('protected-blackout-active');
-          setIsBlackoutActive(true);
-        } else if (!modalState.isOpen) {
-          document.documentElement.classList.remove('protected-blackout-active');
-          document.body?.classList.remove('protected-blackout-active');
-          const rootEl = document.getElementById('root');
-          if (rootEl) rootEl.classList.remove('protected-blackout-active');
-          setIsBlackoutActive(false);
-        }
-      } catch {}
-    }, 200);
-
     // ثبت شنوندگان رویدادها سراسری
     window.addEventListener('pointerover', handlePointerOver, { passive: true });
     window.addEventListener('contextmenu', handleContextMenu, { capture: true });
@@ -456,7 +437,6 @@ export const SecurityProtection: React.FC = () => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      clearInterval(focusCheckInterval);
       window.removeEventListener('pointerover', handlePointerOver);
       window.removeEventListener('contextmenu', handleContextMenu, { capture: true });
       window.removeEventListener('copy', handleCopy, { capture: true });
@@ -473,7 +453,7 @@ export const SecurityProtection: React.FC = () => {
       window.removeEventListener('pagehide', handleWindowBlur);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [triggerSecurityModal, triggerBlackout, modalState.isOpen]);
+  }, [triggerSecurityModal, triggerBlackout]);
 
   return (
     <>
@@ -500,15 +480,14 @@ export const SecurityProtection: React.FC = () => {
           z-index: 15;
           font-size: 10px;
           font-weight: 800;
-          color: rgba(255, 255, 255, 0.9);
-          background: rgba(0, 0, 0, 0.55);
-          backdrop-filter: blur(4px);
+          color: rgba(255, 255, 255, 0.92);
+          background: rgba(18, 18, 18, 0.75);
           padding: 3px 8px;
           border-radius: 6px;
           pointer-events: none;
           letter-spacing: 0.3px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 2px 5px rgba(0,0,0,0.25);
         }
 
         /* غیرفعال کردن کشیدن تصویر با موس یا نگه داشتن تاچ روی عکس در گوشی و دسکتاپ */

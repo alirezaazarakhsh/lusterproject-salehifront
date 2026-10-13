@@ -67,13 +67,13 @@ class AppErrorBoundary extends React.Component<
  * نقطه ورود اصلی اپلیکیشن گالری لوستر اکبر صالحی
  */
 export function App() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    async function init() {
+    // بارگذاری فوری صفحه اصلی بدون معطلی و اجرای همگام‌سازی دیتابیس در پس‌زمینه
+    async function initBackgroundSync() {
       try {
         await loadDeletedKeysFromFirestore();
-        // ابتدا کاتالوگ زنده سرور دریافت و کش می‌شود تا دیتای واقعی لود شود
         try {
           await apiFetchWithFallback('/api/public/catalog');
         } catch (catErr) {
@@ -82,11 +82,9 @@ export function App() {
         await syncFromFirestore();
       } catch (err) {
         console.error('Failed to initialize app data:', err);
-      } finally {
-        setIsLoading(false);
       }
     }
-    init();
+    initBackgroundSync();
   }, []);
 
   return (

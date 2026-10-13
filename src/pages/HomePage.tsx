@@ -86,43 +86,50 @@ class AdminErrorBoundary extends React.Component<
     console.error('AdminErrorBoundary caught error:', error, errorInfo);
   }
 
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  handleFullReset = () => {
+    try {
+      localStorage.removeItem('salehi_admin_session_token');
+      localStorage.removeItem('salehi_admin_session_user');
+    } catch {}
+    this.setState({ hasError: false, error: null });
+    navigateToRoute('admin');
+  };
+
   render() {
     if (this.state.hasError) {
       return (
         <div
           dir="rtl"
-          style={{ fontFamily: "'IRANSansX Pro', 'iransansx pro', 'IRANSansX', 'IranSansX', sans-serif" }}
-          className="min-h-screen w-full bg-[#121212] text-white flex flex-col items-center justify-center p-6 text-center"
+          style={{
+            fontFamily: "'IRANSansX Pro', 'iransansx pro', 'IRANSansXPro', 'IRANSansX', 'IranSansX', sans-serif",
+          }}
+          className="min-h-screen w-full bg-[#121212] text-white flex flex-col items-center justify-center p-6 text-center font-sans"
         >
-          <div className="w-16 h-16 rounded-2xl bg-[#fee2e2]/10 border border-[#fee2e2]/20 flex items-center justify-center text-[#ef4444] mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#fee2e2]/10 border border-[#fee2e2]/20 flex items-center justify-center text-[#ef4444] mb-4 shadow-lg">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8">
               <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold mb-2">بازخوانی پنل مدیریت دیتابیس</h2>
-          <p className="text-xs text-[#aaa] max-w-md mb-6 leading-relaxed">
-            در راه اندازی پنل مدیریت خطایی رخ داد. جهت باز کردن مجدد پنل مدیریت روی دکمه زیر کلیک کنید.
+          <h2 className="text-xl font-black mb-2 text-white tracking-tight">بازخوانی پنل مدیریت دیتابیس</h2>
+          <p className="text-xs text-[#cccccc] max-w-md mb-6 leading-relaxed">
+            در راه‌اندازی داده‌های پنل مدیریت اختلالی رخ داد. جهت باز کردن مجدد پنل روی دکمه زیر کلیک کنید.
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              className="px-5 py-2.5 rounded-xl bg-[#b59766] hover:bg-[#9e8253] text-white text-xs font-bold cursor-pointer transition-colors"
+              onClick={this.handleRetry}
+              className="px-6 py-3 rounded-xl bg-[#b59766] hover:bg-[#9e8253] text-white text-xs font-bold cursor-pointer transition-all shadow-md"
             >
               تلاش مجدد و بارگذاری پنل
             </button>
             <button
               type="button"
-              onClick={() => {
-                localStorage.removeItem('salehi_admin_session_token');
-                localStorage.removeItem('salehi_admin_session_user');
-                this.setState({ hasError: false, error: null });
-                window.location.href = '/admin';
-              }}
-              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer transition-colors"
+              onClick={this.handleFullReset}
+              className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer transition-all border border-white/10"
             >
               ورود مجدد به پنل مدیریت
             </button>
