@@ -56,11 +56,18 @@ ensure_node() {
 # Helper function to safely execute npm commands
 run_npm() {
   ensure_node
+  local args=("$@")
+  
+  # Auto-append --legacy-peer-deps for install commands to prevent ERESOLVE conflicts
+  if [ "${args[0]}" = "install" ] || [ "${args[0]}" = "i" ]; then
+    args=("install" "--legacy-peer-deps" "${args[@]:1}")
+  fi
+
   if command -v npm &> /dev/null; then
-    npm "$@"
+    npm "${args[@]}"
   elif command -v docker &> /dev/null && docker compose ps 2>/dev/null | grep -q "salehi_app"; then
     echo -e "${CYAN}--> Running npm inside Docker container...${NC}"
-    docker compose exec salehi_app npm "$@"
+    docker compose exec salehi_app npm "${args[@]}"
   else
     echo -e "${RED}--> Error: Node.js/npm is not available on host or Docker container.${NC}"
     return 1
