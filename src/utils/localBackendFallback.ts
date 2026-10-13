@@ -903,12 +903,28 @@ export async function handleLocalApiRequest(
     if (savedUserRaw) {
       try {
         const parsedUser = JSON.parse(savedUserRaw);
-        return { admin: parsedUser, user: parsedUser };
+        if (parsedUser && typeof parsedUser === 'object') {
+          return { admin: parsedUser, user: parsedUser };
+        }
       } catch {
         // ignore
       }
     }
-    const fallbackAdmin = dbState.users[0];
+    const defaultSuperAdmin = {
+      id: 1,
+      uid: `admin-${DEFAULT_SUPER_ADMIN_PHONE}`,
+      phone: DEFAULT_SUPER_ADMIN_PHONE,
+      password: DEFAULT_SUPER_ADMIN_PASS,
+      email: `${DEFAULT_SUPER_ADMIN_PHONE}@salehi-admin.local`,
+      displayName: 'اکبر صالحی (مدیر ارشد)',
+      role: 'super_admin',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+      permissions: [...ALL_ADMIN_SECTIONS],
+      permissionsJson: JSON.stringify(ALL_ADMIN_SECTIONS),
+      createdAt: new Date().toISOString(),
+    };
+    const fallbackAdmin = (dbState.users && dbState.users[0]) || defaultSuperAdmin;
     return { admin: fallbackAdmin, user: fallbackAdmin };
   }
 
@@ -1730,7 +1746,23 @@ export async function apiFetchWithFallback(
     const fetchUrl = method === 'GET' 
       ? `${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}` 
       : url;
-    const res = await fetch(fetchUrl, options);
+
+    // تایم‌آوت ۲.۵ ثانیه‌ای جهت جلوگیری از معطلی یا گیر کردن در هنگام استفاده از VPN
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+    const fetchOptions: RequestInit = {
+      ...options,
+      signal: options.signal || controller.signal,
+    };
+
+    let res: Response;
+    try {
+      res = await fetch(fetchUrl, fetchOptions);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
     const contentType = res.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
 

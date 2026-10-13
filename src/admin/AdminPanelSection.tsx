@@ -2664,8 +2664,8 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     navItems[0];
 
   const currentAdminAvatar =
-    adminUser.avatarUrl ||
-    adminsList.find((a) => a.id === adminUser.id)?.avatarUrl ||
+    adminUser?.avatarUrl ||
+    adminsList.find((a) => a && adminUser && a.id === adminUser.id)?.avatarUrl ||
     DEFAULT_ADMIN_AVATAR_URL;
 
   return (

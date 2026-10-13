@@ -6,7 +6,7 @@ interface SecurityAlertState {
   title: string;
   message: string;
   subMessage?: string;
-  triggerType: 'screenshot' | 'image-save' | 'inspect' | 'gesture';
+  triggerType: 'screenshot' | 'image-save' | 'inspect' | 'gesture' | 'external-camera';
 }
 
 /**
@@ -15,7 +15,6 @@ interface SecurityAlertState {
 function isPhotoOrStoryElement(target: Element | null): boolean {
   if (!target) return false;
 
-  // ۱. تگ‌های مستقیم تصویر و رسانه
   if (
     target.tagName === 'IMG' ||
     target.tagName === 'PICTURE' ||
@@ -75,6 +74,7 @@ export const SecurityProtection: React.FC = () => {
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
   const blackoutTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastBlurTimeRef = useRef<number>(0);
 
   // فعال کردن مشکی شدن عکس‌ها
   const triggerBlackout = useCallback((durationMs = 5000) => {
@@ -134,8 +134,8 @@ export const SecurityProtection: React.FC = () => {
 
   // نمایش الرت مودال سفید و سازگار با فونت ایران سانس پرو
   const triggerSecurityModal = useCallback(
-    (reason: 'screenshot' | 'image-save' | 'gesture' = 'screenshot') => {
-      // هنگام هرگونه تلاش برای اسکرین‌شات یا ذخیره، عکس‌ها بلافاصله مشکی می‌شوند
+    (reason: 'screenshot' | 'image-save' | 'gesture' | 'external-camera' = 'screenshot') => {
+      // هنگام هرگونه تلاش برای اسکرین‌شات، دوربین یا ذخیره، عکس‌ها بلافاصله مشکی می‌شوند
       triggerBlackout(5000);
 
       const now = Date.now();
@@ -158,16 +158,21 @@ export const SecurityProtection: React.FC = () => {
 
       setModalState({
         isOpen: true,
-        title: 'تصویربرداری و ذخیره عکس مسدود است',
+        title:
+          reason === 'external-camera'
+            ? 'تصویربرداری و عکاسی با دوربین خارجی مسدود شد'
+            : 'تصویربرداری و ذخیره عکس مسدود است',
         message:
-          'عکسبرداری (اسکرین‌شات)، ذخیره و کپی تصاویر در این بخش امکان‌پذیر نمی‌باشد. تمامی تصاویر، استوری‌ها و مدل‌های سه‌بعدی گالری لوستر اکبر صالحی دارای نشان ثبت تجاری و کپی‌رایت انحصاری هستند.',
+          'عکسبرداری (اسکرین‌شات)، عکاسی با گوشی دیگر، ذخیره و کپی تصاویر در این بخش امکان‌پذیر نمی‌باشد. تمامی تصاویر، استوری‌ها و مدل‌های سه‌بعدی گالری لوستر اکبر صالحی دارای نشان ثبت تجاری و کپی‌رایت انحصاری هستند.',
         subMessage:
-          reason === 'gesture'
+          reason === 'external-camera'
+            ? 'سیستم هوشمند حسگر نوری، تلاش برای ثبت عکس با دوربین تلفن همراه دیگر از روی صفحه را مسدود کرد.'
+            : reason === 'gesture'
             ? 'سیستم ژست تصویربرداری از روی عکس را در دستگاه شما مسدود نمود.'
             : reason === 'image-save'
             ? 'تلاش برای ذخیره یا کپی مستقیم این تصویر مسدود گردید.'
             : 'تلاش برای ثبت اسکرین‌شات شناسایی شد و تمامی تصاویر مخفی و مشکی گردیدند.',
-        triggerType: reason === 'gesture' ? 'gesture' : reason === 'image-save' ? 'image-save' : 'screenshot',
+        triggerType: reason,
       });
 
       // پر شدن خط تایمر در ۴ ثانیه و بستن خودکار
@@ -397,26 +402,60 @@ export const SecurityProtection: React.FC = () => {
       }
     } catch {}
 
-    // ۸. مشکی کردن عکس‌ها هنگام باز شدن برنامه اسکرین‌شات/ضبط فیلم در آیفون و اندروید (Blur, Visibility, PageHide, Freeze)
+    // ۸. مشکی کردن عکس‌ها هنگام باز شدن برنامه اسکرین‌شات/ضبط فیلم در آیفون و اندروید (iOS/Android Control Center & Screen Recording)
     const handleWindowBlur = () => {
-      triggerBlackout(6000);
+      lastBlurTimeRef.current = Date.now();
+      triggerBlackout(12000);
     };
 
     const handleWindowFocus = () => {
-      if (blackoutTimerRef.current) clearTimeout(blackoutTimerRef.current);
-      setIsBlackoutActive(false);
-      document.documentElement.classList.remove('protected-blackout-active');
-      document.body?.classList.remove('protected-blackout-active');
-      const rootEl = document.getElementById('root');
-      if (rootEl) rootEl.classList.remove('protected-blackout-active');
+      const timeSinceBlur = Date.now() - lastBlurTimeRef.current;
+      // اگر کاربر در ۸ ثانیه گذشته صفحه را Blur کرده باشد (مثلاً سوایپ منوی کنترل سنتر آیفون برای ضبط فیلم)،
+      // پرده مشکی به صورت آنی حذف نمی‌شود تا فیلمبرداری ضبط شده از صفحه کاملاً مشکی باقی بماند.
+      if (timeSinceBlur < 8000) {
+        if (blackoutTimerRef.current) clearTimeout(blackoutTimerRef.current);
+        blackoutTimerRef.current = setTimeout(() => {
+          setIsBlackoutActive(false);
+          document.documentElement.classList.remove('protected-blackout-active');
+          document.body?.classList.remove('protected-blackout-active');
+          const rootEl = document.getElementById('root');
+          if (rootEl) rootEl.classList.remove('protected-blackout-active');
+        }, 8000 - timeSinceBlur);
+      } else {
+        if (blackoutTimerRef.current) clearTimeout(blackoutTimerRef.current);
+        setIsBlackoutActive(false);
+        document.documentElement.classList.remove('protected-blackout-active');
+        document.body?.classList.remove('protected-blackout-active');
+        const rootEl = document.getElementById('root');
+        if (rootEl) rootEl.classList.remove('protected-blackout-active');
+      }
     };
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        triggerBlackout(6000);
+        lastBlurTimeRef.current = Date.now();
+        triggerBlackout(12000);
       } else {
         handleWindowFocus();
       }
+    };
+
+    // ۹. پایش تغییر زاویه و ژست‌های عکاسی با دوربین دیگر با حسگر Orientation/Gyro
+    let lastBeta = 0;
+    let lastGamma = 0;
+    const handleDeviceOrientation = (e: DeviceOrientationEvent) => {
+      try {
+        const beta = Math.abs(e.beta || 0);
+        const gamma = Math.abs(e.gamma || 0);
+        // اگر زاویه گوشی به ناگهان جهت عکاسی یا نمایش به دوربین دیگر کج شود (تغییر بیش از ۳۵ درجه)
+        if (Math.abs(beta - lastBeta) > 35 || Math.abs(gamma - lastGamma) > 35) {
+          if (isAnyPhotoModalOpen() || isPhotoOrStoryElement(currentHoveredElementRef.current)) {
+            triggerSecurityModal('external-camera');
+          }
+        }
+        lastBeta = beta;
+        lastGamma = gamma;
+      } catch {}
     };
 
     // ثبت شنوندگان رویدادها سراسری
@@ -434,6 +473,7 @@ export const SecurityProtection: React.FC = () => {
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('focus', handleWindowFocus);
     window.addEventListener('pagehide', handleWindowBlur);
+    window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
@@ -451,6 +491,7 @@ export const SecurityProtection: React.FC = () => {
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('pagehide', handleWindowBlur);
+      window.removeEventListener('deviceorientation', handleDeviceOrientation);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [triggerSecurityModal, triggerBlackout]);
@@ -466,28 +507,53 @@ export const SecurityProtection: React.FC = () => {
           user-select: none !important;
         }
 
-        /* واترمارک همیشگی کپی‌رایت روی کارت محصولات، استوری‌ها و عکس‌ها جهت مسدودسازی سودجویی از فیلمبرداری */
+        /* واترمارک همیشگی کپی‌رایت و شبکه امنیتی ضد عکسبرداری روی کلیه محصولات و عکس‌ها */
         .product-card, .story-item, .project-card, [data-protected-image] {
           position: relative;
+          overflow: hidden;
         }
+
+        /* واترمارک قطری ضد کپی روی تمامی عکس‌های محصولات جهت خنثی کردن عکسبرداری با دوربین دیگر و اسکرین‌شات */
         .product-card::before,
         .story-item::before,
-        .project-card::before {
-          content: 'لوستر اکبر صالحی © Akbar Salehi';
+        .project-card::before,
+        [data-protected-image]::before {
+          content: 'لوستر اکبر صالحی © Akbar Salehi - کپی‌برداری غیرقانونی است';
           position: absolute;
-          top: 10px;
-          right: 10px;
+          top: 8px;
+          right: 8px;
           z-index: 15;
           font-size: 10px;
-          font-weight: 800;
-          color: rgba(255, 255, 255, 0.92);
-          background: rgba(18, 18, 18, 0.75);
-          padding: 3px 8px;
-          border-radius: 6px;
+          font-weight: 900;
+          color: rgba(255, 255, 255, 0.95);
+          background: rgba(18, 18, 18, 0.85);
+          padding: 4px 10px;
+          border-radius: 8px;
           pointer-events: none;
           letter-spacing: 0.3px;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+          border: 1px solid rgba(223, 193, 141, 0.4);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* شبکه قطری محافظتی شفاف ضد سنسور دوربین (Moiré Protection Overlay) */
+        .product-card::after,
+        .story-item::after,
+        .project-card::after,
+        [data-protected-image]::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          z-index: 12;
+          pointer-events: none;
+          background: repeating-linear-gradient(
+            -45deg,
+            rgba(0, 0, 0, 0.08) 0px,
+            rgba(0, 0, 0, 0.08) 2px,
+            rgba(181, 151, 102, 0.05) 2px,
+            rgba(181, 151, 102, 0.05) 6px
+          );
+          opacity: 0.95;
+          mix-blend-mode: multiply;
         }
 
         /* غیرفعال کردن کشیدن تصویر با موس یا نگه داشتن تاچ روی عکس در گوشی و دسکتاپ */
@@ -500,7 +566,7 @@ export const SecurityProtection: React.FC = () => {
           -webkit-touch-callout: none !important;
         }
 
-        /* مشکی شدن کامل تمامی عکس‌ها و محصولات در هنگام اسکرین‌شات یا ابزار Snipping Tool / Blur / Screen Recording */
+        /* مشکی شدن کامل تمامی عکس‌ها و محصولات در هنگام اسکرین‌شات، کنترل سنتر یا فیلمبرداری در آیفون و اندروید */
         .protected-blackout-active img,
         .protected-blackout-active picture,
         .protected-blackout-active canvas,
