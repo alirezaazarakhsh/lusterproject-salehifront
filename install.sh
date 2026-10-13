@@ -2,9 +2,53 @@
 
 # ==============================================================================
 # Salehi Luxury Chandelier Platform - Complete Server & Mobile App Suite
+# Ultra-Resilient Linux VPS Script (Auto-detects NVM, Node, Docker & Git)
 # ==============================================================================
 
 set -e
+
+# Load NVM and standard Node.js paths if available
+export NVM_DIR="$HOME/.nvm"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  \. "$NVM_DIR/nvm.sh" 2>/dev/null || true
+fi
+export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:~/.nvm/versions/node/$(ls ~/.nvm/versions/node 2>/dev/null | tail -n 1)/bin"
+
+# Helper function to safely execute npm commands
+run_npm() {
+  if command -v npm &> /dev/null; then
+    npm "$@"
+  elif command -v docker &> /dev/null && docker compose ps 2>/dev/null | grep -q "salehi_app"; then
+    echo "--> Running npm inside Docker container..."
+    docker compose exec salehi_app npm "$@"
+  else
+    echo "--> Node.js/npm not found. Installing Node.js 22 LTS..."
+    if command -v apt-get &> /dev/null; then
+      curl -fsSL https://deb.nodesource.com/setup_22.x | bash - 2>/dev/null || true
+      apt-get install -y nodejs 2>/dev/null || true
+    fi
+    npm "$@"
+  fi
+}
+
+# Helper function to safely execute npx commands
+run_npx() {
+  if command -v npx &> /dev/null; then
+    npx "$@"
+  else
+    run_npm exec "$@"
+  fi
+}
+
+# Helper function to safely pull from git
+pull_git() {
+  if [ -d ".git" ]; then
+    echo "--> Pulling latest updates from GitHub..."
+    git pull origin main || true
+  else
+    echo "--> Notice: Directory is not initialized as a git repository."
+  fi
+}
 
 show_banner() {
   clear
@@ -44,31 +88,42 @@ if [ -n "$COMMAND" ]; then
   case "$COMMAND" in
     install|1)
       echo "Running Full Server Installation..."
-      npm install
-      npm run build
-      docker compose up -d --build 2>/dev/null || true
+      run_npm install
+      run_npm run build
+      if command -v docker &> /dev/null; then
+        docker compose up -d --build 2>/dev/null || true
+      fi
       ;;
     update|2)
-      echo "Updating codebase from GitHub..."
-      git pull origin main 2>/dev/null || true
-      npm install
-      npm run build
-      docker compose restart 2>/dev/null || true
+      echo "Updating codebase..."
+      pull_git
+      run_npm install
+      run_npm run build
+      if command -v docker &> /dev/null; then
+        docker compose restart 2>/dev/null || true
+      fi
       ;;
     logs|3)
-      docker compose logs -f
+      if command -v docker &> /dev/null; then
+        docker compose logs -f
+      fi
       ;;
     restart|4)
-      docker compose restart
+      if command -v docker &> /dev/null; then
+        docker compose restart
+      fi
       ;;
     status|ps|5)
-      docker compose ps
+      if command -v docker &> /dev/null; then
+        docker compose ps
+      fi
       ;;
     dns|6)
-      dig @127.0.0.1 lostersalehi.ir +short || true
+      if command -v dig &> /dev/null; then
+        dig @127.0.0.1 lostersalehi.ir +short || true
+      fi
       ;;
     config|7)
-      echo "Reconfiguring environment settings..."
       nano .env || true
       ;;
     ssl|8)
@@ -79,13 +134,13 @@ if [ -n "$COMMAND" ]; then
       sudo systemctl stop systemd-resolved 2>/dev/null || true
       ;;
     security|10)
-      echo "Configuring Server Security & Firewall..."
+      echo "Configuring Firewall Security..."
       ;;
     android|11)
       echo "Building Android Native Project..."
-      npm run build
-      npx cap add android 2>/dev/null || true
-      npx cap sync android
+      run_npm run build
+      run_npx cap add android 2>/dev/null || true
+      run_npx cap sync android
       echo ""
       echo "================================================================"
       echo "✅ Android Native Project successfully built & synced!"
@@ -94,9 +149,9 @@ if [ -n "$COMMAND" ]; then
       ;;
     ios|12)
       echo "Building iOS Native Project..."
-      npm run build
-      npx cap add ios 2>/dev/null || true
-      npx cap sync ios
+      run_npm run build
+      run_npx cap add ios 2>/dev/null || true
+      run_npx cap sync ios
       echo ""
       echo "================================================================"
       echo "✅ iOS Native Project successfully built & synced!"
@@ -105,10 +160,10 @@ if [ -n "$COMMAND" ]; then
       ;;
     dual|mobile|13)
       echo "Building Dual Mobile Apps (Android & iOS)..."
-      npm run build
-      npx cap add android 2>/dev/null || true
-      npx cap add ios 2>/dev/null || true
-      npx cap sync
+      run_npm run build
+      run_npx cap add android 2>/dev/null || true
+      run_npx cap add ios 2>/dev/null || true
+      run_npx cap sync
       echo ""
       echo "================================================================"
       echo "🎉 Both Android & iOS projects successfully built & synced!"
@@ -134,19 +189,17 @@ read -p "Select option [0-13]: " choice
 case $choice in
   1)
     echo "Running Full Installation..."
-    npm install
-    npm run build
+    run_npm install
+    run_npm run build
     if command -v docker &> /dev/null; then
       docker compose up -d --build
     fi
     ;;
   2)
     echo "Updating latest code..."
-    if command -v git &> /dev/null; then
-      git pull origin main 2>/dev/null || true
-    fi
-    npm install
-    npm run build
+    pull_git
+    run_npm install
+    run_npm run build
     if command -v docker &> /dev/null; then
       docker compose restart
     fi
@@ -186,9 +239,9 @@ case $choice in
     ;;
   11)
     echo "Building Android Native APK/AAB..."
-    npm run build
-    npx cap add android 2>/dev/null || true
-    npx cap sync android
+    run_npm run build
+    run_npx cap add android 2>/dev/null || true
+    run_npx cap sync android
     echo ""
     echo "================================================================"
     echo "✅ Android project ready! Run 'npx cap open android' to open."
@@ -196,9 +249,9 @@ case $choice in
     ;;
   12)
     echo "Building iOS Native IPA..."
-    npm run build
-    npx cap add ios 2>/dev/null || true
-    npx cap sync ios
+    run_npm run build
+    run_npx cap add ios 2>/dev/null || true
+    run_npx cap sync ios
     echo ""
     echo "================================================================"
     echo "✅ iOS project ready! Run 'npx cap open ios' on macOS to open."
@@ -206,10 +259,10 @@ case $choice in
     ;;
   13)
     echo "Building Android & iOS Projects..."
-    npm run build
-    npx cap add android 2>/dev/null || true
-    npx cap add ios 2>/dev/null || true
-    npx cap sync
+    run_npm run build
+    run_npx cap add android 2>/dev/null || true
+    run_npx cap add ios 2>/dev/null || true
+    run_npx cap sync
     echo ""
     echo "================================================================"
     echo "🎉 Android and iOS projects synced successfully!"
