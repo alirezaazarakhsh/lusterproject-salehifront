@@ -166,6 +166,7 @@ export const INITIAL_PRODUCT_FILTER_SETTINGS: ProductFilterSettingsConfig = {
 };
 
 export const INITIAL_MAIN_SETTINGS = {
+  appLogoUrl: '/icon.svg',
   hideLanguageSelector: false,
   siteTitle: 'گالری لوستر اکبر صالحی',
   siteSubtitle: 'بزرگترین تولیدکننده لوسترهای برنزی و کریستال در تهران',

@@ -8,6 +8,7 @@ import { loadDeletedKeysFromFirestore } from './lib/firestoreSync';
 import { PagePreloader } from './components/PagePreloader';
 import { SecurityProtection } from './components/SecurityProtection';
 import { PWAInstallPopup } from './components/PWAInstallPopup';
+import { trackCurrentAppSession } from './utils/appTracker';
 
 interface AppErrorBoundaryState {
   hasError: boolean;
@@ -69,6 +70,7 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    trackCurrentAppSession();
     async function initBackgroundSync() {
       try {
         await loadDeletedKeysFromFirestore();

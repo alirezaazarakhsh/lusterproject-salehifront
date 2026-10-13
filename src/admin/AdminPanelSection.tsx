@@ -41,7 +41,9 @@ import {
   Sliders,
   Palette,
   Tag,
+  Smartphone,
 } from 'lucide-react';
+import { MobileBuildsManager } from './components/MobileBuildsManager';
 import { navigateToRoute, navigateToProjectSlug } from '../utils/navigation';
 import { GENERATED_IMAGES } from '../data/chandelierData';
 import { DynamicCategoryIcon } from '../components/DynamicCategoryIcon';
@@ -93,6 +95,7 @@ type AdminTab =
   | 'articles'
   | 'messages'
   | 'orders'
+  | 'mobile_builds'
   | 'settings'
   | 'product_filters';
 
@@ -2666,6 +2669,11 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       label: 'سفارشات مشتریان',
       icon: <ShoppingBag className="w-4 h-4" />,
       count: ordersList.length || summary.ordersCount,
+    },
+    {
+      id: 'mobile_builds',
+      label: 'خروجی اپلیکیشن & نصب',
+      icon: <Smartphone className="w-4 h-4 text-[#d4af37]" />,
     },
     {
       id: 'settings',
@@ -11700,6 +11708,36 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                           placeholder="https://instagram.com/lostersalehi"
                         />
                       </div>
+
+                      {/* تغییر لوگوی برنامه و وب‌سایت از دیتابیس */}
+                      <div className="space-y-1.5 bg-[#faf8f4] p-4 rounded-xl border border-[#ece4d4] md:col-span-2">
+                        <label className="block text-xs font-black text-[#181818] flex items-center justify-between">
+                          <span>لوگوی اختصاصی اپلیکیشن و وب‌سایت (App Logo URL):</span>
+                          <span className="text-[11px] text-[#b59766] font-normal">ذخیره خودکار در دیتابیس</span>
+                        </label>
+                        <div className="flex flex-col sm:flex-row items-center gap-3">
+                          <input
+                            type="text"
+                            dir="ltr"
+                            value={mainSettingsForm.appLogoUrl || ''}
+                            onChange={(e) => setMainSettingsForm({ ...mainSettingsForm, appLogoUrl: e.target.value })}
+                            className="w-full h-10 rounded-lg border border-[#e0e0e0] bg-white px-3 text-xs font-mono"
+                            placeholder="مسیر فایل لوگو یا آدرس تصویر (مثال: /icon.svg یا لینک عکس لوگو)"
+                          />
+                          {mainSettingsForm.appLogoUrl && (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <img
+                                src={mainSettingsForm.appLogoUrl}
+                                alt="پیش‌نمایش لوگوی اپ"
+                                className="w-10 h-10 object-contain bg-[#121212] p-1 rounded-lg border border-[#cbb592]"
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#777] mt-1">
+                          تغییر آدرس لوگو باعث بروزرسانی آنی لوگوی اپلیکیشن در هدر سایت، فوتر، پنجره نصب اپلیکیشن و دیتابیس می‌شود.
+                        </p>
+                      </div>
                     </div>
                   </form>
                 </div>
@@ -12027,6 +12065,9 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
               </div>
             </div>
           )}
+
+          {/* ۱۰.۳. تب مدیریت خروجی‌های اپلیکیشن موبایل (Android APK, iOS IPA) و آمار نصب‌ها */}
+          {activeTab === 'mobile_builds' && <MobileBuildsManager />}
         </div>
       </div>
 

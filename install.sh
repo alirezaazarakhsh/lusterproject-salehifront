@@ -33,22 +33,25 @@ for p in /usr/local/bin /usr/bin /bin ~/.nvm/versions/node/*/bin /root/.nvm/vers
 done
 
 ensure_node() {
-  if command -v npm &> /dev/null; then
+  local NODE_VER=$(node -v 2>/dev/null || echo "v0.0.0")
+  local MAJOR_VER=$(echo "$NODE_VER" | sed 's/v//' | cut -d. -f1)
+
+  if [ "$MAJOR_VER" -ge 22 ] 2>/dev/null && command -v npm &> /dev/null; then
     return 0
   fi
   
-  echo -e "${YELLOW}--> Node.js/npm not found on system. Attempting auto-installation...${NC}"
+  echo -e "${YELLOW}--> Upgrading or installing Node.js 22 LTS for Capacitor CLI...${NC}"
   if command -v apt-get &> /dev/null; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - 2>/dev/null || true
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - 2>/dev/null || true
     apt-get install -y nodejs 2>/dev/null || true
   elif command -v yum &> /dev/null; then
-    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - 2>/dev/null || true
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - 2>/dev/null || true
     yum install -y nodejs 2>/dev/null || true
   fi
 
   for p in /usr/local/bin /usr/bin /bin ~/.nvm/versions/node/*/bin /root/.nvm/versions/node/*/bin; do
     if [ -d "$p" ]; then
-      export PATH="$PATH:$p"
+      export PATH="$p:$PATH"
     fi
   done
 }
