@@ -7,275 +7,251 @@
 
 set -e
 
+# ANSI Color Codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+GOLD='\033[38;2;212;175;55m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
 # Load NVM and standard Node.js paths if available
 export NVM_DIR="$HOME/.nvm"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
   \. "$NVM_DIR/nvm.sh" 2>/dev/null || true
 fi
-export PATH="$PATH:/usr/local/bin:/usr/bin:/bin:~/.nvm/versions/node/$(ls ~/.nvm/versions/node 2>/dev/null | tail -n 1)/bin"
+
+# Expand PATH to include common Node / npm locations
+for p in /usr/local/bin /usr/bin /bin ~/.nvm/versions/node/*/bin /root/.nvm/versions/node/*/bin /home/*/.nvm/versions/node/*/bin /snap/bin; do
+  if [ -d "$p" ]; then
+    export PATH="$PATH:$p"
+  fi
+done
+
+ensure_node() {
+  if command -v npm &> /dev/null; then
+    return 0
+  fi
+  
+  echo -e "${YELLOW}--> Node.js/npm not found on system. Attempting auto-installation...${NC}"
+  if command -v apt-get &> /dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - 2>/dev/null || true
+    apt-get install -y nodejs 2>/dev/null || true
+  elif command -v yum &> /dev/null; then
+    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - 2>/dev/null || true
+    yum install -y nodejs 2>/dev/null || true
+  fi
+
+  for p in /usr/local/bin /usr/bin /bin ~/.nvm/versions/node/*/bin /root/.nvm/versions/node/*/bin; do
+    if [ -d "$p" ]; then
+      export PATH="$PATH:$p"
+    fi
+  done
+}
 
 # Helper function to safely execute npm commands
 run_npm() {
+  ensure_node
   if command -v npm &> /dev/null; then
     npm "$@"
   elif command -v docker &> /dev/null && docker compose ps 2>/dev/null | grep -q "salehi_app"; then
-    echo "--> Running npm inside Docker container..."
+    echo -e "${CYAN}--> Running npm inside Docker container...${NC}"
     docker compose exec salehi_app npm "$@"
   else
-    echo "--> Node.js/npm not found. Installing Node.js 22 LTS..."
-    if command -v apt-get &> /dev/null; then
-      curl -fsSL https://deb.nodesource.com/setup_22.x | bash - 2>/dev/null || true
-      apt-get install -y nodejs 2>/dev/null || true
-    fi
-    npm "$@"
+    echo -e "${RED}--> Error: Node.js/npm is not available on host or Docker container.${NC}"
+    return 1
   fi
 }
 
 # Helper function to safely execute npx commands
 run_npx() {
+  ensure_node
   if command -v npx &> /dev/null; then
     npx "$@"
+  elif command -v npm &> /dev/null; then
+    npm exec "$@"
+  elif command -v docker &> /dev/null && docker compose ps 2>/dev/null | grep -q "salehi_app"; then
+    echo -e "${CYAN}--> Running npx inside Docker container...${NC}"
+    docker compose exec salehi_app npx "$@"
   else
-    run_npm exec "$@"
+    echo -e "${RED}--> Error: npx is not available on host or Docker container.${NC}"
+    return 1
   fi
 }
 
 # Helper function to safely pull from git
 pull_git() {
+  echo -e "${CYAN}--> Pulling latest updates from GitHub...${NC}"
   if [ -d ".git" ]; then
-    echo "--> Pulling latest updates from GitHub..."
-    git pull origin main || true
+    git pull origin main || git pull || echo -e "${YELLOW}--> Notice: Git pull returned warning/up-to-date.${NC}"
   else
-    echo "--> Notice: Directory is not initialized as a git repository."
+    echo -e "${YELLOW}--> Notice: Directory is not initialized as a git repository (.git missing).${NC}"
   fi
 }
 
 show_banner() {
   clear
-  echo "================================================================"
-  echo "       Salehi Luxury Chandelier Server & App Suite              "
-  echo "          Docker + Nginx + PostgreSQL + Mobile Build            "
-  echo "================================================================"
+  echo -e "${CYAN}================================================================${NC}"
+  echo -e "${BOLD}${GOLD}       Salehi Luxury Chandelier Server & App Suite              ${NC}"
+  echo -e "${BOLD}${WHITE}          Docker + Nginx + PostgreSQL + Mobile Build            ${NC}"
+  echo -e "${CYAN}================================================================${NC}"
 }
 
 show_menu() {
   show_banner
   echo ""
-  echo "  [Server Management]"
-  echo "   1) Fresh / Full Installation (Auto Docker, Nginx, DB, BIND9)"
-  echo "   2) Update & Pull Latest Code from GitHub"
-  echo "   3) View Live Server Logs"
-  echo "   4) Restart Services"
-  echo "   5) View Docker Services Status"
-  echo "   6) Test BIND9 DNS Resolution (dig @127.0.0.1)"
-  echo "   7) Reconfigure Domain & DNS Nameservers"
-  echo "   8) Issue / Generate Let's Encrypt SSL & WebSockets (Certbot)"
-  echo "   9) Free Port 53 & Start BIND9 Container"
-  echo "  10) Configure Server Security & Anti-Scan Armor"
+  echo -e "  ${BOLD}${BLUE}[Server Management]${NC}"
+  echo -e "   ${BOLD}${GREEN}1)${NC} Fresh / Full Installation (Auto Docker, Nginx, DB, BIND9)"
+  echo -e "   ${BOLD}${GREEN}2)${NC} Update & Pull Latest Code from GitHub"
+  echo -e "   ${BOLD}${GREEN}3)${NC} View Live Server Logs"
+  echo -e "   ${BOLD}${GREEN}4)${NC} Restart Services"
+  echo -e "   ${BOLD}${GREEN}5)${NC} View Docker Services Status"
+  echo -e "   ${BOLD}${GREEN}6)${NC} Test BIND9 DNS Resolution (dig @127.0.0.1)"
+  echo -e "   ${BOLD}${GREEN}7)${NC} Reconfigure Domain & DNS Nameservers"
+  echo -e "   ${BOLD}${GREEN}8)${NC} Issue / Generate Let's Encrypt SSL & WebSockets (Certbot)"
+  echo -e "   ${BOLD}${GREEN}9)${NC} Free Port 53 & Start BIND9 Container"
+  echo -e "  ${BOLD}${GREEN}10)${NC} Configure Server Security & Anti-Scan Armor"
   echo ""
-  echo "  [Mobile App Builds]"
-  echo "  11) Build Android Native APK / AAB (Bazaar & Myket)"
-  echo "  12) Build iOS Native IPA (App Store & SibApp)"
-  echo "  13) Dual Mobile Build (Android & iOS)"
+  echo -e "  ${BOLD}${PURPLE}[Mobile App Builds]${NC}"
+  echo -e "  ${BOLD}${YELLOW}11)${NC} Build Android Native APK / AAB (Bazaar & Myket)"
+  echo -e "  ${BOLD}${YELLOW}12)${NC} Build iOS Native IPA (App Store & SibApp)"
+  echo -e "  ${BOLD}${YELLOW}13)${NC} Dual Mobile Build (Android & iOS)"
   echo ""
-  echo "   0) Exit"
+  echo -e "   ${BOLD}${RED}0)${NC} Exit"
   echo ""
 }
 
-COMMAND="${1:-}"
-
-if [ -n "$COMMAND" ]; then
-  case "$COMMAND" in
-    install|1)
-      echo "Running Full Server Installation..."
+execute_option() {
+  local opt="$1"
+  case "$opt" in
+    1|install)
+      echo -e "${BOLD}${GREEN}=== Running Full Server Installation ===${NC}"
       run_npm install
       run_npm run build
       if command -v docker &> /dev/null; then
         docker compose up -d --build 2>/dev/null || true
       fi
       ;;
-    update|2)
-      echo "Updating codebase..."
+    2|update)
+      echo -e "${BOLD}${CYAN}=== Updating Codebase & Services ===${NC}"
       pull_git
-      run_npm install
-      run_npm run build
+      run_npm install || true
+      run_npm run build || true
       if command -v docker &> /dev/null; then
         docker compose restart 2>/dev/null || true
       fi
       ;;
-    logs|3)
+    3|logs)
+      echo -e "${BOLD}${CYAN}=== Live Server Logs (Press Ctrl+C to exit logs) ===${NC}"
       if command -v docker &> /dev/null; then
         docker compose logs -f
       fi
       ;;
-    restart|4)
+    4|restart)
+      echo -e "${BOLD}${YELLOW}=== Restarting Docker Services ===${NC}"
       if command -v docker &> /dev/null; then
         docker compose restart
       fi
       ;;
-    status|ps|5)
+    5|status|ps)
+      echo -e "${BOLD}${BLUE}=== Docker Services Status ===${NC}"
       if command -v docker &> /dev/null; then
         docker compose ps
       fi
       ;;
-    dns|6)
+    6|dns)
+      echo -e "${BOLD}${CYAN}=== Testing BIND9 DNS Resolution ===${NC}"
       if command -v dig &> /dev/null; then
         dig @127.0.0.1 lostersalehi.ir +short || true
       fi
       ;;
-    config|7)
+    7|config)
       nano .env || true
       ;;
-    ssl|8)
-      echo "Issuing SSL Certificate via Certbot..."
+    8|ssl)
+      echo -e "${BOLD}${GREEN}=== Issuing SSL Certificate via Certbot ===${NC}"
       ;;
-    fix-dns|9)
-      echo "Freeing port 53 for BIND9..."
+    9|fix-dns)
+      echo -e "${BOLD}${YELLOW}=== Freeing Port 53 for BIND9 ===${NC}"
       sudo systemctl stop systemd-resolved 2>/dev/null || true
       ;;
-    security|10)
-      echo "Configuring Firewall Security..."
+    10|security)
+      echo -e "${BOLD}${RED}=== Configuring Firewall & Anti-Scan Security ===${NC}"
       ;;
-    android|11)
-      echo "Building Android Native Project..."
+    11|android)
+      echo -e "${BOLD}${YELLOW}=== Building Android Native APK / AAB ===${NC}"
+      pull_git
+      run_npm install || true
       run_npm run build
       run_npx cap add android 2>/dev/null || true
       run_npx cap sync android
       echo ""
-      echo "================================================================"
-      echo "✅ Android Native Project successfully built & synced!"
-      echo "Run 'npx cap open android' to open in Android Studio."
-      echo "================================================================"
+      echo -e "${GREEN}================================================================"${NC}
+      echo -e "${BOLD}${GREEN}✅ Android Native Project successfully built & synced!${NC}"
+      echo -e "${WHITE}To generate final APK / AAB for Bazaar & Myket:${NC}"
+      echo -e " 1. Open project in Android Studio: ${CYAN}npx cap open android${NC}"
+      echo -e " 2. Select menu: ${GOLD}Build > Build Bundle(s) / APK(s) > Build APK(s)${NC}"
+      echo -e "${GREEN}================================================================"${NC}
       ;;
-    ios|12)
-      echo "Building iOS Native Project..."
+    12|ios)
+      echo -e "${BOLD}${PURPLE}=== Building iOS Native IPA ===${NC}"
+      pull_git
+      run_npm install || true
       run_npm run build
       run_npx cap add ios 2>/dev/null || true
       run_npx cap sync ios
       echo ""
-      echo "================================================================"
-      echo "✅ iOS Native Project successfully built & synced!"
-      echo "Run 'npx cap open ios' to open in Xcode."
-      echo "================================================================"
+      echo -e "${GREEN}================================================================"${NC}
+      echo -e "${BOLD}${GREEN}✅ iOS Native Project successfully built & synced!${NC}"
+      echo -e "${WHITE}To generate final IPA for App Store & SibApp:${NC}"
+      echo -e " 1. Open project on macOS Xcode: ${CYAN}npx cap open ios${NC}"
+      echo -e " 2. Select menu: ${GOLD}Product > Archive > Distribute App${NC}"
+      echo -e "${GREEN}================================================================"${NC}
       ;;
-    dual|mobile|13)
-      echo "Building Dual Mobile Apps (Android & iOS)..."
+    13|dual|mobile)
+      echo -e "${BOLD}${CYAN}=== Dual Mobile App Build (Android & iOS) ===${NC}"
+      pull_git
+      run_npm install || true
       run_npm run build
       run_npx cap add android 2>/dev/null || true
       run_npx cap add ios 2>/dev/null || true
       run_npx cap sync
       echo ""
-      echo "================================================================"
-      echo "🎉 Both Android & iOS projects successfully built & synced!"
-      echo "1. Android: npx cap open android"
-      echo "2. iOS:     npx cap open ios"
-      echo "================================================================"
+      echo -e "${GREEN}================================================================"${NC}
+      echo -e "${BOLD}${GREEN}🎉 Both Android & iOS projects built & synced successfully!${NC}"
+      echo -e "${WHITE}Open native IDEs to complete signing & release:${NC}"
+      echo -e " 1. Android: ${CYAN}npx cap open android${NC}"
+      echo -e " 2. iOS:     ${CYAN}npx cap open ios${NC}"
+      echo -e "${GREEN}================================================================"${NC}
       ;;
-    exit|0)
-      echo "Exiting."
+    0|exit)
+      echo -e "${GREEN}Exiting. Have a great day!${NC}"
       exit 0
       ;;
     *)
-      echo "Unknown command: $COMMAND"
-      exit 1
+      echo -e "${RED}Invalid option selected.${NC}"
       ;;
   esac
+}
+
+COMMAND="${1:-}"
+
+# Non-interactive direct command execution if argument passed
+if [ -n "$COMMAND" ]; then
+  execute_option "$COMMAND"
   exit 0
 fi
 
-show_menu
-read -p "Select option [0-13]: " choice
-
-case $choice in
-  1)
-    echo "Running Full Installation..."
-    run_npm install
-    run_npm run build
-    if command -v docker &> /dev/null; then
-      docker compose up -d --build
-    fi
-    ;;
-  2)
-    echo "Updating latest code..."
-    pull_git
-    run_npm install
-    run_npm run build
-    if command -v docker &> /dev/null; then
-      docker compose restart
-    fi
-    ;;
-  3)
-    if command -v docker &> /dev/null; then
-      docker compose logs -f
-    fi
-    ;;
-  4)
-    if command -v docker &> /dev/null; then
-      docker compose restart
-    fi
-    ;;
-  5)
-    if command -v docker &> /dev/null; then
-      docker compose ps
-    fi
-    ;;
-  6)
-    if command -v dig &> /dev/null; then
-      dig @127.0.0.1 lostersalehi.ir || true
-    fi
-    ;;
-  7)
-    nano .env || true
-    ;;
-  8)
-    echo "Generating SSL certificate..."
-    ;;
-  9)
-    echo "Stopping systemd-resolved..."
-    sudo systemctl stop systemd-resolved 2>/dev/null || true
-    ;;
-  10)
-    echo "Configuring firewall armor..."
-    ;;
-  11)
-    echo "Building Android Native APK/AAB..."
-    run_npm run build
-    run_npx cap add android 2>/dev/null || true
-    run_npx cap sync android
-    echo ""
-    echo "================================================================"
-    echo "✅ Android project ready! Run 'npx cap open android' to open."
-    echo "================================================================"
-    ;;
-  12)
-    echo "Building iOS Native IPA..."
-    run_npm run build
-    run_npx cap add ios 2>/dev/null || true
-    run_npx cap sync ios
-    echo ""
-    echo "================================================================"
-    echo "✅ iOS project ready! Run 'npx cap open ios' on macOS to open."
-    echo "================================================================"
-    ;;
-  13)
-    echo "Building Android & iOS Projects..."
-    run_npm run build
-    run_npx cap add android 2>/dev/null || true
-    run_npx cap add ios 2>/dev/null || true
-    run_npx cap sync
-    echo ""
-    echo "================================================================"
-    echo "🎉 Android and iOS projects synced successfully!"
-    echo "1. Android: npx cap open android"
-    echo "2. iOS:     npx cap open ios"
-    echo "================================================================"
-    ;;
-  0)
-    echo "Exiting."
-    exit 0
-    ;;
-  *)
-    echo "Invalid option."
-    exit 1
-    ;;
-esac
+# Interactive Loop Mode (Keeps script open after selecting options 1-13)
+while true; do
+  show_menu
+  read -p "$(echo -e "${BOLD}${WHITE}Select option [0-13]: ${NC}")" choice
+  echo ""
+  execute_option "$choice"
+  echo ""
+  read -p "$(echo -e "${BOLD}${CYAN}Press [Enter] to return to main menu...${NC}")" _unused
+done
