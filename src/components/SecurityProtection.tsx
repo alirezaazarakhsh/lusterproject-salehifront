@@ -67,12 +67,33 @@ export const SecurityProtection: React.FC = () => {
     message: '',
     triggerType: 'screenshot',
   });
+  const [isBlackoutActive, setIsBlackoutActive] = useState<boolean>(false);
 
   const lastAlertTimeRef = useRef<number>(0);
   const currentHoveredElementRef = useRef<Element | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const blackoutTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // فعال کردن مشکی شدن عکس‌ها
+  const triggerBlackout = useCallback((durationMs = 5000) => {
+    setIsBlackoutActive(true);
+    document.documentElement.classList.add('protected-blackout-active');
+    document.body?.classList.add('protected-blackout-active');
+    const rootEl = document.getElementById('root');
+    if (rootEl) rootEl.classList.add('protected-blackout-active');
+
+    if (blackoutTimerRef.current) {
+      clearTimeout(blackoutTimerRef.current);
+    }
+    blackoutTimerRef.current = setTimeout(() => {
+      setIsBlackoutActive(false);
+      document.documentElement.classList.remove('protected-blackout-active');
+      document.body?.classList.remove('protected-blackout-active');
+      if (rootEl) rootEl.classList.remove('protected-blackout-active');
+    }, durationMs);
+  }, []);
 
   // لرزش ملایم گوشی
   const triggerHaptic = useCallback(() => {
@@ -114,6 +135,9 @@ export const SecurityProtection: React.FC = () => {
   // نمایش الرت مودال سفید و سازگار با فونت ایران سانس پرو
   const triggerSecurityModal = useCallback(
     (reason: 'screenshot' | 'image-save' | 'gesture' = 'screenshot') => {
+      // هنگام هرگونه تلاش برای اسکرین‌شات یا ذخیره، عکس‌ها بلافاصله مشکی می‌شوند
+      triggerBlackout(5000);
+
       const now = Date.now();
       if (now - lastAlertTimeRef.current < 2500) return;
       lastAlertTimeRef.current = now;
@@ -121,12 +145,12 @@ export const SecurityProtection: React.FC = () => {
       triggerHaptic();
       playAlertSound();
 
-      // پاکسازی متن کلیپ‌بورد در صورت تلاش برای کپی
+      // پاکسازی متن کلیپ‌بورد با مدیریت ایمن خطای فوکوس
       try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
           navigator.clipboard.writeText(
             'تصاویر و استوری‌های این وب‌سایت دارای حق کپی‌رایت اختصاصی گالری لوستر اکبر صالحی است.'
-          );
+          ).catch(() => {});
         }
       } catch {
         // نادیده گرفتن
@@ -142,7 +166,7 @@ export const SecurityProtection: React.FC = () => {
             ? 'سیستم ژست تصویربرداری از روی عکس را در دستگاه شما مسدود نمود.'
             : reason === 'image-save'
             ? 'تلاش برای ذخیره یا کپی مستقیم این تصویر مسدود گردید.'
-            : 'تلاش برای ثبت اسکرین‌شات از عکس‌ها و استوری‌های گالری شناسایی شد.',
+            : 'تلاش برای ثبت اسکرین‌شات شناسایی شد و تمامی تصاویر مخفی و مشکی گردیدند.',
         triggerType: reason === 'gesture' ? 'gesture' : reason === 'image-save' ? 'image-save' : 'screenshot',
       });
 
@@ -154,7 +178,7 @@ export const SecurityProtection: React.FC = () => {
         setModalState((prev) => ({ ...prev, isOpen: false }));
       }, 4000);
     },
-    [triggerHaptic, playAlertSound]
+    [triggerHaptic, playAlertSound, triggerBlackout]
   );
 
   const handleCloseModal = () => {
@@ -163,6 +187,11 @@ export const SecurityProtection: React.FC = () => {
       dismissTimerRef.current = null;
     }
     setModalState((prev) => ({ ...prev, isOpen: false }));
+    setIsBlackoutActive(false);
+    document.documentElement.classList.remove('protected-blackout-active');
+    document.body?.classList.remove('protected-blackout-active');
+    const rootEl = document.getElementById('root');
+    if (rootEl) rootEl.classList.remove('protected-blackout-active');
   };
 
   useEffect(() => {
@@ -220,12 +249,30 @@ export const SecurityProtection: React.FC = () => {
       triggerSecurityModal('image-save');
     };
 
-    // ۵. جلوگیری سراسری از کلیدهای میانبر اسکرین‌شات، کپی، پرینت و سورس
+    // ۵. جلوگیری سراسری از تمامی کلیدهای میانبر اسکرین‌شات (مک، ویندوز، لینوکس)
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = (e.target || currentHoveredElementRef.current) as HTMLElement | null;
       const inInput = isEditableInput(target);
 
-      // کلید PrintScreen (دکمه اسکرین‌شات کیبورد)
+      // الف) مشکی کردن فوری و آنی تمام عکس‌ها به محض فشردن اولین کلید Modifier (Cmd, Ctrl, Shift, Alt, PrintScreen)
+      // این کار باعث می‌شود قبل از اینکه کلیدهای ۳ یا ۴ یا S فشرده شوند و OS عکس بگیرد، عکس‌ها کاملاً مشکی شوند.
+      if (!inInput && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.key === 'Meta' || e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'PrintScreen' || e.code === 'PrintScreen')) {
+        document.documentElement.classList.add('protected-blackout-active');
+        document.body?.classList.add('protected-blackout-active');
+        const rootEl = document.getElementById('root');
+        if (rootEl) rootEl.classList.add('protected-blackout-active');
+        setIsBlackoutActive(true);
+      }
+
+      // ب) تشخیص ترکیبات اسکرین‌شات (Cmd/Ctrl + Shift یا Cmd/Ctrl + Alt)
+      if ((e.metaKey || e.ctrlKey) && (e.shiftKey || e.altKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerSecurityModal('screenshot');
+        return;
+      }
+
+      // ج) کلید PrintScreen (دکمه اسکرین‌شات ویندوز)
       if (e.key === 'PrintScreen' || e.code === 'PrintScreen' || e.keyCode === 44) {
         e.preventDefault();
         e.stopPropagation();
@@ -233,51 +280,27 @@ export const SecurityProtection: React.FC = () => {
         return;
       }
 
-      // ترکیب Win + Shift + S یا Cmd + Shift + 3/4/5 (ابزار اسکرین‌شات ویندوز و مک)
-      if (
-        (e.shiftKey && (e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S' || e.code === 'KeyS')) ||
-        (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key))
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerSecurityModal('screenshot');
-        return;
-      }
-
-      // میانبر کپی (Ctrl + C یا Cmd + C) خارج از فیلدهای ورودی
-      if (!inInput && (e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.code === 'KeyC')) {
+      // د) میانبر کپی (Ctrl + C یا Cmd + C) خارج از فیلدهای ورودی
+      if (!inInput && (e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.code === 'KeyC' || e.key === 'ز')) {
         e.preventDefault();
         e.stopPropagation();
         triggerSecurityModal('image-save');
         return;
       }
 
-      // ذخیره مستقیم صفحه با میانبر (Ctrl + S یا Cmd + S)
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.code === 'KeyS')) {
+      // هـ) ذخیره مستقیم صفحه با میانبر (Ctrl + S یا Cmd + S)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.code === 'KeyS' || e.key === 'س')) {
         e.preventDefault();
         e.stopPropagation();
         triggerSecurityModal('image-save');
         return;
       }
 
-      // پرینت صفحه (Ctrl + P یا Cmd + P)
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P' || e.code === 'KeyP')) {
+      // و) پرینت صفحه (Ctrl + P یا Cmd + P)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P' || e.code === 'KeyP' || e.key === 'ح')) {
         e.preventDefault();
         e.stopPropagation();
         triggerSecurityModal('screenshot');
-        return;
-      }
-
-      // مشاهده سورس یا اینسپکت مرورگر (F12 یا Ctrl+Shift+I / Cmd+Opt+I یا Ctrl+U)
-      if (
-        e.key === 'F12' ||
-        e.code === 'F12' ||
-        ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) ||
-        ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key))
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerSecurityModal('gesture');
         return;
       }
     };
@@ -286,18 +309,37 @@ export const SecurityProtection: React.FC = () => {
       if (e.key === 'PrintScreen' || e.code === 'PrintScreen' || e.keyCode === 44) {
         e.preventDefault();
         triggerSecurityModal('screenshot');
+        return;
+      }
+
+      // اگر مودال باز نیست و هیچ کلید Modifier دیگری فشرده نشده است، مشکی بودن عکس‌ها را پاک کن
+      if (!modalState.isOpen && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        if (blackoutTimerRef.current) clearTimeout(blackoutTimerRef.current);
+        blackoutTimerRef.current = setTimeout(() => {
+          if (!modalState.isOpen) {
+            setIsBlackoutActive(false);
+            document.documentElement.classList.remove('protected-blackout-active');
+            document.body?.classList.remove('protected-blackout-active');
+            const rootEl = document.getElementById('root');
+            if (rootEl) rootEl.classList.remove('protected-blackout-active');
+          }
+        }, 300);
       }
     };
 
-    // ۶. مدیریت تاچ در گوشی: نگه‌داشتن دست (Long-press) یا ژست ۳ انگشتی اسکرین‌شات
+    // ۶. مدیریت تاچ در آیفون و اندروید: نگه‌داشتن دست (Long-press) یا ژست‌های چندانگشتی اسکرین‌شات
     const handleTouchStart = (e: TouchEvent) => {
       const target = e.target as HTMLElement | null;
       currentHoveredElementRef.current = target;
       if (isEditableInput(target)) return;
 
-      // ژست ۳ انگشتی اسکرین‌شات در گوشی
-      if (e.touches && e.touches.length >= 3) {
-        e.preventDefault();
+      // ژست‌های چندانگشتی اسکرین‌شات در آیفون و اندروید (۲ یا ۳ انگشت)
+      if (e.touches && e.touches.length >= 2) {
+        document.documentElement.classList.add('protected-blackout-active');
+        document.body?.classList.add('protected-blackout-active');
+        const rootEl = document.getElementById('root');
+        if (rootEl) rootEl.classList.add('protected-blackout-active');
+        setIsBlackoutActive(true);
         triggerSecurityModal('gesture');
         return;
       }
@@ -339,17 +381,62 @@ export const SecurityProtection: React.FC = () => {
       currentHoveredElementRef.current = e.target as Element | null;
     };
 
-    // ۷. هوش مصنوعی تشخیص قطعی و اسکرین‌شات در هنگام از دست دادن فوکوس یا ابزارهای گرفتن عکس (Snipping Tool / Win+Shift+S / مک)
+    // ۷. مسدودسازی برنامه‌های ضبط ویدیو و فیلمبرداری از صفحه (Screen Recording Interception)
+    try {
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.mediaDevices &&
+        typeof navigator.mediaDevices.getDisplayMedia === 'function'
+      ) {
+        const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+        navigator.mediaDevices.getDisplayMedia = async (options?: DisplayMediaStreamOptions) => {
+          triggerSecurityModal('screenshot');
+          triggerBlackout(8000);
+          throw new DOMException('ضبط فیلم از وب‌سایت گالری لوستر اکبر صالحی به علت کپی‌رایت مسدود است.', 'NotAllowedError');
+        };
+      }
+    } catch {}
+
+    // ۸. مشکی کردن عکس‌ها هنگام باز شدن برنامه اسکرین‌شات/ضبط فیلم در آیفون و اندروید (Blur, Visibility, PageHide, Freeze)
     const handleWindowBlur = () => {
-      // در زمان اسکرین‌شات ویندوز/مک/موبایل، فوکوس پنجره قطع می‌شود
-      triggerSecurityModal('screenshot');
+      triggerBlackout(6000);
+    };
+
+    const handleWindowFocus = () => {
+      if (blackoutTimerRef.current) clearTimeout(blackoutTimerRef.current);
+      setIsBlackoutActive(false);
+      document.documentElement.classList.remove('protected-blackout-active');
+      document.body?.classList.remove('protected-blackout-active');
+      const rootEl = document.getElementById('root');
+      if (rootEl) rootEl.classList.remove('protected-blackout-active');
     };
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        triggerSecurityModal('screenshot');
+        triggerBlackout(6000);
+      } else {
+        handleWindowFocus();
       }
     };
+
+    // ۹. پایش مداوم focus سند در آیفون و اندروید جهت شناسایی Control Center و Quick Settings
+    const focusCheckInterval = setInterval(() => {
+      try {
+        if (!document.hasFocus() || document.hidden) {
+          document.documentElement.classList.add('protected-blackout-active');
+          document.body?.classList.add('protected-blackout-active');
+          const rootEl = document.getElementById('root');
+          if (rootEl) rootEl.classList.add('protected-blackout-active');
+          setIsBlackoutActive(true);
+        } else if (!modalState.isOpen) {
+          document.documentElement.classList.remove('protected-blackout-active');
+          document.body?.classList.remove('protected-blackout-active');
+          const rootEl = document.getElementById('root');
+          if (rootEl) rootEl.classList.remove('protected-blackout-active');
+          setIsBlackoutActive(false);
+        }
+      } catch {}
+    }, 200);
 
     // ثبت شنوندگان رویدادها سراسری
     window.addEventListener('pointerover', handlePointerOver, { passive: true });
@@ -364,9 +451,12 @@ export const SecurityProtection: React.FC = () => {
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
     window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
     window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('pagehide', handleWindowBlur);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      clearInterval(focusCheckInterval);
       window.removeEventListener('pointerover', handlePointerOver);
       window.removeEventListener('contextmenu', handleContextMenu, { capture: true });
       window.removeEventListener('copy', handleCopy, { capture: true });
@@ -379,9 +469,11 @@ export const SecurityProtection: React.FC = () => {
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchEnd);
       window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('pagehide', handleWindowBlur);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [triggerSecurityModal]);
+  }, [triggerSecurityModal, triggerBlackout, modalState.isOpen]);
 
   return (
     <>
@@ -392,6 +484,60 @@ export const SecurityProtection: React.FC = () => {
           -moz-user-select: none !important;
           -ms-user-select: none !important;
           user-select: none !important;
+        }
+
+        /* واترمارک همیشگی کپی‌رایت روی کارت محصولات، استوری‌ها و عکس‌ها جهت مسدودسازی سودجویی از فیلمبرداری */
+        .product-card, .story-item, .project-card, [data-protected-image] {
+          position: relative;
+        }
+        .product-card::before,
+        .story-item::before,
+        .project-card::before {
+          content: 'لوستر اکبر صالحی © Akbar Salehi';
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 15;
+          font-size: 10px;
+          font-weight: 800;
+          color: rgba(255, 255, 255, 0.9);
+          background: rgba(0, 0, 0, 0.55);
+          backdrop-filter: blur(4px);
+          padding: 3px 8px;
+          border-radius: 6px;
+          pointer-events: none;
+          letter-spacing: 0.3px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        /* غیرفعال کردن کشیدن تصویر با موس یا نگه داشتن تاچ روی عکس در گوشی و دسکتاپ */
+        img, picture, canvas, video, [data-protected-image] {
+          -webkit-user-drag: none !important;
+          -khtml-user-drag: none !important;
+          -moz-user-drag: none !important;
+          -o-user-drag: none !important;
+          user-drag: none !important;
+          -webkit-touch-callout: none !important;
+        }
+
+        /* مشکی شدن کامل تمامی عکس‌ها و محصولات در هنگام اسکرین‌شات یا ابزار Snipping Tool / Blur / Screen Recording */
+        .protected-blackout-active img,
+        .protected-blackout-active picture,
+        .protected-blackout-active canvas,
+        .protected-blackout-active video,
+        .protected-blackout-active [data-protected-image],
+        .protected-blackout-active [style*="background-image"],
+        .protected-blackout-active .story-item,
+        .protected-blackout-active .product-card,
+        .protected-blackout-active .project-card,
+        html.protected-blackout-active img,
+        body.protected-blackout-active img {
+          filter: brightness(0) contrast(100%) grayscale(100%) !important;
+          background-color: #000000 !important;
+          background-image: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
         }
 
         /* مسدودسازی کامل محتوا در زمان پرینت یا ذخیره به فایل PDF */
@@ -431,6 +577,25 @@ export const SecurityProtection: React.FC = () => {
           animation: modalFillProgress 4000ms linear forwards;
         }
       `}</style>
+
+      {/* پرده مشکی کامل روی کل صفحه در زمان ثبت اسکرین‌شات یا ابزار برش تصویر */}
+      {isBlackoutActive && (
+        <div
+          dir="rtl"
+          style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
+          className="fixed inset-0 z-[999999] bg-black text-white flex flex-col items-center justify-center p-6 text-center select-none pointer-events-none animate-in fade-in duration-75"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mb-4">
+            <CameraOff className="w-8 h-8 stroke-[2.2]" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-white mb-2">
+            تصویربرداری و ثبت اسکرین‌شات مسدود است
+          </h2>
+          <p className="text-sm text-gray-400 max-w-md leading-relaxed">
+            تمامی تصاویر، مدل‌ها و محتوای گالری لوستر اکبر صالحی دارای نشان ثبت تجاری و کپی‌رایت انحصاری می‌باشند.
+          </p>
+        </div>
+      )}
 
       {modalState.isOpen && (
         <>
