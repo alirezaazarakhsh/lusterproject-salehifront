@@ -440,23 +440,40 @@ export const SecurityProtection: React.FC = () => {
       }
     };
 
-    // ۹. پایش تغییر زاویه و ژست‌های عکاسی با دوربین دیگر با حسگر Orientation/Gyro
+    // ۹. پایش سنسور چرخشی و زاویه گوشی (Gyroscope / Orientation) جهت تشخیص گرفتن گوشی جلوی دوربین دیگر
     let lastBeta = 0;
     let lastGamma = 0;
     const handleDeviceOrientation = (e: DeviceOrientationEvent) => {
       try {
         const beta = Math.abs(e.beta || 0);
         const gamma = Math.abs(e.gamma || 0);
-        // اگر زاویه گوشی به ناگهان جهت عکاسی یا نمایش به دوربین دیگر کج شود (تغییر بیش از ۳۵ درجه)
-        if (Math.abs(beta - lastBeta) > 35 || Math.abs(gamma - lastGamma) > 35) {
-          if (isAnyPhotoModalOpen() || isPhotoOrStoryElement(currentHoveredElementRef.current)) {
-            triggerSecurityModal('external-camera');
-          }
+        
+        // اگر گوشی در حالت عمودی/ایستاده قرار گیرد یا تغییر زاویه سریع برای نشان دادن به دوربین دیگر داده شود
+        if (Math.abs(beta - lastBeta) > 20 || Math.abs(gamma - lastGamma) > 20 || (beta > 55 && beta < 120)) {
+          triggerBlackout(10000);
+          triggerSecurityModal('external-camera');
         }
         lastBeta = beta;
         lastGamma = gamma;
       } catch {}
     };
+
+    // ۱۰. پایش حسگر نور محیطی (Ambient Light Sensor) جهت تشخیص نزدیک شدن لنز دوربین یا فلاش
+    try {
+      if ('AmbientLightSensor' in window) {
+        const sensor = new (window as any).AmbientLightSensor();
+        let lastLux = 0;
+        sensor.addEventListener('reading', () => {
+          const currentLux = sensor.illuminance || 0;
+          if (Math.abs(currentLux - lastLux) > 80 && lastLux > 0) {
+            triggerBlackout(10000);
+            triggerSecurityModal('external-camera');
+          }
+          lastLux = currentLux;
+        });
+        sensor.start();
+      }
+    } catch {}
 
     // ثبت شنوندگان رویدادها سراسری
     window.addEventListener('pointerover', handlePointerOver, { passive: true });
@@ -474,6 +491,7 @@ export const SecurityProtection: React.FC = () => {
     window.addEventListener('focus', handleWindowFocus);
     window.addEventListener('pagehide', handleWindowBlur);
     window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
+    window.addEventListener('devicemotion', handleDeviceOrientation as any, { passive: true });
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
@@ -507,13 +525,44 @@ export const SecurityProtection: React.FC = () => {
           user-select: none !important;
         }
 
-        /* واترمارک همیشگی کپی‌رایت و شبکه امنیتی ضد عکسبرداری روی کلیه محصولات و عکس‌ها */
+
+
+        /* لایه فرکانس بالا خنثی‌کننده لنز دوربین (Anti-Camera Stroboscopic Rolling Shutter Mask) */
+        @keyframes antiCameraShutterStrobe {
+          0% { opacity: 0; }
+          50% { opacity: 0.92; background-color: #000000; }
+          100% { opacity: 0; }
+        }
+
+        /* پوشش ضد عکاسی با دوربین روی تمامی عکس‌ها، استوری‌ها و محصولات جهت سیاهی کامل در دوربین دیگر */
         .product-card, .story-item, .project-card, [data-protected-image] {
           position: relative;
           overflow: hidden;
         }
 
-        /* واترمارک قطری ضد کپی روی تمامی عکس‌های محصولات جهت خنثی کردن عکسبرداری با دوربین دیگر و اسکرین‌شات */
+        /* لایه استروب خنثی‌کننده لنز دوربین روی تمام عکس‌ها جهت ثبت تصویر کاملاً مشکی در دوربین گوشی دیگر */
+        .product-card::after,
+        .story-item::after,
+        .project-card::after,
+        [data-protected-image]::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          z-index: 20;
+          pointer-events: none;
+          background: repeating-linear-gradient(
+            0deg,
+            #000000 0px,
+            #000000 1.5px,
+            transparent 1.5px,
+            transparent 3px
+          );
+          opacity: 0.88;
+          mix-blend-mode: color-burn;
+          animation: antiCameraShutterStrobe 0.016s infinite linear;
+        }
+
+        /* واترمارک همیشگی کپی‌رایت و شبکه امنیتی ضد عکسبرداری روی کلیه محصولات و عکس‌ها */
         .product-card::before,
         .story-item::before,
         .project-card::before,
@@ -522,38 +571,17 @@ export const SecurityProtection: React.FC = () => {
           position: absolute;
           top: 8px;
           right: 8px;
-          z-index: 15;
+          z-index: 25;
           font-size: 10px;
           font-weight: 900;
           color: rgba(255, 255, 255, 0.95);
-          background: rgba(18, 18, 18, 0.85);
+          background: rgba(18, 18, 18, 0.9);
           padding: 4px 10px;
           border-radius: 8px;
           pointer-events: none;
           letter-spacing: 0.3px;
           border: 1px solid rgba(223, 193, 141, 0.4);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-
-        /* شبکه قطری محافظتی شفاف ضد سنسور دوربین (Moiré Protection Overlay) */
-        .product-card::after,
-        .story-item::after,
-        .project-card::after,
-        [data-protected-image]::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          z-index: 12;
-          pointer-events: none;
-          background: repeating-linear-gradient(
-            -45deg,
-            rgba(0, 0, 0, 0.08) 0px,
-            rgba(0, 0, 0, 0.08) 2px,
-            rgba(181, 151, 102, 0.05) 2px,
-            rgba(181, 151, 102, 0.05) 6px
-          );
-          opacity: 0.95;
-          mix-blend-mode: multiply;
         }
 
         /* غیرفعال کردن کشیدن تصویر با موس یا نگه داشتن تاچ روی عکس در گوشی و دسکتاپ */
@@ -623,24 +651,37 @@ export const SecurityProtection: React.FC = () => {
         }
       `}</style>
 
-      {/* پرده مشکی کامل روی کل صفحه در زمان ثبت اسکرین‌شات یا ابزار برش تصویر */}
+      {/* پرده مشکی کامل روی کل صفحه در زمان ثبت اسکرین‌شات، فیلمبرداری یا عکاسی */}
       {isBlackoutActive && (
         <div
           dir="rtl"
           style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
-          className="fixed inset-0 z-[999999] bg-black text-white flex flex-col items-center justify-center p-6 text-center select-none pointer-events-none animate-in fade-in duration-75"
+          className="fixed inset-0 z-[9999999] bg-[#0c0c0c] text-white flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in duration-100"
         >
-          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 mb-4">
-            <CameraOff className="w-8 h-8 stroke-[2.2]" />
+          <div className="w-20 h-20 rounded-3xl bg-[#ef4444]/15 border border-[#ef4444]/40 flex items-center justify-center text-[#ef4444] mb-5 shadow-2xl animate-pulse">
+            <CameraOff className="w-10 h-10 stroke-[2.2]" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white mb-2">
-            تصویربرداری و ثبت اسکرین‌شات مسدود است
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-[#ef4444]/20 border border-[#ef4444]/30 text-[#fca5a5] mb-3">
+            <ShieldAlert className="w-4 h-4" />
+            <span>سیستم حفاظت از کپی‌رایت انحصاری</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-white mb-3 tracking-tight">
+            دستگاه شما در حال ثبت تصویر یا ضبط ویدیو تشخیص داده شد
           </h2>
-          <p className="text-sm text-gray-400 max-w-md leading-relaxed">
-            تمامی تصاویر، مدل‌ها و محتوای گالری لوستر اکبر صالحی دارای نشان ثبت تجاری و کپی‌رایت انحصاری می‌باشند.
+          <p className="text-xs sm:text-sm text-[#cccccc] max-w-lg leading-relaxed mb-6">
+            عکسبرداری (اسکرین‌شات)، عکاسی با دوربین دیگر، و ضبط فیلم از صفحه نمایش وب‌سایت به علت کپی‌رایت غیرفعال گردید. جهت ادامه استفاده، ابزار تصویربرداری را ببندید.
           </p>
+          <button
+            type="button"
+            onClick={handleCloseModal}
+            className="px-6 py-3 rounded-xl bg-[#ef4444] hover:bg-[#dc2626] text-white text-xs font-black transition-colors cursor-pointer shadow-lg"
+          >
+            متوجه شدم و بازگشت به وب‌سایت
+          </button>
         </div>
       )}
+
+
 
       {modalState.isOpen && (
         <>

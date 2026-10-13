@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Package,
   Layers,
@@ -166,6 +167,28 @@ const ALL_ADMIN_PERMISSION_ITEMS: { id: AdminTab; label: string; desc: string }[
   { id: 'orders', label: 'سفارشات مشتریان', desc: 'مدیریت فاکتورها و وضعیت سفارشات خرید' },
   { id: 'settings', label: 'تنظیمات وب سایت', desc: 'تنظیمات اصلی، پیامک، صفحات و فوتر سایت' },
 ];
+
+function parseAdminPermissions(user: AdminSessionUser | null): AdminTab[] {
+  const allTabs: AdminTab[] = ALL_ADMIN_PERMISSION_ITEMS.map((item) => item.id);
+  if (!user) return allTabs;
+  if (
+    user.role === 'super_admin' ||
+    user.phone === '09120759419' ||
+    isMasterAdminCredentials(user.phone, user.password || '')
+  ) {
+    return allTabs;
+  }
+  if (Array.isArray(user.permissions) && user.permissions.length > 0) {
+    return user.permissions as AdminTab[];
+  }
+  if (user.permissionsJson) {
+    try {
+      const parsed = JSON.parse(user.permissionsJson);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed as AdminTab[];
+    } catch {}
+  }
+  return allTabs;
+}
 
 const WEBSITE_SETTINGS_SUBTABS: { id: WebsiteSettingsSubTab; label: string }[] = [
   { id: 'main', label: 'تب تنظیمات اصلی' },

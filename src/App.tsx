@@ -7,7 +7,7 @@ import { syncFromFirestore, apiFetchWithFallback } from './utils/localBackendFal
 import { loadDeletedKeysFromFirestore } from './lib/firestoreSync';
 import { PagePreloader } from './components/PagePreloader';
 import { SecurityProtection } from './components/SecurityProtection';
-import { initTheme } from './utils/theme';
+import { PWAInstallPopup } from './components/PWAInstallPopup';
 
 interface AppErrorBoundaryState {
   hasError: boolean;
@@ -35,9 +35,8 @@ class AppErrorBoundary extends React.Component<
       return (
         <div
           dir="rtl"
-          className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-clip"
+          className="min-h-screen w-full bg-[#121212] text-[#f0f0f0] overflow-x-clip"
         >
-          {/* در دسکتاپ هدر دارد و در موبایل بدون هدر و بدون فوتر دقیقاً مانند ۴۰۴ */}
           <div className="hidden md:block">
             <HeaderSection
               currentRoute="server-error"
@@ -70,7 +69,6 @@ export function App() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // بارگذاری فوری صفحه اصلی بدون معطلی و اجرای همگام‌سازی دیتابیس در پس‌زمینه
     async function initBackgroundSync() {
       try {
         await loadDeletedKeysFromFirestore();
@@ -90,6 +88,7 @@ export function App() {
   return (
     <AppErrorBoundary>
       <SecurityProtection />
+      <PWAInstallPopup />
       <PagePreloader isVisible={isLoading} />
       {!isLoading && <HomePage />}
     </AppErrorBoundary>
