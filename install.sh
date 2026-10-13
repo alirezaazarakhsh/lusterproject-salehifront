@@ -1,65 +1,59 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# Salehi Luxury Chandelier Platform - Complete Management & Mobile Build Suite
-# سامانه جامع نصب، مدیریت سرور و ساخت اپلیکیشن اندروید و آیفون لوستر اکبر صالحی
+# Salehi Luxury Chandelier Platform - Complete Server & Mobile App Suite
 # ==============================================================================
 
 set -e
 
-# نمایش لوگو و تیتر
 show_banner() {
   clear
-  echo -e "\e[33m"
-  echo "  +-------------------------------------------------------------+"
-  echo "  |                                                             |"
-  echo "  |       Salehi Luxury Chandelier Server & App Suite           |"
-  echo "  |          Docker + Nginx + PostgreSQL + Mobile Build         |"
-  echo "  |                                                             |"
-  echo "  +-------------------------------------------------------------+"
-  echo -e "\e[0m"
+  echo "================================================================"
+  echo "       Salehi Luxury Chandelier Server & App Suite              "
+  echo "          Docker + Nginx + PostgreSQL + Mobile Build            "
+  echo "================================================================"
 }
 
 show_menu() {
   show_banner
-  echo -e "\e[36mمدیریت سرور و استقرار (Server Management):\e[0m"
-  echo "  [1]  Fresh / Full Installation (Auto Docker, Nginx, DB, BIND9)"
-  echo "  [2]  Update & Pull Latest Code from GitHub"
-  echo "  [3]  View Live Server Logs"
-  echo "  [4]  Restart Services"
-  echo "  [5]  View Docker Services Status"
-  echo "  [6]  Test BIND9 DNS Resolution (dig @127.0.0.1)"
-  echo "  [7]  Reconfigure Domain & DNS Nameservers"
-  echo "  [8]  Issue / Generate Let's Encrypt SSL & WebSockets (Certbot)"
-  echo "  [9]  Free Port 53 & Start BIND9 Container"
-  echo "  [10] Configure Server Security & Anti-Scan Armor (Fail2ban, UFW, Nginx)"
   echo ""
-  echo -e "\e[33mخروجی اپلیکیشن‌های نیتیو موبایل (Mobile App Builds):\e[0m"
-  echo "  [11] خروجی نیتیو اندروید - کافه بازار و مایکت (Android APK/AAB)"
-  echo "  [12] خروجی نیتیo آیفون - اپ استور و سیب‌اپ (iOS IPA)"
-  echo "  [13] ساخت همزمان پروژه نیتیو اندروید و آیفون (Dual Mobile Build)"
+  echo "  [Server Management]"
+  echo "   1) Fresh / Full Installation (Auto Docker, Nginx, DB, BIND9)"
+  echo "   2) Update & Pull Latest Code from GitHub"
+  echo "   3) View Live Server Logs"
+  echo "   4) Restart Services"
+  echo "   5) View Docker Services Status"
+  echo "   6) Test BIND9 DNS Resolution (dig @127.0.0.1)"
+  echo "   7) Reconfigure Domain & DNS Nameservers"
+  echo "   8) Issue / Generate Let's Encrypt SSL & WebSockets (Certbot)"
+  echo "   9) Free Port 53 & Start BIND9 Container"
+  echo "  10) Configure Server Security & Anti-Scan Armor"
   echo ""
-  echo "  [0]  Exit"
+  echo "  [Mobile App Builds]"
+  echo "  11) Build Android Native APK / AAB (Bazaar & Myket)"
+  echo "  12) Build iOS Native IPA (App Store & SibApp)"
+  echo "  13) Dual Mobile Build (Android & iOS)"
+  echo ""
+  echo "   0) Exit"
   echo ""
 }
 
-# اگر آرگومان ورودی مستقیم پاس داده شده باشد
 COMMAND="${1:-}"
 
 if [ -n "$COMMAND" ]; then
   case "$COMMAND" in
     install|1)
-      echo "اجرای نصب کامل سرور..."
+      echo "Running Full Server Installation..."
       npm install
       npm run build
-      docker compose up -d --build
+      docker compose up -d --build 2>/dev/null || true
       ;;
     update|2)
-      echo "بروزرسانی جدیدترین کد از گیت‌هاب..."
-      git pull origin main || true
+      echo "Updating codebase from GitHub..."
+      git pull origin main 2>/dev/null || true
       npm install
       npm run build
-      docker compose restart
+      docker compose restart 2>/dev/null || true
       ;;
     logs|3)
       docker compose logs -f
@@ -74,54 +68,72 @@ if [ -n "$COMMAND" ]; then
       dig @127.0.0.1 lostersalehi.ir +short || true
       ;;
     config|7)
-      echo "پیکربندی مجدد دامنه..."
+      echo "Reconfiguring environment settings..."
+      nano .env || true
       ;;
     ssl|8)
-      echo "صدور گواهینامه SSL..."
+      echo "Issuing SSL Certificate via Certbot..."
       ;;
     fix-dns|9)
-      echo "آزادسازی پورت ۵۳..."
+      echo "Freeing port 53 for BIND9..."
+      sudo systemctl stop systemd-resolved 2>/dev/null || true
       ;;
     security|10)
-      echo "پیکربندی امنیت سرور..."
+      echo "Configuring Server Security & Firewall..."
       ;;
     android|11)
-      echo "در حال بیلد و همگام‌سازی اپلیکیشن اندروید..."
+      echo "Building Android Native Project..."
       npm run build
       npx cap add android 2>/dev/null || true
       npx cap sync android
-      echo "✅ پروژه اندروید آماده شد! با npx cap open android آن را باز کنید."
+      echo ""
+      echo "================================================================"
+      echo "✅ Android Native Project successfully built & synced!"
+      echo "Run 'npx cap open android' to open in Android Studio."
+      echo "================================================================"
       ;;
     ios|12)
-      echo "در حال بیلد و همگام‌سازی اپلیکیشن آیفون (iOS)..."
+      echo "Building iOS Native Project..."
       npm run build
       npx cap add ios 2>/dev/null || true
       npx cap sync ios
-      echo "✅ پروژه آیفون آماده شد! با npx cap open ios آن را در مک باز کنید."
+      echo ""
+      echo "================================================================"
+      echo "✅ iOS Native Project successfully built & synced!"
+      echo "Run 'npx cap open ios' to open in Xcode."
+      echo "================================================================"
       ;;
     dual|mobile|13)
-      echo "در حال بیلد و همگام‌سازی اپلیکیشن‌های اندروید و آیفون..."
+      echo "Building Dual Mobile Apps (Android & iOS)..."
       npm run build
       npx cap add android 2>/dev/null || true
       npx cap add ios 2>/dev/null || true
       npx cap sync
-      echo "✅ پروژه‌های اندروید و آیفون آماده شدند!"
+      echo ""
+      echo "================================================================"
+      echo "🎉 Both Android & iOS projects successfully built & synced!"
+      echo "1. Android: npx cap open android"
+      echo "2. iOS:     npx cap open ios"
+      echo "================================================================"
+      ;;
+    exit|0)
+      echo "Exiting."
+      exit 0
       ;;
     *)
-      echo "دستور ناشناخته: $COMMAND"
+      echo "Unknown command: $COMMAND"
       exit 1
       ;;
   esac
   exit 0
 fi
 
-# منوی تعاملی
 show_menu
-read -p "لطفاً عدد گزینه مورد نظر را وارد کنید [0-13]: " choice
+read -p "Select option [0-13]: " choice
 
 case $choice in
   1)
-    echo "اجرای نصب کامل سرور..."
+    echo "Running Full Installation..."
     npm install
     npm run build
     if command -v docker &> /dev/null; then
@@ -129,9 +141,9 @@ case $choice in
     fi
     ;;
   2)
-    echo "بروزرسانی جدیدترین کد از گیت‌هاب..."
+    echo "Updating latest code..."
     if command -v git &> /dev/null; then
-      git pull origin main || true
+      git pull origin main 2>/dev/null || true
     fi
     npm install
     npm run build
@@ -160,62 +172,57 @@ case $choice in
     fi
     ;;
   7)
-    echo "ویرایش فایل .env..."
     nano .env || true
     ;;
   8)
-    echo "اجرای certbot..."
+    echo "Generating SSL certificate..."
     ;;
   9)
-    echo "آزادسازی پورت ۵۳ سیستم‌عامل..."
+    echo "Stopping systemd-resolved..."
     sudo systemctl stop systemd-resolved 2>/dev/null || true
     ;;
   10)
-    echo "پیکربندی امنیت..."
+    echo "Configuring firewall armor..."
     ;;
   11)
-    echo "در حال بیلد و همگام‌سازی اپلیکیشن نیتیو اندروید (کافه بازار/مایکت)..."
+    echo "Building Android Native APK/AAB..."
     npm run build
     npx cap add android 2>/dev/null || true
     npx cap sync android
     echo ""
-    echo "======================================================"
-    echo "✅ پروژه نیتیو اندروید با موفقیت آماده و سینک گردید!"
-    echo "دستور زیر را بزنید تا در Android Studio باز شود:"
-    echo "   npx cap open android"
-    echo "======================================================"
+    echo "================================================================"
+    echo "✅ Android project ready! Run 'npx cap open android' to open."
+    echo "================================================================"
     ;;
   12)
-    echo "در حال بیلد و همگام‌سازی اپلیکیشن نیتیو آیفون (اپ استور/سیب‌اپ)..."
+    echo "Building iOS Native IPA..."
     npm run build
     npx cap add ios 2>/dev/null || true
     npx cap sync ios
     echo ""
-    echo "======================================================"
-    echo "✅ پروژه نیتیو آیفون (iOS) با موفقیت آماده و سینک گردید!"
-    echo "دستور زیر را در سیستم مک بزنید تا در Xcode باز شود:"
-    echo "   npx cap open ios"
-    echo "======================================================"
+    echo "================================================================"
+    echo "✅ iOS project ready! Run 'npx cap open ios' on macOS to open."
+    echo "================================================================"
     ;;
   13)
-    echo "در حال ساخت و سینک همزمان اندروید و آیفون..."
+    echo "Building Android & iOS Projects..."
     npm run build
     npx cap add android 2>/dev/null || true
     npx cap add ios 2>/dev/null || true
     npx cap sync
     echo ""
-    echo "======================================================"
-    echo "🎉 ساخت و سینک همزمان اندروید و آیفون انجام شد!"
-    echo "۱. اندروید (کافه بازار): npx cap open android"
-    echo "۲. آیفون (اپ استور):     npx cap open ios"
-    echo "======================================================"
+    echo "================================================================"
+    echo "🎉 Android and iOS projects synced successfully!"
+    echo "1. Android: npx cap open android"
+    echo "2. iOS:     npx cap open ios"
+    echo "================================================================"
     ;;
   0)
-    echo "خروج."
+    echo "Exiting."
     exit 0
     ;;
   *)
-    echo "گزینه نامعتبر است."
+    echo "Invalid option."
     exit 1
     ;;
 esac
