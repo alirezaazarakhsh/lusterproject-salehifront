@@ -31,11 +31,6 @@ import {
   navigateToProductCategory,
   scrollToTopImmediate,
 } from '../utils/navigation';
-import {
-  loadLocalDb,
-  INITIAL_PRODUCT_FILTER_SETTINGS,
-  ProductFilterSettingsConfig,
-} from '../utils/localBackendFallback';
 
 import {
   Verify,
@@ -2011,33 +2006,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const animTimeoutRef = useRef<Record<string, number>>({});
   const filterCalcTimeoutRef = useRef<number | null>(null);
 
-  const [filterSettings, setFilterSettings] = useState<ProductFilterSettingsConfig>(() => {
-    try {
-      const db = loadLocalDb();
-      return db.productFilterSettings || INITIAL_PRODUCT_FILTER_SETTINGS;
-    } catch {
-      return INITIAL_PRODUCT_FILTER_SETTINGS;
-    }
-  });
-
-  useEffect(() => {
-    const updateFilterConfig = (e?: Event) => {
-      const detail = (e as CustomEvent)?.detail;
-      if (detail && (detail.models || detail.materials || detail.colors)) {
-        setFilterSettings(detail);
-      } else {
-        const db = loadLocalDb();
-        setFilterSettings(db.productFilterSettings || INITIAL_PRODUCT_FILTER_SETTINGS);
-      }
-    };
-    window.addEventListener('app-filter-settings-updated', updateFilterConfig as EventListener);
-    window.addEventListener('storage', updateFilterConfig as EventListener);
-    return () => {
-      window.removeEventListener('app-filter-settings-updated', updateFilterConfig as EventListener);
-      window.removeEventListener('storage', updateFilterConfig as EventListener);
-    };
-  }, []);
-
   const triggerFilterCalculation = () => {
     setIsFilterCalculating(true);
     if (filterCalcTimeoutRef.current) {
@@ -2244,15 +2212,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     }, 650);
   };
 
-  const modelOptionsList = filterSettings.models || INITIAL_PRODUCT_FILTER_SETTINGS.models;
-  const materialOptionsList = filterSettings.materials || INITIAL_PRODUCT_FILTER_SETTINGS.materials;
-  const colorOptionsList = filterSettings.colors || INITIAL_PRODUCT_FILTER_SETTINGS.colors;
-
-  const filteredModelOptions = modelOptionsList.filter((opt) =>
+  const filteredModelOptions = MODEL_FILTER_OPTIONS.filter((opt) =>
     opt.label.toLowerCase().includes(modelSearchQuery.trim().toLowerCase())
   );
 
-  const filteredColorOptions = colorOptionsList.filter((opt) =>
+  const filteredColorOptions = COLOR_FILTER_OPTIONS.filter((opt) =>
     opt.label.toLowerCase().includes(colorSearchQuery.trim().toLowerCase())
   );
 
@@ -2331,11 +2295,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     // ۴. فیلتر مدل محصول
     if (selectedModelFilters.length > 0) {
       const matchesModel = selectedModelFilters.some((modelId) => {
-        const foundOpt = modelOptionsList.find((opt) => opt.id === modelId);
-        if (foundOpt && foundOpt.label) {
-          const labelClean = foundOpt.label.toLowerCase().replace(/لوستر\s*/g, '').trim();
-          if (labelClean && text.includes(labelClean)) return true;
-        }
         if (modelId === 'model-azo') {
           return text.includes('کلاسیک') || indexInPage % 3 === 0;
         }
@@ -2410,11 +2369,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     // ۵. فیلتر جنس محصول (فولاد، پرسلان، برنج، کریستال، گلس)
     if (selectedMaterialFilters.length > 0) {
       const matchesMaterial = selectedMaterialFilters.some((matId) => {
-        const foundOpt = materialOptionsList.find((opt) => opt.id === matId);
-        if (foundOpt && foundOpt.label) {
-          const labelClean = foundOpt.label.toLowerCase().trim();
-          if (labelClean && (text.includes(labelClean) || (product.bodyMaterial && product.bodyMaterial.toLowerCase().includes(labelClean)))) return true;
-        }
         if (matId === 'mat-steel' || matId === 'mat-bronze') {
           return (
             text.includes('برنز') ||
@@ -2463,11 +2417,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     // ۶. فیلتر رنگ محصول
     if (selectedColorFilters.length > 0) {
       const matchesColor = selectedColorFilters.some((colorId) => {
-        const foundOpt = colorOptionsList.find((opt) => opt.id === colorId);
-        if (foundOpt && foundOpt.label) {
-          const labelClean = foundOpt.label.toLowerCase().trim();
-          if (labelClean && text.includes(labelClean)) return true;
-        }
         if (colorId === 'col-white' || colorId === 'color-white') {
           return (
             text.includes('سفید') ||
@@ -2843,7 +2792,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                 }}
                 className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
               >
-                {materialOptionsList.map((opt) => {
+                {MATERIAL_FILTER_OPTIONS.map((opt) => {
                   const isChecked = selectedFilters.includes(opt.id);
                   return (
                     <label

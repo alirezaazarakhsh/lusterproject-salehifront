@@ -118,55 +118,9 @@ interface LocalDbSchema {
   smsSettings: any;
   faqSettings: any;
   ruleSettings: any;
-  productFilterSettings?: ProductFilterSettingsConfig;
 }
-
-export interface ProductFilterOption {
-  id: string;
-  label: string;
-}
-
-export interface ProductFilterSettingsConfig {
-  models: ProductFilterOption[];
-  materials: ProductFilterOption[];
-  colors: ProductFilterOption[];
-}
-
-export const INITIAL_PRODUCT_FILTER_SETTINGS: ProductFilterSettingsConfig = {
-  models: [
-    { id: 'model-azo', label: 'آزو' },
-    { id: 'model-crystalite', label: 'کریستالیت' },
-    { id: 'model-medusa', label: 'مدوسا' },
-    { id: 'model-bicage', label: 'بی کیج' },
-    { id: 'model-marquis', label: 'مارکیز ایتالیایی' },
-    { id: 'model-renaissance', label: 'لوستر رسانس' },
-    { id: 'model-shahmalakeh', label: 'لوستر شاه ملکه' },
-    { id: 'model-ristani', label: 'لوستر ریستانی' },
-    { id: 'model-classic', label: 'کلاسیک سلطنتی' },
-    { id: 'model-12branch', label: '۱۲ شاخه تک' },
-  ],
-  materials: [
-    { id: 'mat-steel', label: 'فولاد' },
-    { id: 'mat-porcelain', label: 'پرسلان' },
-    { id: 'mat-brass', label: 'برنج' },
-    { id: 'mat-crystal', label: 'کریستال' },
-    { id: 'mat-glass', label: 'گلس' },
-  ],
-  colors: [
-    { id: 'col-white', label: 'سفید' },
-    { id: 'col-rosegold', label: 'رز طلایی مدرن' },
-    { id: 'col-gray', label: 'خاکستری' },
-    { id: 'col-matteblack', label: 'مشکی مات' },
-    { id: 'col-honey', label: 'عسلی روشنی' },
-    { id: 'col-gold', label: 'طلایی سلطنتی' },
-    { id: 'col-bronze', label: 'برنز آنتیک' },
-    { id: 'col-silver', label: 'نقره‌ای سلطنتی' },
-    { id: 'col-champagne', label: 'شامپاینی' },
-  ],
-};
 
 export const INITIAL_MAIN_SETTINGS = {
-  appLogoUrl: '/icon.svg',
   hideLanguageSelector: false,
   siteTitle: 'گالری لوستر اکبر صالحی',
   siteSubtitle: 'بزرگترین تولیدکننده لوسترهای برنزی و کریستال در تهران',
@@ -506,7 +460,6 @@ function createInitialLocalDb(): LocalDbSchema {
     smsSettings: INITIAL_SMS_SETTINGS,
     faqSettings: INITIAL_FAQ_SETTINGS,
     ruleSettings: INITIAL_RULE_SETTINGS,
-    productFilterSettings: INITIAL_PRODUCT_FILTER_SETTINGS,
   };
 }
 
@@ -600,17 +553,6 @@ export function loadLocalDb(): LocalDbSchema {
         ruleSettings: {
           ...INITIAL_RULE_SETTINGS,
           ...(parsed.ruleSettings || {}),
-        },
-        productFilterSettings: {
-          models: Array.isArray(parsed.productFilterSettings?.models)
-            ? parsed.productFilterSettings.models
-            : INITIAL_PRODUCT_FILTER_SETTINGS.models,
-          materials: Array.isArray(parsed.productFilterSettings?.materials)
-            ? parsed.productFilterSettings.materials
-            : INITIAL_PRODUCT_FILTER_SETTINGS.materials,
-          colors: Array.isArray(parsed.productFilterSettings?.colors)
-            ? parsed.productFilterSettings.colors
-            : INITIAL_PRODUCT_FILTER_SETTINGS.colors,
         },
       };
     }
@@ -904,28 +846,12 @@ export async function handleLocalApiRequest(
     if (savedUserRaw) {
       try {
         const parsedUser = JSON.parse(savedUserRaw);
-        if (parsedUser && typeof parsedUser === 'object') {
-          return { admin: parsedUser, user: parsedUser };
-        }
+        return { admin: parsedUser, user: parsedUser };
       } catch {
         // ignore
       }
     }
-    const defaultSuperAdmin = {
-      id: 1,
-      uid: `admin-${DEFAULT_SUPER_ADMIN_PHONE}`,
-      phone: DEFAULT_SUPER_ADMIN_PHONE,
-      password: DEFAULT_SUPER_ADMIN_PASS,
-      email: `${DEFAULT_SUPER_ADMIN_PHONE}@salehi-admin.local`,
-      displayName: 'اکبر صالحی (مدیر ارشد)',
-      role: 'super_admin',
-      avatarUrl:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-      permissions: [...ALL_ADMIN_SECTIONS],
-      permissionsJson: JSON.stringify(ALL_ADMIN_SECTIONS),
-      createdAt: new Date().toISOString(),
-    };
-    const fallbackAdmin = (dbState.users && dbState.users[0]) || defaultSuperAdmin;
+    const fallbackAdmin = dbState.users[0];
     return { admin: fallbackAdmin, user: fallbackAdmin };
   }
 
@@ -1697,26 +1623,6 @@ export async function handleLocalApiRequest(
     }
   }
 
-  // ۲۳. تنظیمات فیلترهای محصولات (مدل‌ها، جنس‌ها و رنگ‌ها)
-  if (
-    cleanUrl === '/api/admin/settings/product_filters' ||
-    cleanUrl === '/api/public/settings/product_filters'
-  ) {
-    if (method === 'GET') {
-      return dbState.productFilterSettings || INITIAL_PRODUCT_FILTER_SETTINGS;
-    }
-    if (method === 'PUT') {
-      dbState.productFilterSettings = {
-        models: Array.isArray(body.models) ? body.models : (dbState.productFilterSettings?.models || INITIAL_PRODUCT_FILTER_SETTINGS.models),
-        materials: Array.isArray(body.materials) ? body.materials : (dbState.productFilterSettings?.materials || INITIAL_PRODUCT_FILTER_SETTINGS.materials),
-        colors: Array.isArray(body.colors) ? body.colors : (dbState.productFilterSettings?.colors || INITIAL_PRODUCT_FILTER_SETTINGS.colors),
-      };
-      await saveSettingToFirestore('productFilterSettings', dbState.productFilterSettings);
-      await saveLocalDb(dbState);
-      return dbState.productFilterSettings;
-    }
-  }
-
   return {};
 }
 
@@ -1747,23 +1653,7 @@ export async function apiFetchWithFallback(
     const fetchUrl = method === 'GET' 
       ? `${url}${url.includes('?') ? '&' : '?'}_t=${Date.now()}` 
       : url;
-
-    // تایم‌آوت ۲.۵ ثانیه‌ای جهت جلوگیری از معطلی یا گیر کردن در هنگام استفاده از VPN
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-    const fetchOptions: RequestInit = {
-      ...options,
-      signal: options.signal || controller.signal,
-    };
-
-    let res: Response;
-    try {
-      res = await fetch(fetchUrl, fetchOptions);
-    } finally {
-      clearTimeout(timeoutId);
-    }
-
+    const res = await fetch(fetchUrl, options);
     const contentType = res.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
 

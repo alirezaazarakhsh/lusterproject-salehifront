@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Package,
   Layers,
@@ -38,15 +38,9 @@ import {
   Search,
   Heart,
   ExternalLink,
-  Sliders,
-  Palette,
-  Tag,
-  Smartphone,
 } from 'lucide-react';
-import { MobileBuildsManager } from './components/MobileBuildsManager';
 import { navigateToRoute, navigateToProjectSlug } from '../utils/navigation';
 import { GENERATED_IMAGES } from '../data/chandelierData';
-import { DynamicCategoryIcon } from '../components/DynamicCategoryIcon';
 import {
   FooterSettingsConfig,
   INITIAL_FOOTER_SETTINGS,
@@ -75,9 +69,6 @@ import {
   INITIAL_SMS_SETTINGS,
   INITIAL_FAQ_SETTINGS,
   INITIAL_RULE_SETTINGS,
-  INITIAL_PRODUCT_FILTER_SETTINGS,
-  ProductFilterSettingsConfig,
-  ProductFilterOption,
 } from '../utils/localBackendFallback';
 import { isItemDeleted, recordDeletedKeys } from '../lib/firestoreSync';
 
@@ -95,9 +86,7 @@ type AdminTab =
   | 'articles'
   | 'messages'
   | 'orders'
-  | 'mobile_builds'
-  | 'settings'
-  | 'product_filters';
+  | 'settings';
 
 type WebsiteSettingsSubTab =
   | 'main'
@@ -162,7 +151,6 @@ const ALL_ADMIN_PERMISSION_ITEMS: { id: AdminTab; label: string; desc: string }[
   { id: 'admins', label: 'مدیریت ادمین‌ها', desc: 'افزودن، ویرایش و تعیین دسترسی مدیران' },
   { id: 'products', label: 'مدیریت محصولات', desc: 'ثبت، ویرایش و قیمت‌گذاری لوسترها' },
   { id: 'categories', label: 'دسته‌بندی‌ها', desc: 'مدیریت کالکشن‌ها و دسته‌بندی محصولات' },
-  { id: 'product_filters', label: 'تنظیمات فیلترهای محصولات', desc: 'مدیریت مدل‌ها، جنس‌ها و رنگ‌های فیلتر محصولات' },
   { id: 'projects', label: 'پروژه‌های اجرایی', desc: 'مدیریت پروژه‌های مسکونی، تجاری و تالارها' },
   { id: 'stories', label: 'استوری‌های سایت', desc: 'مدیریت دسته‌بندی استوری و انتشار در سایت' },
   { id: 'articles', label: 'مجله و مقالات', desc: 'انتشار و ویرایش مطالب آموزشی مجله' },
@@ -170,28 +158,6 @@ const ALL_ADMIN_PERMISSION_ITEMS: { id: AdminTab; label: string; desc: string }[
   { id: 'orders', label: 'سفارشات مشتریان', desc: 'مدیریت فاکتورها و وضعیت سفارشات خرید' },
   { id: 'settings', label: 'تنظیمات وب سایت', desc: 'تنظیمات اصلی، پیامک، صفحات و فوتر سایت' },
 ];
-
-function parseAdminPermissions(user: AdminSessionUser | null): AdminTab[] {
-  const allTabs: AdminTab[] = ALL_ADMIN_PERMISSION_ITEMS.map((item) => item.id);
-  if (!user) return allTabs;
-  if (
-    user.role === 'super_admin' ||
-    user.phone === '09120759419' ||
-    isMasterAdminCredentials(user.phone, user.password || '')
-  ) {
-    return allTabs;
-  }
-  if (Array.isArray(user.permissions) && user.permissions.length > 0) {
-    return user.permissions as AdminTab[];
-  }
-  if (user.permissionsJson) {
-    try {
-      const parsed = JSON.parse(user.permissionsJson);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed as AdminTab[];
-    } catch {}
-  }
-  return allTabs;
-}
 
 const WEBSITE_SETTINGS_SUBTABS: { id: WebsiteSettingsSubTab; label: string }[] = [
   { id: 'main', label: 'تب تنظیمات اصلی' },
@@ -486,8 +452,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     slug: '',
     countLabel: '۱۲ محصول',
     image: GENERATED_IMAGES.shahMalakeh,
-    iconName: 'LampCharge',
-    showOnHome: true,
   });
 
   // ۴. فرم پروژه اجرایی
@@ -1024,18 +988,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
   const [ruleSettingsForm, setRuleSettingsForm] = useState<any>(INITIAL_RULE_SETTINGS);
   const [isSavingRuleSettings, setIsSavingRuleSettings] = useState<boolean>(false);
 
-  // تنظیمات فیلترهای محصولات (مدل‌ها، جنس‌ها و رنگ‌ها)
-  const [productFilterSettingsForm, setProductFilterSettingsForm] =
-    useState<ProductFilterSettingsConfig>(() => {
-      const db = loadLocalDb();
-      return db.productFilterSettings || INITIAL_PRODUCT_FILTER_SETTINGS;
-    });
-  const [isSavingProductFilters, setIsSavingProductFilters] =
-    useState<boolean>(false);
-  const [newModelLabel, setNewModelLabel] = useState<string>('');
-  const [newMaterialLabel, setNewMaterialLabel] = useState<string>('');
-  const [newColorLabel, setNewColorLabel] = useState<string>('');
-
   // ۸. فرم سفارش مشتریان
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [orderForm, setOrderForm] = useState({
@@ -1194,13 +1146,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
             deliveryItems: Array.isArray(bootstrapRes.ruleSettings.deliveryItems) && bootstrapRes.ruleSettings.deliveryItems.length > 0 ? bootstrapRes.ruleSettings.deliveryItems : INITIAL_RULE_SETTINGS.deliveryItems,
           });
         }
-        if (bootstrapRes.productFilterSettings) {
-          setProductFilterSettingsForm({
-            models: Array.isArray(bootstrapRes.productFilterSettings.models) ? bootstrapRes.productFilterSettings.models : INITIAL_PRODUCT_FILTER_SETTINGS.models,
-            materials: Array.isArray(bootstrapRes.productFilterSettings.materials) ? bootstrapRes.productFilterSettings.materials : INITIAL_PRODUCT_FILTER_SETTINGS.materials,
-            colors: Array.isArray(bootstrapRes.productFilterSettings.colors) ? bootstrapRes.productFilterSettings.colors : INITIAL_PRODUCT_FILTER_SETTINGS.colors,
-          });
-        }
         return;
       }
 
@@ -1223,7 +1168,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         smsSettingsRes,
         faqSettingsRes,
         ruleSettingsRes,
-        productFilterSettingsRes,
       ] = await Promise.all([
         authFetch('/api/admin/dashboard'),
         authFetch('/api/admin/users'),
@@ -1257,9 +1201,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         ),
         authFetch('/api/admin/settings/rule').catch(
           () => INITIAL_RULE_SETTINGS
-        ),
-        authFetch('/api/admin/settings/product_filters').catch(
-          () => INITIAL_PRODUCT_FILTER_SETTINGS
         ),
       ]);
 
@@ -1352,28 +1293,11 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
           deliveryItems: Array.isArray(ruleSettingsRes.deliveryItems) && ruleSettingsRes.deliveryItems.length > 0 ? ruleSettingsRes.deliveryItems : INITIAL_RULE_SETTINGS.deliveryItems,
         });
       }
-      if (productFilterSettingsRes) {
-        setProductFilterSettingsForm({
-          models: Array.isArray(productFilterSettingsRes.models) ? productFilterSettingsRes.models : INITIAL_PRODUCT_FILTER_SETTINGS.models,
-          materials: Array.isArray(productFilterSettingsRes.materials) ? productFilterSettingsRes.materials : INITIAL_PRODUCT_FILTER_SETTINGS.materials,
-          colors: Array.isArray(productFilterSettingsRes.colors) ? productFilterSettingsRes.colors : INITIAL_PRODUCT_FILTER_SETTINGS.colors,
-        });
-      }
     } catch (err: any) {
-      console.warn('Admin loadAllAdminData notice:', err);
-      try {
-        const local = loadLocalDb();
-        if (local) {
-          if (Array.isArray(local.users)) setAdminsList(local.users.filter((adm: any) => adm && !isItemDeleted(adm)));
-          if (Array.isArray(local.products)) setProductsList(local.products.filter((p: any) => p && !isItemDeleted(p)));
-          if (Array.isArray(local.categories)) setCategoriesList(local.categories.filter((c: any) => c && !isItemDeleted(c)));
-          if (Array.isArray(local.projects)) setProjectsList(local.projects.filter((pr: any) => pr && !isItemDeleted(pr)));
-          if (Array.isArray(local.stories)) setStoriesList(local.stories.filter((s: any) => s && !isItemDeleted(s)));
-          if (Array.isArray(local.articles)) setArticlesList(local.articles.filter((a: any) => a && !isItemDeleted(a)));
-          if (Array.isArray(local.messages)) setMessagesList(local.messages.filter((m: any) => m && !isItemDeleted(m)));
-          if (Array.isArray(local.orders)) setOrdersList(local.orders.filter((o: any) => o && !isItemDeleted(o)));
-        }
-      } catch {}
+      showNotice(
+        'error',
+        err?.message || 'خطا در دریافت اطلاعات از دیتابیس PostgreSQL'
+      );
     } finally {
       setIsLoadingData(false);
     }
@@ -1853,20 +1777,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       showNotice('error', 'عنوان و اسلاگ دسته‌بندی الزامی است.');
       return;
     }
-
-    if (categoryForm.showOnHome !== false) {
-      const activeHomeCount = categoriesList.filter(
-        (c) => c.id !== editingCategoryId && c.showOnHome !== false
-      ).length;
-      if (activeHomeCount >= 4) {
-        showNotice(
-          'error',
-          'حداکثر ۴ دسته‌بندی می‌توانید برای نمایش در صفحه اصلی انتخاب کنید. بیشتر از ۴ دسته‌بندی مجاز نیست.'
-        );
-        return;
-      }
-    }
-
     try {
       if (editingCategoryId) {
         await authFetch(`/api/admin/categories/${editingCategoryId}`, {
@@ -1887,12 +1797,9 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
         slug: '',
         countLabel: '۱۲ محصول',
         image: GENERATED_IMAGES.shahMalakeh,
-        iconName: 'LampCharge',
-        showOnHome: true,
       });
       await loadAllAdminData();
       onCatalogUpdated?.();
-      window.dispatchEvent(new CustomEvent('app-catalog-updated'));
     } catch (err: any) {
       showNotice('error', err?.message || 'خطا در ذخیره دسته‌بندی');
     }
@@ -2636,11 +2543,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       count: categoriesList.length || summary.categoriesCount,
     },
     {
-      id: 'product_filters',
-      label: 'فیلترهای محصولات',
-      icon: <Sliders className="w-4 h-4" />,
-    },
-    {
       id: 'projects',
       label: 'پروژه‌های اجرایی',
       icon: <Building2 className="w-4 h-4" />,
@@ -2671,11 +2573,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       count: ordersList.length || summary.ordersCount,
     },
     {
-      id: 'mobile_builds',
-      label: 'خروجی اپلیکیشن & نصب',
-      icon: <Smartphone className="w-4 h-4 text-[#d4af37]" />,
-    },
-    {
       id: 'settings',
       label: 'تنظیمات وب سایت',
       icon: <Settings className="w-4 h-4" />,
@@ -2695,8 +2592,8 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
     navItems[0];
 
   const currentAdminAvatar =
-    adminUser?.avatarUrl ||
-    adminsList.find((a) => a && adminUser && a.id === adminUser.id)?.avatarUrl ||
+    adminUser.avatarUrl ||
+    adminsList.find((a) => a.id === adminUser.id)?.avatarUrl ||
     DEFAULT_ADMIN_AVATAR_URL;
 
   return (
@@ -3868,24 +3765,19 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
             </div>
           )}
 
-          {/* ۴. تب دسته‌بندی‌ها (با افزودن، ویرایش و حذف + نام، اسلاگ، آیکون متنی Iconsax و تیک صفحه اصلی) */}
+          {/* ۴. تب دسته‌بندی‌ها (با افزودن، ویرایش و حذف) */}
           {activeTab === 'categories' && (
             <div className="space-y-6">
               <form
                 onSubmit={handleSaveCategory}
-                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-5"
+                className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-4"
               >
                 <div className="flex items-center justify-between border-b border-[#efefef] pb-3">
-                  <div>
-                    <h2 className="text-base font-black text-[#1e1e1e]">
-                      {editingCategoryId
-                        ? 'ویرایش دسته‌بندی محصول در دیتابیس'
-                        : 'افزودن دسته‌بندی جدید محصول'}
-                    </h2>
-                    <p className="text-xs text-[#777] mt-0.5">
-                      نام دسته‌بندی، اسلاگ آدرس URL، نام آیکون متنی (از iconsax-react) و تنظیم نمایش در صفحه اصلی
-                    </p>
-                  </div>
+                  <h2 className="text-base font-black text-[#1e1e1e]">
+                    {editingCategoryId
+                      ? 'ویرایش دسته‌بندی در دیتابیس'
+                      : 'افزودن دسته‌بندی جدید'}
+                  </h2>
                   {editingCategoryId && (
                     <button
                       type="button"
@@ -3896,348 +3788,159 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                           slug: '',
                           countLabel: '۱۲ محصول',
                           image: GENERATED_IMAGES.shahMalakeh,
-                          iconName: 'LampCharge',
-                          showOnHome: true,
                         });
                       }}
-                      className="text-xs font-bold text-[#ea1d2c] hover:underline cursor-pointer"
+                      className="text-xs font-bold text-[#ea1d2c] cursor-pointer"
                     >
                       انصراف از ویرایش
                     </button>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* ۱. نام دسته‌بندی */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#333]">
-                      نام دسته‌بندی <span className="text-[#ea1d2c]">*</span>:
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={categoryForm.title}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCategoryForm((prev) => ({
-                          ...prev,
-                          title: val,
-                          slug:
-                            !prev.slug || prev.slug === 'chandeliers' || prev.slug.startsWith('cat-')
-                              ? val
-                                  .trim()
-                                  .toLowerCase()
-                                  .replace(/\s+/g, '-')
-                                  .replace(/[^a-z0-9\u0600-\u06FF_-]/g, '')
-                              : prev.slug,
-                        }));
-                      }}
-                      placeholder="مثلاً: کلکسیون لوسترهای کلاسیک"
-                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
-                    />
-                  </div>
-
-                  {/* ۲. اسلاگ دسته‌بندی */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#333]">
-                      اسلاگ لاتین دسته‌بندی (URL) <span className="text-[#ea1d2c]">*</span>:
-                    </label>
-                    <input
-                      type="text"
-                      dir="ltr"
-                      required
-                      value={categoryForm.slug}
-                      onChange={(e) =>
-                        setCategoryForm({
-                          ...categoryForm,
-                          slug: e.target.value
-                            .toLowerCase()
-                            .replace(/\s+/g, '-')
-                            .replace(/[^a-z0-9_-]/g, ''),
-                        })
-                      }
-                      placeholder="مثلاً: classic-chandeliers"
-                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold text-left font-mono focus:outline-none focus:border-[#b59766]"
-                    />
-                  </div>
-
-                  {/* ۳. آیکون متنی از سایت iconsax-react */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#333]">
-                      نام آیکون متنی (از iconsax-react):
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        dir="ltr"
-                        value={categoryForm.iconName || ''}
-                        onChange={(e) =>
-                          setCategoryForm({
-                            ...categoryForm,
-                            iconName: e.target.value,
-                          })
-                        }
-                        placeholder="LampCharge, Crown, Category, Flash, Direct, Sparkles..."
-                        className="flex-1 h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold text-left font-mono focus:outline-none focus:border-[#b59766]"
-                      />
-                      <div className="shrink-0 flex items-center justify-center p-1 bg-[#faf8f4] rounded-xl border border-[#e5dfd3]" title="پیش‌نمایش زنده آیکون">
-                        <DynamicCategoryIcon iconName={categoryForm.iconName} size={36} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ۴. برچسب تعداد محصولات */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#333]">
-                      برچسب تعداد محصولات:
-                    </label>
-                    <input
-                      type="text"
-                      value={categoryForm.countLabel}
-                      onChange={(e) =>
-                        setCategoryForm({
-                          ...categoryForm,
-                          countLabel: e.target.value,
-                        })
-                      }
-                      placeholder="مثلاً: ۱۸ محصول"
-                      className="w-full h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold focus:outline-none focus:border-[#b59766]"
-                    />
-                  </div>
-
-                  {/* ۵. تصویر شاخص دسته‌بندی */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#333]">
-                      تصویر شاخص دسته‌بندی:
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={categoryForm.image}
-                        onChange={(e) =>
-                          setCategoryForm({
-                            ...categoryForm,
-                            image: e.target.value,
-                          })
-                        }
-                        className="flex-1 h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white focus:outline-none focus:border-[#b59766]"
-                      >
-                        <option value="">-- انتخاب تصویر آماده --</option>
-                        {PRESET_PRODUCT_IMAGES.map((img, idx) => (
-                          <option key={idx} value={img.url}>
-                            {img.label}
-                          </option>
-                        ))}
-                      </select>
-                      <label className="h-11 px-3.5 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-xs">
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>آپلود</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) =>
-                            handleFileUploadToDataUrl(
-                              e.target.files?.[0],
-                              (dataUrl) =>
-                                setCategoryForm((prev) => ({
-                                  ...prev,
-                                  image: dataUrl,
-                                }))
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* ۶. تیک قرارگیری در صفحه اصلی (فقط تو صفحه اصلی آیکون نمایش داده میشه) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <input
+                    type="text"
+                    required
+                    value={categoryForm.title}
+                    onChange={(e) =>
+                      setCategoryForm({
+                        ...categoryForm,
+                        title: e.target.value,
+                      })
+                    }
+                    placeholder="عنوان دسته‌بندی (مثلاً: کلکسیون لوستر)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={categoryForm.slug}
+                    onChange={(e) =>
+                      setCategoryForm({ ...categoryForm, slug: e.target.value })
+                    }
+                    placeholder="اسلاگ لاتین (مثلاً: chandeliers)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
+                  <input
+                    type="text"
+                    value={categoryForm.countLabel}
+                    onChange={(e) =>
+                      setCategoryForm({
+                        ...categoryForm,
+                        countLabel: e.target.value,
+                      })
+                    }
+                    placeholder="برچسب تعداد (مثلاً: ۱۸ محصول)"
+                    className="h-11 rounded-xl border border-[#e0e0e0] px-3.5 text-xs font-semibold"
+                  />
                   <div className="space-y-1.5 flex flex-col justify-end">
-                    <label
-                      onClick={() => {
-                        const isCurrentlyOn = categoryForm.showOnHome !== false;
-                        if (!isCurrentlyOn) {
-                          const activeHomeCount = categoriesList.filter(
-                            (c) => c.id !== editingCategoryId && c.showOnHome !== false
-                          ).length;
-                          if (activeHomeCount >= 4) {
-                            showNotice(
-                              'error',
-                              'حداکثر ۴ دسته‌بندی می‌توانید برای نمایش در صفحه اصلی انتخاب کنید. امکان تیک زدن بیش از ۴ دسته‌بندی وجود ندارد.'
-                            );
-                            return;
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={categoryForm.image}
+                          onChange={(e) =>
+                            setCategoryForm({
+                              ...categoryForm,
+                              image: e.target.value,
+                            })
                           }
-                        }
-                        setCategoryForm((prev) => ({
-                          ...prev,
-                          showOnHome: !isCurrentlyOn,
-                        }));
-                      }}
-                      className={`h-11 px-4 rounded-xl border flex items-center justify-between gap-3 cursor-pointer select-none transition-all ${
-                        categoryForm.showOnHome !== false
-                          ? 'bg-[#1a1814] text-white border-[#b59766] shadow-2xs'
-                          : 'bg-[#f7f5f0] text-[#666] border-[#dcd3c2] hover:border-[#b59766]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 text-xs font-bold">
-                        <Check
-                          className={`w-4 h-4 ${
-                            categoryForm.showOnHome !== false
-                              ? 'text-[#d4b27c]'
-                              : 'text-transparent'
-                          }`}
-                        />
-                        <span>نمایش این دسته‌بندی در صفحه اصلی (حداکثر ۴ تا)</span>
+                          className="flex-1 h-11 rounded-xl border border-[#e0e0e0] px-3 text-xs font-semibold bg-white focus:outline-none focus:border-[#b59766]"
+                        >
+                          <option value="">-- انتخاب تصویر آماده --</option>
+                          {PRESET_PRODUCT_IMAGES.map((img, idx) => (
+                            <option key={idx} value={img.url}>
+                              {img.label}
+                            </option>
+                          ))}
+                        </select>
+                        <label className="h-11 px-4 rounded-xl bg-[#1a1814] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors shrink-0 shadow-xs">
+                          <Upload className="w-3.5 h-3.5" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) =>
+                              handleFileUploadToDataUrl(
+                                e.target.files?.[0],
+                                (dataUrl) =>
+                                  setCategoryForm((prev) => ({
+                                    ...prev,
+                                    image: dataUrl,
+                                  }))
+                              )
+                            }
+                          />
+                        </label>
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        categoryForm.showOnHome !== false ? 'bg-[#b59766] text-white' : 'bg-gray-200 text-gray-700'
-                      }`}>
-                        {categoryForm.showOnHome !== false ? 'تیک خورده' : 'مخفی'}
-                      </span>
-                    </label>
+                    </div>
                   </div>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between border-t border-[#efefef]">
-                  <div className="text-xs text-[#666] flex items-center gap-2">
-                    <span>💡 حداکثر ۴ دسته‌بندی می‌توانند تیک نمایش در صفحه اصلی داشته باشند.</span>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>
-                      {editingCategoryId
-                        ? 'ذخیره تغییرات دسته‌بندی'
-                        : 'ثبت دسته‌بندی جدید'}
-                    </span>
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  className="h-11 px-6 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {editingCategoryId
+                      ? 'ذخیره تغییرات دسته‌بندی'
+                      : 'ثبت دسته‌بندی'}
+                  </span>
+                </button>
               </form>
 
               <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 space-y-3">
-                <div className="flex items-center justify-between pb-3 border-b border-[#efefef]">
-                  <h3 className="text-sm font-black text-[#1e1e1e]">
-                    دسته‌بندی‌های ثبت‌شده در دیتابیس ({categoriesList.length.toLocaleString('fa-IR')})
-                  </h3>
-                  <span className="text-xs text-[#8c6f41] bg-[#fbf8f2] px-3 py-1 rounded-lg border border-[#edd9be] font-bold">
-                    {categoriesList.filter((c) => c.showOnHome !== false).length.toLocaleString('fa-IR')} از ۴ دسته‌بندی فعال در صفحه اصلی
-                  </span>
-                </div>
-
-                {categoriesList.length === 0 ? (
-                  <p className="text-xs text-[#777] text-center py-6">دسته‌بندی ثبت‌شده‌ای یافت نشد.</p>
-                ) : (
-                  categoriesList.map((cat) => {
-                    const isShownHome = cat.showOnHome !== false;
-                    return (
-                      <div
-                        key={cat.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-[#efefef] bg-white hover:border-[#dcd0bd] transition-colors"
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          {/* آیکون متنی و تصویر */}
-                          <div className="relative shrink-0">
-                            <DynamicCategoryIcon iconName={cat.iconName} size={44} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="text-sm font-bold text-[#1e1e1e] truncate">
-                                {cat.title}
-                              </p>
-                              {isShownHome ? (
-                                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                                  ✓ نمایش در صفحه اصلی
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                                  غیرفعال در صفحه اصلی
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-[#777] dir-ltr text-right truncate">
-                              /product/categories/{cat.slug} • آیکون: <code className="bg-[#f0f0f0] px-1 rounded font-mono">{cat.iconName || 'کلاسیک'}</code> • {cat.countLabel || '۱۲ محصول'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (!isShownHome) {
-                                const activeHomeCount = categoriesList.filter(
-                                  (c) => c.id !== cat.id && c.showOnHome !== false
-                                ).length;
-                                if (activeHomeCount >= 4) {
-                                  showNotice(
-                                    'error',
-                                    'حداکثر ۴ دسته‌بندی می‌توانید برای نمایش در صفحه اصلی انتخاب کنید. امکان تیک زدن بیش از ۴ دسته‌بندی وجود ندارد.'
-                                  );
-                                  return;
-                                }
-                              }
-                              try {
-                                await authFetch(`/api/admin/categories/${cat.id}`, {
-                                  method: 'PUT',
-                                  body: JSON.stringify({ ...cat, showOnHome: !isShownHome }),
-                                });
-                                showNotice(
-                                  'success',
-                                  !isShownHome
-                                    ? `دسته‌بندی «${cat.title}» در صفحه اصلی فعال شد.`
-                                    : `دسته‌بندی «${cat.title}» از صفحه اصلی غیرفعال شد.`
-                                );
-                                await loadAllAdminData();
-                                onCatalogUpdated?.();
-                                window.dispatchEvent(new CustomEvent('app-catalog-updated'));
-                              } catch (err: any) {
-                                showNotice('error', err?.message || 'خطا در تغییر وضعیت دسته‌بندی');
-                              }
-                            }}
-                            className={`h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors ${
-                              isShownHome
-                                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
-                            }`}
-                            title={isShownHome ? 'غیرفعال‌سازی از صفحه اصلی' : 'فعال‌سازی در صفحه اصلی'}
-                          >
-                            <Check className={`w-3.5 h-3.5 ${isShownHome ? 'text-emerald-600' : 'text-gray-400'}`} />
-                            <span>{isShownHome ? 'فعال در صفحه اصلی' : 'غیرفعال'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingCategoryId(cat.id);
-                              setCategoryForm({
-                                title: cat.title || '',
-                                slug: cat.slug || '',
-                                countLabel: cat.countLabel || '۱۲ محصول',
-                                image: cat.image || GENERATED_IMAGES.shahMalakeh,
-                                iconName: cat.iconName || 'LampCharge',
-                                showOnHome: cat.showOnHome !== false,
-                              });
-                            }}
-                            className="h-9 px-3.5 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>ویرایش</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCategory(cat.id)}
-                            className="h-9 px-3.5 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>حذف</span>
-                          </button>
-                        </div>
+                <h3 className="text-sm font-black text-[#1e1e1e] mb-3">
+                  دسته‌بندی‌های ثبت‌شده در دیتابیس ({categoriesList.length.toLocaleString('fa-IR')})
+                </h3>
+                {categoriesList.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-[#efefef]"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src={cat.image}
+                        alt={cat.title}
+                        className="w-12 h-12 rounded-xl object-cover bg-[#f5f5f5] shrink-0"
+                      />
+                      <div>
+                        <p className="text-sm font-bold text-[#1e1e1e]">
+                          {cat.title}
+                        </p>
+                        <p className="text-xs text-[#777] mt-0.5">
+                          مسیر: /product/categories/{cat.slug} • {cat.countLabel}
+                        </p>
                       </div>
-                    );
-                  })
-                )}
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCategoryId(cat.id);
+                          setCategoryForm({
+                            title: cat.title || '',
+                            slug: cat.slug || '',
+                            countLabel: cat.countLabel || '۱۲ محصول',
+                            image: cat.image || GENERATED_IMAGES.shahMalakeh,
+                          });
+                        }}
+                        className="h-9 px-3 rounded-lg bg-[#f5f5f5] hover:bg-[#1e1e1e] text-[#333] hover:text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>ویرایش</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="h-9 px-3 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>حذف</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -11708,36 +11411,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                           placeholder="https://instagram.com/lostersalehi"
                         />
                       </div>
-
-                      {/* تغییر لوگوی برنامه و وب‌سایت از دیتابیس */}
-                      <div className="space-y-1.5 bg-[#faf8f4] p-4 rounded-xl border border-[#ece4d4] md:col-span-2">
-                        <label className="block text-xs font-black text-[#181818] flex items-center justify-between">
-                          <span>لوگوی اختصاصی اپلیکیشن و وب‌سایت (App Logo URL):</span>
-                          <span className="text-[11px] text-[#b59766] font-normal">ذخیره خودکار در دیتابیس</span>
-                        </label>
-                        <div className="flex flex-col sm:flex-row items-center gap-3">
-                          <input
-                            type="text"
-                            dir="ltr"
-                            value={mainSettingsForm.appLogoUrl || ''}
-                            onChange={(e) => setMainSettingsForm({ ...mainSettingsForm, appLogoUrl: e.target.value })}
-                            className="w-full h-10 rounded-lg border border-[#e0e0e0] bg-white px-3 text-xs font-mono"
-                            placeholder="مسیر فایل لوگو یا آدرس تصویر (مثال: /icon.svg یا لینک عکس لوگو)"
-                          />
-                          {mainSettingsForm.appLogoUrl && (
-                            <div className="flex items-center gap-2 shrink-0">
-                              <img
-                                src={mainSettingsForm.appLogoUrl}
-                                alt="پیش‌نمایش لوگوی اپ"
-                                className="w-10 h-10 object-contain bg-[#121212] p-1 rounded-lg border border-[#cbb592]"
-                              />
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-[#777] mt-1">
-                          تغییر آدرس لوگو باعث بروزرسانی آنی لوگوی اپلیکیشن در هدر سایت، فوتر، پنجره نصب اپلیکیشن و دیتابیس می‌شود.
-                        </p>
-                      </div>
                     </div>
                   </form>
                 </div>
@@ -11760,314 +11433,6 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
               )}
             </div>
           )}
-
-          {/* ۱۰.۲. تب مدیریت و تنظیمات فیلترهای محصولات (مدل‌ها، جنس‌ها، رنگ‌ها) */}
-          {activeTab === 'product_filters' && (
-            <div className="space-y-6" dir="rtl">
-              {/* کارت اصلی تنظیمات فیلتر محصولات */}
-              <div className="bg-white rounded-[22px] border border-[#e7dfd1] p-6 sm:p-8 space-y-8 shadow-xs">
-                {/* هدر بالای بخش فیلترها */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#efefef] pb-5">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-[#f5efe4] text-[#b59766] flex items-center justify-center shrink-0">
-                      <Sliders className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h2 className="text-base sm:text-lg font-black text-[#181818]">
-                        تنظیمات فیلترهای محصولات (مدل، جنس، رنگ)
-                      </h2>
-                      <p className="text-xs text-[#666] mt-1">
-                        افزودن، ویرایش و حذف گزینه‌های فیلتر هوشمند محصولات جهت نمایش فوری در نوار کناری فیلترهای فروشگاه
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={isSavingProductFilters}
-                    onClick={async () => {
-                      setIsSavingProductFilters(true);
-                      try {
-                        const res = await authFetch('/api/admin/settings/product_filters', {
-                          method: 'PUT',
-                          body: JSON.stringify(productFilterSettingsForm),
-                        });
-                        setProductFilterSettingsForm({
-                          models: Array.isArray(res.models) ? res.models : productFilterSettingsForm.models,
-                          materials: Array.isArray(res.materials) ? res.materials : productFilterSettingsForm.materials,
-                          colors: Array.isArray(res.colors) ? res.colors : productFilterSettingsForm.colors,
-                        });
-                        window.dispatchEvent(new CustomEvent('app-filter-settings-updated', { detail: res }));
-                        showNotice('success', 'گزینه‌های فیلتر محصولات با موفقیت ذخیره و در سایت اعمال شد.');
-                      } catch (err: any) {
-                        showNotice('error', err?.message || 'خطا در ذخیره فیلترهای محصولات');
-                      } finally {
-                        setIsSavingProductFilters(false);
-                      }
-                    }}
-                    className="h-11 px-7 rounded-xl bg-[#b59766] hover:bg-[#9f8252] text-white text-xs font-bold flex items-center gap-2 cursor-pointer transition-all shadow-sm disabled:opacity-60 shrink-0 self-start sm:self-auto"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{isSavingProductFilters ? 'در حال ذخیره...' : 'ثبت و اعمال کلی فیلترها'}</span>
-                  </button>
-                </div>
-
-                {/* شبکه ۳ گانه: بخش‌های مدل، جنس و رنگ */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                  {/* ۱. کارت افزودن و مدیریت مدل‌های محصول */}
-                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between border-b border-[#ece0cc] pb-3">
-                        <div className="flex items-center gap-2">
-                          <Tag className="w-4 h-4 text-[#b59766]" />
-                          <h3 className="text-sm font-black text-[#181818]">
-                            مدل‌های محصول
-                          </h3>
-                        </div>
-                        <span className="text-[11px] font-bold text-[#b59766] bg-[#f2e8d8] px-2.5 py-0.5 rounded-full tabular-nums">
-                          {productFilterSettingsForm.models.length.toLocaleString('fa-IR')} مورد
-                        </span>
-                      </div>
-
-                      {/* فرم افزودن مدل جدید */}
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const val = newModelLabel.trim();
-                          if (!val) return;
-                          const newOption: ProductFilterOption = {
-                            id: `model-${Date.now()}`,
-                            label: val,
-                          };
-                          const updated = [...productFilterSettingsForm.models, newOption];
-                          setProductFilterSettingsForm({ ...productFilterSettingsForm, models: updated });
-                          setNewModelLabel('');
-                          showNotice('success', `مدل «${val}» به لیست اضافه شد. جهت ذخیره دکمه ثبت را بزنید.`);
-                        }}
-                        className="flex gap-2"
-                      >
-                        <input
-                          type="text"
-                          value={newModelLabel}
-                          onChange={(e) => setNewModelLabel(e.target.value)}
-                          placeholder="مثلاً: مدل برلیان، لوستر رسانس..."
-                          className="h-10 flex-1 rounded-xl border border-[#dcd2c3] bg-white px-3 text-xs font-semibold text-[#222] placeholder:text-[#999] focus:outline-none focus:border-[#b59766]"
-                        />
-                        <button
-                          type="submit"
-                          className="h-10 px-3.5 rounded-xl bg-[#1c1a17] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>افزودن</span>
-                        </button>
-                      </form>
-
-                      {/* لیست مدل‌های ثبت‌شده */}
-                      <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 pl-1">
-                        {productFilterSettingsForm.models.map((item: ProductFilterOption, idx: number) => (
-                          <div
-                            key={item.id || idx}
-                            className="p-2.5 rounded-xl bg-white border border-[#e8ded0] flex items-center justify-between gap-2 hover:border-[#b59766] transition-colors"
-                          >
-                            <input
-                              type="text"
-                              value={item.label}
-                              onChange={(e) => {
-                                const next = [...productFilterSettingsForm.models];
-                                next[idx] = { ...next[idx], label: e.target.value };
-                                setProductFilterSettingsForm({ ...productFilterSettingsForm, models: next });
-                              }}
-                              className="bg-transparent text-xs font-bold text-[#222] focus:outline-none focus:bg-[#faf8f4] px-1.5 py-0.5 rounded w-full"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = productFilterSettingsForm.models.filter((_: ProductFilterOption, i: number) => i !== idx);
-                                setProductFilterSettingsForm({ ...productFilterSettingsForm, models: next });
-                              }}
-                              className="w-7 h-7 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                              title="حذف این مدل"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ۲. کارت افزودن و مدیریت جنس‌های محصول */}
-                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between border-b border-[#ece0cc] pb-3">
-                        <div className="flex items-center gap-2">
-                          <Layers className="w-4 h-4 text-[#b59766]" />
-                          <h3 className="text-sm font-black text-[#181818]">
-                            جنس‌های محصول
-                          </h3>
-                        </div>
-                        <span className="text-[11px] font-bold text-[#b59766] bg-[#f2e8d8] px-2.5 py-0.5 rounded-full tabular-nums">
-                          {productFilterSettingsForm.materials.length.toLocaleString('fa-IR')} مورد
-                        </span>
-                      </div>
-
-                      {/* فرم افزودن جنس جدید */}
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const val = newMaterialLabel.trim();
-                          if (!val) return;
-                          const newOption: ProductFilterOption = {
-                            id: `mat-${Date.now()}`,
-                            label: val,
-                          };
-                          const updated = [...productFilterSettingsForm.materials, newOption];
-                          setProductFilterSettingsForm({ ...productFilterSettingsForm, materials: updated });
-                          setNewMaterialLabel('');
-                          showNotice('success', `جنس «${val}» به لیست اضافه شد. جهت ذخیره دکمه ثبت را بزنید.`);
-                        }}
-                        className="flex gap-2"
-                      >
-                        <input
-                          type="text"
-                          value={newMaterialLabel}
-                          onChange={(e) => setNewMaterialLabel(e.target.value)}
-                          placeholder="مثلاً: برنز سنگین، زاماک، آلومینیوم..."
-                          className="h-10 flex-1 rounded-xl border border-[#dcd2c3] bg-white px-3 text-xs font-semibold text-[#222] placeholder:text-[#999] focus:outline-none focus:border-[#b59766]"
-                        />
-                        <button
-                          type="submit"
-                          className="h-10 px-3.5 rounded-xl bg-[#1c1a17] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>افزودن</span>
-                        </button>
-                      </form>
-
-                      {/* لیست جنس‌های ثبت‌شده */}
-                      <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 pl-1">
-                        {productFilterSettingsForm.materials.map((item: ProductFilterOption, idx: number) => (
-                          <div
-                            key={item.id || idx}
-                            className="p-2.5 rounded-xl bg-white border border-[#e8ded0] flex items-center justify-between gap-2 hover:border-[#b59766] transition-colors"
-                          >
-                            <input
-                              type="text"
-                              value={item.label}
-                              onChange={(e) => {
-                                const next = [...productFilterSettingsForm.materials];
-                                next[idx] = { ...next[idx], label: e.target.value };
-                                setProductFilterSettingsForm({ ...productFilterSettingsForm, materials: next });
-                              }}
-                              className="bg-transparent text-xs font-bold text-[#222] focus:outline-none focus:bg-[#faf8f4] px-1.5 py-0.5 rounded w-full"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = productFilterSettingsForm.materials.filter((_: ProductFilterOption, i: number) => i !== idx);
-                                setProductFilterSettingsForm({ ...productFilterSettingsForm, materials: next });
-                              }}
-                              className="w-7 h-7 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                              title="حذف این جنس"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ۳. کارت افزودن و مدیریت رنگ‌های محصول */}
-                  <div className="p-5 rounded-2xl bg-[#faf8f4] border border-[#ece4d4] space-y-4 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between border-b border-[#ece0cc] pb-3">
-                        <div className="flex items-center gap-2">
-                          <Palette className="w-4 h-4 text-[#b59766]" />
-                          <h3 className="text-sm font-black text-[#181818]">
-                            رنگ‌های محصول
-                          </h3>
-                        </div>
-                        <span className="text-[11px] font-bold text-[#b59766] bg-[#f2e8d8] px-2.5 py-0.5 rounded-full tabular-nums">
-                          {productFilterSettingsForm.colors.length.toLocaleString('fa-IR')} مورد
-                        </span>
-                      </div>
-
-                      {/* فرم افزودن رنگ جدید */}
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const val = newColorLabel.trim();
-                          if (!val) return;
-                          const newOption: ProductFilterOption = {
-                            id: `col-${Date.now()}`,
-                            label: val,
-                          };
-                          const updated = [...productFilterSettingsForm.colors, newOption];
-                          setProductFilterSettingsForm({ ...productFilterSettingsForm, colors: updated });
-                          setNewColorLabel('');
-                          showNotice('success', `رنگ «${val}» به لیست اضافه شد. جهت ذخیره دکمه ثبت را بزنید.`);
-                        }}
-                        className="flex gap-2"
-                      >
-                        <input
-                          type="text"
-                          value={newColorLabel}
-                          onChange={(e) => setNewColorLabel(e.target.value)}
-                          placeholder="مثلاً: برنز سیاه‌قلم، کرم طلایی..."
-                          className="h-10 flex-1 rounded-xl border border-[#dcd2c3] bg-white px-3 text-xs font-semibold text-[#222] placeholder:text-[#999] focus:outline-none focus:border-[#b59766]"
-                        />
-                        <button
-                          type="submit"
-                          className="h-10 px-3.5 rounded-xl bg-[#1c1a17] hover:bg-[#b59766] text-white text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>افزودن</span>
-                        </button>
-                      </form>
-
-                      {/* لیست رنگ‌های ثبت‌شده */}
-                      <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 pl-1">
-                        {productFilterSettingsForm.colors.map((item: ProductFilterOption, idx: number) => (
-                          <div
-                            key={item.id || idx}
-                            className="p-2.5 rounded-xl bg-white border border-[#e8ded0] flex items-center justify-between gap-2 hover:border-[#b59766] transition-colors"
-                          >
-                            <input
-                              type="text"
-                              value={item.label}
-                              onChange={(e) => {
-                                const next = [...productFilterSettingsForm.colors];
-                                next[idx] = { ...next[idx], label: e.target.value };
-                                setProductFilterSettingsForm({ ...productFilterSettingsForm, colors: next });
-                              }}
-                              className="bg-transparent text-xs font-bold text-[#222] focus:outline-none focus:bg-[#faf8f4] px-1.5 py-0.5 rounded w-full"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = productFilterSettingsForm.colors.filter((_: ProductFilterOption, i: number) => i !== idx);
-                                setProductFilterSettingsForm({ ...productFilterSettingsForm, colors: next });
-                              }}
-                              className="w-7 h-7 rounded-lg bg-[#fde8ea] hover:bg-[#ea1d2c] text-[#ea1d2c] hover:text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                              title="حذف این رنگ"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ۱۰.۳. تب مدیریت خروجی‌های اپلیکیشن موبایل (Android APK, iOS IPA) و آمار نصب‌ها */}
-          {activeTab === 'mobile_builds' && <MobileBuildsManager />}
         </div>
       </div>
 

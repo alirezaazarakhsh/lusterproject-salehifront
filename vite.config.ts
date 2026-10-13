@@ -12,42 +12,21 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['apple-touch-icon.png', 'icon.svg'],
         manifest: {
           id: '/',
           name: 'گالری لوستر اکبر صالحی',
           short_name: 'لوستر صالحی',
-          description: 'گالری لوستر اکبر صالحی - خرید آنلاین و مشاوره تخصصی لوستر و آینه شمعدان',
-          theme_color: '#121212',
-          background_color: '#121212',
+          description: 'گالری لوستر اکبر صالحی - خرید آنلاین لوستر',
+          theme_color: '#ffffff',
+          background_color: '#ffffff',
           display: 'standalone',
           start_url: '/',
           scope: '/',
-          icons: [
-            {
-              src: '/pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any',
-            },
-            {
-              src: '/pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any',
-            },
-            {
-              src: '/pwa-maskable-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable',
-            },
-          ],
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
-        devOptions: { enabled: true, type: 'module' },
+        devOptions: { enabled: true },
       }),
     ],
     esbuild: {

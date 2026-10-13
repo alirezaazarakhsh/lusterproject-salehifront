@@ -669,10 +669,6 @@ export interface CategoryItem {
   countText: string;
   filterKey: string;
   slug: string;
-  iconName?: string;
-  showOnHome?: boolean;
-  countLabel?: string;
-  image?: string;
 }
 
 /**

@@ -27,7 +27,6 @@ export interface HeaderMenuItem {
 }
 
 export interface MainSettingsConfig {
-  appLogoUrl?: string;
   hideLanguageSelector?: boolean;
   siteTitle?: string;
   siteSubtitle?: string;
@@ -830,11 +829,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
           className="shrink-0 focus:outline-none flex items-center overflow-hidden"
           aria-label="گالری لوستر اکبر صالحی"
         >
-          {mainSettings?.appLogoUrl && mainSettings.appLogoUrl !== '/icon.svg' ? (
-            <img src={mainSettings.appLogoUrl} alt={mainSettings.siteTitle || 'لوگوی برنامه'} className="h-12 sm:h-14 w-auto object-contain shrink-0 rounded-lg" />
-          ) : (
-            <HeaderBrandLogo />
-          )}
+          <HeaderBrandLogo />
         </a>
 
         {/* وسط: لینک‌های منوی ناوبری به همراه زیرمنوهای آبشاری دقیقاً مطابق طرح فیگما */}

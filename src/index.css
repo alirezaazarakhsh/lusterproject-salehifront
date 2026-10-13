@@ -119,43 +119,6 @@
   font-display: swap;
 }
 
-/* Alias IRANSansX Pro & iransansx pro */
-@font-face {
-  font-family: 'IRANSansX Pro';
-  src: url('/fonts/iransansx-d4/IRANSansX-RegularD4.woff2') format('woff2'),
-       url('/fonts/iransansx-d4/IRANSansX-RegularD4.woff') format('woff');
-  font-weight: 100 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'IRANSansX Pro';
-  src: url('/fonts/iransansx-d4/IRANSansX-BoldD4.woff2') format('woff2'),
-       url('/fonts/iransansx-d4/IRANSansX-BoldD4.woff') format('woff');
-  font-weight: 600 950;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'iransansx pro';
-  src: url('/fonts/iransansx-d4/IRANSansX-RegularD4.woff2') format('woff2'),
-       url('/fonts/iransansx-d4/IRANSansX-RegularD4.woff') format('woff');
-  font-weight: 100 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'iransansx pro';
-  src: url('/fonts/iransansx-d4/IRANSansX-BoldD4.woff2') format('woff2'),
-       url('/fonts/iransansx-d4/IRANSansX-BoldD4.woff') format('woff');
-  font-weight: 600 950;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* IRANSansXFaNum Pro (D4 / Dot4) Farsi Numerals Definitions */
 @font-face {
   font-family: 'IRANSansXFaNum';
@@ -379,7 +342,7 @@
 
 @layer base {
   html {
-    font-family: 'IRANSansX Pro', 'iransansx pro', 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', 'IRANSans', system-ui, -apple-system, sans-serif;
+    font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', 'IRANSans', system-ui, -apple-system, sans-serif;
     scroll-behavior: smooth;
     direction: ltr !important;
     overflow-x: clip;
@@ -387,7 +350,7 @@
   }
 
   body {
-    font-family: 'IRANSansX Pro', 'iransansx pro', 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', 'IRANSans', system-ui, -apple-system, sans-serif;
+    font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', 'IRANSans', system-ui, -apple-system, sans-serif;
     background-color: #fcfbf9;
     color: #1a1a1a;
     overflow-x: clip;
@@ -397,7 +360,7 @@
   }
 
   #root, button, input, textarea, select {
-    font-family: 'IRANSansX Pro', 'iransansx pro', 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', 'IRANSans', system-ui, -apple-system, sans-serif;
+    font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', 'IRANSans', system-ui, -apple-system, sans-serif;
   }
 
   #root {

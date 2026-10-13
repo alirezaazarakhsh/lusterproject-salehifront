@@ -6,7 +6,7 @@ interface SecurityAlertState {
   title: string;
   message: string;
   subMessage?: string;
-  triggerType: 'screenshot' | 'image-save' | 'inspect' | 'gesture' | 'external-camera';
+  triggerType: 'screenshot' | 'image-save' | 'inspect' | 'gesture';
 }
 
 /**
@@ -15,6 +15,7 @@ interface SecurityAlertState {
 function isPhotoOrStoryElement(target: Element | null): boolean {
   if (!target) return false;
 
+  // ۱. تگ‌های مستقیم تصویر و رسانه
   if (
     target.tagName === 'IMG' ||
     target.tagName === 'PICTURE' ||
@@ -66,34 +67,12 @@ export const SecurityProtection: React.FC = () => {
     message: '',
     triggerType: 'screenshot',
   });
-  const [isBlackoutActive, setIsBlackoutActive] = useState<boolean>(false);
 
   const lastAlertTimeRef = useRef<number>(0);
   const currentHoveredElementRef = useRef<Element | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const blackoutTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastBlurTimeRef = useRef<number>(0);
-
-  // فعال کردن مشکی شدن عکس‌ها
-  const triggerBlackout = useCallback((durationMs = 5000) => {
-    setIsBlackoutActive(true);
-    document.documentElement.classList.add('protected-blackout-active');
-    document.body?.classList.add('protected-blackout-active');
-    const rootEl = document.getElementById('root');
-    if (rootEl) rootEl.classList.add('protected-blackout-active');
-
-    if (blackoutTimerRef.current) {
-      clearTimeout(blackoutTimerRef.current);
-    }
-    blackoutTimerRef.current = setTimeout(() => {
-      setIsBlackoutActive(false);
-      document.documentElement.classList.remove('protected-blackout-active');
-      document.body?.classList.remove('protected-blackout-active');
-      if (rootEl) rootEl.classList.remove('protected-blackout-active');
-    }, durationMs);
-  }, []);
 
   // لرزش ملایم گوشی
   const triggerHaptic = useCallback(() => {
@@ -134,10 +113,7 @@ export const SecurityProtection: React.FC = () => {
 
   // نمایش الرت مودال سفید و سازگار با فونت ایران سانس پرو
   const triggerSecurityModal = useCallback(
-    (reason: 'screenshot' | 'image-save' | 'gesture' | 'external-camera' = 'screenshot') => {
-      // هنگام هرگونه تلاش برای اسکرین‌شات، دوربین یا ذخیره، عکس‌ها بلافاصله مشکی می‌شوند
-      triggerBlackout(5000);
-
+    (reason: 'screenshot' | 'image-save' | 'gesture' = 'screenshot') => {
       const now = Date.now();
       if (now - lastAlertTimeRef.current < 2500) return;
       lastAlertTimeRef.current = now;
@@ -145,12 +121,12 @@ export const SecurityProtection: React.FC = () => {
       triggerHaptic();
       playAlertSound();
 
-      // پاکسازی متن کلیپ‌بورد با مدیریت ایمن خطای فوکوس
+      // پاکسازی متن کلیپ‌بورد در صورت تلاش برای کپی
       try {
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(
             'تصاویر و استوری‌های این وب‌سایت دارای حق کپی‌رایت اختصاصی گالری لوستر اکبر صالحی است.'
-          ).catch(() => {});
+          );
         }
       } catch {
         // نادیده گرفتن
@@ -158,21 +134,16 @@ export const SecurityProtection: React.FC = () => {
 
       setModalState({
         isOpen: true,
-        title:
-          reason === 'external-camera'
-            ? 'تصویربرداری و عکاسی با دوربین خارجی مسدود شد'
-            : 'تصویربرداری و ذخیره عکس مسدود است',
+        title: 'تصویربرداری و ذخیره عکس مسدود است',
         message:
-          'عکسبرداری (اسکرین‌شات)، عکاسی با گوشی دیگر، ذخیره و کپی تصاویر در این بخش امکان‌پذیر نمی‌باشد. تمامی تصاویر، استوری‌ها و مدل‌های سه‌بعدی گالری لوستر اکبر صالحی دارای نشان ثبت تجاری و کپی‌رایت انحصاری هستند.',
+          'عکسبرداری (اسکرین‌شات)، ذخیره و کپی تصاویر در این بخش امکان‌پذیر نمی‌باشد. تمامی تصاویر، استوری‌ها و مدل‌های سه‌بعدی گالری لوستر اکبر صالحی دارای نشان ثبت تجاری و کپی‌رایت انحصاری هستند.',
         subMessage:
-          reason === 'external-camera'
-            ? 'سیستم هوشمند حسگر نوری، تلاش برای ثبت عکس با دوربین تلفن همراه دیگر از روی صفحه را مسدود کرد.'
-            : reason === 'gesture'
+          reason === 'gesture'
             ? 'سیستم ژست تصویربرداری از روی عکس را در دستگاه شما مسدود نمود.'
             : reason === 'image-save'
             ? 'تلاش برای ذخیره یا کپی مستقیم این تصویر مسدود گردید.'
-            : 'تلاش برای ثبت اسکرین‌شات شناسایی شد و تمامی تصاویر مخفی و مشکی گردیدند.',
-        triggerType: reason,
+            : 'تلاش برای ثبت اسکرین‌شات از عکس‌ها و استوری‌های گالری شناسایی شد.',
+        triggerType: reason === 'gesture' ? 'gesture' : reason === 'image-save' ? 'image-save' : 'screenshot',
       });
 
       // پر شدن خط تایمر در ۴ ثانیه و بستن خودکار
@@ -183,7 +154,7 @@ export const SecurityProtection: React.FC = () => {
         setModalState((prev) => ({ ...prev, isOpen: false }));
       }, 4000);
     },
-    [triggerHaptic, playAlertSound, triggerBlackout]
+    [triggerHaptic, playAlertSound]
   );
 
   const handleCloseModal = () => {
@@ -192,165 +163,110 @@ export const SecurityProtection: React.FC = () => {
       dismissTimerRef.current = null;
     }
     setModalState((prev) => ({ ...prev, isOpen: false }));
-    setIsBlackoutActive(false);
-    document.documentElement.classList.remove('protected-blackout-active');
-    document.body?.classList.remove('protected-blackout-active');
-    const rootEl = document.getElementById('root');
-    if (rootEl) rootEl.classList.remove('protected-blackout-active');
   };
 
   useEffect(() => {
-    const isEditableInput = (target: Element | null): boolean => {
-      if (!target) return false;
-      const tag = target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return true;
-      if (target.getAttribute('contenteditable') === 'true' || (target as HTMLElement).isContentEditable) return true;
-      return Boolean(target.closest('input, textarea, [contenteditable="true"]'));
+    // ردیابی المانی که نشانگر ماوس در حال حاضر روی آن است
+    const handlePointerOver = (e: PointerEvent) => {
+      currentHoveredElementRef.current = e.target as Element | null;
     };
 
-    // ۱. جلوگیری سراسری از کلیک راست (Context Menu) در تمام صفحات سایت
+    // ۱. جلوگیری از کلیک راست روی تصاویر و استوری‌ها
     const handleContextMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
-      if (isEditableInput(target)) {
-        return; // اجازه استفاده عادی در فیلدهای ورودی
+      if (isPhotoOrStoryElement(target) || isAnyPhotoModalOpen()) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerSecurityModal('image-save');
       }
-      e.preventDefault();
-      e.stopPropagation();
-      triggerSecurityModal('image-save');
     };
 
-    // ۲. جلوگیری سراسری از کپی برداری (Copy Event) در سایت
-    const handleCopy = (e: ClipboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (isEditableInput(target)) {
-        return;
-      }
-      e.preventDefault();
-      try {
-        if (e.clipboardData) {
-          e.clipboardData.setData(
-            'text/plain',
-            'محتوا، تصاویر و مدل‌های این وب‌سایت دارای حق کپی‌رایت اختصاصی گالری لوستر اکبر صالحی است.'
-          );
-        }
-      } catch {}
-      triggerSecurityModal('image-save');
-    };
-
-    // ۳. جلوگیری سراسری از هایلایت و انتخاب متن (Select Start)
-    const handleSelectStart = (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (isEditableInput(target)) {
-        return;
-      }
-      e.preventDefault();
-    };
-
-    // ۴. جلوگیری سراسری از کشیدن و رها کردن (Drag & Drop) تمام المان‌ها و عکس‌ها
+    // ۲. جلوگیری از کشیدن و رها کردن (Drag & Drop) تصاویر
     const handleDragStart = (e: DragEvent) => {
       const target = e.target as HTMLElement | null;
-      if (isEditableInput(target)) return;
-      e.preventDefault();
-      triggerSecurityModal('image-save');
+      if (isPhotoOrStoryElement(target)) {
+        e.preventDefault();
+        triggerSecurityModal('image-save');
+      }
     };
 
-    // ۵. جلوگیری سراسری از تمامی کلیدهای میانبر اسکرین‌شات (مک، ویندوز، لینوکس)
+    // ۳. جلوگیری از کلیدهای میانبر اسکرین‌شات و ذخیره (فقط وقتی روی بخش‌های عکس یا استوری هستیم)
     const handleKeyDown = (e: KeyboardEvent) => {
-      const target = (e.target || currentHoveredElementRef.current) as HTMLElement | null;
-      const inInput = isEditableInput(target);
+      const isOverMedia =
+        isPhotoOrStoryElement(currentHoveredElementRef.current) ||
+        isPhotoOrStoryElement(document.activeElement) ||
+        isAnyPhotoModalOpen();
 
-      // الف) مشکی کردن فوری و آنی تمام عکس‌ها به محض فشردن اولین کلید Modifier (Cmd, Ctrl, Shift, Alt, PrintScreen)
-      // این کار باعث می‌شود قبل از اینکه کلیدهای ۳ یا ۴ یا S فشرده شوند و OS عکس بگیرد، عکس‌ها کاملاً مشکی شوند.
-      if (!inInput && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.key === 'Meta' || e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'PrintScreen' || e.code === 'PrintScreen')) {
-        document.documentElement.classList.add('protected-blackout-active');
-        document.body?.classList.add('protected-blackout-active');
-        const rootEl = document.getElementById('root');
-        if (rootEl) rootEl.classList.add('protected-blackout-active');
-        setIsBlackoutActive(true);
-      }
-
-      // ب) تشخیص ترکیبات اسکرین‌شات (Cmd/Ctrl + Shift یا Cmd/Ctrl + Alt)
-      if ((e.metaKey || e.ctrlKey) && (e.shiftKey || e.altKey)) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerSecurityModal('screenshot');
-        return;
-      }
-
-      // ج) کلید PrintScreen (دکمه اسکرین‌شات ویندوز)
+      // کلید PrintScreen
       if (e.key === 'PrintScreen' || e.code === 'PrintScreen' || e.keyCode === 44) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerSecurityModal('screenshot');
+        if (isOverMedia) {
+          e.preventDefault();
+          triggerSecurityModal('screenshot');
+        }
         return;
       }
 
-      // د) میانبر کپی (Ctrl + C یا Cmd + C) خارج از فیلدهای ورودی
-      if (!inInput && (e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.code === 'KeyC' || e.key === 'ز')) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerSecurityModal('image-save');
+      // ترکیب Win + Shift + S یا Cmd + Shift + 3/4/5
+      if (
+        (e.shiftKey && (e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S' || e.code === 'KeyS')) ||
+        (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key))
+      ) {
+        if (isOverMedia) {
+          e.preventDefault();
+          triggerSecurityModal('screenshot');
+        }
         return;
       }
 
-      // هـ) ذخیره مستقیم صفحه با میانبر (Ctrl + S یا Cmd + S)
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.code === 'KeyS' || e.key === 'س')) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerSecurityModal('image-save');
+      // ذخیره مستقیم صفحه با میانبر (Ctrl + S یا Cmd + S)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.code === 'KeyS')) {
+        if (isOverMedia) {
+          e.preventDefault();
+          triggerSecurityModal('image-save');
+        }
         return;
       }
 
-      // و) پرینت صفحه (Ctrl + P یا Cmd + P)
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P' || e.code === 'KeyP' || e.key === 'ح')) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerSecurityModal('screenshot');
+      // پرینت صفحه (Ctrl + P یا Cmd + P)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+        if (isOverMedia) {
+          e.preventDefault();
+          triggerSecurityModal('screenshot');
+        }
         return;
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'PrintScreen' || e.code === 'PrintScreen' || e.keyCode === 44) {
-        e.preventDefault();
-        triggerSecurityModal('screenshot');
-        return;
-      }
+        const isOverMedia =
+          isPhotoOrStoryElement(currentHoveredElementRef.current) ||
+          isPhotoOrStoryElement(document.activeElement) ||
+          isAnyPhotoModalOpen();
 
-      // اگر مودال باز نیست و هیچ کلید Modifier دیگری فشرده نشده است، مشکی بودن عکس‌ها را پاک کن
-      if (!modalState.isOpen && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-        if (blackoutTimerRef.current) clearTimeout(blackoutTimerRef.current);
-        blackoutTimerRef.current = setTimeout(() => {
-          if (!modalState.isOpen) {
-            setIsBlackoutActive(false);
-            document.documentElement.classList.remove('protected-blackout-active');
-            document.body?.classList.remove('protected-blackout-active');
-            const rootEl = document.getElementById('root');
-            if (rootEl) rootEl.classList.remove('protected-blackout-active');
-          }
-        }, 300);
+        if (isOverMedia) {
+          e.preventDefault();
+          triggerSecurityModal('screenshot');
+        }
       }
     };
 
-    // ۶. مدیریت تاچ در آیفون و اندروید: نگه‌داشتن دست (Long-press) یا ژست‌های چندانگشتی اسکرین‌شات
+    // ۴. مدیریت تاچ در گوشی: نگه‌داشتن دست روی عکس (Long-press) یا ژست ۳ انگشتی روی عکس
     const handleTouchStart = (e: TouchEvent) => {
       const target = e.target as HTMLElement | null;
       currentHoveredElementRef.current = target;
-      if (isEditableInput(target)) return;
 
-      // ژست‌های چندانگشتی اسکرین‌شات در آیفون و اندروید (۲ یا ۳ انگشت)
-      if (e.touches && e.touches.length >= 2) {
-        document.documentElement.classList.add('protected-blackout-active');
-        document.body?.classList.add('protected-blackout-active');
-        const rootEl = document.getElementById('root');
-        if (rootEl) rootEl.classList.add('protected-blackout-active');
-        setIsBlackoutActive(true);
+      const isOverMedia = isPhotoOrStoryElement(target) || isAnyPhotoModalOpen();
+
+      // ژست ۳ انگشتی اسکرین‌شات در گوشی وقتی روی عکس یا استوری است
+      if (e.touches && e.touches.length >= 3 && isOverMedia) {
+        e.preventDefault();
         triggerSecurityModal('gesture');
         return;
       }
 
-      // نگه‌داشتن دست روی عکس یا متن در گوشی برای ذخیره
-      if (e.touches.length === 1) {
+      // نگه‌داشتن دست روی عکس در گوشی (منوی دانلود تصویر در مرورگر موبایل)
+      if (isOverMedia && e.touches.length === 1) {
         const touch = e.touches[0];
         touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
 
@@ -368,6 +284,7 @@ export const SecurityProtection: React.FC = () => {
       if (longPressTimerRef.current && touchStartPosRef.current && e.touches[0]) {
         const dx = Math.abs(e.touches[0].clientX - touchStartPosRef.current.x);
         const dy = Math.abs(e.touches[0].clientY - touchStartPosRef.current.y);
+        // لغو در صورت اسکرول عادی دست
         if (dx > 12 || dy > 12) {
           clearTimeout(longPressTimerRef.current);
           longPressTimerRef.current = null;
@@ -382,104 +299,9 @@ export const SecurityProtection: React.FC = () => {
       }
     };
 
-    const handlePointerOver = (e: PointerEvent) => {
-      currentHoveredElementRef.current = e.target as Element | null;
-    };
-
-    // ۷. مسدودسازی برنامه‌های ضبط ویدیو و فیلمبرداری از صفحه (Screen Recording Interception)
-    try {
-      if (
-        typeof navigator !== 'undefined' &&
-        navigator.mediaDevices &&
-        typeof navigator.mediaDevices.getDisplayMedia === 'function'
-      ) {
-        const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
-        navigator.mediaDevices.getDisplayMedia = async (options?: DisplayMediaStreamOptions) => {
-          triggerSecurityModal('screenshot');
-          triggerBlackout(8000);
-          throw new DOMException('ضبط فیلم از وب‌سایت گالری لوستر اکبر صالحی به علت کپی‌رایت مسدود است.', 'NotAllowedError');
-        };
-      }
-    } catch {}
-
-    // ۸. مشکی کردن عکس‌ها هنگام باز شدن برنامه اسکرین‌شات/ضبط فیلم در آیفون و اندروید (iOS/Android Control Center & Screen Recording)
-    const handleWindowBlur = () => {
-      lastBlurTimeRef.current = Date.now();
-      triggerBlackout(12000);
-    };
-
-    const handleWindowFocus = () => {
-      const timeSinceBlur = Date.now() - lastBlurTimeRef.current;
-      // اگر کاربر در ۸ ثانیه گذشته صفحه را Blur کرده باشد (مثلاً سوایپ منوی کنترل سنتر آیفون برای ضبط فیلم)،
-      // پرده مشکی به صورت آنی حذف نمی‌شود تا فیلمبرداری ضبط شده از صفحه کاملاً مشکی باقی بماند.
-      if (timeSinceBlur < 8000) {
-        if (blackoutTimerRef.current) clearTimeout(blackoutTimerRef.current);
-        blackoutTimerRef.current = setTimeout(() => {
-          setIsBlackoutActive(false);
-          document.documentElement.classList.remove('protected-blackout-active');
-          document.body?.classList.remove('protected-blackout-active');
-          const rootEl = document.getElementById('root');
-          if (rootEl) rootEl.classList.remove('protected-blackout-active');
-        }, 8000 - timeSinceBlur);
-      } else {
-        if (blackoutTimerRef.current) clearTimeout(blackoutTimerRef.current);
-        setIsBlackoutActive(false);
-        document.documentElement.classList.remove('protected-blackout-active');
-        document.body?.classList.remove('protected-blackout-active');
-        const rootEl = document.getElementById('root');
-        if (rootEl) rootEl.classList.remove('protected-blackout-active');
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        lastBlurTimeRef.current = Date.now();
-        triggerBlackout(12000);
-      } else {
-        handleWindowFocus();
-      }
-    };
-
-    // ۹. پایش سنسور چرخشی و زاویه گوشی (Gyroscope / Orientation) جهت تشخیص گرفتن گوشی جلوی دوربین دیگر
-    let lastBeta = 0;
-    let lastGamma = 0;
-    const handleDeviceOrientation = (e: DeviceOrientationEvent) => {
-      try {
-        const beta = Math.abs(e.beta || 0);
-        const gamma = Math.abs(e.gamma || 0);
-        
-        // اگر گوشی در حالت عمودی/ایستاده قرار گیرد یا تغییر زاویه سریع برای نشان دادن به دوربین دیگر داده شود
-        if (Math.abs(beta - lastBeta) > 20 || Math.abs(gamma - lastGamma) > 20 || (beta > 55 && beta < 120)) {
-          triggerBlackout(10000);
-          triggerSecurityModal('external-camera');
-        }
-        lastBeta = beta;
-        lastGamma = gamma;
-      } catch {}
-    };
-
-    // ۱۰. پایش حسگر نور محیطی (Ambient Light Sensor) جهت تشخیص نزدیک شدن لنز دوربین یا فلاش
-    try {
-      if ('AmbientLightSensor' in window) {
-        const sensor = new (window as any).AmbientLightSensor();
-        let lastLux = 0;
-        sensor.addEventListener('reading', () => {
-          const currentLux = sensor.illuminance || 0;
-          if (Math.abs(currentLux - lastLux) > 80 && lastLux > 0) {
-            triggerBlackout(10000);
-            triggerSecurityModal('external-camera');
-          }
-          lastLux = currentLux;
-        });
-        sensor.start();
-      }
-    } catch {}
-
-    // ثبت شنوندگان رویدادها سراسری
+    // ثبت شنوندگان رویدادها
     window.addEventListener('pointerover', handlePointerOver, { passive: true });
     window.addEventListener('contextmenu', handleContextMenu, { capture: true });
-    window.addEventListener('copy', handleCopy, { capture: true });
-    window.addEventListener('selectstart', handleSelectStart, { capture: true });
     window.addEventListener('dragstart', handleDragStart, { capture: true });
     window.addEventListener('keydown', handleKeyDown, { capture: true });
     window.addEventListener('keyup', handleKeyUp, { capture: true });
@@ -487,18 +309,10 @@ export const SecurityProtection: React.FC = () => {
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
     window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
-    window.addEventListener('blur', handleWindowBlur);
-    window.addEventListener('focus', handleWindowFocus);
-    window.addEventListener('pagehide', handleWindowBlur);
-    window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
-    window.addEventListener('devicemotion', handleDeviceOrientation as any, { passive: true });
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('pointerover', handlePointerOver);
       window.removeEventListener('contextmenu', handleContextMenu, { capture: true });
-      window.removeEventListener('copy', handleCopy, { capture: true });
-      window.removeEventListener('selectstart', handleSelectStart, { capture: true });
       window.removeEventListener('dragstart', handleDragStart, { capture: true });
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
       window.removeEventListener('keyup', handleKeyUp, { capture: true });
@@ -506,138 +320,14 @@ export const SecurityProtection: React.FC = () => {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchEnd);
-      window.removeEventListener('blur', handleWindowBlur);
-      window.removeEventListener('focus', handleWindowFocus);
-      window.removeEventListener('pagehide', handleWindowBlur);
-      window.removeEventListener('deviceorientation', handleDeviceOrientation);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [triggerSecurityModal, triggerBlackout]);
+  }, [triggerSecurityModal]);
+
+  if (!modalState.isOpen) return null;
 
   return (
     <>
       <style>{`
-        /* جلوگیری سراسری از انتخاب متن و هایلایت در تمام صفحات سایت */
-        body, html, #root {
-          -webkit-user-select: none !important;
-          -moz-user-select: none !important;
-          -ms-user-select: none !important;
-          user-select: none !important;
-        }
-
-
-
-        /* لایه فرکانس بالا خنثی‌کننده لنز دوربین (Anti-Camera Stroboscopic Rolling Shutter Mask) */
-        @keyframes antiCameraShutterStrobe {
-          0% { opacity: 0; }
-          50% { opacity: 0.92; background-color: #000000; }
-          100% { opacity: 0; }
-        }
-
-        /* پوشش ضد عکاسی با دوربین روی تمامی عکس‌ها، استوری‌ها و محصولات جهت سیاهی کامل در دوربین دیگر */
-        .product-card, .story-item, .project-card, [data-protected-image] {
-          position: relative;
-          overflow: hidden;
-        }
-
-        /* لایه استروب خنثی‌کننده لنز دوربین روی تمام عکس‌ها جهت ثبت تصویر کاملاً مشکی در دوربین گوشی دیگر */
-        .product-card::after,
-        .story-item::after,
-        .project-card::after,
-        [data-protected-image]::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          z-index: 20;
-          pointer-events: none;
-          background: repeating-linear-gradient(
-            0deg,
-            #000000 0px,
-            #000000 1.5px,
-            transparent 1.5px,
-            transparent 3px
-          );
-          opacity: 0.88;
-          mix-blend-mode: color-burn;
-          animation: antiCameraShutterStrobe 0.016s infinite linear;
-        }
-
-        /* واترمارک همیشگی کپی‌رایت و شبکه امنیتی ضد عکسبرداری روی کلیه محصولات و عکس‌ها */
-        .product-card::before,
-        .story-item::before,
-        .project-card::before,
-        [data-protected-image]::before {
-          content: 'لوستر اکبر صالحی © Akbar Salehi - کپی‌برداری غیرقانونی است';
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          z-index: 25;
-          font-size: 10px;
-          font-weight: 900;
-          color: rgba(255, 255, 255, 0.95);
-          background: rgba(18, 18, 18, 0.9);
-          padding: 4px 10px;
-          border-radius: 8px;
-          pointer-events: none;
-          letter-spacing: 0.3px;
-          border: 1px solid rgba(223, 193, 141, 0.4);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-
-        /* غیرفعال کردن کشیدن تصویر با موس یا نگه داشتن تاچ روی عکس در گوشی و دسکتاپ */
-        img, picture, canvas, video, [data-protected-image] {
-          -webkit-user-drag: none !important;
-          -khtml-user-drag: none !important;
-          -moz-user-drag: none !important;
-          -o-user-drag: none !important;
-          user-drag: none !important;
-          -webkit-touch-callout: none !important;
-        }
-
-        /* مشکی شدن کامل تمامی عکس‌ها و محصولات در هنگام اسکرین‌شات، کنترل سنتر یا فیلمبرداری در آیفون و اندروید */
-        .protected-blackout-active img,
-        .protected-blackout-active picture,
-        .protected-blackout-active canvas,
-        .protected-blackout-active video,
-        .protected-blackout-active [data-protected-image],
-        .protected-blackout-active [style*="background-image"],
-        .protected-blackout-active .story-item,
-        .protected-blackout-active .product-card,
-        .protected-blackout-active .project-card,
-        html.protected-blackout-active img,
-        body.protected-blackout-active img {
-          filter: brightness(0) contrast(100%) grayscale(100%) !important;
-          background-color: #000000 !important;
-          background-image: none !important;
-          opacity: 0 !important;
-          visibility: hidden !important;
-        }
-
-        /* مسدودسازی کامل محتوا در زمان پرینت یا ذخیره به فایل PDF */
-        @media print {
-          html, body, #root {
-            display: none !important;
-            visibility: hidden !important;
-          }
-          body::after {
-            content: 'امکان پرینت و ذخیره فایل PDF از وب‌سایت لوستر اکبر صالحی به علت کپی‌رایت مسدود شده است.';
-            display: block !important;
-            visibility: visible !important;
-            font-size: 20px;
-            font-weight: bold;
-            color: #e52e40;
-            text-align: center;
-            padding: 100px 20px;
-          }
-        }
-        /* استثنا برای فیلدهای ورودی فرم‌ها تا کاربر و ادمین به راحتی تایپ کنند */
-        input, textarea, [contenteditable="true"], .selectable-text {
-          -webkit-user-select: text !important;
-          -moz-user-select: text !important;
-          -ms-user-select: text !important;
-          user-select: text !important;
-        }
-
         @keyframes modalFillProgress {
           from {
             width: 0%;
@@ -651,122 +341,88 @@ export const SecurityProtection: React.FC = () => {
         }
       `}</style>
 
-      {/* پرده مشکی کامل روی کل صفحه در زمان ثبت اسکرین‌شات، فیلمبرداری یا عکاسی */}
-      {isBlackoutActive && (
-        <div
-          dir="rtl"
-          style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
-          className="fixed inset-0 z-[9999999] bg-[#0c0c0c] text-white flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in duration-100"
+      {/* بک‌دراپ تیره و تار مطابق سایر مودال‌های سایت */}
+      <div
+        className="fixed inset-0 z-[99998] bg-black/60 backdrop-blur-[2px] transition-opacity animate-in fade-in duration-200"
+        onClick={handleCloseModal}
+      />
+
+      {/* کارت مودال کاملاً سفید و راست‌چین با فونت ایران‌سانس پرو هم در دسکتاپ و هم در موبایل */}
+      <div
+        dir="rtl"
+        role="alertdialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+        style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
+        className="fixed z-[99999] 
+          /* استایل‌های موبایل: دراور پایین صفحه کاملاً سفید */
+          bottom-0 inset-x-0 bg-white rounded-t-[32px] px-6 pb-8 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.18)] flex flex-col items-stretch justify-start animate-in slide-in-from-bottom duration-300
+          /* استایل‌های دسکتاپ: کادر سفید وسط‌چین */
+          sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[500px] sm:rounded-[24px] sm:px-8 sm:py-7 sm:shadow-[0_24px_60px_rgba(0,0,0,0.22)] sm:border sm:border-[#ece8df]"
+      >
+        {/* دستگیره تاچ برای دراور موبایل */}
+        <div className="w-12 h-1 bg-[#e4e2dc] rounded-full mx-auto mb-4 sm:hidden shrink-0" />
+
+        {/* دکمه ضربدر بستن در دسکتاپ */}
+        <button
+          type="button"
+          onClick={handleCloseModal}
+          aria-label="بستن"
+          className="hidden sm:flex absolute top-5 left-5 w-7 h-7 rounded-full items-center justify-center text-[#2b2b2b] hover:text-[#e52e40] hover:bg-[#f6f6f6] transition-colors cursor-pointer"
         >
-          <div className="w-20 h-20 rounded-3xl bg-[#ef4444]/15 border border-[#ef4444]/40 flex items-center justify-center text-[#ef4444] mb-5 shadow-2xl animate-pulse">
-            <CameraOff className="w-10 h-10 stroke-[2.2]" />
+          <X className="w-4 h-4 stroke-[2]" />
+        </button>
+
+        {/* هدر مودال با آیکون سپر و دوربین خط‌خورده */}
+        <div className="flex items-center gap-3.5 mb-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-[#fee2e2] border border-[#fca5a5] flex items-center justify-center text-[#e52e40] shrink-0 shadow-xs">
+            <CameraOff className="w-6 h-6 stroke-[2.2]" />
           </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-[#ef4444]/20 border border-[#ef4444]/30 text-[#fca5a5] mb-3">
-            <ShieldAlert className="w-4 h-4" />
-            <span>سیستم حفاظت از کپی‌رایت انحصاری</span>
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ffe4e6] text-[#e11d48] mb-1">
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>محافظت از گالری و تصاویر</span>
+            </div>
+            <h3 className="text-[16px] sm:text-[17.5px] font-extrabold text-[#1a1a1a] leading-tight">
+              {modalState.title}
+            </h3>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white mb-3 tracking-tight">
-            دستگاه شما در حال ثبت تصویر یا ضبط ویدیو تشخیص داده شد
-          </h2>
-          <p className="text-xs sm:text-sm text-[#cccccc] max-w-lg leading-relaxed mb-6">
-            عکسبرداری (اسکرین‌شات)، عکاسی با دوربین دیگر، و ضبط فیلم از صفحه نمایش وب‌سایت به علت کپی‌رایت غیرفعال گردید. جهت ادامه استفاده، ابزار تصویربرداری را ببندید.
-          </p>
+        </div>
+
+        {/* توضیحات متن به فونت ایران سانس */}
+        <p className="text-[13px] sm:text-[13.5px] text-[#333333] leading-[1.85] mb-3 text-right">
+          {modalState.message}
+        </p>
+
+        {/* ساب مسیج راهنما */}
+        {modalState.subMessage && (
+          <div className="p-3 rounded-xl bg-[#fff5f5] border border-[#fed7d7] text-[11.5px] text-[#c53030] flex items-start gap-2 mb-4">
+            <AlertOctagon className="w-4 h-4 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{modalState.subMessage}</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-1.5 text-[11px] text-[#777777] mb-4">
+          <Lock className="w-3.5 h-3.5 text-[#b08754]" />
+          <span>برای مشاهده جزییات یا استعلام قیمت، محصول را باز کنید.</span>
+        </div>
+
+        {/* دکمه تایید «متوجه شدم» */}
+        <div className="flex items-center justify-end gap-3 w-full">
           <button
             type="button"
             onClick={handleCloseModal}
-            className="px-6 py-3 rounded-xl bg-[#ef4444] hover:bg-[#dc2626] text-white text-xs font-black transition-colors cursor-pointer shadow-lg"
+            className="w-full sm:w-auto min-w-[130px] h-[44px] px-6 rounded-[12px] bg-[#e52e40] hover:bg-[#cf2234] active:bg-[#b81d2e] text-white text-[13.5px] font-bold transition-all cursor-pointer shadow-sm text-center flex items-center justify-center"
           >
-            متوجه شدم و بازگشت به وب‌سایت
+            متوجه شدم
           </button>
         </div>
-      )}
 
-
-
-      {modalState.isOpen && (
-        <>
-          {/* بک‌دراپ تیره و تار مطابق سایر مودال‌های سایت */}
-          <div
-            className="fixed inset-0 z-[99998] bg-black/60 backdrop-blur-[2px] transition-opacity animate-in fade-in duration-200"
-            onClick={handleCloseModal}
-          />
-
-          {/* کارت مودال کاملاً سفید و راست‌چین با فونت ایران‌سانس پرو هم در دسکتاپ و هم در موبایل */}
-          <div
-            dir="rtl"
-            role="alertdialog"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-            style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
-            className="fixed z-[99999] 
-              bottom-0 inset-x-0 bg-white rounded-t-[32px] px-6 pb-8 pt-4 shadow-[0_-12px_40px_rgba(0,0,0,0.18)] flex flex-col items-stretch justify-start animate-in slide-in-from-bottom duration-300
-              sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[500px] sm:rounded-[24px] sm:px-8 sm:py-7 sm:shadow-[0_24px_60px_rgba(0,0,0,0.22)] sm:border sm:border-[#ece8df]"
-          >
-            {/* دستگیره تاچ برای دراور موبایل */}
-            <div className="w-12 h-1 bg-[#e4e2dc] rounded-full mx-auto mb-4 sm:hidden shrink-0" />
-
-            {/* دکمه ضربدر بستن در دسکتاپ */}
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              aria-label="بستن"
-              className="hidden sm:flex absolute top-5 left-5 w-7 h-7 rounded-full items-center justify-center text-[#2b2b2b] hover:text-[#e52e40] hover:bg-[#f6f6f6] transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4 stroke-[2]" />
-            </button>
-
-            {/* هدر مودال با آیکون سپر و دوربین خط‌خورده */}
-            <div className="flex items-center gap-3.5 mb-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-[#fee2e2] border border-[#fca5a5] flex items-center justify-center text-[#e52e40] shrink-0 shadow-xs">
-                <CameraOff className="w-6 h-6 stroke-[2.2]" />
-              </div>
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-[#ffe4e6] text-[#e11d48] mb-1">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>محافظت از گالری و تصاویر</span>
-                </div>
-                <h3 className="text-[16px] sm:text-[17.5px] font-extrabold text-[#1a1a1a] leading-tight">
-                  {modalState.title}
-                </h3>
-              </div>
-            </div>
-
-            {/* توضیحات متن به فونت ایران سانس */}
-            <p className="text-[13px] sm:text-[13.5px] text-[#333333] leading-[1.85] mb-3 text-right">
-              {modalState.message}
-            </p>
-
-            {/* ساب مسیج راهنما */}
-            {modalState.subMessage && (
-              <div className="p-3 rounded-xl bg-[#fff5f5] border border-[#fed7d7] text-[11.5px] text-[#c53030] flex items-start gap-2 mb-4">
-                <AlertOctagon className="w-4 h-4 shrink-0 mt-0.5" />
-                <span className="leading-relaxed">{modalState.subMessage}</span>
-              </div>
-            )}
-
-            <div className="flex items-center gap-1.5 text-[11px] text-[#777777] mb-4">
-              <Lock className="w-3.5 h-3.5 text-[#b08754]" />
-              <span>برای مشاهده جزییات یا استعلام قیمت، محصول را باز کنید.</span>
-            </div>
-
-            {/* دکمه تایید «متوجه شدم» */}
-            <div className="flex items-center justify-end gap-3 w-full">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="w-full sm:w-auto min-w-[130px] h-[44px] px-6 rounded-[12px] bg-[#e52e40] hover:bg-[#cf2234] active:bg-[#b81d2e] text-white text-[13.5px] font-bold transition-all cursor-pointer shadow-sm text-center flex items-center justify-center"
-              >
-                متوجه شدم
-              </button>
-            </div>
-
-            {/* نوار پیشرفت تایمر که پر می‌شود */}
-            <div className="w-full h-[4px] bg-[#f0ede6] rounded-full overflow-hidden mt-4">
-              <div className="h-full bg-[#e52e40] rounded-full animate-modal-fill-progress" />
-            </div>
-          </div>
-        </>
-      )}
+        {/* نوار پیشرفت تایمر که پر می‌شود («و پر شه هم تو دسکتاپ هم تو موبایل») */}
+        <div className="w-full h-[4px] bg-[#f0ede6] rounded-full overflow-hidden mt-4">
+          <div className="h-full bg-[#e52e40] rounded-full animate-modal-fill-progress" />
+        </div>
+      </div>
     </>
   );
 };

@@ -92,47 +92,37 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
         </div>
       ) : (
         isIntersected && (
-          <>
-            <img
-              ref={imgRef}
-              src={currentSrc}
-              alt={alt}
-              draggable={false}
-              data-protected-image="true"
-              onContextMenu={(e) => {
-                e.preventDefault();
-              }}
-              loading={priority ? 'eager' : loading}
-              decoding="async"
-              fetchPriority={priority ? 'high' : 'auto'}
-              onLoad={() => {
-                setIsLoaded(true);
-                onImageLoad?.();
-              }}
-              onError={(e) => {
-                setHasError(true);
-                handleImgErrorFallback(e, fallbackSrc);
-              }}
-              style={{
-                ...style,
-                userSelect: 'none',
-                WebkitTouchCallout: 'none',
-                WebkitUserDrag: 'none',
-                pointerEvents: 'none',
-              } as React.CSSProperties}
-              className={`${className} select-none transition-opacity duration-500 ease-out ${
-                isLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              {...restProps}
-            />
-            {/* لایه محافظتی شفاف جهت جلوگیری از کپی، کشیدن و Inspect مستقیم روی تصویر */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 z-20 bg-transparent select-none pointer-events-auto"
-              onContextMenu={(e) => e.preventDefault()}
-              onDragStart={(e) => e.preventDefault()}
-            />
-          </>
+          <img
+            ref={imgRef}
+            src={currentSrc}
+            alt={alt}
+            draggable={false}
+            data-protected-image="true"
+            onContextMenu={(e) => {
+              e.preventDefault();
+            }}
+            loading={priority ? 'eager' : loading}
+            decoding="async"
+            fetchPriority={priority ? 'high' : 'auto'}
+            onLoad={() => {
+              setIsLoaded(true);
+              onImageLoad?.();
+            }}
+            onError={(e) => {
+              setHasError(true);
+              handleImgErrorFallback(e, fallbackSrc);
+            }}
+            style={{
+              ...style,
+              userSelect: 'none',
+              WebkitTouchCallout: 'none',
+              WebkitUserDrag: 'none',
+            } as React.CSSProperties}
+            className={`${className} select-none transition-opacity duration-500 ease-out ${
+              isLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            {...restProps}
+          />
         )
       )}
     </div>

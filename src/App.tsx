@@ -7,8 +7,7 @@ import { syncFromFirestore, apiFetchWithFallback } from './utils/localBackendFal
 import { loadDeletedKeysFromFirestore } from './lib/firestoreSync';
 import { PagePreloader } from './components/PagePreloader';
 import { SecurityProtection } from './components/SecurityProtection';
-import { PWAInstallPopup } from './components/PWAInstallPopup';
-import { trackCurrentAppSession } from './utils/appTracker';
+import { initTheme } from './utils/theme';
 
 interface AppErrorBoundaryState {
   hasError: boolean;
@@ -36,8 +35,9 @@ class AppErrorBoundary extends React.Component<
       return (
         <div
           dir="rtl"
-          className="min-h-screen w-full bg-[#121212] text-[#f0f0f0] overflow-x-clip"
+          className="min-h-screen w-full bg-[#fcfbf9] text-[#222222] overflow-x-clip"
         >
+          {/* در دسکتاپ هدر دارد و در موبایل بدون هدر و بدون فوتر دقیقاً مانند ۴۰۴ */}
           <div className="hidden md:block">
             <HeaderSection
               currentRoute="server-error"
@@ -67,13 +67,13 @@ class AppErrorBoundary extends React.Component<
  * نقطه ورود اصلی اپلیکیشن گالری لوستر اکبر صالحی
  */
 export function App() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    trackCurrentAppSession();
-    async function initBackgroundSync() {
+    async function init() {
       try {
         await loadDeletedKeysFromFirestore();
+        // ابتدا کاتالوگ زنده سرور دریافت و کش می‌شود تا دیتای واقعی لود شود
         try {
           await apiFetchWithFallback('/api/public/catalog');
         } catch (catErr) {
@@ -82,15 +82,16 @@ export function App() {
         await syncFromFirestore();
       } catch (err) {
         console.error('Failed to initialize app data:', err);
+      } finally {
+        setIsLoading(false);
       }
     }
-    initBackgroundSync();
+    init();
   }, []);
 
   return (
     <AppErrorBoundary>
       <SecurityProtection />
-      <PWAInstallPopup />
       <PagePreloader isVisible={isLoading} />
       {!isLoading && <HomePage />}
     </AppErrorBoundary>
