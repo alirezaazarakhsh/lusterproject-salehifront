@@ -373,15 +373,15 @@ export const detectRouteFromLocation = (): AppRoute => {
   if (
     pathname === '/admin' ||
     pathname.startsWith('/admin/') ||
+    pathname.endsWith('/admin') ||
+    pathname.includes('/admin') ||
     hash === '#admin' ||
     hash === '#/admin' ||
-    hash.startsWith('#admin/') ||
-    hash.startsWith('#/admin/') ||
-    search.includes('page=admin')
+    hash.startsWith('#admin') ||
+    hash.startsWith('#/admin') ||
+    hash.includes('admin') ||
+    search.includes('admin')
   ) {
-    return 'admin';
-  }
-  if (pathname.endsWith('/admin')) {
     return 'admin';
   }
   if (

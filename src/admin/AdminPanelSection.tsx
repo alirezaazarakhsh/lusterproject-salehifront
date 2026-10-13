@@ -1817,6 +1817,20 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
       showNotice('error', 'عنوان و اسلاگ دسته‌بندی الزامی است.');
       return;
     }
+
+    if (categoryForm.showOnHome !== false) {
+      const activeHomeCount = categoriesList.filter(
+        (c) => c.id !== editingCategoryId && c.showOnHome !== false
+      ).length;
+      if (activeHomeCount >= 4) {
+        showNotice(
+          'error',
+          'حداکثر ۴ دسته‌بندی می‌توانید برای نمایش در صفحه اصلی انتخاب کنید. بیشتر از ۴ دسته‌بندی مجاز نیست.'
+        );
+        return;
+      }
+    }
+
     try {
       if (editingCategoryId) {
         await authFetch(`/api/admin/categories/${editingCategoryId}`, {
@@ -3998,12 +4012,25 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                   {/* ۶. تیک قرارگیری در صفحه اصلی (فقط تو صفحه اصلی آیکون نمایش داده میشه) */}
                   <div className="space-y-1.5 flex flex-col justify-end">
                     <label
-                      onClick={() =>
+                      onClick={() => {
+                        const isCurrentlyOn = categoryForm.showOnHome !== false;
+                        if (!isCurrentlyOn) {
+                          const activeHomeCount = categoriesList.filter(
+                            (c) => c.id !== editingCategoryId && c.showOnHome !== false
+                          ).length;
+                          if (activeHomeCount >= 4) {
+                            showNotice(
+                              'error',
+                              'حداکثر ۴ دسته‌بندی می‌توانید برای نمایش در صفحه اصلی انتخاب کنید. امکان تیک زدن بیش از ۴ دسته‌بندی وجود ندارد.'
+                            );
+                            return;
+                          }
+                        }
                         setCategoryForm((prev) => ({
                           ...prev,
-                          showOnHome: !prev.showOnHome,
-                        }))
-                      }
+                          showOnHome: !isCurrentlyOn,
+                        }));
+                      }}
                       className={`h-11 px-4 rounded-xl border flex items-center justify-between gap-3 cursor-pointer select-none transition-all ${
                         categoryForm.showOnHome !== false
                           ? 'bg-[#1a1814] text-white border-[#b59766] shadow-2xs'
@@ -4018,7 +4045,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                               : 'text-transparent'
                           }`}
                         />
-                        <span>نمایش این دسته‌بندی در صفحه اصلی</span>
+                        <span>نمایش این دسته‌بندی در صفحه اصلی (حداکثر ۴ تا)</span>
                       </div>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                         categoryForm.showOnHome !== false ? 'bg-[#b59766] text-white' : 'bg-gray-200 text-gray-700'
@@ -4031,7 +4058,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
 
                 <div className="pt-2 flex items-center justify-between border-t border-[#efefef]">
                   <div className="text-xs text-[#666] flex items-center gap-2">
-                    <span>💡 آیکون متنی ثبت‌شده فقط در کارت‌های صفحه اصلی نمایش داده می‌شود.</span>
+                    <span>💡 حداکثر ۴ دسته‌بندی می‌توانند تیک نمایش در صفحه اصلی داشته باشند.</span>
                   </div>
 
                   <button
@@ -4054,7 +4081,7 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                     دسته‌بندی‌های ثبت‌شده در دیتابیس ({categoriesList.length.toLocaleString('fa-IR')})
                   </h3>
                   <span className="text-xs text-[#8c6f41] bg-[#fbf8f2] px-3 py-1 rounded-lg border border-[#edd9be] font-bold">
-                    {categoriesList.filter((c) => c.showOnHome !== false).length.toLocaleString('fa-IR')} دسته‌بندی فعال در صفحه اصلی
+                    {categoriesList.filter((c) => c.showOnHome !== false).length.toLocaleString('fa-IR')} از ۴ دسته‌بندی فعال در صفحه اصلی
                   </span>
                 </div>
 
@@ -4095,6 +4122,50 @@ export const AdminPanelSection: React.FC<AdminPanelSectionProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!isShownHome) {
+                                const activeHomeCount = categoriesList.filter(
+                                  (c) => c.id !== cat.id && c.showOnHome !== false
+                                ).length;
+                                if (activeHomeCount >= 4) {
+                                  showNotice(
+                                    'error',
+                                    'حداکثر ۴ دسته‌بندی می‌توانید برای نمایش در صفحه اصلی انتخاب کنید. امکان تیک زدن بیش از ۴ دسته‌بندی وجود ندارد.'
+                                  );
+                                  return;
+                                }
+                              }
+                              try {
+                                await authFetch(`/api/admin/categories/${cat.id}`, {
+                                  method: 'PUT',
+                                  body: JSON.stringify({ ...cat, showOnHome: !isShownHome }),
+                                });
+                                showNotice(
+                                  'success',
+                                  !isShownHome
+                                    ? `دسته‌بندی «${cat.title}» در صفحه اصلی فعال شد.`
+                                    : `دسته‌بندی «${cat.title}» از صفحه اصلی غیرفعال شد.`
+                                );
+                                await loadAllAdminData();
+                                onCatalogUpdated?.();
+                                window.dispatchEvent(new CustomEvent('app-catalog-updated'));
+                              } catch (err: any) {
+                                showNotice('error', err?.message || 'خطا در تغییر وضعیت دسته‌بندی');
+                              }
+                            }}
+                            className={`h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                              isShownHome
+                                ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+                            }`}
+                            title={isShownHome ? 'غیرفعال‌سازی از صفحه اصلی' : 'فعال‌سازی در صفحه اصلی'}
+                          >
+                            <Check className={`w-3.5 h-3.5 ${isShownHome ? 'text-emerald-600' : 'text-gray-400'}`} />
+                            <span>{isShownHome ? 'فعال در صفحه اصلی' : 'غیرفعال'}</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => {

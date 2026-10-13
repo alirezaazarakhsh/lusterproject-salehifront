@@ -69,6 +69,67 @@ import {
   AppToast,
 } from '../components/InteractiveModals';
 
+class AdminErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('AdminErrorBoundary caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div dir="rtl" className="min-h-screen w-full bg-[#121212] text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+          <div className="w-16 h-16 rounded-2xl bg-[#fee2e2]/10 border border-[#fee2e2]/20 flex items-center justify-center text-[#ef4444] mb-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8">
+              <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold mb-2">بازخوانی پنل مدیریت دیتابیس</h2>
+          <p className="text-xs text-[#aaa] max-w-md mb-6 leading-relaxed">
+            در راه اندازی پنل مدیریت خطایی رخ داد. جهت باز کردن مجدد پنل مدیریت روی دکمه زیر کلیک کنید.
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.reload();
+              }}
+              className="px-5 py-2.5 rounded-xl bg-[#b59766] hover:bg-[#9e8253] text-white text-xs font-bold cursor-pointer transition-colors"
+            >
+              تلاش مجدد و بارگذاری پنل
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem('salehi_admin_session_token');
+                localStorage.removeItem('salehi_admin_session_user');
+                this.setState({ hasError: false, error: null });
+                window.location.href = '/admin';
+              }}
+              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer transition-colors"
+            >
+              ورود مجدد به پنل مدیریت
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 /**
  * کامپوننت صفحه اصلی (HomePage) و صفحه قوانین و مقررات (/rule)
  * با هدر و فوتر و سبد خرید یکپارچه در دسکتاپ و موبایل
@@ -232,6 +293,17 @@ export const HomePage: React.FC = () => {
           navigateToRoute('not-found');
           return;
         }
+        if (
+          lowerHref === '#admin' ||
+          lowerHref === '#/admin' ||
+          lowerHref.startsWith('#admin/') ||
+          lowerHref.startsWith('#/admin/')
+        ) {
+          e.preventDefault();
+          setCurrentRoute('admin');
+          navigateToRoute('admin', lowerHref);
+          return;
+        }
         return;
       }
 
@@ -240,6 +312,14 @@ export const HomePage: React.FC = () => {
           lowerHref.length > 1 && lowerHref.endsWith('/')
             ? lowerHref.slice(0, -1)
             : lowerHref;
+
+        if (cleanPath === '/admin' || cleanPath.startsWith('/admin/')) {
+          e.preventDefault();
+          setCurrentRoute('admin');
+          navigateToRoute('admin');
+          return;
+        }
+
         if (
           cleanPath === '/500' ||
           cleanPath === '/server-error' ||
@@ -1113,7 +1193,9 @@ export const HomePage: React.FC = () => {
         />
       ) : currentRoute === 'admin' ? (
         /* محتوای پنل مدیریت گرافیکی (/admin) متصل به PostgreSQL و Express */
-        <AdminPanelSection onCatalogUpdated={fetchLiveCatalogFromDb} />
+        <AdminErrorBoundary>
+          <AdminPanelSection onCatalogUpdated={fetchLiveCatalogFromDb} />
+        </AdminErrorBoundary>
       ) : currentRoute === 'product' ? (
         /* محتوای میانی صفحه محصولات و دسته‌بندی‌ها (/product و /product/categories/:slug) */
         <ProductContentSection
