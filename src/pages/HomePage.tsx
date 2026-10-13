@@ -89,7 +89,11 @@ class AdminErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div dir="rtl" className="min-h-screen w-full bg-[#121212] text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div
+          dir="rtl"
+          style={{ fontFamily: "'IRANSansX Pro', 'iransansx pro', 'IRANSansX', 'IranSansX', sans-serif" }}
+          className="min-h-screen w-full bg-[#121212] text-white flex flex-col items-center justify-center p-6 text-center"
+        >
           <div className="w-16 h-16 rounded-2xl bg-[#fee2e2]/10 border border-[#fee2e2]/20 flex items-center justify-center text-[#ef4444] mb-4">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8">
               <path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

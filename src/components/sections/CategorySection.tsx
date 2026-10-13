@@ -127,20 +127,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
       ? categories
       : PRODUCT_CATEGORIES;
 
-  // حذف گزینه «کلیه دسته‌بندی‌ها» و فیلتر تیک «نمایش در صفحه اصلی» (showOnHome !== false)
+  // فیلتر دسته‌بندی‌هایی که تیک نمایش در صفحه اصلی دارند (حداکثر ۴ دسته‌بندی)
   const homeAllowedCategories = rawCategories.filter(
     (c) => !isAllCategoryItem(c) && (c.showOnHome === undefined || c.showOnHome === true)
   );
 
-  const baseCategories = PRODUCT_CATEGORIES.filter(
-    (c) => !isAllCategoryItem(c) && (c.showOnHome === undefined || c.showOnHome === true)
-  );
-  const mergedCategories = [
-    ...homeAllowedCategories,
-    ...baseCategories.filter((bc) => !homeAllowedCategories.some((fc) => fc.slug === bc.slug)),
-  ];
-
-  const displayCategories = mergedCategories;
+  const displayCategories = homeAllowedCategories.length > 0
+    ? homeAllowedCategories.slice(0, 4)
+    : PRODUCT_CATEGORIES.filter((c) => !isAllCategoryItem(c)).slice(0, 4);
   const [activeCategoryDot, setActiveCategoryDot] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
