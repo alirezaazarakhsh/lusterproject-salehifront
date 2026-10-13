@@ -2156,7 +2156,11 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
         </div>
 
         {/* ==================== ۳. بخش «لوستر های استفاده شده در این پروژه» (در صورت عدم انتخاب لوستر، این ویجت کلاً هیدن می‌شود) ==================== */}
-        {Boolean(projectChandeliers && projectChandeliers.length > 0) && (
+        {Boolean(
+          projectChandeliers &&
+          projectChandeliers.length > 0 &&
+          projectChandeliers.some((ch: any) => ch && (ch.name || ch.title || ch.code))
+        ) && (
           <>
             {/* خط جداکننده افقی */}
             <div className="border-t border-[#ececec] my-8 sm:my-11" />

@@ -391,45 +391,55 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
               {currentProject.description}
             </p>
 
-            <h4 className="text-[14px] font-bold text-[#222222] mb-3">
-              لوستر های استفاده شده :
-            </h4>
+            {Boolean(
+              currentProject.usedProducts &&
+              currentProject.usedProducts.length > 0 &&
+              currentProject.usedProducts.some(
+                (up) => up && up.name && up.name.trim() && up.productId !== 'none'
+              )
+            ) && (
+              <>
+                <h4 className="text-[14px] font-bold text-[#222222] mb-3">
+                  لوستر های استفاده شده :
+                </h4>
 
-            {/* لیست ۲ محصول استفاده شده در پروژه */}
-            <div className="space-y-3 pt-1">
-              {currentProject.usedProducts.map((up) => {
-                const linkedProduct =
-                  liveProducts.find((p) => p.id === up.productId) ||
-                  liveProducts[2] ||
-                  liveProducts[0];
+                {/* لیست محصولات استفاده شده در پروژه */}
+                <div className="space-y-3 pt-1">
+                  {currentProject.usedProducts.map((up) => {
+                    const linkedProduct =
+                      liveProducts.find((p) => p.id === up.productId) ||
+                      liveProducts[2] ||
+                      liveProducts[0];
 
-                return (
-                  <div
-                    key={up.id}
-                    className="flex flex-wrap items-center justify-between gap-2 py-1 text-xs sm:text-[13px]"
-                  >
-                    <div className="flex items-center gap-2.5 font-semibold text-[#222222]">
-                      <CategoryStarSeal size={24} />
-                      <span>{up.name}</span>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs">
-                      <span className="font-bold text-[#222222] tabular-nums">
-                        {up.price}
-                      </span>
-                      <span className="text-[#dddddd]">|</span>
-                      <button
-                        type="button"
-                        onClick={() => onOpenProductModal(linkedProduct)}
-                        className="text-[#b59766] hover:underline font-medium cursor-pointer whitespace-nowrap"
+                    return (
+                      <div
+                        key={up.id}
+                        className="flex flex-wrap items-center justify-between gap-2 py-1 text-xs sm:text-[13px]"
                       >
-                        مشاهده محصول
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                        <div className="flex items-center gap-2.5 font-semibold text-[#222222]">
+                          <CategoryStarSeal size={24} />
+                          <span>{up.name}</span>
+                        </div>
+
+                        <div className="flex items-center gap-3 text-xs">
+                          <span className="font-bold text-[#222222] tabular-nums">
+                            {up.price}
+                          </span>
+                          <span className="text-[#dddddd]">|</span>
+                          <button
+                            type="button"
+                            onClick={() => onOpenProductModal(linkedProduct)}
+                            className="text-[#b59766] hover:underline font-medium cursor-pointer whitespace-nowrap"
+                          >
+                            مشاهده محصول
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* دکمه اطلاعات بیشتر */}
@@ -442,9 +452,9 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   return;
                 }
                 const firstUsedProductId =
-                  currentProject.usedProducts[0]?.productId;
+                  currentProject.usedProducts?.[0]?.productId;
                 const targetProduct =
-                  liveProducts.find((p) => p.id === firstUsedProductId) ||
+                  (firstUsedProductId && liveProducts.find((p) => p.id === firstUsedProductId)) ||
                   liveProducts[0];
                 onOpenProductModal(targetProduct);
               }}

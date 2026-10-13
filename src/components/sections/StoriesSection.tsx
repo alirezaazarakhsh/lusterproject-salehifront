@@ -116,7 +116,13 @@ export const StoriesSection: React.FC<StoriesSectionProps> = ({
   };
 
   return (
-    <section className="w-full max-w-[1800px] mx-auto px-3 sm:px-8 lg:px-14 xl:px-20 pt-4 sm:pt-6 pb-4 sm:pb-5">
+    <section
+      className="w-full max-w-[1800px] mx-auto px-3 sm:px-8 lg:px-14 xl:px-20 pt-7 pb-8"
+      style={{
+        paddingTop: 'calc(var(--spacing) * 7)',
+        paddingBottom: 'calc(var(--spacing) * 8)',
+      }}
+    >
       <div className="relative flex items-center justify-between w-full gap-2">
         {/* دکمه فلش سمت راست دسکتاپ (بدون بک‌گراند گرد - فقط آیکون خالی) */}
         {stories.length > 10 && (

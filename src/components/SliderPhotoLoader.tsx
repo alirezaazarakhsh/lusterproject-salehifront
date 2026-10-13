@@ -72,7 +72,7 @@ export const SliderPhotoLoader: React.FC<SliderPhotoLoaderProps> = ({
 }) => {
   return (
     <div
-      className={`absolute inset-0 w-full h-full bg-[#f6f6f6] flex flex-col items-center justify-center select-none pointer-events-none z-0 px-4 text-center overflow-hidden transition-opacity duration-500 ${className}`}
+      className={`absolute inset-0 w-full h-full bg-[#fafafa] border border-[#e2e2e2] flex flex-col items-center justify-center select-none pointer-events-none z-0 px-4 text-center overflow-hidden transition-opacity duration-500 shadow-none ${className}`}
       dir="rtl"
     >
       <div className="flex flex-col items-center justify-center max-w-[92%] sm:max-w-[460px]">
@@ -84,18 +84,19 @@ export const SliderPhotoLoader: React.FC<SliderPhotoLoaderProps> = ({
           />
         </div>
 
-        {/* ۲. عنوان انگلیسی Chandelier */}
+        {/* ۲. عنوان انگلیسی Chandelier (با فونت Yekan Bakh) */}
         <span
-          className={`text-[#b8986c] font-serif font-medium tracking-[0.22em] uppercase mt-3 sm:mt-4 ${
+          className={`text-[#b8986c] font-medium tracking-[0.22em] uppercase mt-3 sm:mt-4 ${
             compact ? 'text-[11px]' : 'text-[12px] sm:text-[14px] lg:text-[15px]'
           }`}
+          style={{ fontFamily: "'Yekan Bakh Pro', 'Yekan Bakh', sans-serif" }}
         >
           Chandelier
         </span>
 
-        {/* ۳. نام برند AKBAR SALEHI با پترن اسلیمی طلایی در دو طرف (جای سمت راست و چپ طبق درخواست دقیقاً جابه‌جا شد) */}
+        {/* ۳. نام برند AKBAR SALEHI با فونت Hiragino و پترن اسلیمی طلایی در دو طرف */}
         <div className="flex items-center justify-center gap-2 sm:gap-3.5 my-1 sm:my-1.5 w-full">
-          {/* پترن سمت راست در RTL (دارای مقیاس معکوس -scale-x-100) */}
+          {/* پترن سمت راست در RTL */}
           <ExactPalmetteVector
             strokeColor="#cbb592"
             strokeWidth={1.5}
@@ -104,15 +105,16 @@ export const SliderPhotoLoader: React.FC<SliderPhotoLoaderProps> = ({
             }`}
           />
           <h2
-            className={`text-[#222222] font-serif font-bold tracking-[0.14em] uppercase whitespace-nowrap ${
+            className={`text-[#222222] font-normal tracking-[0.14em] uppercase whitespace-nowrap ${
               compact
                 ? 'text-base'
                 : 'text-lg xs:text-xl sm:text-2xl lg:text-[25px]'
             }`}
+            style={{ fontFamily: "'Hiragino Mincho ProN', 'Hiragino', serif" }}
           >
             AKBAR SALEHI
           </h2>
-          {/* پترن سمت چپ در RTL (بدون معکوس شدن) */}
+          {/* پترن سمت چپ در RTL */}
           <ExactPalmetteVector
             strokeColor="#cbb592"
             strokeWidth={1.5}
@@ -122,11 +124,12 @@ export const SliderPhotoLoader: React.FC<SliderPhotoLoaderProps> = ({
           />
         </div>
 
-        {/* ۴. متن فارسی در حال بارگذاری تصویر */}
+        {/* ۴. متن فارسی در حال بارگذاری تصویر (با فونت IRANSansX Pro) */}
         <p
           className={`text-[#666666] font-medium tracking-normal mt-1 sm:mt-1.5 ${
             compact ? 'text-[10.5px]' : 'text-[11.5px] sm:text-[13px]'
           }`}
+          style={{ fontFamily: "'IRANSansX', 'IranSansX', 'IRANSansXFaNum', sans-serif" }}
         >
           در حال بارگذاری تصویر
         </p>

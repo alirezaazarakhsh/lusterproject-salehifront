@@ -10,6 +10,7 @@ import {
   ChandelierProduct,
 } from '../../data/chandelierData';
 import { navigateToProductCategory } from '../../utils/navigation';
+import { DynamicCategoryIcon } from '../DynamicCategoryIcon';
 
 interface CategorySectionProps {
   selectedCategory: string;
@@ -126,18 +127,20 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
       ? categories
       : PRODUCT_CATEGORIES;
 
-  // حذف گزینه «کلیه دسته‌بندی‌ها» و اطمینان از نمایش ۴ دسته اول
-  const filteredCategories = rawCategories.filter((c) => !isAllCategoryItem(c));
+  // حذف گزینه «کلیه دسته‌بندی‌ها» و فیلتر تیک «نمایش در صفحه اصلی» (showOnHome !== false)
+  const homeAllowedCategories = rawCategories.filter(
+    (c) => !isAllCategoryItem(c) && (c.showOnHome === undefined || c.showOnHome === true)
+  );
 
-  // در صورت نیاز، دسته‌بندی‌های پیش‌فرض را برای تکمیل ۴ دسته‌بندی اضافه می‌کنیم
-  const baseCategories = PRODUCT_CATEGORIES.filter((c) => !isAllCategoryItem(c));
+  const baseCategories = PRODUCT_CATEGORIES.filter(
+    (c) => !isAllCategoryItem(c) && (c.showOnHome === undefined || c.showOnHome === true)
+  );
   const mergedCategories = [
-    ...filteredCategories,
-    ...baseCategories.filter((bc) => !filteredCategories.some((fc) => fc.slug === bc.slug)),
+    ...homeAllowedCategories,
+    ...baseCategories.filter((bc) => !homeAllowedCategories.some((fc) => fc.slug === bc.slug)),
   ];
 
-  // دقیقاً ۴ تا از اولین دسته‌بندی‌ها (به جز کلیه دسته‌بندی‌ها)
-  const displayCategories = mergedCategories.slice(0, 4);
+  const displayCategories = mergedCategories;
   const [activeCategoryDot, setActiveCategoryDot] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -224,27 +227,30 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                 href={`/product/categories/${catSlug}`}
                 onClick={(e) => {
                   onSelectCategory(catFilterKey);
-                  scrollToCategory(idx);
                   navigateToProductCategory(catSlug, e);
                 }}
-                className={`group shrink-0 snap-center w-[78vw] max-w-[340px] flex items-center justify-between gap-4 px-5 py-5 rounded-[22px] bg-white border transition-all duration-300 cursor-pointer text-right shadow-[0_6px_25px_rgba(0,0,0,0.03)] ${
+                className={`group shrink-0 snap-center w-[78vw] max-w-[340px] flex items-center justify-between gap-4 px-5 py-5 rounded-[17px] bg-white border transition-all duration-300 cursor-pointer text-right shadow-[0_6px_25px_rgba(0,0,0,0.03)] ${
                   isActive || isDotActive
                     ? 'border-[#b08c57] ring-1 ring-[#b08c57]/20 shadow-[0_8px_30px_rgba(176,140,87,0.1)]'
                     : 'border-[#e8e8e8] hover:border-[#d5c5a8]'
                 }`}
               >
-                {/* ۱. آیکون تیک وریفای طلایی (CategoryStarSeal) در سمت راست کارت در چیدمان RTL */}
-                <CategoryStarSeal
+                {/* ۱. آیکون دسته‌بندی در سمت راست کارت در چیدمان RTL */}
+                <DynamicCategoryIcon
+                  iconName={category.iconName}
                   size={44}
-                  className="shrink-0 group-hover:scale-105 transition-transform duration-300"
+                  className="shrink-0"
                 />
 
-                {/* ۲. عنوان دسته‌بندی در سمت چپ آیکون وریفای */}
+                {/* ۲. عنوان دسته‌بندی در سمت چپ آیکون */}
                 <div className="text-right flex-1 min-w-0">
-                  <h3 className="text-[16px] xs:text-[17px] font-black text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-snug">
+                  <h3 className="text-[17px] font-extrabold text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-snug">
                     {category.title}
                   </h3>
-                  <p className="text-[12px] text-[#7a7a7a] mt-1 font-bold">
+                  <p
+                    className="text-[12px] text-[#7a7a7a] font-bold"
+                    style={{ marginTop: 'calc(var(--spacing) * 1.9)' }}
+                  >
                     {getProductCountText(catSlug)}
                   </p>
                 </div>
@@ -307,16 +313,17 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   onSelectCategory(catFilterKey);
                   navigateToProductCategory(catSlug, e);
                 }}
-                className={`group flex items-center justify-between gap-4 px-6 py-6 rounded-[22px] bg-white/90 backdrop-blur-[2px] border transition-all duration-300 cursor-pointer text-right ${
+                className={`group flex items-center justify-between gap-4 px-6 py-6 rounded-[17px] bg-white/90 backdrop-blur-[2px] border transition-all duration-300 cursor-pointer text-right ${
                   isActive
                     ? 'border-[#b08c57] shadow-[0_10px_30px_rgba(176,140,87,0.12)] bg-white'
                     : 'border-[#ededed] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-[#d5c5a8]'
                 }`}
               >
-                {/* آیکون تیک وریفای طلایی در سمت راست در دسکتاپ */}
-                <CategoryStarSeal
+                {/* آیکون دسته‌بندی در سمت راست در دسکتاپ */}
+                <DynamicCategoryIcon
+                  iconName={category.iconName}
                   size={42}
-                  className="shrink-0 group-hover:scale-105 transition-transform duration-300"
+                  className="shrink-0"
                 />
 
                 {/* عنوان دسته‌بندی */}
@@ -324,7 +331,10 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                   <h3 className="text-[17px] font-bold text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-tight">
                     {category.title}
                   </h3>
-                  <p className="text-[12.5px] text-[#7a7a7a] mt-1.5 font-bold">
+                  <p
+                    className="text-[12.5px] text-[#7a7a7a] font-bold"
+                    style={{ marginTop: 'calc(var(--spacing) * 1.9)' }}
+                  >
                     {getProductCountText(catSlug)}
                   </p>
                 </div>

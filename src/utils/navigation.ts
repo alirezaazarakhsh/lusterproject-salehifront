@@ -214,6 +214,20 @@ export const getCurrentProductSlug = (): string | null => {
   return null;
 };
 
+export const scrollToTopImmediate = () => {
+  if (typeof window === 'undefined') return;
+  window.scrollTo(0, 0);
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+  });
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+  }, 50);
+  setTimeout(() => {
+    window.scrollTo(0, 0);
+  }, 150);
+};
+
 export const navigateToProductSlug = (
   slug: string | null,
   eventOrOptions?: { preventDefault?: () => void } | null
@@ -250,7 +264,7 @@ export const navigateToProductSlug = (
     window.dispatchEvent(
       new CustomEvent('app-product-slug-change', { detail: cleanSlug })
     );
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTopImmediate();
   }
 };
 
@@ -453,7 +467,7 @@ export const navigateToProjectSlug = (slug: string | null) => {
     window.dispatchEvent(
       new CustomEvent('app-project-slug-change', { detail: cleanSlug })
     );
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTopImmediate();
   }
 };
 
@@ -488,6 +502,8 @@ export const navigateToProductCategory = (
         : '#/product';
     }
 
+    scrollToTopImmediate();
+
     if (
       !wasAlreadyOnProduct ||
       !eventOrOptions?.skipRouteChangeIfAlreadyOnProduct
@@ -496,7 +512,6 @@ export const navigateToProductCategory = (
       window.dispatchEvent(
         new CustomEvent('app-route-change', { detail: 'product' })
       );
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     window.dispatchEvent(
@@ -649,7 +664,7 @@ export const navigateToRoute = (route: AppRoute, hashAnchor?: string) => {
       resolvedRoute === 'not-found' ||
       resolvedRoute === 'server-error'
     ) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTopImmediate();
     } else {
       setTimeout(() => {
         const el = document.querySelector(hashAnchor);

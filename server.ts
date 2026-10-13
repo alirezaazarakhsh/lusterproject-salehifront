@@ -320,6 +320,7 @@ async function startServer() {
             mainSettings,
             smsSettings,
             faqSettings,
+            ruleSettings,
           ] = await Promise.all([
             getAllCategories(),
             getAllProducts(),
@@ -333,6 +334,7 @@ async function startServer() {
             getMainSettings(),
             getSmsSettings(),
             getFaqSettings(),
+            getRuleSettings(),
           ]);
 
           await saveAllDataToFirestore({
@@ -348,6 +350,7 @@ async function startServer() {
             mainSettings,
             smsSettings,
             faqSettings,
+            ruleSettings,
           });
           console.log('✅ Full database synchronized to Cloud Firestore successfully on startup.');
         } catch (syncErr) {
@@ -553,6 +556,7 @@ async function startServer() {
                 mainSettings,
                 smsSettings,
                 faqSettings,
+                ruleSettings,
               ] = await Promise.all([
                 getAllCategories(),
                 getAllProducts(),
@@ -566,6 +570,7 @@ async function startServer() {
                 getMainSettings(),
                 getSmsSettings(),
                 getFaqSettings(),
+                getRuleSettings(),
               ]);
 
               await saveAllDataToFirestore({
@@ -581,6 +586,7 @@ async function startServer() {
                 mainSettings,
                 smsSettings,
                 faqSettings,
+                ruleSettings,
               });
               console.log('✅ Real-time Firestore sync completed after admin mutation:', req.path);
             } catch (syncErr) {
@@ -2569,6 +2575,22 @@ async function startServer() {
     }
   );
 
+  app.post(
+    '/api/admin/settings/faq',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveFaqSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save faq settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات سوالات متداول صفحات' });
+      }
+    }
+  );
+
   // مدیریت تنظیمات صفحه قوانین و شرایط تحویل (Rule & Delivery Settings)
   app.get('/api/public/settings/rule', async (_req, res) => {
     try {
@@ -2599,6 +2621,22 @@ async function startServer() {
   );
 
   app.put(
+    '/api/admin/settings/rule',
+    requireAuth,
+    async (req: AuthRequest, res) => {
+      try {
+        const updated = await saveRuleSettings(req.body || {});
+        res.json(updated);
+      } catch (error: any) {
+        console.error('Failed to save rule settings:', error);
+        res
+          .status(500)
+          .json({ error: error.message || 'خطا در ذخیره تنظیمات صفحه قوانین و شرایط تحویل' });
+      }
+    }
+  );
+
+  app.post(
     '/api/admin/settings/rule',
     requireAuth,
     async (req: AuthRequest, res) => {
@@ -2684,7 +2722,10 @@ async function startServer() {
   if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: false,
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);

@@ -225,7 +225,7 @@ const UkFlagIcon: React.FC<{ className?: string }> = ({
  * آیکون سبد خرید دقیقاً مطابق فایل bag-2.png ارسالی (کیف خرید با دسته نیم‌دایره و دو نقطه در داخل)
  */
 const HeaderBagIcon: React.FC<{ className?: string }> = ({
-  className = 'w-[22px] h-[22px]',
+  className = 'w-[24px] h-[24px]',
 }) => (
   <svg
     viewBox="0 0 24 24"
@@ -236,14 +236,14 @@ const HeaderBagIcon: React.FC<{ className?: string }> = ({
     <path
       d="M8.3 8.2V6.9C8.3 4.75 9.96 3 12 3C14.04 3 15.7 4.75 15.7 6.9V8.2"
       stroke="currentColor"
-      strokeWidth="1.9"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <path
       d="M9.1 21H14.9C18.45 21 19.15 19.55 19.4 17.7L20.05 12.4C20.3 9.95 19.65 8.2 15.75 8.2H8.25C4.35 8.2 3.7 9.95 3.95 12.4L4.6 17.7C4.85 19.55 5.55 21 9.1 21Z"
       stroke="currentColor"
-      strokeWidth="1.9"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -256,7 +256,7 @@ const HeaderBagIcon: React.FC<{ className?: string }> = ({
  * آیکون حساب کاربری دقیقاً مطابق فایل frame.png ارسالی (دایره بالا + بیضی بسته در پایین)
  */
 const HeaderUserIcon: React.FC<{ className?: string }> = ({
-  className = 'w-[22px] h-[22px]',
+  className = 'w-[24px] h-[24px]',
 }) => (
   <svg
     viewBox="0 0 24 24"
@@ -269,7 +269,7 @@ const HeaderUserIcon: React.FC<{ className?: string }> = ({
       cy="7.8"
       r="4.1"
       stroke="currentColor"
-      strokeWidth="1.9"
+      strokeWidth="1.5"
     />
     <ellipse
       cx="12"
@@ -277,7 +277,7 @@ const HeaderUserIcon: React.FC<{ className?: string }> = ({
       rx="6.3"
       ry="3.6"
       stroke="currentColor"
-      strokeWidth="1.9"
+      strokeWidth="1.5"
     />
   </svg>
 );
@@ -700,13 +700,75 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   const isErrorPage =
     activeRoute === 'not-found' || activeRoute === 'server-error';
 
+  // کنترل چسبان بودن هدر در دسکتاپ حین اسکرول رو به پایین و مخفی شدن با اسکرول رو به بالا طبق درخواست
+  const [isHeaderSticky, setIsHeaderSticky] = useState(false);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // در موبایل و تبلت (< 1024px) هدر کاملاً ثابت است و چسبان/مخفی نمی‌شود
+      if (window.innerWidth < 1024) {
+        if (isHeaderSticky || isHeaderHidden) {
+          setIsHeaderSticky(false);
+          setIsHeaderHidden(false);
+        }
+        return;
+      }
+
+      const currentScrollY = window.scrollY || document.documentElement.scrollTop;
+      const diff = currentScrollY - lastScrollYRef.current;
+
+      // در بالای صفحه: هدر در موقعیت عادی
+      if (currentScrollY <= 20) {
+        setIsHeaderSticky(false);
+        setIsHeaderHidden(false);
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      // وقتی صفحه اسکرول شده
+      if (currentScrollY > 60) {
+        setIsHeaderSticky(true);
+
+        // اسکرول رو به پایین: چسبان و نمایان (translate-y-0)
+        if (diff > 4) {
+          setIsHeaderHidden(false);
+        }
+        // اسکرول رو به بالا: مخفی شود
+        else if (diff < -4) {
+          setIsHeaderHidden(true);
+        }
+      }
+
+      lastScrollYRef.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isHeaderSticky, isHeaderHidden]);
+
   return (
-    <header
-      ref={headerRef}
-      className={`w-full bg-white border-b border-[#efefef] relative z-40 ${
-        isErrorPage ? 'hidden md:block' : ''
-      }`}
-    >
+    <>
+      {/* پلیس‌هولدر برای جلوگیری از پرش چیدمان اسلایدر هیرو حین فیکس شدن هدر دسکتاپ */}
+      {isHeaderSticky && (
+        <div className="hidden lg:block h-22 w-full pointer-events-none" />
+      )}
+
+      <header
+        ref={headerRef}
+        className={`w-full z-50 transition-all duration-300 ease-in-out ${
+          isErrorPage ? 'hidden md:block' : ''
+        } ${
+          isHeaderSticky
+            ? `lg:fixed lg:top-0 lg:inset-x-0 ${
+                isHeaderHidden
+                  ? 'lg:-translate-y-full lg:opacity-0 lg:pointer-events-none bg-transparent shadow-none border-transparent'
+                  : 'lg:translate-y-0 lg:opacity-100 bg-white border-b border-[#efefef] lg:shadow-[0_4px_25px_rgba(0,0,0,0.06)]'
+              }`
+            : 'relative bg-white border-b border-[#efefef]'
+        }`}
+      >
       {/* هدر مخصوص موبایل و تبلت (< lg) - در صفحات ۴۰۴ و خطای سرور مخفی است */}
       {!isErrorPage && (
         <div className="lg:hidden w-full h-24 px-2 sm:px-4 flex items-center justify-between relative overflow-hidden bg-white">
@@ -735,7 +797,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               Chandelier
             </span>
             <span
-              className="text-[23px] sm:text-[29px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none"
+              className="text-[25px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none"
               style={{ fontFamily: "'Hiragino Mincho ProN', 'Hiragino', serif" }}
             >
               AKBAR SALEHI
@@ -960,7 +1022,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               totalCartCount > 0 ? 'px-3 gap-2.5' : 'w-12'
             } rounded-[9px] bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer`}
           >
-            <HeaderBagIcon className="w-[22px] h-[22px] shrink-0 transition-colors" />
+            <HeaderBagIcon className="w-[24px] h-[24px] shrink-0 transition-colors" />
             {totalCartCount > 0 && (
               <span className="min-w-[22px] h-[26px] px-1.5 rounded-[7px] bg-[#2b2b2b] text-white text-[13px] font-bold flex items-center justify-center leading-none tabular-nums">
                 {totalCartCount.toLocaleString('fa-IR')}
@@ -998,7 +1060,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               aria-label="حساب کاربری"
               className="w-12 h-12 rounded-[9px] bg-[#f4f4f4] hover:bg-[#b59766] text-[#292d32] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer"
             >
-              <HeaderUserIcon className="w-[22px] h-[22px] transition-colors" />
+              <HeaderUserIcon className="w-[24px] h-[24px] transition-colors" />
             </button>
 
             {isLoggedIn && openSubmenu === 'profile' && (
@@ -1237,7 +1299,7 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               <span className="text-[14px] sm:text-[15.5px] font-semibold tracking-[0.03em] text-[#b58d53] leading-none mb-1">
                 Chandelier
               </span>
-              <span className="font-brand-serif text-[23px] sm:text-[29px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none">
+              <span className="font-brand-serif text-[25px] tracking-[0.05em] text-[#2b2b2b] font-normal uppercase leading-none">
                 AKBAR SALEHI
               </span>
             </div>
@@ -1634,5 +1696,6 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
         </div>
       )}
     </header>
+    </>
   );
 };

@@ -53,8 +53,9 @@ import {
   getCurrentRoute,
   navigateToRoute,
   subscribeToRoute,
+  scrollToTopImmediate,
 } from '../utils/navigation';
-import { apiFetchWithFallback, loadLocalDb, INITIAL_MAIN_SETTINGS, INITIAL_FAQ_SETTINGS } from '../utils/localBackendFallback';
+import { apiFetchWithFallback, loadLocalDb, INITIAL_MAIN_SETTINGS, INITIAL_FAQ_SETTINGS, INITIAL_RULE_SETTINGS } from '../utils/localBackendFallback';
 import {
   ProductStudioModal,
   CustomProduct3DModal,
@@ -78,6 +79,10 @@ export const HomePage: React.FC = () => {
   );
   const [isPagePreloading, setIsPagePreloading] = useState<boolean>(true);
   const preloaderTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    scrollToTopImmediate();
+  }, [currentRoute]);
 
   const triggerPagePreloader = (durationMs = 1350) => {
     setIsPagePreloading(true);
@@ -526,6 +531,19 @@ export const HomePage: React.FC = () => {
     return INITIAL_FAQ_SETTINGS;
   });
 
+  const [ruleSettings, setRuleSettings] = useState<any>(() => {
+    try {
+      const local = loadLocalDb();
+      if (local && local.ruleSettings) {
+        return {
+          ...INITIAL_RULE_SETTINGS,
+          ...local.ruleSettings,
+        };
+      }
+    } catch {}
+    return INITIAL_RULE_SETTINGS;
+  });
+
   const fetchLiveCatalogFromDb = async () => {
     try {
       const data = await apiFetchWithFallback('/api/public/catalog');
@@ -564,6 +582,12 @@ export const HomePage: React.FC = () => {
         setFaqSettings((prev: any) => ({
           ...prev,
           ...data.faqSettings,
+        }));
+      }
+      if (data.ruleSettings) {
+        setRuleSettings((prev: any) => ({
+          ...prev,
+          ...data.ruleSettings,
         }));
       }
 
@@ -1061,7 +1085,7 @@ export const HomePage: React.FC = () => {
         />
       ) : currentRoute === 'rule' ? (
         /* محتوای میانی صفحه قوانین و مقررات (/rule) */
-        <RuleContentSection faqSettings={faqSettings} />
+        <RuleContentSection faqSettings={faqSettings} ruleSettings={ruleSettings} />
       ) : currentRoute === 'contact-us' ? (
         /* محتوای میانی صفحه تماس با ما (/contact-us) */
         <ContactUsContentSection

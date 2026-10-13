@@ -122,12 +122,18 @@ export const TransparentProductImage: React.FC<TransparentProductImageProps> = (
       loading={loading}
       decoding="async"
       referrerPolicy="no-referrer"
+      draggable={false}
+      data-protected-image="true"
+      onContextMenu={(e) => e.preventDefault()}
       onError={(e) => handleImgErrorFallback(e, getFallbackCdnUrl(src))}
       onLoad={() => setIsLoaded(true)}
       style={{
         filter: customHexColor ? 'none' : filterCss,
-      }}
-      className={`${className} transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-90'}`}
+        userSelect: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitUserDrag: 'none',
+      } as React.CSSProperties}
+      className={`${className} select-none transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-90'}`}
     />
   );
 };

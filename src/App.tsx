@@ -6,6 +6,7 @@ import { navigateToRoute } from './utils/navigation';
 import { syncFromFirestore, apiFetchWithFallback } from './utils/localBackendFallback';
 import { loadDeletedKeysFromFirestore } from './lib/firestoreSync';
 import { PagePreloader } from './components/PagePreloader';
+import { SecurityProtection } from './components/SecurityProtection';
 import { initTheme } from './utils/theme';
 
 interface AppErrorBoundaryState {
@@ -90,6 +91,7 @@ export function App() {
 
   return (
     <AppErrorBoundary>
+      <SecurityProtection />
       <PagePreloader isVisible={isLoading} />
       {!isLoading && <HomePage />}
     </AppErrorBoundary>

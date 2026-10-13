@@ -1,5 +1,5 @@
 import { asc, desc, eq, or } from 'drizzle-orm';
-import { db } from './index';
+import { db, executeWithRetry } from './index';
 import { ensureDefaultAdmin } from './users';
 import fs from 'fs';
 import path from 'path';
@@ -1133,136 +1133,169 @@ const INITIAL_ORDERS_SEED = [
 
 export async function ensureSeeded(): Promise<void> {
   if (seedPromise) {
-    return seedPromise;
+    try {
+      await seedPromise;
+      return;
+    } catch {
+      seedPromise = null;
+    }
   }
   seedPromise = (async () => {
     try {
       await ensureDefaultAdmin();
 
       // ۱. دسته‌بندی‌ها (فقط یک‌بار سید می‌شوند)
-      const categorySeedFlag = await db
-        .select()
-        .from(siteSettings)
-        .where(eq(siteSettings.settingKey, 'has_seeded_categories_v1'))
-        .limit(1);
+      const categorySeedFlag = await executeWithRetry(() =>
+        db
+          .select()
+          .from(siteSettings)
+          .where(eq(siteSettings.settingKey, 'has_seeded_categories_v1'))
+          .limit(1)
+      );
 
       if (categorySeedFlag.length === 0) {
-        const existingCategories = await db.select().from(categories);
+        const existingCategories = await executeWithRetry(() => db.select().from(categories));
         if (existingCategories.length === 0) {
-          await db
-            .insert(categories)
-            .values(INITIAL_CATEGORIES_SEED)
-            .onConflictDoNothing();
+          await executeWithRetry(() =>
+            db
+              .insert(categories)
+              .values(INITIAL_CATEGORIES_SEED)
+              .onConflictDoNothing()
+          );
         }
-        await db.insert(siteSettings).values({
-          settingKey: 'has_seeded_categories_v1',
-          settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
-        }).onConflictDoNothing();
+        await executeWithRetry(() =>
+          db.insert(siteSettings).values({
+            settingKey: 'has_seeded_categories_v1',
+            settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+          }).onConflictDoNothing()
+        );
       }
 
       // ۲. محصولات (فقط یک‌بار سید می‌شوند)
-      const productSeedFlag = await db
-        .select()
-        .from(siteSettings)
-        .where(eq(siteSettings.settingKey, 'has_seeded_products_v1'))
-        .limit(1);
+      const productSeedFlag = await executeWithRetry(() =>
+        db
+          .select()
+          .from(siteSettings)
+          .where(eq(siteSettings.settingKey, 'has_seeded_products_v1'))
+          .limit(1)
+      );
 
       if (productSeedFlag.length === 0) {
-        const existingProducts = await db.select().from(products);
+        const existingProducts = await executeWithRetry(() => db.select().from(products));
         if (existingProducts.length === 0) {
-          await db
-            .insert(products)
-            .values(INITIAL_PRODUCTS_SEED)
-            .onConflictDoNothing();
+          await executeWithRetry(() =>
+            db
+              .insert(products)
+              .values(INITIAL_PRODUCTS_SEED)
+              .onConflictDoNothing()
+          );
         }
-        await db.insert(siteSettings).values({
-          settingKey: 'has_seeded_products_v1',
-          settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
-        }).onConflictDoNothing();
+        await executeWithRetry(() =>
+          db.insert(siteSettings).values({
+            settingKey: 'has_seeded_products_v1',
+            settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+          }).onConflictDoNothing()
+        );
       }
 
       // ۳. پروژه‌های اجرایی (فقط یک‌بار برای همیشه سید می‌شوند)
-      const projectSeedFlag = await db
-        .select()
-        .from(siteSettings)
-        .where(eq(siteSettings.settingKey, 'has_seeded_projects_v2'))
-        .limit(1);
+      const projectSeedFlag = await executeWithRetry(() =>
+        db
+          .select()
+          .from(siteSettings)
+          .where(eq(siteSettings.settingKey, 'has_seeded_projects_v2'))
+          .limit(1)
+      );
 
       if (projectSeedFlag.length === 0) {
-        const existingProjects = await db.select().from(projects);
+        const existingProjects = await executeWithRetry(() => db.select().from(projects));
         if (existingProjects.length === 0) {
-          await db
-            .insert(projects)
-            .values(INITIAL_PROJECTS_SEED)
-            .onConflictDoNothing();
+          await executeWithRetry(() =>
+            db
+              .insert(projects)
+              .values(INITIAL_PROJECTS_SEED)
+              .onConflictDoNothing()
+          );
         }
-        await db.insert(siteSettings).values({
-          settingKey: 'has_seeded_projects_v2',
-          settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
-        }).onConflictDoNothing();
+        await executeWithRetry(() =>
+          db.insert(siteSettings).values({
+            settingKey: 'has_seeded_projects_v2',
+            settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+          }).onConflictDoNothing()
+        );
       }
 
       // ۴. استوری‌های بالای صفحه (تکمیل تمامی ۲۰ استوری در دیتابیس و به‌روزرسانی فیلدهای تایپ استوری)
-      const existingStories = await db.select().from(stories);
+      const existingStories = await executeWithRetry(() => db.select().from(stories));
       if (existingStories.length === 0) {
-        await db
-          .insert(stories)
-          .values(INITIAL_STORIES_SEED)
-          .onConflictDoNothing();
+        await executeWithRetry(() =>
+          db
+            .insert(stories)
+            .values(INITIAL_STORIES_SEED)
+            .onConflictDoNothing()
+        );
       } else {
         for (const seedSt of INITIAL_STORIES_SEED) {
           const matchRow = existingStories.find(
             (r) => r.storyKey === seedSt.storyKey
           );
           if (matchRow && !matchRow.thumbnailImage) {
-            await db
-              .update(stories)
-              .set({
-                storyType: seedSt.storyType,
-                thumbnailImage: seedSt.thumbnailImage,
-                mediaUrl: seedSt.mediaUrl,
-                videoUrl: seedSt.videoUrl,
-                linkedProductKey: seedSt.linkedProductKey,
-              })
-              .where(eq(stories.id, matchRow.id));
+            await executeWithRetry(() =>
+              db
+                .update(stories)
+                .set({
+                  storyType: seedSt.storyType,
+                  thumbnailImage: seedSt.thumbnailImage,
+                  mediaUrl: seedSt.mediaUrl,
+                  videoUrl: seedSt.videoUrl,
+                  linkedProductKey: seedSt.linkedProductKey,
+                })
+                .where(eq(stories.id, matchRow.id))
+            );
           }
         }
       }
 
       // ۵. مقالات مجله لوستر (فقط یک‌بار سید می‌شوند)
-      const articleSeedFlag = await db
-        .select()
-        .from(siteSettings)
-        .where(eq(siteSettings.settingKey, 'has_seeded_articles_v1'))
-        .limit(1);
+      const articleSeedFlag = await executeWithRetry(() =>
+        db
+          .select()
+          .from(siteSettings)
+          .where(eq(siteSettings.settingKey, 'has_seeded_articles_v1'))
+          .limit(1)
+      );
 
       if (articleSeedFlag.length === 0) {
-        const existingArticles = await db.select().from(articles);
+        const existingArticles = await executeWithRetry(() => db.select().from(articles));
         if (existingArticles.length === 0) {
-          await db
-            .insert(articles)
-            .values(INITIAL_ARTICLES_SEED)
-            .onConflictDoNothing();
+          await executeWithRetry(() =>
+            db
+              .insert(articles)
+              .values(INITIAL_ARTICLES_SEED)
+              .onConflictDoNothing()
+          );
         }
-        await db.insert(siteSettings).values({
-          settingKey: 'has_seeded_articles_v1',
-          settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
-        }).onConflictDoNothing();
+        await executeWithRetry(() =>
+          db.insert(siteSettings).values({
+            settingKey: 'has_seeded_articles_v1',
+            settingValueJson: JSON.stringify({ seeded: true, at: new Date() }),
+          }).onConflictDoNothing()
+        );
       }
 
       // ۶. پیام‌های تماس با ما اولیه
-      const existingMessages = await db.select().from(contactMessages);
+      const existingMessages = await executeWithRetry(() => db.select().from(contactMessages));
       if (existingMessages.length === 0) {
-        await db.insert(contactMessages).values(INITIAL_MESSAGES_SEED);
+        await executeWithRetry(() => db.insert(contactMessages).values(INITIAL_MESSAGES_SEED));
       }
 
       // ۷. سفارشات اولیه
-      const existingOrders = await db.select().from(orders);
+      const existingOrders = await executeWithRetry(() => db.select().from(orders));
       if (existingOrders.length === 0) {
-        await db.insert(orders).values(INITIAL_ORDERS_SEED);
+        await executeWithRetry(() => db.insert(orders).values(INITIAL_ORDERS_SEED));
       }
     } catch (error) {
-      console.error('Seed check error:', error);
+      console.warn('Seed check notice (will retry on next request):', error);
       seedPromise = null;
     }
   })();
@@ -1296,10 +1329,12 @@ export function isServerItemDeleted(item: any): boolean {
 export async function getAllCategories() {
   try {
     await ensureSeeded();
-    const rows = await db
-      .select()
-      .from(categories)
-      .orderBy(asc(categories.sortOrder), asc(categories.id));
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(categories)
+        .orderBy(asc(categories.sortOrder), asc(categories.id))
+    );
     return rows.filter((cat) => !isServerItemDeleted(cat));
   } catch (error) {
     console.warn('Database query notice in getAllCategories, returning fallback seed data:', error);
@@ -1370,7 +1405,9 @@ export async function deleteCategoryById(id: number) {
 export async function getAllProducts() {
   try {
     await ensureSeeded();
-    const rows = await db.select().from(products).orderBy(asc(products.id));
+    const rows = await executeWithRetry(() =>
+      db.select().from(products).orderBy(asc(products.id))
+    );
     return rows.filter((prod) => !isServerItemDeleted(prod));
   } catch (error) {
     console.warn('Database query notice in getAllProducts, returning fallback seed data:', error);
@@ -1484,7 +1521,9 @@ export async function deleteProductRecord(id: number) {
 export async function getAllProjects() {
   try {
     await ensureSeeded();
-    const rows = await db.select().from(projects).orderBy(desc(projects.id));
+    const rows = await executeWithRetry(() =>
+      db.select().from(projects).orderBy(desc(projects.id))
+    );
     return rows
       .filter((row) => !isServerItemDeleted(row))
       .map((row) => {
@@ -1945,10 +1984,12 @@ export async function deleteProjectRecord(idOrSlug: number | string) {
 export async function getAllStories() {
   try {
     await ensureSeeded();
-    const rows = await db
-      .select()
-      .from(stories)
-      .orderBy(desc(stories.createdAt), desc(stories.id));
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(stories)
+        .orderBy(desc(stories.createdAt), desc(stories.id))
+    );
     return rows.filter((st) => !isServerItemDeleted(st));
   } catch (error) {
     console.warn('Database query notice in getAllStories, returning fallback seed data:', error);
@@ -2149,7 +2190,9 @@ export async function deleteStoryRecord(idOrKey: number | string) {
 export async function getAllArticles() {
   try {
     await ensureSeeded();
-    const rows = await db.select().from(articles).orderBy(asc(articles.id));
+    const rows = await executeWithRetry(() =>
+      db.select().from(articles).orderBy(asc(articles.id))
+    );
     return rows.filter((art) => !isServerItemDeleted(art));
   } catch (error) {
     console.warn('Database query notice in getAllArticles, returning fallback seed data:', error);
@@ -2567,11 +2610,13 @@ export const DEFAULT_FOOTER_SETTINGS: FooterSettingsData = {
 
 export async function getFooterSettings(): Promise<FooterSettingsData> {
   try {
-    const rows = await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.settingKey, 'footer'))
-      .limit(1);
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'footer'))
+        .limit(1)
+    );
 
     if (rows.length === 0) {
       await db.insert(siteSettings).values({
@@ -2970,11 +3015,13 @@ export const DEFAULT_CONTACT_US_SETTINGS: ContactUsSettingsData = {
 
 export async function getContactUsSettings(): Promise<ContactUsSettingsData> {
   try {
-    const rows = await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.settingKey, 'contact_us'))
-      .limit(1);
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'contact_us'))
+        .limit(1)
+    );
 
     if (rows.length === 0) {
       await db.insert(siteSettings).values({
@@ -3224,11 +3271,13 @@ export const DEFAULT_ABOUT_US_SETTINGS: AboutUsSettingsData = {
 
 export async function getAboutUsSettings(): Promise<AboutUsSettingsData> {
   try {
-    const rows = await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.settingKey, 'about_us'))
-      .limit(1);
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'about_us'))
+        .limit(1)
+    );
 
     if (rows.length === 0 || !rows[0].settingValueJson) {
       return DEFAULT_ABOUT_US_SETTINGS;
@@ -3461,11 +3510,13 @@ export const DEFAULT_HERO_SLIDER_SETTINGS: HeroSliderSettingsData = {
 
 export async function getHeroSliderSettings(): Promise<HeroSliderSettingsData> {
   try {
-    const rows = await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.settingKey, 'hero_slider'))
-      .limit(1);
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'hero_slider'))
+        .limit(1)
+    );
 
     if (rows.length === 0 || !rows[0].settingValueJson) {
       return DEFAULT_HERO_SLIDER_SETTINGS;
@@ -3659,11 +3710,13 @@ export const DEFAULT_MAIN_SETTINGS: MainSettingsData = {
 
 export async function getMainSettings(): Promise<MainSettingsData> {
   try {
-    const rows = await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.settingKey, 'main_settings'))
-      .limit(1);
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'main_settings'))
+        .limit(1)
+    );
 
     if (rows.length === 0 || !rows[0].settingValueJson) {
       return DEFAULT_MAIN_SETTINGS;
@@ -3769,11 +3822,13 @@ export const DEFAULT_SMS_SETTINGS: SmsSettingsData = {
 
 export async function getSmsSettings(): Promise<SmsSettingsData> {
   try {
-    const rows = await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.settingKey, 'sms_settings'))
-      .limit(1);
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'sms_settings'))
+        .limit(1)
+    );
 
     if (rows.length === 0 || !rows[0].settingValueJson) {
       return DEFAULT_SMS_SETTINGS;
@@ -3884,12 +3939,42 @@ export const DEFAULT_FAQ_SETTINGS: FaqSettingsData = {
       {
         id: 'faq-rules-1',
         question: 'شرایط تعویض یا مرجوعی کالا چیست؟',
-        answer: 'در صورت وجود هرگونه نقص فنی یا مغایرت با سفارش، کالا تا ۷ روز پس از تحویل قابل تعویض یا مرجوعی می‌باشد، مشروط بر اینکه محصول در شرایط اولیه خود باقی مانده باشد.',
+        answer: 'در صورت وجود هرگونه نقص فنی، آسیب در حین حمل یا مغایرت با پیش‌فاکتور، کالا تا ۷ روز پس از تحویل بدون قید و شرط قابل تعویض یا مرجوعی می‌باشد. هماهنگی با واحد خدمات پس از فروش الزامی است.',
       },
       {
         id: 'faq-rules-2',
-        question: 'زمان تحویل سفارشات چقدر است؟',
-        answer: 'سفارشات آماده ارسال ظرف ۲۴ تا ۴۸ ساعت و سفارشات اختصاصی با توجه به پیچیدگی طراحی، بین ۱۰ تا ۲۰ روز کاری زمان می‌برند.',
+        question: 'زمان آماده‌سازی و ارسال سفارشات چقدر است؟',
+        answer: 'لوسترهای آماده ارسال ظرف ۲۴ الی ۴۸ ساعت کاری در تهران و حداکثر ۷۲ ساعت در شهرستان‌ها تحویل می‌گردند. زمان ساخت سفارشات سفارشی بر اساس تعداد شاخه و نوع آبکاری بین ۱۰ تا ۲۰ روز کاری برآورد می‌شود.',
+      },
+      {
+        id: 'faq-rules-3',
+        question: 'نحوه ارسال سفارشات به شهرستان‌ها چگونه است؟',
+        answer: 'تمامی سفارشات شهرستان از طریق باربری‌های معتبر و به صورت بیمه‌شده کامل ارسال می‌شوند. بسته‌بندی با فوم فشرده و پالت چوبی ایمن انجام می‌شود تا سلامت کامل کالا تضمین گردد.',
+      },
+      {
+        id: 'faq-rules-4',
+        question: 'آیا امکان پرداخت در محل یا پرداخت اقساطی وجود دارد؟',
+        answer: 'برای سفارشات شهر تهران امکان تسویه نهایی هنگام تحویل و نصب مقدور است. همچنین از طریق درگاه‌های معتبر اعتباری نظیر اسنپ‌پی امکان پرداخت اقساطی ۴ ماهه بدون کارمزد برای محصولات فعال است.',
+      },
+      {
+        id: 'faq-rules-5',
+        question: 'گارانتی و ضمانت‌نامه محصولات به چه صورت است؟',
+        answer: 'کلیه محصولات صنایع لوستر صالحی دارای ضمانت‌نامه کتبی ۱۰ ساله ثبات رنگ آبکاری (طلا ۲۴ عیار، نقره و آنتیک) و ضمانت مادام‌العمر اصالت فلز برنز و کریستال‌های وارداتی درجه یک می‌باشند.',
+      },
+      {
+        id: 'faq-rules-6',
+        question: 'شرایط نصب لوستر در سقف‌های کناف و یونولیت چیست؟',
+        answer: 'تیم فنی و نصابان حرفه‌ای گالری صالحی مجهز به ابزارآلات تخصصی و میل‌مهارهای باربر هستند و نصب ایمن انواع لوسترهای سنگین و طبقاتی را در انواع سقف‌های کاذب، کناف، بتنی و تیرچه‌ای تضمین می‌کنند.',
+      },
+      {
+        id: 'faq-rules-7',
+        question: 'در صورت آسیب دیدن کریستال یا قطعات هنگام جابجایی چه باید کرد؟',
+        answer: 'در صورت آسیب یا شکستگی هر قطعه در حین ارسال یا نصب، قطعه معیوب بدون هیچ‌گونه هزینه اضافی و در سریع‌ترین زمان ممکن توسط کارخانه برای مشتری تامین و جایگزین خواهد شد.',
+      },
+      {
+        id: 'faq-rules-8',
+        question: 'آیا امکان تغییر ابعاد و تعداد شاخه‌ها پس از ثبت سفارش وجود دارد؟',
+        answer: 'تا ۲۴ ساعت پس از ثبت سفارش اولیه و پیش از ورود محصول به خط ریخته‌گری و آبکاری، امکان تغییر در تعداد شاخه، قطر سازه و رنگ کریستال با هماهنگی کارشناس فنی فروشگاه میسر است.',
       },
     ],
   },
@@ -3897,13 +3982,23 @@ export const DEFAULT_FAQ_SETTINGS: FaqSettingsData = {
 
 export async function getFaqSettings(): Promise<FaqSettingsData> {
   try {
-    const rows = await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.settingKey, 'faq_settings'))
-      .limit(1);
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'faq_settings'))
+        .limit(1)
+    );
 
     if (rows.length === 0 || !rows[0].settingValueJson) {
+      try {
+        await executeWithRetry(() =>
+          db.insert(siteSettings).values({
+            settingKey: 'faq_settings',
+            settingValueJson: JSON.stringify(DEFAULT_FAQ_SETTINGS),
+          })
+        );
+      } catch {}
       return DEFAULT_FAQ_SETTINGS;
     }
 
@@ -3911,9 +4006,11 @@ export async function getFaqSettings(): Promise<FaqSettingsData> {
     const aboutList = Array.isArray(parsed.faqs?.about) && parsed.faqs.about.length > 0
       ? parsed.faqs.about
       : DEFAULT_FAQ_SETTINGS.faqs.about;
-    const rulesList = Array.isArray(parsed.faqs?.rules) && parsed.faqs.rules.length > 0
+    let rulesList = Array.isArray(parsed.faqs?.rules) && parsed.faqs.rules.length > 0
       ? parsed.faqs.rules
-      : DEFAULT_FAQ_SETTINGS.faqs.rules;
+      : (Array.isArray(parsed.faqs?.rule) && parsed.faqs.rule.length > 0
+         ? parsed.faqs.rule
+         : DEFAULT_FAQ_SETTINGS.faqs.rules);
 
     return {
       faqs: {
@@ -3931,10 +4028,14 @@ export async function saveFaqSettings(
 ): Promise<FaqSettingsData> {
   try {
     const current = await getFaqSettings();
+    const rulesList = Array.isArray(data.faqs?.rules)
+      ? data.faqs.rules
+      : (Array.isArray((data.faqs as any)?.rule) ? (data.faqs as any).rule : current.faqs.rules);
+
     const merged: FaqSettingsData = {
       faqs: {
         about: Array.isArray(data.faqs?.about) ? data.faqs.about : current.faqs.about,
-        rules: Array.isArray(data.faqs?.rules) ? data.faqs.rules : current.faqs.rules,
+        rules: rulesList,
       },
     };
 
@@ -3984,57 +4085,81 @@ export interface RuleSettingsData {
 
 export const DEFAULT_RULE_SETTINGS: RuleSettingsData = {
   ruleTitle: 'قوانین و مقرارت لوستر صالحی',
-  ruleDescription: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد، در این صورت می توان امید داشت که تمام و دشواری موجود در ارائه راهکارها، و شرایط سخت تایپ به پایان رسد و زمان مورد نیاز شامل حروفچینی دستاوردهای اصلی، و جوابگوی سوالات پیوسته اهل دنیای موجود طراحی اساسا مورد استفاده قرار گیرد.',
-  ruleMobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز به نردبان هیدرولیکی به متر 12 . محدوده نصب خدمات تهران، کرج، لواسانات را برای شما مشتریان عزیز انجام میدهد. لوستر صالحی با بیش از 18 سال سابقه کاری در صنعت لوستر ایران دارای رزومه کاری فرودگاه امام خمینی ، مسجد فخر آباد مسجد چهارده معصوم و انواع مساجد سینما آستارای تجریش و غیره آماده ارائه خدمات برای شما مشتریان عزیز می باشد.',
+  ruleDescription: 'کلیه فعالیت‌های فروشگاه اینترنتی صنایع لوستر اکبر صالحی منطبق بر قوانین جاری کشور، قانون تجارت الکترونیک و قانون حمایت از حقوق مصرف‌کننده است. ثبت سفارش و استفاده از خدمات این وب‌سایت به منزله پذیرش کامل این قوانین و شرایط از سوی خریدار تلقی می‌گردد. گالری لوستر صالحی متعهد است که تمامی محصولات ارائه شده را با بالاترین استانداردهای کیفی، مواد اولیه اصیل شامل برنز درجه یک، کریستال‌های مرغوب و آبکاری مقاوم ۲۴ عیار به مشتریان گرامی تقدیم نماید. مشخصات فنی، ابعاد و تصاویر درج شده در سایت دقیقاً منطبق بر محصولات تولیدی بوده و هرگونه مغایرت در تحویل، با گارانتی تعویض و بازگشت وجه جبران خواهد شد.',
+  ruleMobileDescription: 'کلیه فعالیت‌های فروشگاه اینترنتی صنایع لوستر اکبر صالحی منطبق بر قوانین جاری کشور، قانون تجارت الکترونیک و قانون حمایت از حقوق مصرف‌کننده است. ثبت سفارش و استفاده از خدمات این وب‌سایت به منزله پذیرش کامل این قوانین و شرایط از سوی خریدار تلقی می‌گردد. گالری لوستر صالحی متعهد است که تمامی محصولات ارائه شده را با بالاترین استانداردهای کیفی، مواد اولیه اصیل شامل برنز درجه یک، کریستال‌های مرغوب و آبکاری مقاوم ۲۴ عیار به مشتریان گرامی تقدیم نماید. مشخصات فنی، ابعاد و تصاویر درج شده در سایت دقیقاً منطبق بر محصولات تولیدی بوده و هرگونه مغایرت در تحویل، با گارانتی تعویض و بازگشت وجه جبران خواهد شد.',
   deliveryTitle: 'شرایط تحویل محصولات',
   deliveryItems: [
     {
       id: 'rule-del-1',
       title: 'بسته‌بندی دقیق و ایمن لوستر شما',
-      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد، کتابهای زیادی در شصت و سه درصد گذشته حال و آینده، شناخت فراوان جامعه و متخصصان را می طلبد، تا با نرم افزارها شناخت بیشتری را برای طراحان رایانه ای علی الخصوص طراحان خلاقی، و فرهنگ پیشرو در زبان فارسی ایجاد کرد...',
-      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول و شمعدان برنزی ،نقره ای ، طلایی ، آنتیک نصب لوستر طبقاتی و نصب کلاب لوستر در سقف های یونولیت مجهز میباشد.'
+      description: 'تمامی قطعات، شاخه‌ها و کریستال‌های لوستر با فوم‌های ضدضربه فشرده، نایلون حباب‌دار چندلایه و کارتن‌های مقاوم ۵ لایه صادراتی بسته‌بندی می‌شوند تا در طول فرایند جابجایی و ارسال به سراسر کشور از هرگونه خط و خش، شکستگی و فشار مصون بمانند.',
+      mobileDescription: 'تمامی قطعات، شاخه‌ها و کریستال‌های لوستر با فوم‌های ضدضربه فشرده، نایلون حباب‌دار چندلایه و کارتن‌های مقاوم ۵ لایه صادراتی بسته‌بندی می‌شوند تا در طول فرایند جابجایی و ارسال به سراسر کشور از هرگونه خط و خش، شکستگی و فشار مصون بمانند.'
     },
     {
       id: 'rule-del-2',
       title: 'شاهکار لوستر دست زمان میبرد',
-      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد...',
-      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری انواع لوستر آینه و کنسول...'
+      description: 'به دلیل دست‌ساز بودن سازه‌های برنزی و آبکاری اختصاصی طلا و نقره، آماده‌سازی لوسترهای سفارشی نیازمند دقت بالا و زمان‌بندی مهندسی است. تیم تولید پس از پرداخت نهایی و کنترل کیفی، سفارش را در موعد مقرر تحویل واحد لجستیک می‌نماید.',
+      mobileDescription: 'به دلیل دست‌ساز بودن سازه‌های برنزی و آبکاری اختصاصی طلا و نقره، آماده‌سازی لوسترهای سفارشی نیازمند دقت بالا و زمان‌بندی مهندسی است. تیم تولید پس از پرداخت نهایی و کنترل کیفی، سفارش را در موعد مقرر تحویل واحد لجستیک می‌نماید.'
     },
     {
       id: 'rule-del-3',
       title: 'خدمات استثنایی، در هر قدم از پیاده سازی',
-      description: 'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ، و با استفاده از طراحان گرافیک است، چاپگرها و متون بلکه روزنامه و مجله در ستون و سطرآنچنان که لازم است، و برای شرایط فعلی تکنولوژی مورد نیاز، و کاربردهای متنوع با هدف بهبود ابزارهای کاربردی می باشد...',
-      mobileDescription: 'گالری لوستر صالحی خدماتی شامل تعمیر لوستر آینه و کنسول، لوازم برنزی دکوری، آبکاری...'
+      description: 'کارشناسان فنی لوستر صالحی خدمات ارسال تخصصی با ناوگان اختصاصی در تهران و باربری‌های بیمه‌شده در شهرستان‌ها، به همراه امکان اعزام تکنسین مجرب برای نصب اصولی در سقف‌های معمولی، کناف و بتنی را با بالاترین ایمنی ارائه می‌دهند.',
+      mobileDescription: 'کارشناسان فنی لوستر صالحی خدمات ارسال تخصصی با ناوگان اختصاصی در تهران و باربری‌های بیمه‌شده در شهرستان‌ها، به همراه امکان اعزام تکنسین مجرب برای نصب اصولی در سقف‌های معمولی، کناف و بتنی را با بالاترین ایمنی ارائه می‌دهند.'
     }
   ]
 };
 
 export async function getRuleSettings(): Promise<RuleSettingsData> {
   try {
-    const rows = await db
-      .select()
-      .from(siteSettings)
-      .where(eq(siteSettings.settingKey, 'rule_settings'))
-      .limit(1);
+    const rows = await executeWithRetry(() =>
+      db
+        .select()
+        .from(siteSettings)
+        .where(eq(siteSettings.settingKey, 'rule_settings'))
+        .limit(1)
+    );
 
     if (rows.length === 0 || !rows[0].settingValueJson) {
+      try {
+        await executeWithRetry(() =>
+          db.insert(siteSettings).values({
+            settingKey: 'rule_settings',
+            settingValueJson: JSON.stringify(DEFAULT_RULE_SETTINGS),
+          })
+        );
+      } catch {}
       return DEFAULT_RULE_SETTINGS;
     }
 
     const parsed = JSON.parse(rows[0].settingValueJson);
+    const ruleDesc = typeof parsed.ruleDescription === 'string' && parsed.ruleDescription.trim()
+      ? parsed.ruleDescription
+      : DEFAULT_RULE_SETTINGS.ruleDescription;
+    const ruleMobileDesc = typeof parsed.ruleMobileDescription === 'string' && parsed.ruleMobileDescription.trim()
+      ? parsed.ruleMobileDescription
+      : ruleDesc;
+
+    const items = Array.isArray(parsed.deliveryItems) && parsed.deliveryItems.length > 0
+      ? parsed.deliveryItems.map((item: any, idx: number) => {
+          const fallback = DEFAULT_RULE_SETTINGS.deliveryItems[idx] || DEFAULT_RULE_SETTINGS.deliveryItems[0] || { title: 'عنوان تحویل', description: '', mobileDescription: '' };
+          const desc = item.description !== undefined && item.description !== null ? String(item.description) : fallback.description;
+          const mDesc = item.mobileDescription !== undefined && item.mobileDescription !== null ? String(item.mobileDescription) : desc;
+          return {
+            id: String(item.id || `rule-del-${idx + 1}`),
+            title: String(item.title || fallback.title),
+            description: desc,
+            mobileDescription: mDesc,
+          };
+        })
+      : DEFAULT_RULE_SETTINGS.deliveryItems;
+
     return {
       ruleTitle: typeof parsed.ruleTitle === 'string' && parsed.ruleTitle.trim() ? parsed.ruleTitle : DEFAULT_RULE_SETTINGS.ruleTitle,
-      ruleDescription: typeof parsed.ruleDescription === 'string' && parsed.ruleDescription.trim() ? parsed.ruleDescription : DEFAULT_RULE_SETTINGS.ruleDescription,
-      ruleMobileDescription: typeof parsed.ruleMobileDescription === 'string' && parsed.ruleMobileDescription.trim() ? parsed.ruleMobileDescription : DEFAULT_RULE_SETTINGS.ruleMobileDescription,
+      ruleDescription: ruleDesc,
+      ruleMobileDescription: ruleMobileDesc,
       deliveryTitle: typeof parsed.deliveryTitle === 'string' && parsed.deliveryTitle.trim() ? parsed.deliveryTitle : DEFAULT_RULE_SETTINGS.deliveryTitle,
-      deliveryItems: Array.isArray(parsed.deliveryItems) && parsed.deliveryItems.length > 0
-        ? parsed.deliveryItems.map((item: any, idx: number) => ({
-            id: String(item.id || `rule-del-${idx + 1}`),
-            title: String(item.title || ''),
-            description: String(item.description || ''),
-            mobileDescription: String(item.mobileDescription || item.description || ''),
-          }))
-        : DEFAULT_RULE_SETTINGS.deliveryItems,
+      deliveryItems: items,
     };
   } catch {
     return DEFAULT_RULE_SETTINGS;

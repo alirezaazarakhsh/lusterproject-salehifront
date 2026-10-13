@@ -198,7 +198,7 @@ export const HeaderBrandLogo: React.FC = () => {
           Chandelier
         </span>
         <span
-          className="text-[21px] sm:text-[26px] tracking-[0.04em] text-[#2b2b2b] font-normal uppercase leading-none"
+          className="text-[25px] tracking-[0.04em] text-[#2b2b2b] font-normal uppercase leading-none"
           style={{ fontFamily: "'Hiragino Mincho ProN', 'Hiragino', serif" }}
         >
           AKBAR SALEHI
@@ -296,7 +296,7 @@ export const SectionHeading: React.FC<{
           direction="rtl"
           className="w-5 h-5 xs:w-6 xs:h-6 sm:w-9 sm:h-9"
         />
-        <h2 className="text-[15.5px] xs:text-[16.5px] sm:text-[23px] font-extrabold text-[#141414] tracking-tight whitespace-nowrap">
+        <h2 className="text-[20px] font-extrabold text-[#141414] tracking-tight whitespace-nowrap">
           <span className="sm:hidden">{mobileTitle || title}</span>
           <span className="hidden sm:inline">{title}</span>
         </h2>

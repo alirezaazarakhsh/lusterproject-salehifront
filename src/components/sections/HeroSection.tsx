@@ -267,7 +267,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
               <div
                 key={`mobile-hero-${slide.id || idx}`}
                 onClick={() => scrollToSlide(idx, true)}
-                className={`relative w-[84vw] max-w-[640px] shrink-0 snap-center rounded-[24px] sm:rounded-[30px] overflow-hidden h-[270px] xs:h-[300px] sm:h-[350px] bg-[#f6f6f6] shadow-[0_12px_36px_rgba(0,0,0,0.18)] flex flex-col justify-between transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
+                className={`relative w-[84vw] max-w-[640px] shrink-0 snap-center rounded-[24px] sm:rounded-[30px] border border-[#e2e2e2] overflow-hidden h-[270px] xs:h-[300px] sm:h-[350px] bg-[#fafafa] shadow-[0_12px_36px_rgba(0,0,0,0.08)] flex flex-col justify-between transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] cursor-pointer ${
                   isCurrent
                     ? 'opacity-100 scale-100 ring-1 ring-black/10'
                     : 'opacity-70 scale-[0.95]'
@@ -301,42 +301,48 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
                 {/* محتوای متن و دکمه اسلاید (تنها در صورت لود شدن عکس نمایش داده می‌شود و در حالت لودینگ کاملاً مخفی است) */}
                 {isImageLoaded && (
                   <div
-                    className={`relative z-10 p-4 xs:p-5 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-4 pb-6 pr-5 xs:pr-6 sm:pr-8 pl-3 max-w-[90%] transition-all duration-700 ease-out ${
+                    className={`relative z-10 p-3 xs:p-4 sm:p-7 flex flex-col items-start justify-center text-right h-full my-auto pt-3 pb-5 pr-3.5 xs:pr-5 sm:pr-8 pl-2.5 max-w-full overflow-hidden transition-all duration-700 ease-out ${
                       isCurrent
                         ? 'opacity-100 translate-y-0'
                         : 'opacity-80 translate-y-1'
                     }`}
                   >
                     {hasTitle && (
-                      <div className="flex items-center justify-start gap-1.5 xs:gap-2 mb-2">
-                        <HeroTitleOrnament flip className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
-                        <h1 className="text-right">
+                      <div className="flex items-center justify-start gap-1.5 xs:gap-2 mb-2 max-w-full">
+                        <HeroTitleOrnament flip className="!w-6 !h-7 xs:!w-7 xs:!h-8 sm:!w-9 sm:!h-10 text-white shrink-0" />
+                        <h1 className="text-right" style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}>
                           {titleLine1 && (
-                            <span className="block text-sm xs:text-base sm:text-lg font-black text-white leading-tight tracking-tight whitespace-nowrap">
+                            <span
+                              className="block text-[11px] xs:text-[12.5px] sm:text-base font-black text-white leading-tight tracking-tight whitespace-nowrap"
+                              style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
+                            >
                               {titleLine1}
                             </span>
                           )}
                           {titleLine2 && (
-                            <span className="block text-[11px] xs:text-[12.5px] sm:text-[14px] font-bold text-white/95 mt-0.5 leading-tight whitespace-nowrap">
+                            <span
+                              className="block text-[9.5px] xs:text-[11px] sm:text-[13px] font-bold text-white/95 mt-0.5 leading-tight whitespace-nowrap"
+                              style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
+                            >
                               {titleLine2}
                             </span>
                           )}
                         </h1>
-                        <HeroTitleOrnament className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7 text-white shrink-0" />
+                        <HeroTitleOrnament className="!w-6 !h-7 xs:!w-7 xs:!h-8 sm:!w-9 sm:!h-10 text-white shrink-0" />
                       </div>
                     )}
 
                     {description && (
-                      <p className="text-[10px] xs:text-[11px] sm:text-[12.5px] text-[#e5e5e5] font-normal leading-relaxed mt-1 text-right max-w-[95%]">
+                      <p className="text-[10px] xs:text-[11px] sm:text-[12.5px] text-[#e5e5e5] font-normal leading-relaxed mt-0.5 text-right max-w-[95%]">
                         {description}
                       </p>
                     )}
 
                     {buttonText && (
-                      <div className="mt-3 sm:mt-4 text-right">
+                      <div className="mt-2.5 sm:mt-4 text-right">
                         <a
                           href={buttonUrl || '#collection-salehi'}
-                          className="inline-flex items-center justify-center px-3.5 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 rounded-[10px] sm:rounded-[12px] bg-white hover:bg-[#f5f5f5] text-[#1e1e1e] text-[10.5px] xs:text-[11.5px] sm:text-xs font-bold shadow-md transition-colors whitespace-nowrap"
+                          className="inline-flex items-center justify-center px-3 py-1.5 xs:px-4 xs:py-2 sm:px-5 sm:py-2.5 rounded-[10px] sm:rounded-[12px] bg-white hover:bg-[#f5f5f5] text-[#1e1e1e] text-[10px] xs:text-[11px] sm:text-xs font-bold shadow-md transition-colors whitespace-nowrap"
                         >
                           {buttonText}
                         </a>
@@ -371,7 +377,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
       <div
         onPointerDown={handleDesktopPointerDown}
         onPointerUp={handleDesktopPointerUp}
-        className="hidden lg:flex relative w-full rounded-[28px] overflow-hidden min-h-[480px] lg:min-h-[520px] 2xl:min-h-[550px] bg-[#f6f6f6] shadow-[0_18px_50px_rgba(0,0,0,0.14)] items-center justify-start select-none"
+        className="hidden lg:flex relative w-full rounded-[28px] border border-[#e2e2e2] overflow-hidden min-h-[480px] lg:min-h-[520px] 2xl:min-h-[550px] bg-[#fafafa] shadow-[0_12px_40px_rgba(0,0,0,0.08)] items-center justify-start select-none"
       >
         {/* لودر اختصاصی فیگما برای اسلایدر دسکتاپ هنگام لود نشدن یا در حال بارگذاری بودن عکس */}
         {(() => {
@@ -457,14 +463,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
                 <div className="flex items-center justify-start gap-3">
                   <HeroTitleOrnament flip className="hidden sm:block" />
 
-                  <h1 className="text-right">
+                  <h1 className="text-right" style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}>
                     {t1 && (
-                      <span className="block text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-black text-white leading-[1.28] tracking-tight whitespace-nowrap">
+                      <span
+                        className="block text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-black text-white leading-[1.28] tracking-tight whitespace-nowrap"
+                        style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
+                      >
                         {t1}
                       </span>
                     )}
                     {t2 && (
-                      <span className="block text-xl lg:text-[23px] xl:text-[26px] font-extrabold text-white leading-[1.35] mt-1.5 text-right whitespace-nowrap">
+                      <span
+                        className="block text-xl lg:text-[23px] xl:text-[26px] font-extrabold text-white leading-[1.35] mt-1.5 text-right whitespace-nowrap"
+                        style={{ fontFamily: "'IRANSansX', 'IranSansX', sans-serif" }}
+                      >
                         {t2}
                       </span>
                     )}

@@ -96,6 +96,11 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
             ref={imgRef}
             src={currentSrc}
             alt={alt}
+            draggable={false}
+            data-protected-image="true"
+            onContextMenu={(e) => {
+              e.preventDefault();
+            }}
             loading={priority ? 'eager' : loading}
             decoding="async"
             fetchPriority={priority ? 'high' : 'auto'}
@@ -109,8 +114,11 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
             }}
             style={{
               ...style,
-            }}
-            className={`${className} transition-opacity duration-500 ease-out ${
+              userSelect: 'none',
+              WebkitTouchCallout: 'none',
+              WebkitUserDrag: 'none',
+            } as React.CSSProperties}
+            className={`${className} select-none transition-opacity duration-500 ease-out ${
               isLoaded ? 'opacity-100' : 'opacity-0'
             }`}
             {...restProps}

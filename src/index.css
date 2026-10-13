@@ -1,56 +1,184 @@
 @import "tailwindcss";
 
-/* IRANSansX Pro Font Definitions */
+/* IRANSansX Pro (D4 / Dot4) Font Definitions */
 @font-face {
   font-family: 'IRANSansX';
-  src: url('/fonts/IRANSansX-Regular.woff2') format('woff2'),
-       url('/fonts/IRANSansX-Regular.woff') format('woff');
-  font-weight: 100 500;
+  src: url('/fonts/iransansx-d4/IRANSansX-ThinD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-ThinD4.woff') format('woff');
+  font-weight: 100;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: 'IRANSansX';
-  src: url('/fonts/IRANSansX-Bold.woff2') format('woff2'),
-       url('/fonts/IRANSansX-Bold.woff') format('woff');
-  font-weight: 600 900;
+  src: url('/fonts/iransansx-d4/IRANSansX-UltraLightD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-UltraLightD4.woff') format('woff');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-LightD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-LightD4.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-RegularD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-RegularD4.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-MediumD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-MediumD4.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-DemiBoldD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-DemiBoldD4.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-BoldD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-BoldD4.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-ExtraBoldD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-ExtraBoldD4.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-HeavyD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-HeavyD4.woff') format('woff');
+  font-weight: 850;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-BlackD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-BlackD4.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-ExtraBlackD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-ExtraBlackD4.woff') format('woff');
+  font-weight: 950;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Alias IranSansX */
+@font-face {
+  font-family: 'IranSansX';
+  src: url('/fonts/iransansx-d4/IRANSansX-RegularD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-RegularD4.woff') format('woff');
+  font-weight: 100 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: 'IranSansX';
-  src: url('/fonts/IRANSansX-Regular.woff2') format('woff2'),
-       url('/fonts/IRANSansX-Regular.woff') format('woff');
-  font-weight: 100 500;
+  src: url('/fonts/iransansx-d4/IRANSansX-BoldD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansX-BoldD4.woff') format('woff');
+  font-weight: 600 950;
   font-style: normal;
   font-display: swap;
 }
 
+/* IRANSansXFaNum Pro (D4 / Dot4) Farsi Numerals Definitions */
 @font-face {
-  font-family: 'IranSansX';
-  src: url('/fonts/IRANSansX-Bold.woff2') format('woff2'),
-       url('/fonts/IRANSansX-Bold.woff') format('woff');
-  font-weight: 600 900;
+  font-family: 'IRANSansXFaNum';
+  src: url('/fonts/iransansx-d4/IRANSansXFaNum-ThinD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansXFaNum-ThinD4.woff') format('woff');
+  font-weight: 100;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: 'IRANSansXFaNum';
-  src: url('/fonts/IRANSansX-Regular.woff2') format('woff2'),
-       url('/fonts/IRANSansX-Regular.woff') format('woff');
-  font-weight: 100 500;
+  src: url('/fonts/iransansx-d4/IRANSansXFaNum-RegularD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansXFaNum-RegularD4.woff') format('woff');
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
   font-family: 'IRANSansXFaNum';
-  src: url('/fonts/IRANSansX-Bold.woff2') format('woff2'),
-       url('/fonts/IRANSansX-Bold.woff') format('woff');
-  font-weight: 600 900;
+  src: url('/fonts/iransansx-d4/IRANSansXFaNum-MediumD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansXFaNum-MediumD4.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  src: url('/fonts/iransansx-d4/IRANSansXFaNum-DemiBoldD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansXFaNum-DemiBoldD4.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  src: url('/fonts/iransansx-d4/IRANSansXFaNum-BoldD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansXFaNum-BoldD4.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  src: url('/fonts/iransansx-d4/IRANSansXFaNum-ExtraBoldD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansXFaNum-ExtraBoldD4.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IRANSansXFaNum';
+  src: url('/fonts/iransansx-d4/IRANSansXFaNum-BlackD4.woff2') format('woff2'),
+       url('/fonts/iransansx-d4/IRANSansXFaNum-BlackD4.woff') format('woff');
+  font-weight: 900 950;
   font-style: normal;
   font-display: swap;
 }
@@ -176,6 +304,37 @@
 @font-face {
   font-family: 'Hiragino Mincho ProN';
   src: url('/fonts/HiraginoMinchoProNW6.otf') format('opentype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Brianna Qasim / Berianna qasim Font Definitions */
+@font-face {
+  font-family: 'Brianna Qasim';
+  src: url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.woff') format('woff'),
+       url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.otf') format('opentype'),
+       url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Berianna qasim';
+  src: url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.woff') format('woff'),
+       url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.otf') format('opentype'),
+       url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'BriannaQasim';
+  src: url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.woff') format('woff'),
+       url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.otf') format('opentype'),
+       url('/fonts/brianna-qasim/Brianna Qasim/BriannaQasim.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -541,5 +700,54 @@ div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-
 div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) {
   direction: ltr !important;
 }
+
+/* Focus Mode: IranSans font for selected hero banner title elements */
+div#root:nth-of-type(1) > div#top:nth-of-type(2) > section:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(4),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > section:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(4) {
+  font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', sans-serif !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(2) > section:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > section:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(1) {
+  font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', sans-serif !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(2) > section:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(1) > h1:nth-of-type(1) > span:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > section:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(4) > div:nth-of-type(1) > h1:nth-of-type(1) > span:nth-of-type(1) {
+  font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', sans-serif !important;
+}
+
+
+/* ممانعت از کپی، کشیدن و ذخیره تصاویر و مدیاها در موبایل و دسکتاپ */
+img,
+picture,
+svg image,
+canvas,
+[data-protected-image] {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -khtml-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  user-drag: none !important;
+  pointer-events: auto;
+}
+
+/* جلوگیری از انتخاب و دانلود تصاویر پس‌زمینه */
+[style*="background-image"] {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* مسدودسازی پرینت و ذخیره صفحات به صورت PDF */
+@media print {
+  body {
+    display: none !important;
+  }
+}
+
 
 
