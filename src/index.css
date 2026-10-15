@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root {
+  --spacing: 0.25rem;
+}
+
 /* IRANSansX Pro (D4 / Dot4) Font Definitions */
 @font-face {
   font-family: 'IRANSansX';
@@ -627,58 +631,107 @@ html, body {
   height: 0 !important;
 }
 
-/* اسکرول‌بار سایت با رنگ و استایل قبلی */
-@media (min-width: 1024px) {
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #f6f5f0;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #d1c7b7;
-    border-radius: 4px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #b89768;
-  }
-  html.dark ::-webkit-scrollbar-track {
-    background: #1e1e1e;
-  }
-  html.dark ::-webkit-scrollbar-thumb {
-    background: #444;
-  }
-  html.dark ::-webkit-scrollbar-thumb:hover {
-    background: #666;
-  }
+/* استایل اسکرول‌بار ظریف ۴ پیکسل لیست فیلترهای محصولات */
+.filter-scroll-list {
+  -webkit-overflow-scrolling: touch;
+  height: 180px;
+  max-height: 180px;
+}
 
-  /* اسکرول‌بار ظریف و باریک مختص فیلترها با بک‌گراند track و thumb */
+.filter-scroll-list::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  display: block;
+}
+
+.filter-scroll-list::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.filter-scroll-list::-webkit-scrollbar-thumb {
+  background: rgb(205, 205, 205);
+  border-radius: 9999px;
+}
+
+.filter-scroll-list::-webkit-scrollbar-thumb:hover {
+  background: #b59766;
+}
+
+.filter-scroll-list::-webkit-scrollbar-track,
+.filter-scroll-list::-webkit-scrollbar-track-piece {
+  background: rgb(243, 243, 243);
+  border-radius: 9999px;
+}
+
+@media (width >= 1024px) {
   .filter-scroll-list::-webkit-scrollbar {
     width: 4px;
     height: 4px;
+    display: block;
   }
-  .filter-scroll-list::-webkit-scrollbar-track {
-    background: #F6F6F6;
-    border-radius: 4px;
-  }
+
   .filter-scroll-list::-webkit-scrollbar-thumb {
-    background: #D9D9D9;
-    border-radius: 4px;
+    background: rgb(205, 205, 205);
+    border-radius: 9999px;
   }
+
   .filter-scroll-list::-webkit-scrollbar-thumb:hover {
-    background: #bcbcbc;
+    background: #b59766;
   }
+
+  .filter-scroll-list::-webkit-scrollbar-track,
+  .filter-scroll-list::-webkit-scrollbar-track-piece {
+    background: rgb(243, 243, 243);
+    border-radius: 9999px;
+  }
+}
+
+html.dark .filter-scroll-list {
+  scrollbar-color: #555555 #222222 !important;
+}
+
+@media (width >= 1024px) {
   html.dark .filter-scroll-list::-webkit-scrollbar-track {
-    background: #2a2a2a;
-    border-radius: 4px;
+    background: #222222 !important;
+    border-radius: 4px !important;
   }
+
   html.dark .filter-scroll-list::-webkit-scrollbar-thumb {
-    background: #555555;
+    background: #555555 !important;
+    border-radius: 4px !important;
+  }
+
+  html.dark .filter-scroll-list::-webkit-scrollbar-thumb:hover {
+    background: #b59766 !important;
+  }
+}
+
+/* اسکرول‌بار سایت با رنگ و استایل قبلی */
+@media (min-width: 1024px) {
+  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-track {
+    background: #f6f5f0;
+  }
+  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-thumb {
+    background: #d1c7b7;
     border-radius: 4px;
   }
-  html.dark .filter-scroll-list::-webkit-scrollbar-thumb:hover {
-    background: #777777;
+  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-thumb:hover {
+    background: #b89768;
+  }
+  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
+  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-thumb {
+    background: #444;
+  }
+  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-thumb:hover {
+    background: #666;
   }
 }
 
@@ -717,6 +770,19 @@ div#root:nth-of-type(1) > div#top:nth-of-type(1) > section:nth-of-type(2) > div:
   font-family: 'IRANSansX', 'IranSansX', 'IRANSansXFaNum', sans-serif !important;
 }
 
+/* Focus Mode: تنظیمات کانتینر توضیحات تکمیلی */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) {
+  overflow-y: visible !important;
+  max-height: none !important;
+}
+
+/* Focus Mode: Spacing between title and navigations for the selected element */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
+  margin-top: 14px !important;
+}
+
+
+
 
 /* ممانعت از کپی، کشیدن و ذخیره تصاویر و مدیاها در موبایل و دسکتاپ */
 img,
@@ -748,6 +814,400 @@ canvas,
     display: none !important;
   }
 }
+
+/* Focus Mode: Background color #ffffff for selected element */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) {
+  background-color: #ffffff !important;
+}
+
+/* Focus Mode: Padding for selected section (Stories section on home page) */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > section:nth-of-type(1) {
+  padding-top: calc(var(--spacing) * 7) !important;
+  padding-bottom: calc(var(--spacing) * 8) !important;
+}
+
+/* Focus Mode: Spacing from header for selected element */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) {
+  margin-top: 32px !important;
+  padding-bottom: 16px !important;
+}
+
+/* Focus Mode: Spacing from upper component for second main element */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) {
+  margin-top: 12px !important;
+  padding-top: 36px !important;
+  border-top: 1px solid #e8ded0 !important;
+}
+
+/* Focus Mode: Inner elements spacing from line */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) {
+  margin-top: 12px !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) {
+  margin-top: 12px !important;
+}
+
+/* Focus Mode: اسکرول‌بار دقیقاً مشابه فیلترهای محصولات و تصویر ارسالی */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1),
+#product-description-scroll {
+  max-height: 120px !important;
+  overflow-y: auto !important;
+  padding-left: 14px !important;
+  line-height: 2.2 !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar,
+#product-description-scroll::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+  display: block !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-button,
+#product-description-scroll::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-track,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-track-piece,
+#product-description-scroll::-webkit-scrollbar-track,
+#product-description-scroll::-webkit-scrollbar-track-piece {
+  background: #f3f3f3 !important;
+  border-radius: 9999px !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-thumb,
+#product-description-scroll::-webkit-scrollbar-thumb {
+  background: #cdcdcd !important;
+  border-radius: 9999px !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
+#product-description-scroll::-webkit-scrollbar-thumb:hover {
+  background: #b59766 !important;
+}
+
+/* Focus Mode: Divider line between selector 1 and 2 */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) {
+  border-top: 1.5px solid #E9E9E9 !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) {
+  border-top: none !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) {
+  border-top: none !important;
+}
+
+/* Focus Mode: Match height of span elements */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1) {
+  height: 100% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* Focus Mode: Spacing between rating rows and between text and progress bar */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div {
+  margin-top: 20px !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div > div:nth-of-type(2) {
+  margin-top: 8px !important;
+}
+
+/* Focus Mode: Spacing between label and score inside rating rows */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div > div:nth-of-type(1) {
+  margin-bottom: 12px !important;
+}
+
+/* Focus Mode: Set border-radius to 12px */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > button:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) {
+  border-radius: 12px !important;
+}
+
+/* Focus Mode: Set border-radius to 12px for additional elements */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) {
+  border-radius: 12px !important;
+}
+
+/* Focus Mode: Border-radius 8px, padding 28px, height 45px and font-family */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1) {
+  border-radius: 8px !important;
+  padding: 0 28px !important;
+  height: 45px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: 'IRANSansXFaNum', sans-serif !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) {
+  font-family: 'IRANSansXFaNum', sans-serif !important;
+  color: #2B2B2B !important;
+}
+
+/* Focus Mode: Place span 1 next to span 2 */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(2) {
+  display: inline-block !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > span:nth-of-type(1) {
+  display: inline-block !important;
+}
+
+/* Focus Mode: Filter scrollbar design */
+#filter-model-scroll-list,
+#filter-material-scroll-list,
+#filter-color-scroll-list,
+.filter-scroll-list,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1) {
+  height: 180px !important;
+  max-height: 180px !important;
+  overflow-y: auto !important;
+}
+
+#filter-model-scroll-list::-webkit-scrollbar,
+#filter-material-scroll-list::-webkit-scrollbar,
+#filter-color-scroll-list::-webkit-scrollbar,
+.filter-scroll-list::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+  display: block !important;
+}
+
+#filter-model-scroll-list::-webkit-scrollbar-button,
+#filter-material-scroll-list::-webkit-scrollbar-button,
+#filter-color-scroll-list::-webkit-scrollbar-button,
+.filter-scroll-list::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+#filter-model-scroll-list::-webkit-scrollbar-track,
+#filter-model-scroll-list::-webkit-scrollbar-track-piece,
+#filter-material-scroll-list::-webkit-scrollbar-track,
+#filter-material-scroll-list::-webkit-scrollbar-track-piece,
+#filter-color-scroll-list::-webkit-scrollbar-track,
+#filter-color-scroll-list::-webkit-scrollbar-track-piece,
+.filter-scroll-list::-webkit-scrollbar-track,
+.filter-scroll-list::-webkit-scrollbar-track-piece,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar-track,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar-track,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar-track {
+  background: #f3f3f3 !important;
+  border-radius: 9999px !important;
+}
+
+#filter-model-scroll-list::-webkit-scrollbar-thumb,
+#filter-material-scroll-list::-webkit-scrollbar-thumb,
+#filter-color-scroll-list::-webkit-scrollbar-thumb,
+.filter-scroll-list::-webkit-scrollbar-thumb,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb {
+  background: #cdcdcd !important;
+  border-radius: 9999px !important;
+}
+
+#filter-model-scroll-list::-webkit-scrollbar-thumb:hover,
+#filter-material-scroll-list::-webkit-scrollbar-thumb:hover,
+#filter-color-scroll-list::-webkit-scrollbar-thumb:hover,
+.filter-scroll-list::-webkit-scrollbar-thumb:hover,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb:hover {
+  background: #b59766 !important;
+}
+
+/* انیمیشن نرم و روان ورق خوردن صفحات نظرات */
+@keyframes commentSlideNext {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes commentSlidePrev {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-comment-slide-next {
+  animation: commentSlideNext 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-comment-slide-prev {
+  animation: commentSlidePrev 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* هدایت و نمایش بالاتر تصویر انتخاب‌شده اسلایدر هیرو دسکتاپ */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > section:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > img:nth-of-type(3) {
+  top: -28px !important;
+  bottom: auto !important;
+  height: calc(100% + 36px) !important;
+  object-position: left 35% !important;
+}
+
+/* دکمه‌های ناوبری نظرات - هاور آیکون کاملاً سفید */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > button:not(:disabled):hover svg,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > button:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* نقاط صفحه‌بندی نظرات: حرکت رو به جلو از عقب شروع شود (سمت چپ صفحه ۱ و سمت راست آخرین صفحه) */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) {
+  direction: ltr !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > button {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* بج امتیاز در کارت نظرات: قرارگیری آیکون ستاره در سمت راست عدد و تراز دقیق هر دو در مرکز */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) div[id^="comment-card-"] > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(2) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.375rem !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) > div:nth-of-type(1) > div#comment-card-0:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(2) > svg:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) div[id^="comment-card-"] > div:nth-of-type(1) > div:nth-of-type(2) > span:nth-of-type(2) > svg {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  align-self: center !important;
+  flex-shrink: 0 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* کانتینر نظرات مطابق طرح فیگما */
+div#comments-cards-scroll-container {
+  overflow: hidden !important;
+}
+
+/* کارت دوم نظرات: بریده شدن در انتهای بخش مطابق تصویر فیگما برای القای رفتن به صفحه بعد */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) > div:nth-of-type(1) > div#comment-card-1:nth-of-type(2),
+div#comments-cards-scroll-container div[id^="comment-card-"]:nth-of-type(2) {
+  height: 110px !important;
+  max-height: 110px !important;
+  overflow: hidden !important;
+  border-bottom: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  position: relative !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) > div:nth-of-type(1) > div#comment-card-1:nth-of-type(2)::after,
+div#comments-cards-scroll-container div[id^="comment-card-"]:nth-of-type(2)::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 38px !important;
+  background: linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%) !important;
+  pointer-events: none !important;
+}
+
+/* استروک D9D9D9 و پر شدن کامل تصاویر بندانگشتی گالری محصول با بوردر رادیوس ملایم‌تر */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > button {
+  border: 2px solid #D9D9D9 !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background-color: #ffffff !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > button.border-\[\#b59766\],
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > button:hover {
+  border-color: #b59766 !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > button > div,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > button > div > div,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > button img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border-radius: 10px !important;
+}
+
+/* هاور دکمه‌های اکشن محصول (جستجو، نشان کردن، اشتراک‌گذاری) مطابق طرح فیگما */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button {
+  border-radius: 14px !important;
+  transition: all 0.22s ease-in-out !important;
+}
+
+/* ۱. دکمه اول (جستجو): هاور رنگ طوسی فیگما #71747d با آیکون سفید */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(1):hover {
+  background-color: #71747d !important;
+  color: #ffffff !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(1):hover svg,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(1):hover svg path,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(1):hover svg circle {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* ۲. دکمه دوم (نشان کردن): هاور رنگ برنز طلایی فیگما #b58c5e با آیکون سفید */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(2):hover {
+  background-color: #b58c5e !important;
+  color: #ffffff !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(2):hover svg,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(2):hover svg path {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* ۳. دکمه سوم (اشتراک‌گذاری): هاور رنگ برنز طلایی فیگما #b58c5e با آیکون سفید */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(3):hover {
+  background-color: #b58c5e !important;
+  color: #ffffff !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(3):hover svg,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(3):hover svg path,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(2) > button:nth-of-type(3):hover svg circle {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
 
 
 

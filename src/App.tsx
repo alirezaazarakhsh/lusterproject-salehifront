@@ -91,7 +91,6 @@ export function App() {
 
   return (
     <AppErrorBoundary>
-      <SecurityProtection />
       <PagePreloader isVisible={isLoading} />
       {!isLoading && <HomePage />}
     </AppErrorBoundary>

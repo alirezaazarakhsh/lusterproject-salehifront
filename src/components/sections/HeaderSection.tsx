@@ -53,6 +53,7 @@ interface HeaderSectionProps {
   onProfileMenuInteracted?: () => void;
   onOpen3DStudio: () => void;
   onOpenCustomProductModal?: () => void;
+  onOpenSavedPhotos?: () => void;
   mainSettings?: MainSettingsConfig;
 }
 
@@ -581,6 +582,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
   forceOpenProfileMenu = false,
   onProfileMenuInteracted,
   onOpen3DStudio,
+  onOpenCustomProductModal,
+  onOpenSavedPhotos,
   mainSettings,
 }) => {
   const [phoneNumber, setPhoneNumber] = useState<string>('');
@@ -1011,6 +1014,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({
               )}
             </div>
           )}
+
+
 
           {/* ۳. دکمه سبد خرید - در کنار دکمه‌های سمت چپ */}
           <button

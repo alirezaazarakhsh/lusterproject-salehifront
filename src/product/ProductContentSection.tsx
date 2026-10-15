@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +9,8 @@ import {
   RotateCcw,
   ShoppingBag,
   Sparkles,
+  Star,
+  Plus,
 } from 'lucide-react';
 import { SectionHeading } from '../components/Ornaments';
 import { AppToast } from '../components/InteractiveModals';
@@ -28,9 +30,16 @@ import { OptimizedImage } from '../components/OptimizedImage';
 import { handleImgErrorFallback, resolveDirectImageUrl } from '../utils/imageCdnHelper';
 import {
   getProductCategorySlugFromLocation,
+  getCurrentProductSlug,
   navigateToProductCategory,
   scrollToTopImmediate,
 } from '../utils/navigation';
+import {
+  loadLocalDb,
+  INITIAL_PRODUCT_FILTER_SETTINGS,
+  ProductFilterSettingsConfig,
+} from '../utils/localBackendFallback';
+import { toPersianDigits } from '../utils/persianDigits';
 
 import {
   Verify,
@@ -1839,6 +1848,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   cartQuantities = {},
   onOpenProductModal,
   onAddToCart,
+  onShowToast,
+  onOpenLogin,
   isLoggedIn = false,
 }) => {
   const [activeCategory, setActiveCategory] = useState<ProductCategoryTabItem>(
@@ -1889,8 +1900,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   };
 
   const [selectedProduct, setSelectedProduct] = useState<ChandelierProduct | null>(() => {
-    const slug = getProductCategorySlugFromLocation();
-    return findProductBySlugOrCode(slug);
+    const productSlug = getCurrentProductSlug();
+    if (productSlug) {
+      const found = findProductBySlugOrCode(productSlug);
+      if (found) return found;
+    }
+    return null;
   });
 
   const navigateToProductDetail = (productId: string) => {
@@ -1936,19 +1951,235 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const [activeSlideIdx, setActiveSlideIdx] = useState<number>(0);
   const [selectedFinish, setSelectedFinish] = useState<FinishType>('original');
   const [qty, setQty] = useState<number>(1);
-  const [addedToast, setAddedToast] = useState<boolean>(false);
+
+  const similarCarouselRef = useRef<HTMLDivElement | null>(null);
+  const similarDesktopIndexRef = useRef<number>(0);
+  const isSimilarButtonScrollingRef = useRef<boolean>(false);
+  const similarButtonScrollTimeoutRef = useRef<number | null>(null);
+
+  const handleSimilarCarouselScroll = () => {
+    if (isSimilarButtonScrollingRef.current) return;
+    const container = similarCarouselRef.current;
+    if (!container) return;
+    const cards = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-carousel-card="true"]')
+    ).filter((el) => el.offsetParent !== null);
+    if (cards.length === 0) return;
+
+    const containerRight = container.getBoundingClientRect().right;
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    cards.forEach((card, idx) => {
+      const diff = Math.abs(card.getBoundingClientRect().right - containerRight);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+    similarDesktopIndexRef.current = closestIdx;
+  };
+
+  const scrollSimilarCarousel = (direction: 'next' | 'prev') => {
+    const container = similarCarouselRef.current;
+    if (!container) return;
+    const cards = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-carousel-card="true"]')
+    ).filter((el) => el.offsetParent !== null);
+    if (cards.length === 0) return;
+
+    const visibleCount = window.innerWidth >= 1024 ? 4 : window.innerWidth >= 640 ? 2 : 1;
+    const maxStartIndex = Math.max(0, cards.length - visibleCount);
+
+    let nextIndex = similarDesktopIndexRef.current;
+    if (direction === 'next') {
+      nextIndex = nextIndex >= maxStartIndex ? 0 : nextIndex + 1;
+    } else {
+      nextIndex = nextIndex <= 0 ? maxStartIndex : nextIndex - 1;
+    }
+    similarDesktopIndexRef.current = nextIndex;
+
+    const targetCard = cards[nextIndex];
+    if (!targetCard) return;
+
+    isSimilarButtonScrollingRef.current = true;
+    if (similarButtonScrollTimeoutRef.current) {
+      window.clearTimeout(similarButtonScrollTimeoutRef.current);
+    }
+    similarButtonScrollTimeoutRef.current = window.setTimeout(() => {
+      isSimilarButtonScrollingRef.current = false;
+    }, 550);
+
+    const containerRight = container.getBoundingClientRect().right;
+    const targetRight = targetCard.getBoundingClientRect().right;
+    const deltaX = targetRight - containerRight;
+
+    container.scrollBy({
+      left: deltaX,
+      behavior: 'smooth',
+    });
+  };
 
   useEffect(() => {
     if (selectedProduct) {
       setSelectedFinish(selectedProduct.defaultFinish || 'original');
       setActiveSlideIdx(0);
       setQty(1);
-      setAddedToast(false);
+      similarDesktopIndexRef.current = 0;
+      if (similarCarouselRef.current) {
+        similarCarouselRef.current.scrollTo({ left: 0, behavior: 'instant' });
+      }
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
   }, [selectedProduct]);
 
+  // ساخت آواتارهای وکتور تضمینی با گرادینت لوکس و حروف اول نام کاربر
+  const makeAvatarSvg = (initials: string, bg1: string, bg2: string) => {
+    const cleanId = encodeURIComponent(initials.trim().replace(/\s+/g, '_'));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+      <defs>
+        <linearGradient id="g_${cleanId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${bg1}"/>
+          <stop offset="100%" stop-color="${bg2}"/>
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="50" fill="url(#g_${cleanId})"/>
+      <circle cx="50" cy="38" r="17" fill="rgba(255,255,255,0.85)"/>
+      <path d="M22 84 C22 62 78 62 78 84 Z" fill="rgba(255,255,255,0.85)"/>
+      <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5"/>
+      <text x="50" y="55" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="13" fill="${bg1}">${initials}</text>
+    </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  };
 
+  // نظرات کاربران درباره محصول با ترتیب جدیدترین در بالا و قدیمی‌ترین در پایین
+  const [activeCommentPage, setActiveCommentPage] = useState<number>(0);
+  const [commentSlideDir, setCommentSlideDir] = useState<'next' | 'prev'>('next');
+  const [isAddCommentModalOpen, setIsAddCommentModalOpen] = useState<boolean>(false);
+  const [newCommentName, setNewCommentName] = useState<string>('');
+  const [newCommentText, setNewCommentText] = useState<string>('');
+  const [newCommentRating, setNewCommentRating] = useState<number>(5);
+  const [commentToast, setCommentToast] = useState<string | null>(null);
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
+
+  const [commentItems, setCommentItems] = useState([
+    {
+      id: 'c1',
+      name: 'ساشا آذرخش آلوچه',
+      date: 'تاریخ نظر دهی : ۱۳ شهریور ماه ۱۴۰۳',
+      time: 'ساعت ۱۴:۲۵',
+      rating: '۴.۳',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      avatarSvg: makeAvatarSvg('س.آ', '#8b5cf6', '#6d28d9'),
+      content:
+        'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است.',
+    },
+    {
+      id: 'c2',
+      name: 'پرهام رحیمی',
+      date: 'تاریخ نظر دهی : ۲۴ آبان ماه ۱۴۰۳',
+      time: 'ساعت ۱۴:۲۵',
+      rating: '۴.۳',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+      avatarSvg: makeAvatarSvg('پ.ر', '#b58c5e', '#8c673d'),
+      content:
+        'لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم',
+    },
+    {
+      id: 'c3',
+      name: 'مهندس کیانوش علیزاده',
+      date: 'تاریخ نظر دهی : ۲۸ تیر ماه ۱۴۰۳',
+      time: 'ساعت ۱۱:۱۵',
+      rating: '۴.۹',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+      avatarSvg: makeAvatarSvg('ک.ع', '#0284c7', '#0369a1'),
+      content:
+        'طراحی این مدل به شدت با دکوراسیون کلاسیک و مدرن منزل ما همخوانی داشت. خدمات پشتیبانی و مشاوره قبل از خرید بسیار حرفه‌ای و صبورانه بود. تشکر ویژه از تیم تولید و گارانتی معتبر مجموعه صالحی.',
+    },
+    {
+      id: 'c4',
+      name: 'دکتر نیلوفر سپهری',
+      date: 'تاریخ نظر دهی : ۱۶ خرداد ماه ۱۴۰۳',
+      time: 'ساعت ۲۰:۱۰',
+      rating: '۴.۶',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
+      avatarSvg: makeAvatarSvg('ن.س', '#059669', '#047857'),
+      content:
+        'جنس برنج و آبکاری طلایی مات بعد از چند ماه استفاده همچنان کیفیت و درخشش روز اول رو حفظ کرده و هیچ‌گونه تغییر رنگ یا کدر شدنی نداشته. حتما خریدش رو به دوستانی که دنبال کار لوکس و ماندگار هستند پیشنهاد می‌کنم.',
+    },
+    {
+      id: 'c5',
+      name: 'علیرضا کریمی',
+      date: 'تاریخ نظر دهی : ۱۹ اردیبهشت ماه ۱۴۰۳',
+      time: 'ساعت ۰۹:۴۵',
+      rating: '۴.۲',
+      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150',
+      avatarSvg: makeAvatarSvg('ع.ک', '#d97706', '#b45309'),
+      content:
+        'هماهنگی برای ارسال در ساعت مشخص شده بسیار دقیق بود. بسته‌بندی چندلایه با فوم‌های ضربه‌گیر باعث شد با خیال راحت در شهرستان تحویل بگیرم. ممنون از توجه ویژه به رضایت مشتری.',
+    },
+    {
+      id: 'c6',
+      name: 'زهرا صادقیان',
+      date: 'تاریخ نظر دهی : ۴ فروردین ماه ۱۴۰۳',
+      time: 'ساعت ۱۸:۳۰',
+      rating: '۴.۷',
+      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+      avatarSvg: makeAvatarSvg('ز.ص', '#db2777', '#be185d'),
+      content:
+        'یک خرید کاملاً مطمئن و با اصالت. نوردهی فوق‌العاده یکدست بدون پرش نوری داره و کریستال‌های تراش‌خورده جلوه بی‌نظیری به سالن پذیرایی داده است.',
+    },
+  ]);
+
+  const totalCommentPages = Math.max(1, commentItems.length - 1);
+
+  const handlePrevCommentPage = () => {
+    if (activeCommentPage > 0) {
+      setCommentSlideDir('prev');
+      setActiveCommentPage((prev) => prev - 1);
+    }
+  };
+
+  const handleNextCommentPage = () => {
+    const totalPages = Math.max(1, commentItems.length - 1);
+    if (activeCommentPage < totalPages - 1) {
+      setCommentSlideDir('next');
+      setActiveCommentPage((prev) => prev + 1);
+    }
+  };
+
+  const handleSelectCommentDot = (pageIdx: number) => {
+    if (pageIdx !== activeCommentPage) {
+      setCommentSlideDir(pageIdx > activeCommentPage ? 'next' : 'prev');
+      setActiveCommentPage(pageIdx);
+    }
+  };
+
+  const handleSubmitNewComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentName.trim() || !newCommentText.trim()) return;
+
+    const initials = newCommentName.trim().slice(0, 2);
+    const newObj = {
+      id: `c-new-${Date.now()}`,
+      name: newCommentName.trim(),
+      date: 'تاریخ نظر دهی : امروز',
+      time: 'ساعت ' + new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+      rating: newCommentRating.toLocaleString('fa-IR') + '.0',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      avatarSvg: makeAvatarSvg(initials, '#b58c5e', '#8c673d'),
+      content: newCommentText.trim(),
+    };
+
+    setCommentItems((prev) => [newObj, ...prev]);
+    setNewCommentName('');
+    setNewCommentText('');
+    setNewCommentRating(5);
+    setIsAddCommentModalOpen(false);
+    setCommentSlideDir('next');
+    setActiveCommentPage(0);
+    setCommentToast('نظر شما با موفقیت ثبت شد و در بالای نظرات قرار گرفت.');
+    setTimeout(() => setCommentToast(null), 4000);
+  };
 
   const [openFilterGroups, setOpenFilterGroups] = useState<
     Record<string, boolean>
@@ -2006,6 +2237,33 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const animTimeoutRef = useRef<Record<string, number>>({});
   const filterCalcTimeoutRef = useRef<number | null>(null);
 
+  const [filterSettings, setFilterSettings] = useState<ProductFilterSettingsConfig>(() => {
+    try {
+      const db = loadLocalDb();
+      return db.productFilterSettings || INITIAL_PRODUCT_FILTER_SETTINGS;
+    } catch {
+      return INITIAL_PRODUCT_FILTER_SETTINGS;
+    }
+  });
+
+  useEffect(() => {
+    const updateFilterConfig = (e?: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail && (detail.models || detail.materials || detail.colors)) {
+        setFilterSettings(detail);
+      } else {
+        const db = loadLocalDb();
+        setFilterSettings(db.productFilterSettings || INITIAL_PRODUCT_FILTER_SETTINGS);
+      }
+    };
+    window.addEventListener('app-filter-settings-updated', updateFilterConfig as EventListener);
+    window.addEventListener('storage', updateFilterConfig as EventListener);
+    return () => {
+      window.removeEventListener('app-filter-settings-updated', updateFilterConfig as EventListener);
+      window.removeEventListener('storage', updateFilterConfig as EventListener);
+    };
+  }, []);
+
   const triggerFilterCalculation = () => {
     setIsFilterCalculating(true);
     if (filterCalcTimeoutRef.current) {
@@ -2044,8 +2302,28 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       setCurrentPage(1);
       syncPriceBoundsForCategory(resolved.slug);
 
-      const found = findProductBySlugOrCode(slug);
+      // When category changes, user is viewing category catalog, NOT a product detail
+      if (customSlug !== undefined) {
+        setSelectedProduct(null);
+      } else {
+        const prodSlug = getCurrentProductSlug();
+        const found = prodSlug ? findProductBySlugOrCode(prodSlug) : null;
+        setSelectedProduct(found);
+      }
+      scrollToTopImmediate();
+    };
+
+    const syncProductFromUrl = (e?: Event) => {
+      const customSlug = (e as CustomEvent<string | null>)?.detail;
+      const prodSlug =
+        customSlug !== undefined
+          ? customSlug
+          : getCurrentProductSlug();
+      const found = prodSlug ? findProductBySlugOrCode(prodSlug) : null;
       setSelectedProduct(found);
+      if (found) {
+        setSelectedFinish(found.defaultFinish || 'original');
+      }
       scrollToTopImmediate();
     };
 
@@ -2055,6 +2333,10 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       'app-product-category-change',
       syncCategoryFromUrl as EventListener
     );
+    window.addEventListener(
+      'app-product-slug-change',
+      syncProductFromUrl as EventListener
+    );
 
     return () => {
       window.removeEventListener('popstate', syncCategoryFromUrl);
@@ -2062,6 +2344,10 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       window.removeEventListener(
         'app-product-category-change',
         syncCategoryFromUrl as EventListener
+      );
+      window.removeEventListener(
+        'app-product-slug-change',
+        syncProductFromUrl as EventListener
       );
       if (filterCalcTimeoutRef.current) {
         window.clearTimeout(filterCalcTimeoutRef.current);
@@ -2174,7 +2460,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     }
     setActiveSlideIdx(0);
     setQty(1);
-    setAddedToast(false);
 
     if (typeof window !== 'undefined') {
       const targetUrl = `/product/${encodeURIComponent(product.id)}`;
@@ -2212,11 +2497,24 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     }, 650);
   };
 
-  const filteredModelOptions = MODEL_FILTER_OPTIONS.filter((opt) =>
+  const modelOptionsList =
+    filterSettings?.models && filterSettings.models.length >= INITIAL_PRODUCT_FILTER_SETTINGS.models.length
+      ? filterSettings.models
+      : INITIAL_PRODUCT_FILTER_SETTINGS.models;
+  const materialOptionsList =
+    filterSettings?.materials && filterSettings.materials.length >= INITIAL_PRODUCT_FILTER_SETTINGS.materials.length
+      ? filterSettings.materials
+      : INITIAL_PRODUCT_FILTER_SETTINGS.materials;
+  const colorOptionsList =
+    filterSettings?.colors && filterSettings.colors.length >= INITIAL_PRODUCT_FILTER_SETTINGS.colors.length
+      ? filterSettings.colors
+      : INITIAL_PRODUCT_FILTER_SETTINGS.colors;
+
+  const filteredModelOptions = modelOptionsList.filter((opt) =>
     opt.label.toLowerCase().includes(modelSearchQuery.trim().toLowerCase())
   );
 
-  const filteredColorOptions = COLOR_FILTER_OPTIONS.filter((opt) =>
+  const filteredColorOptions = colorOptionsList.filter((opt) =>
     opt.label.toLowerCase().includes(colorSearchQuery.trim().toLowerCase())
   );
 
@@ -2295,6 +2593,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     // ۴. فیلتر مدل محصول
     if (selectedModelFilters.length > 0) {
       const matchesModel = selectedModelFilters.some((modelId) => {
+        const foundOpt = modelOptionsList.find((opt) => opt.id === modelId);
+        if (foundOpt && foundOpt.label) {
+          const labelClean = foundOpt.label.toLowerCase().replace(/لوستر\s*/g, '').trim();
+          if (labelClean && text.includes(labelClean)) return true;
+        }
         if (modelId === 'model-azo') {
           return text.includes('کلاسیک') || indexInPage % 3 === 0;
         }
@@ -2369,6 +2672,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     // ۵. فیلتر جنس محصول (فولاد، پرسلان، برنج، کریستال، گلس)
     if (selectedMaterialFilters.length > 0) {
       const matchesMaterial = selectedMaterialFilters.some((matId) => {
+        const foundOpt = materialOptionsList.find((opt) => opt.id === matId);
+        if (foundOpt && foundOpt.label) {
+          const labelClean = foundOpt.label.toLowerCase().trim();
+          if (labelClean && (text.includes(labelClean) || (product.bodyMaterial && product.bodyMaterial.toLowerCase().includes(labelClean)))) return true;
+        }
         if (matId === 'mat-steel' || matId === 'mat-bronze') {
           return (
             text.includes('برنز') ||
@@ -2417,6 +2725,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     // ۶. فیلتر رنگ محصول
     if (selectedColorFilters.length > 0) {
       const matchesColor = selectedColorFilters.some((colorId) => {
+        const foundOpt = colorOptionsList.find((opt) => opt.id === colorId);
+        if (foundOpt && foundOpt.label) {
+          const labelClean = foundOpt.label.toLowerCase().trim();
+          if (labelClean && text.includes(labelClean)) return true;
+        }
         if (colorId === 'col-white' || colorId === 'color-white') {
           return (
             text.includes('سفید') ||
@@ -2661,6 +2974,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     ? actualCategoryTotalCount
     : mobileProducts.length;
 
+
+
   const renderFilterSectionsList = () => (
     <div className="divide-y divide-[#efefef]">
       {/* بخش ۱: مدل محصول */}
@@ -2710,12 +3025,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
             ) : (
               <div className="relative pl-1">
                 <div
-                  ref={modelListRef}
+                  id="filter-model-scroll-list"
                   onWheel={(e) => {
                     e.stopPropagation();
                     e.currentTarget.scrollTop += e.deltaY;
                   }}
-                  className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
+                  className="h-[180px] max-h-[180px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
                 >
                   {filteredModelOptions.map((opt) => {
                     const isChecked = selectedFilters.includes(opt.id);
@@ -2786,13 +3101,14 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           <div className="pb-3.5 pt-0.5">
             <div className="relative pl-1">
               <div
+                id="filter-material-scroll-list"
                 onWheel={(e) => {
                   e.stopPropagation();
                   e.currentTarget.scrollTop += e.deltaY;
                 }}
-                className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
+                className="h-[180px] max-h-[180px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
               >
-                {MATERIAL_FILTER_OPTIONS.map((opt) => {
+                {materialOptionsList.map((opt) => {
                   const isChecked = selectedFilters.includes(opt.id);
                   return (
                     <label
@@ -2888,12 +3204,13 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
             ) : (
               <div className="relative pl-1">
                 <div
+                  id="filter-color-scroll-list"
                   ref={colorListRef}
                   onWheel={(e) => {
                     e.stopPropagation();
                     e.currentTarget.scrollTop += e.deltaY;
                   }}
-                  className="max-h-[195px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
+                  className="h-[180px] max-h-[180px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
                 >
                   {filteredColorOptions.map((opt) => {
                     const isChecked = selectedFilters.includes(opt.id);
@@ -3214,6 +3531,55 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
   const renderFilterCardContent = () => (
     <div className="bg-white rounded-[18px] border border-[#ebebeb] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
+      <style>{`
+        #filter-model-scroll-list,
+        #filter-material-scroll-list,
+        #filter-color-scroll-list,
+        .filter-scroll-list {
+          height: 180px !important;
+          max-height: 180px !important;
+        }
+        #filter-model-scroll-list::-webkit-scrollbar,
+        #filter-material-scroll-list::-webkit-scrollbar,
+        #filter-color-scroll-list::-webkit-scrollbar,
+        .filter-scroll-list::-webkit-scrollbar {
+          width: 4px !important;
+          height: 4px !important;
+          display: block !important;
+        }
+        #filter-model-scroll-list::-webkit-scrollbar-button,
+        #filter-material-scroll-list::-webkit-scrollbar-button,
+        #filter-color-scroll-list::-webkit-scrollbar-button,
+        .filter-scroll-list::-webkit-scrollbar-button {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        #filter-model-scroll-list::-webkit-scrollbar-thumb,
+        #filter-material-scroll-list::-webkit-scrollbar-thumb,
+        #filter-color-scroll-list::-webkit-scrollbar-thumb,
+        .filter-scroll-list::-webkit-scrollbar-thumb {
+          background: #cdcdcd !important;
+          border-radius: 9999px !important;
+        }
+        #filter-model-scroll-list::-webkit-scrollbar-thumb:hover,
+        #filter-material-scroll-list::-webkit-scrollbar-thumb:hover,
+        #filter-color-scroll-list::-webkit-scrollbar-thumb:hover,
+        .filter-scroll-list::-webkit-scrollbar-thumb:hover {
+          background: #b59766 !important;
+        }
+        #filter-model-scroll-list::-webkit-scrollbar-track,
+        #filter-model-scroll-list::-webkit-scrollbar-track-piece,
+        #filter-material-scroll-list::-webkit-scrollbar-track,
+        #filter-material-scroll-list::-webkit-scrollbar-track-piece,
+        #filter-color-scroll-list::-webkit-scrollbar-track,
+        #filter-color-scroll-list::-webkit-scrollbar-track-piece,
+        .filter-scroll-list::-webkit-scrollbar-track,
+        .filter-scroll-list::-webkit-scrollbar-track-piece {
+          background: #f3f3f3 !important;
+          border-radius: 9999px !important;
+        }
+      `}</style>
       <div className="flex items-center justify-between gap-2 pb-4 border-b border-[#efefef]">
         <h2 className="text-[14.5px] font-extrabold text-[#1e1e1e]">
           فیلتر مرتب سازی
@@ -3400,12 +3766,25 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       return String(str).replace(/\d/g, (x) => '۰۱۲۳۴۵۶۷۸۹'[parseInt(x)]);
     };
 
+    // محاسبه قیمت کل با ضرب قیمت واحد محصول در تعداد (Qty)
+    const unitPriceNumeric = (() => {
+      if (typeof product.priceNumeric === 'number' && product.priceNumeric > 0) {
+        return product.priceNumeric;
+      }
+      const rawDigits = String(product.priceFormatted || '')
+        .replace(/[۰-۹]/g, (ch) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(ch)))
+        .replace(/[^\d]/g, '');
+      const parsed = parseInt(rawDigits, 10);
+      return !isNaN(parsed) && parsed > 0 ? parsed : 11800000;
+    })();
+
+    const calculatedTotalPrice = unitPriceNumeric * qty;
+    const formattedTotalPrice = `${toPersianDigits(calculatedTotalPrice.toLocaleString('fa-IR'))} تومان`;
+
     const handleAdd = () => {
       for (let i = 0; i < qty; i++) {
         onAddToCart(product);
       }
-      setAddedToast(true);
-      setTimeout(() => setAddedToast(false), 2200);
     };
 
     const galleryImages = [
@@ -3432,8 +3811,15 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       <Ruler size="28" color="#b59766" variant="Linear" className="shrink-0" />
     );
 
-    // سایر محصولات گالری به عنوان شبیه‌ساز محصولات مشابه
-    const similarProducts = products.filter(p => p.id !== product.id).slice(0, 4);
+    // سایر محصولات به عنوان محصولات مشابه (تعداد افزایش یافته جهت فعال‌سازی کاروسل و تست دکمه‌ها)
+    const baseSimilar = products.filter((p) => p.id !== product.id);
+    const fallbackList = SALEHI_COLLECTION_PRODUCTS.filter((p) => p.id !== product.id);
+    const combinedSimilar = [
+      ...baseSimilar,
+      ...fallbackList.filter((fb) => !baseSimilar.some((p) => p.id === fb.id)),
+    ];
+    // تعداد ۱۲ محصول برای کاروسل با قابلیت جابجایی و تست روان
+    const similarProducts = combinedSimilar.length > 4 ? combinedSimilar.slice(0, 12) : combinedSimilar;
 
     return (
       <div className="w-full min-h-screen bg-[#fcfbf9] text-[#222222] font-medium py-6 sm:py-10 pb-20 px-4 sm:px-8 lg:px-14 xl:px-20" dir="rtl">
@@ -3490,8 +3876,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               </button>
             </div>
 
-            {/* بندانگشتی‌های ۵گانه ثابت گالری مطابق طرح */}
-            <div className="grid grid-cols-5 gap-3">
+            {/* بندانگشتی‌های ۵گانه ثابت گالری مطابق طرح: تصاویر کامل و استروک #D9D9D9 */}
+            <div className="grid grid-cols-5 gap-2.5 sm:gap-3">
               {galleryImages.map((thumbSrc, index) => {
                 const isSelected = activeSlideIdx === index;
                 return (
@@ -3499,22 +3885,22 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                     key={`detail-thumb-${index}`}
                     type="button"
                     onClick={() => setActiveSlideIdx(index)}
-                    className={`relative rounded-lg h-[54px] sm:h-[68px] md:h-[78px] bg-white border transition-all cursor-pointer flex items-center justify-center p-1.5 ${
+                    className={`relative rounded-[11px] sm:rounded-[12px] h-[58px] sm:h-[72px] md:h-[82px] bg-white border-2 transition-all cursor-pointer flex items-center justify-center p-0 overflow-hidden ${
                       isSelected
-                        ? 'border-[#b59766] ring-2 ring-[#b59766]/20 shadow-xs'
-                        : 'border-[#ebdcb9]/40 hover:border-[#b59766]/50'
+                        ? 'border-[#b59766] ring-2 ring-[#b59766]/30 shadow-xs'
+                        : 'border-[#D9D9D9] hover:border-[#b59766]/60'
                     }`}
                   >
                     <OptimizedImage
                       src={thumbSrc}
                       alt={index === 0 ? 'نمای سه‌بعدی محصول' : 'محیط اجرایی گالری'}
                       loading="eager"
-                      options={{ width: 200, quality: 80 }}
-                      containerClassName="w-full h-full flex items-center justify-center"
-                      className="max-w-full max-h-full object-contain object-center rounded-md"
+                      options={{ width: 300, quality: 85 }}
+                      containerClassName="w-full h-full"
+                      className="w-full h-full object-cover object-center rounded-[9px] sm:rounded-[10px]"
                     />
                     {index === 0 && (
-                      <span className="absolute bottom-1 right-1 bg-[#b59766] text-white text-[8px] sm:text-[10px] px-1 py-0.5 rounded font-black shadow-xs">
+                      <span className="absolute bottom-1 right-1 bg-[#b59766] text-white text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded font-black shadow-xs z-10">
                         3D
                       </span>
                     )}
@@ -3682,23 +4068,23 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                       <button
                         type="button"
                         title="جستجو"
-                        className="w-12 h-12 rounded-xl bg-[#f6f6f6] hover:bg-[#eaeaea] flex items-center justify-center text-[#1a1a1a] transition-colors cursor-pointer"
+                        className="group w-12 h-12 rounded-[14px] bg-[#f6f6f6] hover:bg-[#71747d] text-[#1a1a1a] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-2xs"
                       >
-                        <SearchNormal size="22" color="#1a1a1a" variant="Linear" />
+                        <SearchNormal size="22" color="currentColor" variant="Linear" className="transition-colors" />
                       </button>
                       <button
                         type="button"
                         title="نشان کردن"
-                        className="w-12 h-12 rounded-xl bg-[#f6f6f6] hover:bg-[#eaeaea] flex items-center justify-center text-[#1a1a1a] transition-colors cursor-pointer"
+                        className="group w-12 h-12 rounded-[14px] bg-[#f6f6f6] hover:bg-[#b58c5e] text-[#1a1a1a] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-2xs"
                       >
-                        <Archive size="22" color="#1a1a1a" variant="Linear" />
+                        <Archive size="22" color="currentColor" variant="Linear" className="transition-colors" />
                       </button>
                       <button
                         type="button"
                         title="اشتراک‌گذاری"
-                        className="w-12 h-12 rounded-xl bg-[#f6f6f6] hover:bg-[#eaeaea] flex items-center justify-center text-[#1a1a1a] transition-colors cursor-pointer"
+                        className="group w-12 h-12 rounded-[14px] bg-[#f6f6f6] hover:bg-[#b58c5e] text-[#1a1a1a] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-2xs"
                       >
-                        <Share size="22" color="#1a1a1a" variant="Linear" />
+                        <Share size="22" color="currentColor" variant="Linear" className="transition-colors" />
                       </button>
                     </div>
                   </div>
@@ -3711,8 +4097,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                     {/* قیمت در سمت راست */}
                     <div className="text-right flex flex-col justify-center leading-tight">
                       <span className="block text-sm font-semibold text-[#1a1a1a]">قیمت :</span>
-                      <span className="text-[17px] sm:text-[18px] font-bold text-[#1a1a1a] tabular-nums mt-1">
-                        {toPersianDigits(product.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان')}
+                      <span className="text-[17px] sm:text-[18px] font-bold text-[#1a1a1a] tabular-nums mt-1 transition-all duration-200">
+                        {formattedTotalPrice}
                       </span>
                     </div>
 
@@ -3782,7 +4168,10 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] mb-4">
                 توضیحات تکمیلی
               </h3>
-              <p className="text-xs sm:text-[13px] leading-7 text-[#777777] text-justify">
+              <p
+                id="product-description-scroll"
+                className="filter-scroll-list text-xs sm:text-[13px] leading-7 text-[#777777] text-justify max-h-[120px] overflow-y-auto pl-3.5"
+              >
                 نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود، یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود، یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود، یکپارچگی محصولات روشنایی پروژه حفظ میشود.
               </p>
             </div>
@@ -3814,29 +4203,92 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
         {/* بخش سوم: نظرات کاربران درباره این محصول */}
         <div className="border-t border-[#ebdcb9]/30 pt-8 mt-10 text-right">
-          <div className="flex items-center justify-between mb-6 mt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 mt-4">
             <div className="flex flex-col gap-1">
               <h3 className="text-lg sm:text-xl font-black text-[#1a1a1a]">
                 نظرات کاربران درباره این محصول
               </h3>
               <span className="text-xs text-[#8c8273] font-bold tabular-nums">
-                ۱۶ نظر ثبت شده
+                ۱۶ نظر ثبت شده · صفحه {toPersianDigits(activeCommentPage + 1)} از {toPersianDigits(totalCommentPages)}
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1">
-                <button type="button" className="w-8 h-8 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronRight className="w-4 h-4" /></button>
-                <button type="button" className="w-8 h-8 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronLeft className="w-4 h-4" /></button>
-              </div>
-              
-              <div className="w-px h-6 border-r border-dashed border-[#ebdcb9]" />
+            <div className="flex items-center gap-3 self-end sm:self-auto">
+              {/* گروه ناوبری عقب و جلو به همراه نقاط صفحه‌بندی */}
+              <div className="flex items-center gap-2">
+                {/* دکمه اول: رفتن به جلو (صفحه بعد / پایینی‌ها) با هاور سفید آیکون */}
+                <button
+                  type="button"
+                  onClick={handleNextCommentPage}
+                  disabled={activeCommentPage >= totalCommentPages - 1}
+                  aria-label="بعدی"
+                  title="صفحه بعد (پایینی‌ها / جلو)"
+                  className={`group w-11 h-11 sm:w-12 sm:h-12 rounded-[14px] bg-[#f5f5f5] hover:bg-[#b58c5e] hover:border-[#b58c5e] border border-transparent flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 text-[#555555] hover:text-white ${
+                    activeCommentPage >= totalCommentPages - 1
+                      ? 'opacity-35 cursor-not-allowed hover:bg-[#f5f5f5] hover:border-transparent hover:text-gray-400'
+                      : ''
+                  }`}
+                >
+                  <ChevronRight
+                    className={`w-5 h-5 transition-colors text-current group-hover:text-white ${
+                      activeCommentPage >= totalCommentPages - 1
+                        ? 'text-gray-400'
+                        : 'text-[#555555] group-hover:text-white'
+                    }`}
+                  />
+                </button>
 
+                <div
+                  className="flex items-center gap-1.5 sm:gap-2 px-1"
+                  dir="ltr"
+                >
+                  {Array.from({ length: totalCommentPages }).map((_, pageIdx) => (
+                    <button
+                      key={`comment-dot-${pageIdx}`}
+                      type="button"
+                      onClick={() => handleSelectCommentDot(pageIdx)}
+                      className={`rounded-full transition-all duration-300 cursor-pointer ${
+                        activeCommentPage === pageIdx
+                          ? 'w-2.5 h-2.5 bg-[#2b2b2b] scale-110'
+                          : 'w-2 h-2 bg-[#e2e2e2] hover:bg-[#b58c5e]'
+                      }`}
+                      aria-label={`صفحه ${pageIdx + 1}${pageIdx === totalCommentPages - 1 ? ' (آخرین صفحه)' : pageIdx === 0 ? ' (صفحه اول)' : ''}`}
+                      title={`صفحه ${pageIdx + 1}${pageIdx === totalCommentPages - 1 ? ' (آخرین صفحه)' : pageIdx === 0 ? ' (صفحه اول)' : ''}`}
+                    />
+                  ))}
+                </div>
+
+                {/* دکمه دوم: رفتن به عقب (صفحه قبل / قبلی‌ها) با هاور سفید آیکون */}
+                <button
+                  type="button"
+                  onClick={handlePrevCommentPage}
+                  disabled={activeCommentPage === 0}
+                  aria-label="قبلی"
+                  title="صفحه قبل (قبلی‌ها / عقب)"
+                  className={`group w-11 h-11 sm:w-12 sm:h-12 rounded-[14px] bg-[#f5f5f5] hover:bg-[#b58c5e] hover:border-[#b58c5e] border border-transparent flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 text-[#555555] hover:text-white ${
+                    activeCommentPage === 0
+                      ? 'opacity-35 cursor-not-allowed hover:bg-[#f5f5f5] hover:border-transparent hover:text-gray-400'
+                      : ''
+                  }`}
+                >
+                  <ChevronLeft
+                    className={`w-5 h-5 transition-colors text-current group-hover:text-white ${
+                      activeCommentPage === 0
+                        ? 'text-gray-400'
+                        : 'text-[#555555] group-hover:text-white'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* دکمه افزودن نظر با ارتفاع مشخص مطابق تصویر - آیکون مثبت در سمت راست متن */}
               <button
                 type="button"
-                className="h-8 px-4 border border-[#ebdcb9] hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                onClick={() => setIsAddCommentModalOpen(true)}
+                className="h-11 sm:h-12 px-5 sm:px-6 rounded-[14px] border border-[#e2e2e2] bg-white hover:bg-gray-50 text-[#1a1a1a] font-bold text-sm sm:text-[15px] flex items-center gap-2 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0"
               >
-                + افزودن نظر
+                <Plus className="w-4 h-4 text-[#1a1a1a] stroke-[2.2]" />
+                <span>افزودن نظر</span>
               </button>
             </div>
           </div>
@@ -3847,12 +4299,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
             <div className="lg:col-span-4">
               <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs space-y-5">
                 {/* هدر امتیاز */}
-                <div className="flex items-center justify-between border-b border-[#f5f5f5] pb-3.5">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl sm:text-3xl font-black text-[#1a1a1a] tabular-nums">۴.۷</span>
-                    <span className="text-[13px] font-extrabold text-[#777777]">امتیاز</span>
+                <div className="flex items-center justify-between border-b-0 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl sm:text-4xl font-black text-[#1a1a1a] tabular-nums">۴.۷</span>
+                    <span className="text-base sm:text-lg font-black text-[#1a1a1a]">امتیاز</span>
                   </div>
-                  <span className="bg-[#eafde8] text-[#1dea2c] border border-[#b2eab9]/40 px-3 py-1 rounded-lg text-xs font-black">
+                  <span className="bg-[#edfcf2] text-[#39b533] border border-[#39b533]/25 px-4 py-1 rounded-full text-xs font-black">
                     خیلی خوب
                   </span>
                 </div>
@@ -3883,68 +4335,93 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               </div>
             </div>
 
-            {/* لیست کامنت‌ها (سمت چپ) - ۸ ستون */}
-            <div className="lg:col-span-8 space-y-4">
-              
-              {/* کامنت ۱ */}
-              <div className="bg-white rounded-[20px] border border-[#ebdcb9]/40 p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-[#b59766] text-white px-2.5 py-1 rounded-lg text-[11px] font-bold tabular-nums">
-                      ۴.۳ ★
-                    </span>
-                    <span className="bg-[#f6f6f5] text-gray-600 border border-[#e5e5e4] px-2.5 py-1 rounded-lg text-[10.5px] font-bold tabular-nums">
-                      ساعت ۱۴:۲۵
-                    </span>
-                  </div>
+            {/* لیست کامنت‌ها (سمت چپ) - ۸ ستون - کارت اول کامل و کارت دوم از پایین برش می‌خورد تا حالت پیوستگی به صفحه بعد ایجاد شود */}
+            <div
+              ref={commentsContainerRef}
+              id="comments-cards-scroll-container"
+              className="lg:col-span-8 overflow-hidden"
+            >
+              <div
+                key={`comment-page-${activeCommentPage}`}
+                className={`space-y-4 ${
+                  commentSlideDir === 'next'
+                    ? 'animate-comment-slide-next'
+                    : 'animate-comment-slide-prev'
+                }`}
+              >
+                {commentItems
+                  .slice(activeCommentPage, activeCommentPage + 2)
+                  .map((comment, localIdx) => {
+                    const globalIdx = activeCommentPage + localIdx;
+                    return (
+                      <div
+                        key={comment.id}
+                        id={`comment-card-${globalIdx}`}
+                        className={`bg-white rounded-[22px] border border-[#ebdcb9]/40 hover:border-[#b58c5e]/50 p-5 sm:p-6 shadow-2xs space-y-3.5 transition-all duration-300 ${
+                          localIdx === 1
+                            ? 'max-h-[110px] sm:max-h-[110px] h-[110px] overflow-hidden border-b-0 rounded-b-none relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-9 after:bg-gradient-to-t after:from-white after:via-white/70 after:to-transparent after:pointer-events-none'
+                            : ''
+                        }`}
+                        style={{
+                          animationDelay: `${localIdx * 70}ms`,
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full shrink-0 shadow-2xs">
+                              <img
+                                src={comment.avatar}
+                                alt={comment.name}
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  const target = e.currentTarget as HTMLImageElement;
+                                  if (comment.avatarSvg && target.src !== comment.avatarSvg) {
+                                    target.src = comment.avatarSvg;
+                                  }
+                                }}
+                                className="w-full h-full rounded-full object-cover border border-[#ebdcb9]/80"
+                              />
+                              <span
+                                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#39b533] border-2 border-white flex items-center justify-center shadow-xs"
+                                title="خریدار تایید شده"
+                              >
+                                <svg className="w-2.5 h-2.5 text-white stroke-[3.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs sm:text-[14px] font-black text-[#1a1a1a] block">
+                                {comment.name}
+                              </span>
+                              <span className="block text-[11px] text-[#777777] font-semibold mt-1">
+                                {comment.date}
+                              </span>
+                            </div>
+                          </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">ساشا آذرخش آلوچه</span>
-                      <span className="block text-[10.5px] text-[#777777] font-semibold mt-1">تاریخ نظر دهی : ۱۳ شهریور ماه ۱۴۰۳</span>
-                    </div>
-                    {/* شبیه‌ساز آواتار کاربر */}
-                    <div className="w-10 h-10 rounded-full bg-[#ebdcb9]/30 flex items-center justify-center text-[#b58c56] font-bold text-sm">
-                      س‌آ
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify">
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است.
-                </p>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-[#1e1e1e] text-white px-3.5 h-10 rounded-[10px] text-xs font-bold tabular-nums shadow-2xs flex items-center justify-center">
+                              {comment.time}
+                            </span>
+                            <span className="bg-[#b58c5e] text-white px-3.5 h-10 rounded-[10px] text-xs font-black tabular-nums shadow-2xs flex items-center justify-center gap-1.5 select-none">
+                              <Star className="w-3.5 h-3.5 fill-white text-white shrink-0 self-center -translate-y-[1px]" />
+                              <span className="leading-none flex items-center justify-center">{comment.rating}</span>
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify font-medium">
+                          {comment.content}
+                        </p>
+                      </div>
+                    );
+                  })}
               </div>
-
-              {/* کامنت ۲ */}
-              <div className="bg-white rounded-[20px] border border-[#ebdcb9]/40 p-5 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-[#b59766] text-white px-2.5 py-1 rounded-lg text-[11px] font-bold tabular-nums">
-                      ۴.۳ ★
-                    </span>
-                    <span className="bg-[#f6f6f5] text-gray-600 border border-[#e5e5e4] px-2.5 py-1 rounded-lg text-[10.5px] font-bold tabular-nums">
-                      ساعت ۱۴:۲۵
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <span className="block text-xs sm:text-[13px] font-black text-[#1a1a1a]">پرهام رحیمی</span>
-                      <span className="block text-[10.5px] text-[#777777] font-semibold mt-1">تاریخ نظر دهی : ۲۴ آبان ماه ۱۴۰۳</span>
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-[#ebdcb9]/30 flex items-center justify-center text-[#b58c56] font-bold text-sm">
-                      پ‌ر
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs sm:text-[13px] leading-7 text-[#555555] text-justify">
-                  لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ است.
-                </p>
-              </div>
-
             </div>
 
           </div>
         </div>
+
 
         {/* بخش چهارم: محصولات مشابه */}
         <div className="border-t border-[#ebdcb9]/30 pt-8 mt-14 text-right">
@@ -3957,43 +4434,87 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               <button
                 type="button"
                 onClick={() => navigateBackToProducts()}
-                className="h-10 px-6 border border-[#b58c5e] hover:bg-[#b58c5e] text-[#b58c56] hover:text-white rounded-lg text-sm font-bold transition-colors cursor-pointer"
+                className="h-10 px-6 bg-[#b58c5e]/5 hover:bg-[#b58c5e] border border-[#b58c5e] text-[#b58c5e] hover:text-white rounded-lg text-sm font-bold transition-colors cursor-pointer"
               >
                 مشاهده محصولات
               </button>
-              <div className="flex gap-1">
-                <button type="button" className="w-10 h-10 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronRight className="w-4 h-4" /></button>
-                <button type="button" className="w-10 h-10 rounded-lg bg-[#f6f6f5] border border-[#e5e5e4] flex items-center justify-center text-gray-600 hover:text-black shrink-0"><ChevronLeft className="w-4 h-4" /></button>
-              </div>
+              {similarProducts.length > 4 && (
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => scrollSimilarCarousel('prev')}
+                    aria-label="قبلی"
+                    className="group w-10 h-10 rounded-lg bg-[#f6f6f5] hover:bg-[#b58c5e] hover:border-[#b58c5e] border border-[#e5e5e4] flex items-center justify-center text-[#444444] hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
+                  >
+                    <ChevronRight className="w-4 h-4 text-[#444444] group-hover:text-white transition-colors" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollSimilarCarousel('next')}
+                    aria-label="بعدی"
+                    className="group w-10 h-10 rounded-lg bg-[#f6f6f5] hover:bg-[#b58c5e] hover:border-[#b58c5e] border border-[#e5e5e4] flex items-center justify-center text-[#444444] hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-[#444444] group-hover:text-white transition-colors" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* شبکه محصولات مشابه ۴ ستونه با دکمه و آیکون سبد خرید دقیقا مطابق طرح */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* کاروسل افقی محصولات مشابه */}
+          <div
+            ref={similarCarouselRef}
+            onScroll={handleSimilarCarouselScroll}
+            className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pr-1 pl-4 sm:px-1 py-2 touch-pan-x [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             {similarProducts.map((simProd) => {
               const isOutOfStock = Boolean(simProd.outOfStock);
-              const qtyInCart = cartQuantities[simProd.id] || 0;
-              const isHighlighted = !isOutOfStock && (qtyInCart > 0 || cartProductIds.includes(simProd.id));
-              const currentFinish = cardFinishes[simProd.id] || 'original';
+              const qtyInCart = isLoggedIn ? cartQuantities[simProd.id] || 0 : 0;
+              const isHighlighted =
+                isLoggedIn &&
+                !isOutOfStock &&
+                (qtyInCart > 0 || cartProductIds.includes(simProd.id));
+              const isCard3D = Boolean(active3DCards[simProd.id]);
+              const currentFinish =
+                cardFinishes[simProd.id] ||
+                simProd.cardFinishOverride ||
+                'original';
               const activeFinishPreset = FINISH_PRESETS[currentFinish];
+
+              const isTooltipActive = recentTooltipId === simProd.id;
+              const showOutOfStockTooltip = isOutOfStock && isTooltipActive;
+              const showAddedTooltip =
+                !isOutOfStock && qtyInCart > 0 && isTooltipActive;
 
               return (
                 <div
                   key={`sim-${simProd.id}`}
                   data-carousel-card="true"
-                  className="group shrink-0 snap-start flex flex-col justify-between bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300"
+                  onMouseLeave={() => {
+                    clearTemporaryTooltip(simProd.id);
+                  }}
+                  className="group shrink-0 snap-start w-[83vw] max-w-[345px] sm:w-[calc((100%-24px)/2)] lg:w-[calc((100%-72px)/4)] sm:max-w-none flex flex-col justify-between bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300"
                 >
                   <div>
+                    {/* باکس عکس با پس‌زمینه طوسی کم‌رنگ و گوشه‌های گرد */}
                     <div
                       onClick={() => {
-                        if (isOutOfStock) return;
-                        if (!active3DCards[simProd.id]) {
-                          navigateToProductDetail(simProd.id);
+                        if (isOutOfStock) {
+                          triggerTemporaryTooltip(simProd.id);
+                          return;
+                        }
+                        if (!isCard3D) {
+                          handleViewAndBuyClick(simProd, currentFinish);
                         }
                       }}
-                      className="relative w-full h-56 sm:h-60 rounded-[12px] bg-[#f5f5f5] flex items-center justify-center overflow-hidden cursor-pointer"
+                      className={`relative w-full h-56 sm:h-60 rounded-[12px] bg-[#f5f5f5] flex items-center justify-center overflow-hidden ${
+                        isOutOfStock ? 'cursor-not-allowed' : 'cursor-pointer'
+                      }`}
                     >
-                      {active3DCards[simProd.id] ? (
+                      {simProd.hasSnappPay && <SnappPayBadge />}
+
+                      {isCard3D ? (
                         <div
                           className="w-full h-full rounded-[12px] overflow-hidden"
                           onClick={(e) => e.stopPropagation()}
@@ -4009,39 +4530,45 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                           />
                         </div>
                       ) : (
-                        <TransparentProductImage
-                          src={simProd.image}
-                          alt={simProd.name}
-                          filterCss={activeFinishPreset?.filterCss || 'none'}
-                          className="w-full h-full max-h-[205px] max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-                        />
+                        <div className="relative w-full h-full flex items-center justify-center p-2.5">
+                          <TransparentProductImage
+                            src={simProd.image}
+                            alt={simProd.name}
+                            filterCss={activeFinishPreset?.filterCss || 'none'}
+                            className={`w-full h-full max-h-[205px] max-w-full object-contain transition-transform duration-300 ${
+                              isOutOfStock ? '' : 'group-hover:scale-[1.03]'
+                            }`}
+                          />
+                        </div>
                       )}
 
+                      {/* دکمه تغییر بین عکس و مدل سه‌بعدی */}
                       {!isOutOfStock && (
                         <button
                           type="button"
                           onClick={(e) => toggleCard3D(simProd.id, e)}
                           title={
-                            active3DCards[simProd.id]
+                            isCard3D
                               ? 'بازگشت به تصویر محصول'
                               : 'تبدیل فوری به مدل سه‌بعدی (3D)'
                           }
                           className={`absolute top-2.5 left-2.5 z-20 px-2.5 py-1 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
-                            active3DCards[simProd.id]
+                            isCard3D
                               ? 'bg-[#b59766] text-white opacity-100'
                               : 'bg-white/95 hover:bg-[#262626] text-[#262626] hover:text-white border border-[#e5e5e5] opacity-0 group-hover:opacity-100'
                           }`}
                         >
                           <Box className="w-3 h-3" />
-                          <span>{active3DCards[simProd.id] ? 'نمای 3D فعال' : '3D خودکار'}</span>
+                          <span>{isCard3D ? 'نمای 3D فعال' : '3D خودکار'}</span>
                         </button>
                       )}
 
+                      {/* نوار انتخاب رنگ‌های واقعی آبکاری لوستر روی کارت */}
                       {!isOutOfStock && (
                         <div
                           onClick={(e) => e.stopPropagation()}
                           className={`absolute bottom-2.5 inset-x-2.5 z-20 flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-xs border border-[#e8e4dc] shadow-2xs transition-opacity ${
-                            currentFinish !== 'original' || active3DCards[simProd.id]
+                            currentFinish !== 'original' || isCard3D
                               ? 'opacity-100'
                               : 'opacity-0 group-hover:opacity-100'
                           }`}
@@ -4097,72 +4624,126 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                       )}
                     </div>
 
+                    {/* عنوان، زیرعنوان و قیمت محصول */}
                     <div className="mt-4 px-1.5 text-right">
-                      <h4
-                        onClick={() => navigateToProductDetail(simProd.id)}
-                        className="text-[17.5px] sm:text-[18.5px] font-bold text-[#1f1f1f] hover:text-[#b59766] cursor-pointer truncate transition-colors"
+                      <h3
+                        onClick={() => {
+                          if (isOutOfStock) {
+                            triggerTemporaryTooltip(simProd.id);
+                            return;
+                          }
+                          handleViewAndBuyClick(simProd, currentFinish);
+                        }}
+                        className={`text-[17.5px] sm:text-[18.5px] font-bold text-[#1f1f1f] transition-colors ${
+                          isOutOfStock
+                            ? 'cursor-not-allowed'
+                            : 'hover:text-[#b59766] cursor-pointer'
+                        }`}
                       >
                         {simProd.name}
-                      </h4>
-                      <p className="text-[12.5px] sm:text-[13px] text-[#757575] font-medium mt-2.5 truncate">{simProd.subtitle}</p>
+                      </h3>
+                      <p className="text-[12.5px] sm:text-[13px] text-[#757575] font-medium mt-2.5">
+                        {simProd.subtitle}
+                      </p>
                       <p className="text-[14px] sm:text-[14.5px] font-semibold text-[#757575] mt-3.5 tabular-nums">
-                        {toPersianDigits(simProd.priceFormatted || '۱۲,۵۰۰,۰۰۰ تومان')}
+                        {simProd.priceFormatted}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-5 px-1.5 flex flex-row items-center justify-between gap-1.5" dir="rtl">
-                    <div className="flex items-center gap-1.5">
+                  {/* نوار پایین کارت: دکمه‌های مشاهده و خرید در راست، دکمه سبد خرید با تولتیپ در وسط، و کد محصول در چپ */}
+                  <div className="mt-5 px-1.5 flex flex-row items-center justify-between gap-2.5" dir="rtl">
+                    <div className="flex items-center gap-2.5">
                       <button
                         type="button"
-                        onClick={() => navigateToProductDetail(simProd.id)}
-                        className="h-11 min-w-[100px] px-3 rounded-[12px] text-[12.5px] font-bold transition-colors whitespace-nowrap bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer ml-1"
+                        onClick={() => handleViewAndBuyClick(simProd, currentFinish)}
+                        className="h-11 sm:h-12 min-w-[115px] sm:min-w-[142px] px-3.5 sm:px-6 rounded-[12px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer"
                       >
                         مشاهده و خرید
                       </button>
 
-                      <div className="relative shrink-0">
+                      {/* دکمه افزودن به سبد خرید / وضعیت ناموجود به همراه تولتیپ موقت در زمان افزودن یا هاور */}
+                      <div
+                        className="relative shrink-0"
+                        onMouseEnter={() => {
+                          if (isOutOfStock || qtyInCart > 0) {
+                            triggerTemporaryTooltip(simProd.id);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          clearTemporaryTooltip(simProd.id);
+                        }}
+                      >
                         {isOutOfStock ? (
-                          <button
-                            type="button"
-                            disabled
-                            aria-label="محصول در انبار وجود ندارد"
-                            className="w-11 h-11 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
-                          >
-                            <BagCross size="22" color="#ea1d2c" variant="Linear" />
-                          </button>
+                          <>
+                            {/* تولتیپ قرمز/صورتی «محصول در انبار وجود ندارد!» فقط هنگام هاور یا تلاش برای انتخاب */}
+                            <div
+                              className={`absolute bottom-[calc(100%+11px)] left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-all duration-200 ${
+                                showOutOfStockTooltip
+                                  ? 'opacity-100 translate-y-0 scale-100'
+                                  : 'opacity-0 translate-y-1 scale-95'
+                              }`}
+                            >
+                              <div className="relative bg-[#fde8ea] text-[#ea1d2c] text-[12px] font-bold px-3.5 py-2.5 rounded-[11px] whitespace-nowrap shadow-xs">
+                                محصول در انبار وجود ندارد!
+                                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#fde8ea] rotate-45 rounded-[2px]" />
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleAddClick(simProd)}
+                              aria-label="محصول در انبار وجود ندارد"
+                              className="w-12 h-12 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
+                            >
+                              <BagCross size="24" color="#ea1d2c" variant="Linear" />
+                            </button>
+                          </>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onAddToCart(simProd);
-                              setAddedToast(true);
-                              setTimeout(() => setAddedToast(false), 2200);
-                            }}
-                            aria-label="افزودن به سبد خرید"
-                            className={`w-11 h-11 rounded-[12px] flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-                              isHighlighted
-                                ? 'bg-[#b59766] hover:bg-[#a38554] text-white'
-                                : 'bg-[#f3f3f3] hover:bg-[#b59766] text-[#222222] hover:text-white'
-                            }`}
-                          >
-                            {isHighlighted ? (
-                              <PlusSquareIcon className="w-[22px] h-[22px]" />
-                            ) : (
-                              <Bag size="22" color="currentColor" variant="Linear" />
-                            )}
-                          </button>
+                          <>
+                            {/* تولتیپ تیره «X محصول اضافه شد» هنگام افزودن به سبد خرید (موقت) یا هاور */}
+                            <div
+                              className={`absolute bottom-[calc(100%+11px)] left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-all duration-200 ${
+                                showAddedTooltip
+                                  ? 'opacity-100 translate-y-0 scale-100'
+                                  : 'opacity-0 translate-y-1 scale-95'
+                              }`}
+                            >
+                              <div className="relative bg-[#2b2b2b] text-white text-[12px] font-bold px-3.5 py-2.5 rounded-[11px] whitespace-nowrap shadow-md">
+                                {qtyInCart.toLocaleString('fa-IR')} محصول اضافه شد
+                                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#2b2b2b] rotate-45 rounded-[2px]" />
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleAddClick(simProd)}
+                              aria-label="افزودن به سبد خرید"
+                              className={`w-12 h-12 rounded-[12px] flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                                isHighlighted
+                                  ? 'bg-[#b59766] hover:bg-[#a38554] text-white'
+                                  : 'bg-[#f3f3f3] hover:bg-[#b59766] text-[#222222] hover:text-white'
+                              }`}
+                            >
+                              {isHighlighted ? (
+                                <PlusSquareIcon className="w-[22px] h-[22px]" />
+                              ) : (
+                                <Bag size="24" color="currentColor" variant="Linear" />
+                              )}
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
-                    
-                    <div className="text-center leading-tight shrink-0">
-                        <span className="block text-[13px] font-bold text-[#2b2b2b]">
-                            کد محصول
-                        </span>
-                        <span className="block text-[13px] font-normal text-[#9e9e9e] tabular-nums mt-0.5">
-                            {simProd.productCode}
-                        </span>
+
+                    {/* سمت چپ: کد محصول */}
+                    <div className="text-left leading-tight shrink-0">
+                      <span className="block text-[13px] font-bold text-[#2b2b2b]">
+                        کد محصول
+                      </span>
+                      <span className="block text-[13px] font-medium text-[#757575] tabular-nums mt-1">
+                        {simProd.productCode}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -4171,11 +4752,105 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           </div>
         </div>
 
-        {/* پاپ‌آپ کوچک تأیید افزودن به سبد خرید */}
-        {addedToast && (
-          <div className="fixed bottom-8 left-8 z-50 bg-[#2b2b2b] text-white text-xs sm:text-[13px] font-bold px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-2 animate-bounce">
-            <span className="w-2 h-2 rounded-full bg-[#b59766] animate-ping" />
-            <span>محصول با موفقیت به سبد خرید شما افزوده شد!</span>
+
+
+        {/* مودال افزودن نظر جدید */}
+        {isAddCommentModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+            <div className="bg-white rounded-[24px] max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-[#ebdcb9]/60 relative text-right space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between border-b border-[#ebdcb9]/30 pb-4">
+                <h4 className="text-base sm:text-lg font-black text-[#1a1a1a]">
+                  افزودن نظر جدید
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => setIsAddCommentModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-black transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitNewComment} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#444] mb-1.5">
+                    نام و نام خانوادگی
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newCommentName}
+                    onChange={(e) => setNewCommentName(e.target.value)}
+                    placeholder="مثال: پرهام رحیمی"
+                    className="w-full h-11 px-4 text-xs sm:text-sm rounded-xl border border-gray-200 focus:border-[#b58c5e] focus:outline-hidden transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#444] mb-1.5">
+                    امتیاز شما به محصول
+                  </label>
+                  <div className="flex items-center gap-1.5" dir="ltr">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={`star-rate-${s}`}
+                        type="button"
+                        onClick={() => setNewCommentRating(s)}
+                        className="p-1 cursor-pointer transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className={`w-6 h-6 ${
+                            s <= newCommentRating
+                              ? 'text-[#b58c5e] fill-[#b58c5e]'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    <span className="text-xs font-bold text-gray-600 mr-2 tabular-nums">
+                      ({newCommentRating} از ۵)
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#444] mb-1.5">
+                    متن نظر شما
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    placeholder="تجربه خود را از کیفیت، بسته‌بندی و ارسال محصول بنویسید..."
+                    className="w-full p-4 text-xs sm:text-sm rounded-xl border border-gray-200 focus:border-[#b58c5e] focus:outline-hidden transition-colors resize-none leading-6"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 h-11 rounded-xl bg-[#b58c5e] hover:bg-[#a0774a] text-white font-bold text-xs sm:text-sm shadow-md transition-colors cursor-pointer"
+                  >
+                    ثبت و ارسال نظر
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddCommentModalOpen(false)}
+                    className="px-5 h-11 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                  >
+                    انصراف
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* پیام تأیید ثبت نظر */}
+        {commentToast && (
+          <div className="fixed bottom-6 right-6 z-50 bg-[#1a1a1a] text-white px-5 py-3 rounded-xl shadow-xl text-xs sm:text-sm font-bold animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {commentToast}
           </div>
         )}
       </div>
@@ -4554,11 +5229,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   onMouseLeave={() => {
                     clearTemporaryTooltip(product.id);
                   }}
-                  className="group bg-white rounded-[16px] border border-[#e8e8e8] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
+                  className="group bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>
                     <div
                       onClick={() => {
+                        if (isOutOfStock) return;
                         if (!isCard3D) {
                           handleViewAndBuyClick(product, currentFinish);
                         }
@@ -4606,67 +5282,87 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                               ? 'بازگشت به تصویر محصول'
                               : 'تبدیل فوری به مدل سه‌بعدی (3D)'
                           }
-                          className={`absolute top-2.5 right-2.5 z-20 h-7 px-2.5 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
+                          className={`absolute top-2.5 left-2.5 z-20 px-2.5 py-1 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs ${
                             isCard3D
-                              ? 'bg-[#1c1917] text-[#d8b67b] opacity-100'
-                              : 'bg-white/90 hover:bg-[#1c1917] text-[#333] hover:text-white border border-[#e5e2dc] opacity-0 group-hover:opacity-100'
+                              ? 'bg-[#b59766] text-white opacity-100'
+                              : 'bg-white/95 hover:bg-[#262626] text-[#262626] hover:text-white border border-[#e5e5e5] opacity-0 group-hover:opacity-100'
                           }`}
                         >
-                          {isCard3D ? (
-                            <>
-                              <RotateCcw className="w-3 h-3" />
-                              <span>تصویر</span>
-                            </>
-                          ) : (
-                            <>
-                              <Box className="w-3.5 h-3.5 text-[#b39561]" />
-                              <span>3D</span>
-                            </>
-                          )}
+                          <Box className="w-3 h-3" />
+                          <span>{isCard3D ? 'نمای 3D فعال' : '3D خودکار'}</span>
                         </button>
+                      )}
+
+                      {!isOutOfStock && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className={`absolute bottom-2.5 inset-x-2.5 z-20 flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-xs border border-[#e8e4dc] shadow-2xs transition-opacity ${
+                            currentFinish !== 'original' || isCard3D
+                              ? 'opacity-100'
+                              : 'opacity-0 group-hover:opacity-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            {CARD_PLATING_FINISHES.map((finishKey) => {
+                              const preset = FINISH_PRESETS[finishKey];
+                              return (
+                                <button
+                                  key={finishKey}
+                                  type="button"
+                                  onClick={() =>
+                                    setCardFinishes((prev) => ({
+                                      ...prev,
+                                      [product.id]: finishKey,
+                                    }))
+                                  }
+                                  title={preset.label}
+                                  className={`w-4 h-4 rounded-full border transition-transform cursor-pointer ${
+                                    currentFinish === finishKey
+                                      ? 'scale-125 border-[#222222] ring-1 ring-[#b59766]'
+                                      : 'border-black/20 hover:scale-110'
+                                  }`}
+                                  style={{
+                                    background: preset.swatch,
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-medium text-[#666] truncate max-w-[90px]">
+                              {activeFinishPreset.label}
+                            </span>
+                            {currentFinish !== 'original' && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCardFinishes((prev) => ({
+                                    ...prev,
+                                    [product.id]: 'original',
+                                  }))
+                                }
+                                title="بازنشانی به رنگ اصلی"
+                                className="text-[10px] text-[#666] hover:text-[#222] flex items-center cursor-pointer"
+                              >
+                                <RotateCcw className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
 
-                    {/* پالت رنگی محصول (مشابه بخش محصولات مشابه) */}
-                    {!isOutOfStock && (
-                      <div className="mt-3 flex items-center justify-start gap-1.5 px-1">
-                        {CARD_PLATING_FINISHES.map((finishKey) => {
-                          const preset = FINISH_PRESETS[finishKey];
-                          return (
-                            <button
-                              key={finishKey}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCardFinishes((prev) => ({
-                                  ...prev,
-                                  [product.id]: finishKey,
-                                }));
-                              }}
-                              title={preset.label}
-                              className={`w-4 h-4 rounded-full border transition-transform cursor-pointer ${
-                                currentFinish === finishKey
-                                  ? 'scale-125 border-[#222222] ring-1 ring-[#b59766]'
-                                  : 'border-black/20 hover:scale-110'
-                              }`}
-                              style={{
-                                background: preset.swatch,
-                              }}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <div className="mt-4 text-right px-1">
+                    <div className="mt-4 px-1.5 text-right">
                       <h3
                         onClick={() => {
+                          if (isOutOfStock) return;
                           handleViewAndBuyClick(product, currentFinish);
                         }}
-                        className={`text-[15.5px] sm:text-[16.5px] font-bold text-[#1e1e1e] transition-colors leading-snug ${
+                        className={`text-[17.5px] sm:text-[18.5px] font-bold text-[#1f1f1f] transition-colors ${
                           isOutOfStock
                             ? 'cursor-not-allowed'
-                            : 'group-hover:text-[#b59766] cursor-pointer'
+                            : 'hover:text-[#b59766] cursor-pointer'
                         }`}
                       >
                         {product.name}
@@ -4680,13 +5376,13 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                     </div>
                   </div>
 
-                  <div className="mt-5 px-1 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                  <div className="mt-5 px-1.5 flex flex-row items-center justify-between gap-2.5" dir="rtl">
+                    <div className="flex items-center gap-2.5">
                       {loadingMap[product.id] ? (
                         <button
                           type="button"
                           disabled
-                          className="h-11 sm:h-12 min-w-[115px] sm:min-w-[132px] px-5 rounded-[12px] bg-[#242424] text-white flex items-center justify-center gap-2 transition-all cursor-wait"
+                          className="h-11 sm:h-12 min-w-[115px] sm:min-w-[142px] px-3.5 sm:px-6 rounded-[12px] bg-[#242424] text-white flex items-center justify-center gap-2 transition-all cursor-wait"
                           title="در حال بارگذاری..."
                         >
                           <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
@@ -4696,10 +5392,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                       ) : (
                         <button
                           type="button"
-                          onClick={() =>
-                            handleViewAndBuyClick(product, currentFinish)
-                          }
-                          className="h-11 sm:h-12 min-w-[115px] sm:min-w-[132px] px-3.5 sm:px-5 rounded-[12px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer"
+                          onClick={() => handleViewAndBuyClick(product, currentFinish)}
+                          className="h-11 sm:h-12 min-w-[115px] sm:min-w-[142px] px-3.5 sm:px-6 rounded-[12px] text-[12.5px] sm:text-[13px] font-bold transition-colors whitespace-nowrap bg-[#f3f3f3] text-[#222222] hover:bg-[#242424] hover:text-white cursor-pointer"
                         >
                           مشاهده و خرید
                         </button>
@@ -4735,9 +5429,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                               type="button"
                               onClick={() => handleAddClick(product)}
                               aria-label="محصول در انبار وجود ندارد"
-                              className="w-11 h-11 sm:w-12 sm:h-12 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
+                              className="w-12 h-12 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
                             >
-                              <OutOfStockBagIcon className="w-[21px] h-[21px]" />
+                              <BagCross size="24" color="#ea1d2c" variant="Linear" />
                             </button>
                           </>
                         ) : (
@@ -4759,7 +5453,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                               type="button"
                               onClick={() => handleAddClick(product)}
                               aria-label="افزودن به سبد خرید"
-                              className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-[12px] flex items-center justify-center transition-all duration-300 cursor-pointer shrink-0 overflow-hidden ${
+                              className={`relative w-12 h-12 rounded-[12px] flex items-center justify-center transition-all duration-300 cursor-pointer shrink-0 ${
                                 isHighlighted
                                   ? 'bg-[#b59766] hover:bg-[#a38554] text-white shadow-[0_6px_16px_rgba(181,151,102,0.32)]'
                                   : 'bg-[#f3f3f3] hover:bg-[#b59766] text-[#222222] hover:text-white'
@@ -4776,7 +5470,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                                   }`}
                                 />
                               ) : (
-                                <ShoppingBasketIcon className="w-[21px] h-[21px]" />
+                                <Bag size="24" color="currentColor" variant="Linear" />
                               )}
                             </button>
                           </>
@@ -4784,11 +5478,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                       </div>
                     </div>
 
-                    <div className="text-center leading-tight shrink-0">
-                      <span className="block text-[12.5px] sm:text-[13px] font-bold text-[#2b2b2b]">
+                    <div className="text-left leading-tight shrink-0">
+                      <span className="block text-[13px] font-bold text-[#2b2b2b]">
                         کد محصول
                       </span>
-                      <span className="block text-[12.5px] sm:text-[13px] font-medium text-[#757575] tabular-nums mt-1">
+                      <span className="block text-[13px] font-medium text-[#757575] tabular-nums mt-1">
                         {product.productCode}
                       </span>
                     </div>

@@ -3822,7 +3822,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             }
             className={`w-full h-[50px] rounded-[12px] text-[13.5px] font-semibold flex items-center justify-center transition-colors cursor-pointer ${
               (step === 'phone' ? isPhoneBtnDark : isOtpBtnDark)
-                ? 'bg-[#2b2b2b] active:bg-[#1f1f1f] text-white'
+                ? 'bg-[#2952ff] hover:bg-[#1d4ed8] active:bg-[#1e40af] text-white'
                 : 'bg-[#f7f7f7] text-[#1a1a1a]'
             }`}
           >
@@ -4032,7 +4032,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               form={step === 'phone' ? 'auth-phone-form' : 'auth-otp-form'}
               className={`mt-3.5 w-full h-[46px] rounded-[12px] text-[13px] font-semibold flex items-center justify-center transition-colors cursor-pointer ${
                 (step === 'phone' ? isPhoneBtnDark : isOtpBtnDark)
-                  ? 'bg-[#2b2b2b] hover:bg-[#1f1f1f] text-white'
+                  ? 'bg-[#2952ff] hover:bg-[#1d4ed8] text-white'
                   : 'bg-[#f5f5f5] hover:bg-[#ececec] text-[#6e6e6e]'
               }`}
             >
@@ -4665,41 +4665,41 @@ const SingleToast: React.FC<{
 
       <div
         onClick={handleDismiss}
-        className={`relative z-[90] w-full lg:w-[385px] bg-white rounded-t-[30px] lg:rounded-[18px] shadow-[0_-12px_45px_rgba(0,0,0,0.22)] lg:shadow-[0_14px_40px_rgba(0,0,0,0.16)] border-t border-[#eeeeee] lg:border px-6 lg:px-4 pb-7 lg:pb-4 pt-3.5 lg:pt-3.5 flex flex-col lg:flex-row items-stretch lg:items-center justify-between overflow-hidden cursor-pointer ${
+        className={`relative z-[90] w-full lg:w-[385px] bg-white rounded-t-[30px] lg:rounded-[18px] shadow-[0_-12px_45px_rgba(0,0,0,0.22)] lg:shadow-[0_14px_40px_rgba(0,0,0,0.16)] px-5 lg:px-4 py-3.5 lg:py-3 flex flex-col lg:flex-row items-stretch lg:items-center justify-between overflow-hidden cursor-pointer border-0 outline-none ${
           isClosing ? 'animate-toast-out' : 'animate-toast-in'
         }`}
       >
         {/* دستگیره کشیدن برای دراور موبایل */}
-        <div className="w-12 h-1.5 bg-[#dcdcdc] rounded-full mx-auto mb-6 lg:hidden shrink-0" />
+        <div className="w-12 h-1.5 bg-[#dcdcdc] rounded-full mx-auto mb-3 lg:hidden shrink-0" />
 
         {/* محتوای توست شامل آیکون و متون به همراه ترازبندی دقیق */}
         <div className="flex items-center justify-between gap-4 w-full pr-0.5">
           <div className="flex items-center gap-3.5 text-right">
             {/* آیکون در کادر مربعی گوشه‌گرد در سمت راست */}
             <div
-              className={`w-12 h-12 lg:w-11 lg:h-11 rounded-[14px] lg:rounded-[12px] border flex items-center justify-center shrink-0 ${
+              className={`w-11 h-11 lg:w-10 lg:h-10 rounded-[12px] lg:rounded-[10px] flex items-center justify-center shrink-0 ${
                 isBlue
-                  ? 'bg-[#eff3ff] border-[#2952ff] text-[#2952ff]'
+                  ? 'bg-[#eff3ff] text-[#2952ff]'
                   : isGreen
-                    ? 'bg-[#eefaf2] border-[#179c26] text-[#179c26]'
-                    : 'bg-[#fff0f2] border-[#ff1f3d] text-[#ff1f3d]'
+                    ? 'bg-[#eefaf2] text-[#179c26]'
+                    : 'bg-[#fff0f2] text-[#ff1f3d]'
               }`}
             >
               {renderToastBoxIcon()}
             </div>
 
             <div className="text-right">
-              <h4 className="text-[15px] lg:text-[14px] font-bold text-[#1e1e1e]">
+              <h4 className="text-[14px] lg:text-[13.5px] font-bold text-[#1e1e1e]">
                 {toast.title}
               </h4>
-              <p className="text-[12.5px] lg:text-[11.5px] text-[#555555] mt-1 leading-relaxed font-normal">
+              <p className="text-[12px] lg:text-[11px] text-[#555555] mt-0.5 leading-snug font-normal">
                 {toast.message}
               </p>
             </div>
           </div>
 
           {/* خط باریک شاخص وضعیت در سمت چپ کادر دسکتاپ که از بالا به پایین پر می‌شود */}
-          <div className="hidden lg:flex w-[3.5px] h-10 rounded-full bg-[#efefef] overflow-hidden shrink-0 flex-col justify-start">
+          <div className="hidden lg:flex w-[3.5px] h-8 rounded-full bg-[#efefef] overflow-hidden shrink-0 self-center flex-col justify-start">
             <span
               className={`w-full rounded-full animate-toast-progress-vertical ${
                 isBlue

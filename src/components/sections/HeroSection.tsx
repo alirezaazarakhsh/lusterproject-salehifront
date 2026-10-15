@@ -398,6 +398,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
             const isSelected = activeDot === idx;
             const slideKey = `desktop-${slide.id || idx}`;
             const isImageLoaded = loadedSlides[slideKey];
+            const isThirdSlide = idx === 2;
 
             return (
               <img
@@ -409,7 +410,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ heroSettings }) => {
                 onError={(e) => {
                   handleImgErrorFallback(e);
                 }}
-                className={`absolute inset-0 w-full h-full object-cover object-left transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] ${
+                style={
+                  isThirdSlide
+                    ? {
+                        top: '-28px',
+                        height: 'calc(100% + 36px)',
+                        bottom: 'auto',
+                        objectPosition: 'left 35%',
+                      }
+                    : undefined
+                }
+                className={`absolute inset-0 w-full object-cover object-left transition-all duration-1000 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform] ${
+                  isThirdSlide ? '-top-7 h-[calc(100%+36px)] bottom-auto' : 'h-full'
+                } ${
                   isSelected && isImageLoaded
                     ? 'opacity-100 scale-100 translate-x-0 z-[1]'
                     : idx < activeDot

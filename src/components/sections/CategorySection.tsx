@@ -10,6 +10,7 @@ import {
   ChandelierProduct,
 } from '../../data/chandelierData';
 import { navigateToProductCategory } from '../../utils/navigation';
+import { DynamicCategoryIcon } from '../DynamicCategoryIcon';
 
 interface CategorySectionProps {
   selectedCategory: string;
@@ -126,18 +127,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
       ? categories
       : PRODUCT_CATEGORIES;
 
-  // حذف گزینه «کلیه دسته‌بندی‌ها» و اطمینان از نمایش ۴ دسته اول
-  const filteredCategories = rawCategories.filter((c) => !isAllCategoryItem(c));
+  // فیلتر دسته‌بندی‌هایی که تیک نمایش در صفحه اصلی دارند (حداکثر ۴ دسته‌بندی)
+  const homeAllowedCategories = rawCategories.filter(
+    (c) => !isAllCategoryItem(c) && (c.showOnHome === undefined || c.showOnHome === true)
+  );
 
-  // در صورت نیاز، دسته‌بندی‌های پیش‌فرض را برای تکمیل ۴ دسته‌بندی اضافه می‌کنیم
-  const baseCategories = PRODUCT_CATEGORIES.filter((c) => !isAllCategoryItem(c));
-  const mergedCategories = [
-    ...filteredCategories,
-    ...baseCategories.filter((bc) => !filteredCategories.some((fc) => fc.slug === bc.slug)),
-  ];
-
-  // دقیقاً ۴ تا از اولین دسته‌بندی‌ها (به جز کلیه دسته‌بندی‌ها)
-  const displayCategories = mergedCategories.slice(0, 4);
+  const displayCategories = homeAllowedCategories.length > 0
+    ? homeAllowedCategories.slice(0, 4)
+    : PRODUCT_CATEGORIES.filter((c) => !isAllCategoryItem(c)).slice(0, 4);
   const [activeCategoryDot, setActiveCategoryDot] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -232,13 +229,14 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     : 'border-[#e8e8e8] hover:border-[#d5c5a8]'
                 }`}
               >
-                {/* ۱. آیکون تیک وریفای طلایی (CategoryStarSeal) در سمت راست کارت در چیدمان RTL - بدون زوم در هاور */}
-                <CategoryStarSeal
+                {/* ۱. آیکون دسته‌بندی در سمت راست کارت در چیدمان RTL */}
+                <DynamicCategoryIcon
+                  iconName={category.iconName}
                   size={44}
                   className="shrink-0"
                 />
 
-                {/* ۲. عنوان دسته‌بندی در سمت چپ آیکون وریفای */}
+                {/* ۲. عنوان دسته‌بندی در سمت چپ آیکون */}
                 <div className="text-right flex-1 min-w-0">
                   <h3 className="text-[17px] font-extrabold text-[#1e1e1e] group-hover:text-[#b08c57] transition-colors leading-snug">
                     {category.title}
@@ -315,8 +313,9 @@ export const CategorySection: React.FC<CategorySectionProps> = ({
                     : 'border-[#ededed] shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-[#d5c5a8]'
                 }`}
               >
-                {/* آیکون تیک وریفای طلایی در سمت راست در دسکتاپ - بدون زوم در هاور */}
-                <CategoryStarSeal
+                {/* آیکون دسته‌بندی در سمت راست در دسکتاپ */}
+                <DynamicCategoryIcon
+                  iconName={category.iconName}
                   size={42}
                   className="shrink-0"
                 />

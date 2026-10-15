@@ -2,6 +2,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import express from 'express';
 import path from 'path';
+import { GoogleGenAI } from '@google/genai';
 import { pool } from './src/db/index';
 import {
   renderHealthHtmlPage,
@@ -2704,6 +2705,81 @@ async function startServer() {
       console.error('Failed to trigger SSL issuance:', error);
       res.status(500).json({ error: error.message || 'خطا در صدور گواهی SSL' });
     }
+  });
+
+  // Gemini AI Consultant & Rate Limiter Handler
+  const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY || '',
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
+  });
+
+  async function callGeminiWithRetry(prompt: string, retries = 3, delay = 2000): Promise<string> {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `شما مشاور ارشد طراحی نور و لوستر در "گالری لوستر اکبر صالحی" هستید. به زبان فارسی روان، تخصصی، مودبانه و دقیق به سوالات مشتریان درباره انتخاب لوستر، متراژ، ارتفاع سقف، سبک کلاسیک و مدرن پاسخ دهید. سوال مشتری: ${prompt}`
+              }
+            ]
+          }
+        ]
+      });
+      return response.text || 'پاسخی از مدل دریافت نشد.';
+    } catch (error: any) {
+      const errStr = String(error?.message || error);
+      if ((errStr.includes('429') || errStr.includes('Rate exceeded') || errStr.includes('ResourceExhausted') || errStr.includes('Quota')) && retries > 0) {
+        console.warn(`[Gemini Rate Exceeded] Retrying in ${delay}ms... (${retries} retries left)`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return callGeminiWithRetry(prompt, retries - 1, delay * 2);
+      }
+      throw error;
+    }
+  }
+
+  app.post('/api/ai/consult', async (req, res) => {
+    try {
+      const prompt = String(req.body?.prompt || '').trim();
+      if (!prompt) {
+        return res.status(400).json({ error: 'لطفاً متن سوال خود را وارد کنید.' });
+      }
+
+      if (!process.env.GEMINI_API_KEY) {
+        return res.json({
+          reply: 'در حال حاضر کلید API هوش مصنوعی تنظیم نشده است، اما شما می‌توانید برای مشاوره تخصصی لوستر با شماره 09120000000 تماس بگیرید.'
+        });
+      }
+
+      const reply = await callGeminiWithRetry(prompt);
+      res.json({ success: true, reply });
+    } catch (error: any) {
+      const errStr = String(error?.message || error);
+      console.error('AI Consult error:', error);
+      if (errStr.includes('429') || errStr.includes('Rate exceeded') || errStr.includes('ResourceExhausted') || errStr.includes('Quota')) {
+        return res.status(429).json({
+          rateExceeded: true,
+          retryAfter: 15,
+          error: 'Rate exceeded. سقف تعداد درخواست‌های مجاز هوش مصنوعی موقتاً تکمیل شد. لطفاً ۱۵ ثانیه دیگر مجدداً تلاش کنید.'
+        });
+      }
+      res.status(500).json({ error: errStr || 'خطا در پردازش هوش مصنوعی' });
+    }
+  });
+
+  app.get('/api/admin/ai/status', requireAuth, (_req: AuthRequest, res) => {
+    res.json({
+      model: 'gemini-3.8-flash',
+      status: 'active',
+      rateLimitHandling: 'automatic_exponential_backoff_and_retry',
+      hasApiKey: Boolean(process.env.GEMINI_API_KEY),
+    });
   });
 
   // Service worker route to guarantee application/javascript MIME type

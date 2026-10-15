@@ -101,6 +101,79 @@ export function isMasterAdminCredentials(rawPhone: any, rawPassword: any): boole
   return isPassMatch || isPhoneMatch;
 }
 
+export interface ProductFilterOption {
+  id: string;
+  label: string;
+  name?: string;
+}
+
+export interface ProductFilterSettingsConfig {
+  models: ProductFilterOption[];
+  materials: ProductFilterOption[];
+  colors: ProductFilterOption[];
+}
+
+export const INITIAL_PRODUCT_FILTER_SETTINGS: ProductFilterSettingsConfig = {
+  models: [
+    { id: 'm1', label: 'آزو' },
+    { id: 'm2', label: 'کریستالیت' },
+    { id: 'm3', label: 'مدوسا' },
+    { id: 'm4', label: 'بی کیج' },
+    { id: 'm5', label: 'مارکیز ایتالیایی' },
+    { id: 'm6', label: 'لوستر رسانس' },
+    { id: 'm7', label: 'لوستر سلطنتی' },
+    { id: 'm8', label: 'لوستر شاخه ای' },
+    { id: 'm9', label: 'لوستر کلاسیک' },
+    { id: 'm10', label: 'لوستر مدرن' },
+    { id: 'm11', label: 'لوستر دیواری' },
+    { id: 'm12', label: 'لوستر آویز' },
+    { id: 'm13', label: 'لوستر سقفی' },
+    { id: 'm14', label: 'لوستر خطی' },
+    { id: 'm15', label: 'لوستر حبابی' },
+    { id: 'm16', label: 'لوستر نئوکلاسیک' },
+    { id: 'm17', label: 'لوستر مولکولی' },
+    { id: 'm18', label: 'لوستر کهکشانی' },
+    { id: 'm19', label: 'لوستر رینگی مدرن' },
+    { id: 'm20', label: 'لوستر شاه عباسی' }
+  ],
+  materials: [
+    { id: 'mat1', label: 'فولاد' },
+    { id: 'mat2', label: 'پرسلان' },
+    { id: 'mat3', label: 'برنج' },
+    { id: 'mat4', label: 'کریستال' },
+    { id: 'mat5', label: 'گلس' },
+    { id: 'mat6', label: 'برنز' },
+    { id: 'mat7', label: 'چوبی' },
+    { id: 'mat8', label: 'آلومینیوم' },
+    { id: 'mat9', label: 'استیل' },
+    { id: 'mat10', label: 'شیشه ای' },
+    { id: 'mat11', label: 'سرامیک' },
+    { id: 'mat12', label: 'آهن' },
+    { id: 'mat13', label: 'مس خالص' },
+    { id: 'mat14', label: 'آلیاژ زاماک' },
+    { id: 'mat15', label: 'برنج آبکاری شده' },
+    { id: 'mat16', label: 'کریستال چک' }
+  ],
+  colors: [
+    { id: 'c1', label: 'طلایی' },
+    { id: 'c2', label: 'آنتیک' },
+    { id: 'c3', label: 'سیلور' },
+    { id: 'c4', label: 'برنزی' },
+    { id: 'c5', label: 'سفید' },
+    { id: 'c6', label: 'مشکی' },
+    { id: 'c7', label: 'شامپاینی' },
+    { id: 'c8', label: 'کروم' },
+    { id: 'c9', label: 'رزگلد' },
+    { id: 'c10', label: 'طوسی' },
+    { id: 'c11', label: 'مسی' },
+    { id: 'c12', label: 'دودی' },
+    { id: 'c13', label: 'طلایی مات' },
+    { id: 'c14', label: 'مشکی مات' },
+    { id: 'c15', label: 'نقره ای مات' },
+    { id: 'c16', label: 'پلاتینیوم' }
+  ]
+};
+
 interface LocalDbSchema {
   users: any[];
   products: any[];
@@ -118,6 +191,7 @@ interface LocalDbSchema {
   smsSettings: any;
   faqSettings: any;
   ruleSettings: any;
+  productFilterSettings: ProductFilterSettingsConfig;
 }
 
 export const INITIAL_MAIN_SETTINGS = {
@@ -460,6 +534,7 @@ function createInitialLocalDb(): LocalDbSchema {
     smsSettings: INITIAL_SMS_SETTINGS,
     faqSettings: INITIAL_FAQ_SETTINGS,
     ruleSettings: INITIAL_RULE_SETTINGS,
+    productFilterSettings: INITIAL_PRODUCT_FILTER_SETTINGS,
   };
 }
 
@@ -553,6 +628,26 @@ export function loadLocalDb(): LocalDbSchema {
         ruleSettings: {
           ...INITIAL_RULE_SETTINGS,
           ...(parsed.ruleSettings || {}),
+        },
+        productFilterSettings: {
+          models:
+            Array.isArray(parsed?.productFilterSettings?.models) &&
+            parsed.productFilterSettings.models.length >=
+              INITIAL_PRODUCT_FILTER_SETTINGS.models.length
+              ? parsed.productFilterSettings.models
+              : INITIAL_PRODUCT_FILTER_SETTINGS.models,
+          materials:
+            Array.isArray(parsed?.productFilterSettings?.materials) &&
+            parsed.productFilterSettings.materials.length >=
+              INITIAL_PRODUCT_FILTER_SETTINGS.materials.length
+              ? parsed.productFilterSettings.materials
+              : INITIAL_PRODUCT_FILTER_SETTINGS.materials,
+          colors:
+            Array.isArray(parsed?.productFilterSettings?.colors) &&
+            parsed.productFilterSettings.colors.length >=
+              INITIAL_PRODUCT_FILTER_SETTINGS.colors.length
+              ? parsed.productFilterSettings.colors
+              : INITIAL_PRODUCT_FILTER_SETTINGS.colors,
         },
       };
     }
@@ -670,6 +765,11 @@ export async function syncFromFirestore(): Promise<void> {
         ruleSettings: {
           ...current.ruleSettings,
           ...(cloudData.ruleSettings || {}),
+        },
+        productFilterSettings: {
+          ...INITIAL_PRODUCT_FILTER_SETTINGS,
+          ...current.productFilterSettings,
+          ...(cloudData.productFilterSettings || {}),
         },
       };
       try {
@@ -1737,17 +1837,24 @@ export async function apiFetchWithFallback(
       throw new Error(errJson.error || 'شماره موبایل یا رمز عبور اشتباه است.');
     }
 
-    // If server returns error (e.g. 500 FUNCTION_INVOCATION_FAILED, 404, 502, 503, or non-JSON HTML),
+    // If server returns error (e.g. 429 Rate Exceeded, 500 FUNCTION_INVOCATION_FAILED, 404, 502, 503, or non-JSON HTML),
     // fallback gracefully to local storage and Cloud Firestore
-    if (res.status === 404 || res.status === 405 || res.status >= 500 || !isJson) {
-      console.warn(`Server returned ${res.status} (json: ${isJson}) for ${url}. Gracefully falling back to local/cloud database.`);
+    if (res.status === 429 || res.status === 404 || res.status === 405 || res.status >= 500 || !isJson) {
+      console.warn(`Server returned ${res.status} (Rate Exceeded or Error, json: ${isJson}) for ${url}. Gracefully falling back to local/cloud database.`);
       isCurrentlyUsingFallback = true;
       try {
         return await handleLocalApiRequest(url, options);
       } catch (fallbackErr: any) {
         const errText = await res.text().catch(() => '');
+        if (res.status === 429) {
+          throw new Error('محدودیت تعداد درخواست (Rate Exceeded). لطفاً چند لحظه دیگر دوباره تلاش کنید.');
+        }
         throw new Error(fallbackErr?.message || `خطای سرور (${res.status}): ${errText.slice(0, 100)}`);
       }
+    }
+
+    if (res.status === 429) {
+      throw new Error('محدودیت تعداد درخواست (Rate Exceeded). لطفاً چند لحظه دیگر دوباره تلاش کنید.');
     }
 
     throw new Error(`خطای ارتباط با سرور (${res.status})`);

@@ -220,7 +220,15 @@ function buildCrystalClean3DFromImage(
   srcCtx.imageSmoothingQuality = 'high';
   srcCtx.drawImage(img, offsetX, offsetY, drawW, drawH);
 
-  const imgData = srcCtx.getImageData(0, 0, size, size);
+  let imgData: ImageData;
+  try {
+    imgData = srcCtx.getImageData(0, 0, size, size);
+  } catch (err) {
+    console.warn('Canvas getImageData tainted by CORS, using fallback image processing:', err);
+    srcCtx.fillStyle = '#ffffff';
+    srcCtx.fillRect(0, 0, size, size);
+    imgData = srcCtx.getImageData(0, 0, size, size);
+  }
   const data = imgData.data;
 
   // نمونه‌برداری رنگ پس‌زمینه از گوشه‌ها

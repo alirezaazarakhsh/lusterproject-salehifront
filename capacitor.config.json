@@ -1,0 +1,11 @@
+{
+  "appId": "com.salehi.chandelier",
+  "appName": "گالری لوستر اکبر صالحی",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "PrivacyScreen": {
+      "enable": true
+    }
+  }
+}

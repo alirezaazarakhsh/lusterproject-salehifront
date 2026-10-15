@@ -96,6 +96,19 @@ export const extractProjectSlugFromLocation = (): string | null => {
   return normalizeProjectSlugInput(querySlug);
 };
 
+const KNOWN_PRODUCT_CATEGORIES = new Set([
+  'all',
+  'chandeliers',
+  'single-branch',
+  'kenar-saloni',
+  'abalour',
+  'mirror-console',
+  'shamdooni',
+  'table',
+  'categories',
+  'category',
+]);
+
 export const extractProductCategorySlugFromLocation = (): string | null => {
   if (typeof window === 'undefined') return null;
 
@@ -118,6 +131,7 @@ export const extractProductCategorySlugFromLocation = (): string | null => {
   if (
     directPathMatch &&
     directPathMatch[1] &&
+    KNOWN_PRODUCT_CATEGORIES.has(directPathMatch[1].toLowerCase()) &&
     directPathMatch[1].toLowerCase() !== 'categories' &&
     directPathMatch[1].toLowerCase() !== 'category'
   ) {
@@ -138,6 +152,7 @@ export const extractProductCategorySlugFromLocation = (): string | null => {
   if (
     directHashMatch &&
     directHashMatch[1] &&
+    KNOWN_PRODUCT_CATEGORIES.has(directHashMatch[1].toLowerCase()) &&
     directHashMatch[1].toLowerCase() !== 'categories' &&
     directHashMatch[1].toLowerCase() !== 'category'
   ) {
@@ -173,8 +188,7 @@ export const extractProductSlugFromLocation = (): string | null => {
   if (
     directPathMatch &&
     directPathMatch[1] &&
-    directPathMatch[1].toLowerCase() !== 'categories' &&
-    directPathMatch[1].toLowerCase() !== 'category'
+    !KNOWN_PRODUCT_CATEGORIES.has(directPathMatch[1].toLowerCase())
   ) {
     return directPathMatch[1].trim();
   }
@@ -186,8 +200,7 @@ export const extractProductSlugFromLocation = (): string | null => {
   if (
     directHashMatch &&
     directHashMatch[1] &&
-    directHashMatch[1].toLowerCase() !== 'categories' &&
-    directHashMatch[1].toLowerCase() !== 'category'
+    !KNOWN_PRODUCT_CATEGORIES.has(directHashMatch[1].toLowerCase())
   ) {
     return directHashMatch[1].trim();
   }
@@ -197,7 +210,9 @@ export const extractProductSlugFromLocation = (): string | null => {
     searchParams.get('product') ||
     searchParams.get('productSlug') ||
     searchParams.get('slug');
-  if (querySlug) return querySlug.trim();
+  if (querySlug && !KNOWN_PRODUCT_CATEGORIES.has(querySlug.toLowerCase())) {
+    return querySlug.trim();
+  }
 
   return null;
 };
@@ -373,15 +388,15 @@ export const detectRouteFromLocation = (): AppRoute => {
   if (
     pathname === '/admin' ||
     pathname.startsWith('/admin/') ||
+    pathname.endsWith('/admin') ||
+    pathname.includes('/admin') ||
     hash === '#admin' ||
     hash === '#/admin' ||
-    hash.startsWith('#admin/') ||
-    hash.startsWith('#/admin/') ||
-    search.includes('page=admin')
+    hash.startsWith('#admin') ||
+    hash.startsWith('#/admin') ||
+    hash.includes('admin') ||
+    search.includes('admin')
   ) {
-    return 'admin';
-  }
-  if (pathname.endsWith('/admin')) {
     return 'admin';
   }
   if (
@@ -485,6 +500,7 @@ export const navigateToProductCategory = (
   currentMemoryRoute = 'product';
   currentMemoryProjectSlug = null;
   currentMemoryProductCategorySlug = cleanSlug;
+  currentMemoryProductSlug = null;
 
   if (typeof window !== 'undefined') {
     const targetUrl = cleanSlug

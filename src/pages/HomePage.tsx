@@ -68,6 +68,7 @@ import {
   AppToastContainer,
   AppToast,
 } from '../components/InteractiveModals';
+import { SavedPhotosModal } from '../components/SavedPhotosModal';
 
 /**
  * کامپوننت صفحه اصلی (HomePage) و صفحه قوانین و مقررات (/rule)
@@ -874,6 +875,8 @@ export const HomePage: React.FC = () => {
     useState<boolean>(false);
   const [isCustom3DModalOpen, setIsCustom3DModalOpen] =
     useState<boolean>(false);
+  const [isSavedPhotosModalOpen, setIsSavedPhotosModalOpen] =
+    useState<boolean>(false);
 
   const [activeProductModal, setActiveProductModal] = useState<{
     product: ChandelierProduct;
@@ -1062,6 +1065,7 @@ export const HomePage: React.FC = () => {
               handleOpenProductModal(productsList[3] || productsList[0])
             }
             onOpenCustomProductModal={() => setIsCustom3DModalOpen(true)}
+            onOpenSavedPhotos={() => setIsSavedPhotosModalOpen(true)}
             mainSettings={mainSettings}
           />
         </div>
@@ -1127,7 +1131,7 @@ export const HomePage: React.FC = () => {
           isLoggedIn={isLoggedIn}
         />
       ) : (
-        <>
+        <div className="space-y-12 sm:space-y-16 md:space-y-20 py-6">
           {/* ۲. نوار استوری‌های دایره‌ای */}
           <StoriesSection
             stories={storiesList}
@@ -1191,7 +1195,7 @@ export const HomePage: React.FC = () => {
             articles={articlesList}
             onSelectArticle={(article) => setActiveArticleModal(article)}
           />
-        </>
+        </div>
       )}
 
       {/* ۱۰. فوتر تمام‌عرض دو رنگ (در پنل ادمین و صفحات 404 و 500 نمایش داده نمی‌شود) */}
@@ -1267,6 +1271,13 @@ export const HomePage: React.FC = () => {
         isOpen={isLogoutConfirmOpen}
         onClose={() => setIsLogoutConfirmOpen(false)}
         onConfirmLogout={handleConfirmLogout}
+      />
+
+      {/* پنجره مودال تصاویر و محصولات ذخیره‌شده */}
+      <SavedPhotosModal
+        isOpen={isSavedPhotosModalOpen}
+        onClose={() => setIsSavedPhotosModalOpen(false)}
+        onShowToast={(msg) => addAppToast('success', 'اطلاع‌رسانی', msg)}
       />
 
       {/* کانتینر نمایش پاپ‌آپ‌های نوتیفیکیشن خروج */}
