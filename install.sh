@@ -130,10 +130,6 @@ show_menu() {
   echo -e "   ${BOLD}${GREEN}9)${NC} Free Port 53 & Start BIND9 Container"
   echo -e "   ${BOLD}${GREEN}10)${NC} Configure Server Security & Anti-Scan Armor"
   echo ""
-  echo -e "  ${BOLD}${PURPLE}[Mobile App Builds]${NC}"
-  echo -e "  ${BOLD}${YELLOW}11)${NC} Build Android Native APK / AAB (Bazaar & Myket)"
-  echo -e "  ${BOLD}${YELLOW}12)${NC} Build iOS Native IPA (App Store & SibApp)"
-  echo -e "  ${BOLD}${YELLOW}13)${NC} Dual Mobile Build (Android & iOS)"
   echo ""
   echo -e "   ${BOLD}${RED}0)${NC} Exit"
   echo ""
@@ -153,10 +149,8 @@ execute_option() {
     2|update)
       echo -e "${BOLD}${CYAN}=== Updating Codebase & Services ===${NC}"
       pull_git
-      run_npm install || true
-      run_npm run build || true
       if command -v docker &> /dev/null; then
-        docker compose restart 2>/dev/null || true
+        docker compose up -d --build 2>/dev/null || true
       fi
       ;;
     3|logs)
@@ -196,52 +190,6 @@ execute_option() {
     10|security)
       echo -e "${BOLD}${RED}=== Configuring Firewall & Anti-Scan Security ===${NC}"
       ;;
-    11|android)
-      echo -e "${BOLD}${YELLOW}=== Building Android Native APK / AAB ===${NC}"
-      pull_git
-      run_npm install || true
-      run_npm run build
-      run_npx cap add android 2>/dev/null || true
-      run_npx cap sync android
-      echo ""
-      echo -e "${GREEN}================================================================"${NC}
-      echo -e "${BOLD}${GREEN}✅ Android Native Project successfully built & synced!${NC}"
-      echo -e "${WHITE}To generate final APK / AAB for Bazaar & Myket:${NC}"
-      echo -e " 1. Open project in Android Studio: ${CYAN}npx cap open android${NC}"
-      echo -e " 2. Select menu: ${GOLD}Build > Build Bundle(s) / APK(s) > Build APK(s)${NC}"
-      echo -e "${GREEN}================================================================"${NC}
-      ;;
-    12|ios)
-      echo -e "${BOLD}${PURPLE}=== Building iOS Native IPA ===${NC}"
-      pull_git
-      run_npm install || true
-      run_npm run build
-      run_npx cap add ios 2>/dev/null || true
-      run_npx cap sync ios
-      echo ""
-      echo -e "${GREEN}================================================================"${NC}
-      echo -e "${BOLD}${GREEN}✅ iOS Native Project successfully built & synced!${NC}"
-      echo -e "${WHITE}To generate final IPA for App Store & SibApp:${NC}"
-      echo -e " 1. Open project on macOS Xcode: ${CYAN}npx cap open ios${NC}"
-      echo -e " 2. Select menu: ${GOLD}Product > Archive > Distribute App${NC}"
-      echo -e "${GREEN}================================================================"${NC}
-      ;;
-    13|dual|mobile)
-      echo -e "${BOLD}${CYAN}=== Dual Mobile App Build (Android & iOS) ===${NC}"
-      pull_git
-      run_npm install || true
-      run_npm run build
-      run_npx cap add android 2>/dev/null || true
-      run_npx cap add ios 2>/dev/null || true
-      run_npx cap sync
-      echo ""
-      echo -e "${GREEN}================================================================"${NC}
-      echo -e "${BOLD}${GREEN}🎉 Both Android & iOS projects built & synced successfully!${NC}"
-      echo -e "${WHITE}Open native IDEs to complete signing & release:${NC}"
-      echo -e " 1. Android: ${CYAN}npx cap open android${NC}"
-      echo -e " 2. iOS:     ${CYAN}npx cap open ios${NC}"
-      echo -e "${GREEN}================================================================"${NC}
-      ;;
     0|exit)
       echo -e "${GREEN}Exiting. Have a great day!${NC}"
       exit 0
@@ -263,7 +211,7 @@ fi
 # Interactive Loop Mode (Keeps script open after selecting options 1-13)
 while true; do
   show_menu
-  read -p "$(echo -e "${BOLD}${WHITE}Select option [0-13]: ${NC}")" choice
+  read -p "$(echo -e "${BOLD}${WHITE}Select option [0-10]: ${NC}")" choice
   echo ""
   execute_option "$choice"
   echo ""
