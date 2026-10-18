@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cd "$(dirname "$0")"
+
 # ==============================================================================
 # Salehi Luxury Chandelier Platform - Complete Server & Mobile App Suite
 # Ultra-Resilient Linux VPS Script (Auto-detects NVM, Node, Docker & Git)
