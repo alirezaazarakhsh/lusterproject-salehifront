@@ -62,8 +62,8 @@ ensure_node() {
 # Helper function to safely execute npm commands
 run_npm() {
   ensure_node
-  # Robustly navigate to the project directory
-  cd /var/www/salehi-chandelier || cd /app/applet || cd "$PROJECT_DIR"
+  # Use the detected project directory
+  cd "$PROJECT_DIR"
   local args=("$@")
   
   # Auto-append --legacy-peer-deps for install commands to prevent ERESOLVE conflicts
@@ -85,8 +85,8 @@ run_npm() {
 # Helper function to safely execute npx commands
 run_npx() {
   ensure_node
-  # Robustly navigate to the project directory
-  cd /var/www/salehi-chandelier || cd /app/applet || cd "$PROJECT_DIR"
+  # Use the detected project directory
+  cd "$PROJECT_DIR"
   if command -v npx &> /dev/null; then
     npx "$@"
   elif command -v npm &> /dev/null; then
