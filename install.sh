@@ -59,7 +59,7 @@ ensure_node() {
 # Helper function to safely execute npm commands
 run_npm() {
   ensure_node
-  cd /
+  cd /app/applet
   local args=("$@")
   
   # Auto-append --legacy-peer-deps for install commands to prevent ERESOLVE conflicts
@@ -81,7 +81,7 @@ run_npm() {
 # Helper function to safely execute npx commands
 run_npx() {
   ensure_node
-  cd /
+  cd /app/applet
   if command -v npx &> /dev/null; then
     npx "$@"
   elif command -v npm &> /dev/null; then
@@ -126,7 +126,7 @@ show_menu() {
   echo -e "   ${BOLD}${GREEN}7)${NC} Reconfigure Domain & DNS Nameservers"
   echo -e "   ${BOLD}${GREEN}8)${NC} Issue / Generate Let's Encrypt SSL & WebSockets (Certbot)"
   echo -e "   ${BOLD}${GREEN}9)${NC} Free Port 53 & Start BIND9 Container"
-  echo -e "  ${BOLD}${GREEN}10)${NC} Configure Server Security & Anti-Scan Armor"
+  echo -e "   ${BOLD}${GREEN}10)${NC} Configure Server Security & Anti-Scan Armor"
   echo ""
   echo -e "  ${BOLD}${PURPLE}[Mobile App Builds]${NC}"
   echo -e "  ${BOLD}${YELLOW}11)${NC} Build Android Native APK / AAB (Bazaar & Myket)"
