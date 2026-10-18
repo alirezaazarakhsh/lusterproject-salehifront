@@ -59,6 +59,7 @@ ensure_node() {
 # Helper function to safely execute npm commands
 run_npm() {
   ensure_node
+  cd /
   local args=("$@")
   
   # Auto-append --legacy-peer-deps for install commands to prevent ERESOLVE conflicts
@@ -80,6 +81,7 @@ run_npm() {
 # Helper function to safely execute npx commands
 run_npx() {
   ensure_node
+  cd /
   if command -v npx &> /dev/null; then
     npx "$@"
   elif command -v npm &> /dev/null; then
