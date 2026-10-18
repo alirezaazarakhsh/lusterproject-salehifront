@@ -1329,7 +1329,11 @@ export const Chandelier3DViewer: React.FC<Chandelier3DViewerProps> = ({
             <button
               type="button"
               onClick={() =>
-                setZoomDistance((z) => Math.max(2.6, +(z - 0.35).toFixed(2)))
+                setZoomDistance((z) => {
+                  const newZ = Math.max(2.6, +(z - 0.35).toFixed(2));
+                  if (newZ !== z) window.dispatchEvent(new CustomEvent('show-app-toast', { detail: { type: 'zoom-in', title: 'بزرگ‌نمایی', message: 'تصویر بزرگ شد' } }));
+                  return newZ;
+                })
               }
               title="بزرگ‌نمایی"
               className="w-7 h-7 rounded-lg text-[#555] hover:bg-black/5 flex items-center justify-center transition-colors cursor-pointer"
@@ -1340,7 +1344,11 @@ export const Chandelier3DViewer: React.FC<Chandelier3DViewerProps> = ({
             <button
               type="button"
               onClick={() =>
-                setZoomDistance((z) => Math.min(6.2, +(z + 0.35).toFixed(2)))
+                setZoomDistance((z) => {
+                  const newZ = Math.min(6.2, +(z + 0.35).toFixed(2));
+                  if (newZ !== z) window.dispatchEvent(new CustomEvent('show-app-toast', { detail: { type: 'zoom-out', title: 'کوچک‌نمایی', message: 'تصویر کوچک شد' } }));
+                  return newZ;
+                })
               }
               title="کوچک‌نمایی"
               className="w-7 h-7 rounded-lg text-[#555] hover:bg-black/5 flex items-center justify-center transition-colors cursor-pointer"

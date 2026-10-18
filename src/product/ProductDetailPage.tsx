@@ -167,14 +167,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
 
   return (
     <div className="w-full min-h-screen bg-[#faf9f6] text-[#1e1e1e] pb-24 pt-4 sm:pt-6 font-sans antialiased" dir="rtl">
-      {/* تمام‌عرض در تمامی نمایشگرها */}
-      <div className="w-full max-w-full mx-auto px-4 sm:px-8 lg:px-14 xl:px-20 pt-2">
+      {/* تنظیمات عرض و پدینگ درخواست شده */}
+      <div className="w-full max-w-[1440px] mx-auto px-6 lg:px-10 pt-2">
 
         {/* ۱. بخش اصلی هیرو و گالری محصول */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mb-10">
           
-          {/* ستون راست: اطلاعات، مشخصات و کارت خرید */}
-          <div className="lg:col-span-6 flex flex-col order-1 lg:order-1">
+          {/* ستون راست */}
+          <div className="lg:col-span-8 flex flex-col order-1">
             <ProductHeroInfo product={product} />
             <ProductSpecsCard
               product={product}
@@ -194,16 +194,18 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({
             />
           </div>
 
-          {/* ستون چپ: گالری تصاویر و استودیو ۳۶۰ درجه */}
-          <ProductVisualGallery
-            product={product}
-            selectedFinish={selectedFinish}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            activeThumbIdx={activeThumbIdx}
-            setActiveThumbIdx={setActiveThumbIdx}
-            galleryImages={galleryImages}
-          />
+          {/* ستون چپ */}
+          <div className="lg:col-span-4 order-2">
+            <ProductVisualGallery
+              product={product}
+              selectedFinish={selectedFinish}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              activeThumbIdx={activeThumbIdx}
+              setActiveThumbIdx={setActiveThumbIdx}
+              galleryImages={galleryImages}
+            />
+          </div>
 
         </div>
 

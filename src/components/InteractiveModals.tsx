@@ -1,4 +1,4 @@
-import { TruckFast } from 'iconsax-react';
+import { TruckFast, NotificationBing, CloseCircle, MessageText1, DeviceMessage, TickSquare } from 'iconsax-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { navigateToRoute } from '../utils/navigation';
 import {
@@ -25,6 +25,8 @@ import {
   Video,
   Loader2,
   Eye,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import {
   ChandelierProduct,
@@ -353,19 +355,23 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setQty((q) => Math.min(12, q + 1))}
+                      disabled={product.outOfStock}
                       aria-label="افزایش تعداد"
-                      className="focus:outline-none shrink-0"
+                      className={`focus:outline-none shrink-0 ${product.outOfStock ? 'opacity-30 cursor-not-allowed' : ''}`}
                     >
                       <CustomAddSquareIcon />
                     </button>
-                    <span className="text-base font-black text-[#1a1a1a] tabular-nums min-w-[18px] text-center">
-                      {toPersianDigits(qty)}
+                    <span className={`text-base font-black tabular-nums min-w-[18px] text-center ${
+                      product.outOfStock ? 'text-[#888888]' : 'text-[#1a1a1a]'
+                    }`}>
+                      {toPersianDigits(product.outOfStock ? 0 : qty)}
                     </span>
                     <button
                       type="button"
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
+                      disabled={product.outOfStock}
                       aria-label="کاهش تعداد"
-                      className="focus:outline-none shrink-0"
+                      className={`focus:outline-none shrink-0 ${product.outOfStock ? 'opacity-30 cursor-not-allowed' : ''}`}
                     >
                       <CustomMinusSquareIcon />
                     </button>
@@ -381,18 +387,26 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                         const cfg = FINISH_PRESETS[fKey];
                         const isActive = selectedFinish === fKey;
                         return (
-                          <button
-                            key={fKey}
-                            type="button"
-                            onClick={() => setSelectedFinish(fKey)}
-                            title={cfg.label}
-                            className={`w-5 h-5 rounded-full border transition-all ${
-                              isActive
-                                ? 'ring-2 ring-[#b59766] scale-110 border-white'
-                                : 'border-black/20 hover:scale-105'
-                            }`}
-                            style={{ background: cfg.swatch }}
-                          />
+                          <div key={fKey} className="relative group/swatch">
+                            {/* تولتیپ مشکی با رادیوس کمتر و فاصله مناسب از کادر */}
+                            <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 opacity-0 group-hover/swatch:opacity-100 pointer-events-none transition-all duration-200 z-30 flex flex-col items-center">
+                              <div className="bg-[#323232] text-white text-[11px] font-bold px-3.5 py-2 rounded-[7px] shadow-md whitespace-nowrap leading-none flex items-center justify-center">
+                                {cfg.label}
+                              </div>
+                              <div className="w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-[#323232] -mt-[0.5px]" />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedFinish(fKey)}
+                              style={{ background: cfg.swatch }}
+                              className={`w-5 h-5 rounded-full border transition-all cursor-pointer ${
+                                isActive
+                                  ? 'ring-2 ring-[#b59766] scale-110 border-white'
+                                  : 'border-black/20 hover:scale-105'
+                              }`}
+                            />
+                          </div>
                         );
                       })}
                     </div>
@@ -433,14 +447,29 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                     </span>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleAdd}
-                    className="w-full h-11 rounded-xl bg-[#262626] hover:bg-[#b59766] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
-                  >
-                    <ShoppingBag className="w-4 h-4 shrink-0 text-white" />
-                    <span>افزودن به سبد خرید</span>
-                  </button>
+                  {product.outOfStock ? (
+                    <button
+                      type="button"
+                      dir="rtl"
+                      onClick={() => {
+                        setAddedToast(true);
+                        setTimeout(() => setAddedToast(false), 2200);
+                      }}
+                      className="w-full h-11.5 rounded-xl bg-[#f42f3c] hover:bg-[#de2330] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98"
+                    >
+                      <NotificationBing size="20" color="#ffffff" variant="Linear" className="shrink-0" />
+                      <span>موجود شد خبرم کنید</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleAdd}
+                      className="w-full h-11 rounded-xl bg-[#262626] hover:bg-[#b59766] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                    >
+                      <ShoppingBag className="w-4 h-4 shrink-0 text-white" />
+                      <span>افزودن به سبد خرید</span>
+                    </button>
+                  )}
                 </div>
 
               </div>
@@ -3247,6 +3276,7 @@ const LocalMobileToast: React.FC<{
           animation: localToastProgressVertical 3800ms linear forwards;
         }
       `}</style>
+
       <div
         onClick={handleDismiss}
         className="fixed inset-0 z-[65] bg-black/55 sm:hidden"
@@ -3258,10 +3288,8 @@ const LocalMobileToast: React.FC<{
           isClosing ? 'animate-toast-out' : 'animate-toast-in'
         }`}
       >
-        {/* دستگیره کپسولی بالای باتم‌شیت */}
-        <div className="w-12 h-1.5 rounded-full bg-[#dcdcdc] mx-auto mb-6" />
-
-        <div className="flex items-center justify-start gap-3.5">
+        <div className="w-12 h-1.5 rounded-full bg-[#d8d8d8] mx-auto mb-4" />
+        <div className="flex items-center gap-4 text-right">
           <div
             className={`w-12 h-12 rounded-[14px] border flex items-center justify-center shrink-0 ${
               isGreen
@@ -3273,19 +3301,18 @@ const LocalMobileToast: React.FC<{
           </div>
 
           <div className="text-right">
-            <h4 className="text-[15px] font-bold text-[#1e1e1e]">
+            <h4 className="text-[14.5px] font-bold text-[#1e1e1e]">
               {toast.title}
             </h4>
-            <p className="text-[12.5px] text-[#555555] mt-1 leading-relaxed">
+            <p className="text-[12.5px] text-[#555555] mt-1 leading-normal font-normal">
               {toast.message}
             </p>
           </div>
         </div>
 
-        {/* نوار پیشرفت افقی پایین باتم‌شیت موبایل با رشد واقعی از راست به چپ */}
-        <div className="mt-6 w-full h-[5px] bg-[#efefef] overflow-hidden rounded-full relative">
-          <div
-            className={`absolute right-0 h-full rounded-full animate-local-toast-progress ${
+        <div className="w-full h-1.5 rounded-full bg-[#efefef] overflow-hidden mt-5">
+          <span
+            className={`block h-full rounded-full animate-local-toast-progress ${
               isGreen ? 'bg-[#17b26a]' : 'bg-[#ff1f3d]'
             }`}
           />
@@ -3755,7 +3782,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 <button
                   type="button"
                   onClick={handleTimerOrResendClick}
-                  className="flex-1 h-[50px] min-w-[84px] rounded-[12px] bg-[#efefef] active:bg-[#e4e4e4] text-[#333333] flex items-center justify-center text-[14px] font-semibold tabular-nums transition-colors cursor-pointer"
+                  className="flex-1 h-[50px] min-w-[84px] rounded-[12px] bg-[#2b2b2b] active:bg-black text-white flex items-center justify-center text-[14px] font-semibold tabular-nums transition-colors cursor-pointer"
                 >
                   {isResendingOtp ? (
                     /* سه نقطه تیره داخل باکس تایمر هنگام ارسال مجدد کد (Mobile 15) */
@@ -3763,14 +3790,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       className="flex items-center justify-center gap-1"
                       dir="ltr"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#777777] animate-pulse" />
-                      <span className="w-2 h-2 rounded-full bg-[#222222] animate-pulse [animation-delay:150ms]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#777777] animate-pulse [animation-delay:300ms]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      <span className="w-2 h-2 rounded-full bg-white animate-pulse [animation-delay:150ms]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse [animation-delay:300ms]" />
                     </div>
                   ) : secondsLeft > 0 ? (
                     <span>{formatTimer(secondsLeft)}</span>
                   ) : (
-                    <RefreshCodeIcon className="w-5 h-5 text-[#292d32]" />
+                    <RefreshCodeIcon className="w-5 h-5 text-white" />
                   )}
                 </button>
               </div>
@@ -3822,7 +3849,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             }
             className={`w-full h-[50px] rounded-[12px] text-[13.5px] font-semibold flex items-center justify-center transition-colors cursor-pointer ${
               (step === 'phone' ? isPhoneBtnDark : isOtpBtnDark)
-                ? 'bg-[#2952ff] hover:bg-[#1d4ed8] active:bg-[#1e40af] text-white'
+                ? 'bg-[#2b2b2b] hover:bg-black text-white'
                 : 'bg-[#f7f7f7] text-[#1a1a1a]'
             }`}
           >
@@ -4032,7 +4059,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               form={step === 'phone' ? 'auth-phone-form' : 'auth-otp-form'}
               className={`mt-3.5 w-full h-[46px] rounded-[12px] text-[13px] font-semibold flex items-center justify-center transition-colors cursor-pointer ${
                 (step === 'phone' ? isPhoneBtnDark : isOtpBtnDark)
-                  ? 'bg-[#2952ff] hover:bg-[#1d4ed8] text-white'
+                  ? 'bg-[#2b2b2b] hover:bg-black text-white'
                   : 'bg-[#f5f5f5] hover:bg-[#ececec] text-[#6e6e6e]'
               }`}
             >
@@ -4151,6 +4178,8 @@ export interface AppToast {
     | 'contact-send-error'
     | 'catalog-download-success'
     | 'catalog-download-error'
+    | 'zoom-in'
+    | 'zoom-out'
     | 'project-like-success'
     | 'project-dislike'
     | 'product-add-error';
@@ -4266,7 +4295,12 @@ const SingleToast: React.FC<{
     toast.type === 'cart-delete-success' ||
     toast.type === 'contact-success' ||
     toast.type === 'catalog-download-success' ||
-    toast.type === 'project-like-success';
+    toast.type === 'project-like-success' ||
+    toast.type === 'zoom-in';
+
+  const isRed =
+    toast.type === 'contact-empty-error' ||
+    toast.type === 'zoom-out';
 
   React.useEffect(() => {
     // پر شدن خط پیشرفت در ۳۶۰۰ میلی‌ثانیه به پایان می‌رسد و سپس اسلاید خروج آغاز می‌شود
@@ -4364,33 +4398,27 @@ const SingleToast: React.FC<{
       );
     }
 
+    if (toast.type === 'zoom-in' || toast.type === 'zoom-out') {
+      /* آیکون زوم */
+      return (
+        <ZoomIn
+          strokeWidth={1.8}
+          className="w-[24px] h-[24px] lg:w-[22px] lg:h-[22px]"
+        />
+      );
+    }
+
     if (
       toast.type === 'cart-delete-success' ||
-      toast.type === 'contact-success'
+      toast.type === 'contact-success' ||
+      toast.type === 'success'
     ) {
-      /* آیکون تیک کنگره‌دار ۸ پر سبز برای «با موفقیت حذف شد» و «پیام شما با موفقیت ارسال شد» مطابق عکس‌ها */
+      /* آیکون تیک یا آیکون موفقیت */
       return (
-        <svg
-          viewBox="0 0 48 48"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+        <ZoomIn
+          strokeWidth={1.8}
           className="w-[24px] h-[24px] lg:w-[22px] lg:h-[22px]"
-        >
-          <path
-            d="M24 4.5 C26.6 4.5, 28.5 7.4, 30.9 8.4 C33.3 9.4, 36.8 8.3, 38.6 10.1 C40.4 11.9, 39.3 15.4, 40.3 17.8 C41.3 20.2, 44.2 22.1, 44.2 24.7 C44.2 27.3, 41.3 29.2, 40.3 31.6 C39.3 34.0, 40.4 37.5, 38.6 39.3 C36.8 41.1, 33.3 40.0, 30.9 41.0 C28.5 42.0, 26.6 44.9, 24 44.9 C21.4 44.9, 19.5 42.0, 17.1 41.0 C14.7 40.0, 11.2 41.1, 9.4 39.3 C7.6 37.5, 8.7 34.0, 7.7 31.6 C6.7 29.2, 3.8 27.3, 3.8 24.7 C3.8 22.1, 6.7 20.2, 7.7 17.8 C8.7 15.4, 7.6 11.9, 9.4 10.1 C11.2 8.3, 14.7 9.4, 17.1 8.4 C19.5 7.4, 21.4 4.5, 24 4.5 Z"
-            stroke="currentColor"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M17.5 24.8 L22.1 29.3 L31.2 20.2"
-            stroke="currentColor"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
       );
     }
 
@@ -4657,72 +4685,111 @@ const SingleToast: React.FC<{
 
   return (
     <>
-      {/* بک‌دراپ تیره پشت دراور در نمای موبایل و تبلت (< lg) مطابق عکس اول */}
+      {/* بک‌دراپ تیره پشت توست در نمای موبایل و تبلت (< lg) */}
+      {/* بک‌دراپ تیره پشت توست در نمای موبایل و تبلت (< lg) */}
       <div
         onClick={handleDismiss}
         className="fixed inset-0 z-[85] bg-black/55 lg:hidden"
       />
 
+      {/* موبایل: باتم‌شیت تمام‌عرض با دستگیره بالا و نوار پیشرفت افقی پایین مطابق فیگما */}
       <div
-        onClick={handleDismiss}
-        className={`relative z-[90] w-full lg:w-[385px] bg-white rounded-t-[30px] lg:rounded-[18px] shadow-[0_-12px_45px_rgba(0,0,0,0.22)] lg:shadow-[0_14px_40px_rgba(0,0,0,0.16)] px-5 lg:px-4 py-3.5 lg:py-3 flex flex-col lg:flex-row items-stretch lg:items-center justify-between overflow-hidden cursor-pointer border-0 outline-none ${
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+        className={`fixed inset-x-0 bottom-0 z-[90] bg-white rounded-t-[30px] pt-3.5 pb-7 px-6 shadow-[0_-12px_45px_rgba(0,0,0,0.22)] lg:hidden ${
           isClosing ? 'animate-toast-out' : 'animate-toast-in'
         }`}
       >
-        {/* دستگیره کشیدن برای دراور موبایل */}
-        <div className="w-12 h-1.5 bg-[#dcdcdc] rounded-full mx-auto mb-3 lg:hidden shrink-0" />
+        <div className="w-12 h-1.5 rounded-full bg-[#d8d8d8] mx-auto mb-4" />
+        <div className="flex items-center gap-4 text-right">
+          <div
+            className={`w-12 h-12 rounded-[14px] border flex items-center justify-center shrink-0 ${
+              isBlue
+                ? 'bg-[#eff3ff] border-[#cfe2ff] text-[#2952ff]'
+                : isGreen
+                  ? 'bg-[#edfcf2] border-[#abefc6] text-[#17b26a]'
+                  : 'bg-[#fff0f2] border-[#ffccd3] text-[#ff1f3d]'
+            }`}
+          >
+            {renderToastBoxIcon()}
+          </div>
 
+          <div className="text-right">
+            <h4 className="text-[14.5px] font-bold text-[#1e1e1e]">
+              {toast.title}
+            </h4>
+            <p className="text-[12.5px] text-[#555555] mt-1 leading-normal font-normal">
+              {toast.message}
+            </p>
+          </div>
+        </div>
+
+        <div className="w-full h-1.5 rounded-full bg-[#efefef] overflow-hidden mt-5">
+          <span
+            className={`block h-full rounded-full animate-toast-progress-horizontal ${
+              isBlue
+                ? 'bg-[#2952ff]'
+                : isGreen
+                  ? 'bg-[#17b26a]'
+                  : 'bg-[#ff1f3d]'
+            }`}
+          />
+        </div>
+      </div>
+
+      {/* دسکتاپ: کادر شناور با نوار پیشرفت عمودی */}
+      <div
+        onClick={handleDismiss}
+        className={`relative z-[90] hidden lg:flex w-[370px] bg-white rounded-[18px] shadow-[0_14px_40px_rgba(0,0,0,0.14)] px-4 pt-3.5 pb-4 items-center justify-between gap-3.5 overflow-hidden cursor-pointer border-0 outline-none ${
+          isClosing ? 'animate-toast-out' : 'animate-toast-in'
+        }`}
+      >
         {/* محتوای توست شامل آیکون و متون به همراه ترازبندی دقیق */}
-        <div className="flex items-center justify-between gap-4 w-full pr-0.5">
+        <div className="flex items-center justify-between gap-3.5 w-full pr-0.5">
           <div className="flex items-center gap-3.5 text-right">
-            {/* آیکون در کادر مربعی گوشه‌گرد در سمت راست */}
+            {/* آیکون در کادر مربعی گوشه‌گرد با حاشیه در سمت راست */}
             <div
-              className={`w-11 h-11 lg:w-10 lg:h-10 rounded-[12px] lg:rounded-[10px] flex items-center justify-center shrink-0 ${
+              className={`w-11 h-11 rounded-[12px] border flex items-center justify-center shrink-0 ${
                 isBlue
-                  ? 'bg-[#eff3ff] text-[#2952ff]'
+                  ? 'bg-[#eff3ff] border-[#cfe2ff] text-[#2952ff]'
                   : isGreen
-                    ? 'bg-[#eefaf2] text-[#179c26]'
-                    : 'bg-[#fff0f2] text-[#ff1f3d]'
+                    ? 'bg-[#edfcf2] border-[#abefc6] text-[#17b26a]'
+                    : 'bg-[#fff0f2] border-[#ffccd3] text-[#ff1f3d]'
               }`}
             >
               {renderToastBoxIcon()}
             </div>
 
             <div className="text-right">
-              <h4 className="text-[14px] lg:text-[13.5px] font-bold text-[#1e1e1e]">
+              <h4 className="text-[13.5px] font-bold text-[#1e1e1e]">
                 {toast.title}
               </h4>
-              <p className="text-[12px] lg:text-[11px] text-[#555555] mt-0.5 leading-snug font-normal">
+              <p className="text-[11.5px] text-[#555555] mt-1 leading-normal font-normal">
                 {toast.message}
               </p>
             </div>
           </div>
 
-          {/* خط باریک شاخص وضعیت در سمت چپ کادر دسکتاپ که از بالا به پایین پر می‌شود */}
-          <div className="hidden lg:flex w-[3.5px] h-8 rounded-full bg-[#efefef] overflow-hidden shrink-0 self-center flex-col justify-start">
+          {/* خط باریک شاخص وضعیت در سمت چپ کادر که از بالا به پایین پر می‌شود */}
+          <div
+            className={`w-[3.5px] h-9 rounded-full overflow-hidden shrink-0 flex flex-col justify-start ${
+              isBlue
+                ? 'bg-[#cfe2ff]'
+                : isGreen
+                  ? 'bg-[#dcfce7]'
+                  : 'bg-[#ffe4e8]'
+            }`}
+          >
             <span
               className={`w-full rounded-full animate-toast-progress-vertical ${
                 isBlue
                   ? 'bg-[#2952ff]'
                   : isGreen
-                    ? 'bg-[#179c26]'
-                    : 'bg-[#e50019]'
+                    ? 'bg-[#17b26a]'
+                    : 'bg-[#ff1f3d]'
               }`}
             />
           </div>
-        </div>
-
-        {/* خط پیشرفت انیمیشنی پایینی داخل دراور موبایل (پر شدن از راست به چپ مطابق عکس اول) */}
-        <div className="lg:hidden mt-6 w-full h-[5px] bg-[#efefef] rounded-full overflow-hidden relative">
-          <div
-            className={`absolute right-0 top-0 h-full rounded-full animate-toast-progress-full ${
-              isBlue
-                ? 'bg-[#2952ff]'
-                : isGreen
-                  ? 'bg-[#179c26]'
-                  : 'bg-[#e50019]'
-            }`}
-          />
         </div>
       </div>
     </>
@@ -4766,10 +4833,17 @@ export const AppToastContainer: React.FC<{
         .animate-toast-progress-vertical {
           animation: toastProgressVertical 3600ms linear forwards;
         }
+        @keyframes toastProgressHorizontal {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+        .animate-toast-progress-horizontal {
+          animation: toastProgressHorizontal 3600ms linear forwards;
+        }
       `}</style>
       <div
         dir="rtl"
-        className="fixed bottom-0 inset-x-0 lg:bottom-6 lg:left-6 lg:right-auto lg:inset-x-auto z-[90] flex flex-col gap-0 lg:gap-3 pointer-events-auto select-none"
+        className="fixed bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto z-[90] flex flex-col gap-2.5 pointer-events-auto select-none w-full sm:w-[370px]"
       >
         {toasts.map((toast) => (
           <SingleToast key={toast.id} toast={toast} onDismiss={onDismiss} />
@@ -4778,4 +4852,145 @@ export const AppToastContainer: React.FC<{
     </>
   );
 };
+
+export interface NotifyAvailabilityModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  product?: ChandelierProduct | null;
+  userPhone?: string;
+  onSubmitSuccess: () => void;
+}
+
+/**
+ * پاپ‌آپ اطلاع‌رسانی محصول (پاپ‌آپ انتخاب روش اطلاع‌رسانی پیامک یا سیستم پیام شخصی)
+ * مطابق با Screenshot 2026-10-18 at 05.40.25.png
+ */
+export const NotifyAvailabilityModal: React.FC<NotifyAvailabilityModalProps> = ({
+  isOpen,
+  onClose,
+  product,
+  userPhone = '۰۹۱۲۳۴۵۶۷۸۹',
+  onSubmitSuccess,
+}) => {
+  const [selectedMethods, setSelectedMethods] = useState<string[]>(['sms']);
+
+  if (!isOpen) return null;
+
+  const toggleMethod = (method: string) => {
+    setSelectedMethods((prev) =>
+      prev.includes(method)
+        ? prev.filter((m) => m !== method)
+        : [...prev, method]
+    );
+  };
+
+  const handleSubmit = () => {
+    onClose();
+    onSubmitSuccess();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+      dir="rtl"
+    >
+      <div className="relative w-full max-w-[440px] bg-white rounded-[24px] p-6 sm:p-7 shadow-2xl border border-[#ece6da] animate-fadeIn">
+        {/* دکمه بستن */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="بستن"
+          className="absolute top-5 left-5 w-8 h-8 flex items-center justify-center transition-colors cursor-pointer"
+        >
+          <X size="28" color="#1a1a1a" />
+        </button>
+
+        {/* عنوان و زیرعنوان */}
+        <div className="text-right mt-1 mb-6">
+          <h2 className="text-lg sm:text-xl font-black text-[#1a1a1a]">
+            اطلاع رسانی محصول
+          </h2>
+          <p className="text-xs text-[#666666] font-medium mt-2 leading-relaxed px-1">
+            یکی از روش های زیر انتخاب کنید تا به محض موجود شدن کالا مورد نظر شما خبر دهیم.
+          </p>
+        </div>
+
+        {/* گزینه‌های انتخاب روش اطلاع‌رسانی */}
+        <div className="space-y-3.5 mb-6">
+          {/* گزینه ۱: ارسال پیامک به شماره کاربر */}
+          <div
+            onClick={() => toggleMethod('sms')}
+            className={`flex items-center justify-between p-3.5 sm:p-4 rounded-[16px] border transition-all cursor-pointer select-none ${
+              selectedMethods.includes('sms')
+                ? 'border-[#1a1a1a]'
+                : 'border-[#e4e4e4] hover:border-[#ccc]'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl border border-[#e2e2e2] flex items-center justify-center text-[#444] shrink-0">
+                <MessageText1 size="20" color="#1a1a1a" variant="Linear" />
+              </div>
+              <span className="text-xs sm:text-[13px] font-bold text-[#1a1a1a]">
+                ارسال پیامک به ({userPhone})
+              </span>
+            </div>
+
+            <div
+              className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-colors shrink-0 border ${
+                selectedMethods.includes('sms')
+                  ? 'bg-[#22a45a] border-[#22a45a]'
+                  : 'border-[#e4e4e4] bg-white'
+              }`}
+            >
+              {selectedMethods.includes('sms') && (
+                <TickSquare size="24" color="white" variant="Bold" />
+              )}
+            </div>
+          </div>
+
+          {/* گزینه ۲: سیستم پیام شخصی (اعلان‌ها) */}
+          <div
+            onClick={() => toggleMethod('notification')}
+            className={`flex items-center justify-between p-3.5 sm:p-4 rounded-[16px] border transition-all cursor-pointer select-none ${
+              selectedMethods.includes('notification')
+                ? 'border-[#e4e4e4]'
+                : 'border-[#e4e4e4] hover:border-[#ccc]'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl border border-[#e2e2e2] flex items-center justify-center text-[#444] shrink-0">
+                <DeviceMessage size="20" color="#1a1a1a" variant="Linear" />
+              </div>
+              <span className="text-xs sm:text-[13px] font-bold text-[#1a1a1a]">
+                سیستم پیام شخصی (اعلان ها)
+              </span>
+            </div>
+
+            <div
+              className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-colors shrink-0 border ${
+                selectedMethods.includes('notification')
+                  ? 'bg-[#22a45a] border-[#22a45a]'
+                  : 'border-[#e4e4e4] bg-white'
+              }`}
+            >
+              {selectedMethods.includes('notification') && (
+                <TickSquare size="24" color="white" variant="Bold" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* دکمه ثبت اطلاع رسانی */}
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="w-full h-12 rounded-[14px] bg-[#2b2b2b] hover:bg-black text-white text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-98 flex items-center justify-center"
+        >
+          ثبت اطلاع رسانی
+        </button>
+      </div>
+    </div>
+  );
+};
+
 

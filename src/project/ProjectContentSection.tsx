@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import { Bag, BagCross, NotificationBing } from 'iconsax-react';
 import { SectionHeading } from '../components/Ornaments';
 import { AppToast } from '../components/InteractiveModals';
 import { TransparentProductImage } from '../components/TransparentProductImage';
@@ -1387,19 +1388,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
       (cleanId && likedMap[cleanId])
     );
 
-    // هر کاربر فقط یک‌بار می‌تواند لایک کند (جلوگیری قطعی از لایک مجدد)
-    if (currentlyLiked) {
-      if (onShowToast) {
-        onShowToast(
-          'project-like-success',
-          'قبلاً لایک شده',
-          'شما قبلاً به این پروژه امتیاز داده‌اید.'
-        );
-      }
-      return;
-    }
-
-    const nextLiked = true;
+    const nextLiked = !currentlyLiked;
 
     // ۱. به‌روزرسانی آنی وضعیت لایک کاربر و ذخیره دائمی در localStorage
     setLikedMap((prev) => {
@@ -1420,7 +1409,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
       const statsRaw = localStorage.getItem('app_project_likes_stats');
       const stats: Record<string, number> = statsRaw ? JSON.parse(statsRaw) : {};
       const prevCount = (stats[key] ?? stats[projId] ?? stats[cleanSlug] ?? stats[cleanId] ?? Number(project.initialLikes)) || 0;
-      updatedCount = prevCount + 1;
+      updatedCount = nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1);
       stats[key] = updatedCount;
       if (projId) stats[projId] = updatedCount;
       if (projSlug) stats[projSlug] = updatedCount;
@@ -1455,7 +1444,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
           'Content-Type': 'application/json',
           'X-Client-Id': clientId,
         },
-        body: JSON.stringify({ increment: true, clientId }),
+        body: JSON.stringify({ increment: nextLiked, clientId }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -1470,7 +1459,7 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
           localStorage.setItem('app_project_likes_stats', JSON.stringify(stats));
           window.dispatchEvent(
             new CustomEvent('app-project-liked', {
-              detail: { projectId: projId, slug: projSlug, count: data.likesCount, isLiked: true },
+              detail: { projectId: projId, slug: projSlug, count: data.likesCount, isLiked: nextLiked },
             })
           );
         }
@@ -1480,11 +1469,19 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
     }
 
     if (onShowToast) {
-      onShowToast(
-        'project-like-success',
-        'با موفقیت لایک شد',
-        'مشتری عزیز از امتیاز دهی به پروژه ما متشکریم.'
-      );
+      if (nextLiked) {
+        onShowToast(
+          'project-like-success',
+          'با موفقیت لایک شد',
+          'مشتری عزیز از امتیاز دهی به پروژه ما متشکریم.'
+        );
+      } else {
+        onShowToast(
+          'project-dislike',
+          'لایک برداشته شد',
+          'مشتری عزیز لایک شما از این پروژه برداشته شد.'
+        );
+      }
     }
   };
 
@@ -1729,12 +1726,12 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => handleToggleLike(activeSingleProject)}
-                  aria-label={isProjectLiked ? 'پروژه لایک شده' : 'لایک پروژه'}
-                  title={isProjectLiked ? 'شما قبلاً این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
-                  className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all ${
+                  aria-label={isProjectLiked ? 'لغو لایک پروژه' : 'لایک پروژه'}
+                  title={isProjectLiked ? 'لغو لایک پروژه' : 'لایک پروژه'}
+                  className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
                     isProjectLiked
-                      ? 'bg-[#a9895b] text-white shadow-xs cursor-default'
-                      : 'bg-[#f5efe6] text-[#a68452] hover:bg-[#ece2d2] cursor-pointer'
+                      ? 'bg-[#a9895b] text-white shadow-xs hover:bg-[#98794d]'
+                      : 'bg-[#f5efe6] text-[#a68452] hover:bg-[#ece2d2]'
                   }`}
                 >
                   <svg
@@ -1754,11 +1751,11 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                 <button
                   type="button"
                   onClick={() => handleToggleLike(activeSingleProject)}
-                  title={isProjectLiked ? 'شما قبلاً این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
-                  className={`h-[42px] px-4 rounded-[10px] text-[13px] font-bold flex items-center justify-center transition-colors whitespace-nowrap ${
+                  title={isProjectLiked ? 'لغو لایک پروژه' : 'لایک پروژه'}
+                  className={`h-[42px] px-4 rounded-[10px] text-[13px] font-bold flex items-center justify-center transition-colors whitespace-nowrap cursor-pointer ${
                     isProjectLiked
-                      ? 'bg-[#f5efe6] text-[#a9895b] hover:bg-[#ede3d3] cursor-default'
-                      : 'bg-[#f4f4f4] hover:bg-[#eaeaea] text-[#222222] cursor-pointer'
+                      ? 'bg-[#f5efe6] text-[#a9895b] hover:bg-[#ede3d3]'
+                      : 'bg-[#f4f4f4] hover:bg-[#eaeaea] text-[#222222]'
                   }`}
                 >
                   {toPersianDigits(likeCount)} {isProjectLiked ? 'لایک شده' : 'لایک کردن'}
@@ -2118,12 +2115,12 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               <button
                 type="button"
                 onClick={() => handleToggleLike(activeSingleProject)}
-                aria-label={isProjectLiked ? 'پروژه لایک شده' : 'لایک پروژه'}
-                title={isProjectLiked ? 'شما قبلاً این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
-                className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-all ${
+                aria-label={isProjectLiked ? 'لغو لایک پروژه' : 'لایک پروژه'}
+                title={isProjectLiked ? 'لغو لایک پروژه' : 'لایک پروژه'}
+                className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
                   isProjectLiked
-                    ? 'bg-[#a9895b] text-white shadow-xs cursor-default'
-                    : 'bg-[#f5efe6] text-[#a68452] cursor-pointer'
+                    ? 'bg-[#a9895b] text-white shadow-xs hover:bg-[#98794d]'
+                    : 'bg-[#f5efe6] text-[#a68452] hover:bg-[#ece2d2]'
                 }`}
               >
                 <svg
@@ -2142,11 +2139,11 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
               <button
                 type="button"
                 onClick={() => handleToggleLike(activeSingleProject)}
-                title={isProjectLiked ? 'شما قبلاً این پروژه را لایک کرده‌اید' : 'لایک پروژه'}
-                className={`h-10 px-3.5 rounded-[10px] text-[12px] font-bold flex items-center justify-center whitespace-nowrap transition-colors ${
+                title={isProjectLiked ? 'لغو لایک پروژه' : 'لایک پروژه'}
+                className={`h-10 px-3.5 rounded-[10px] text-[12px] font-bold flex items-center justify-center whitespace-nowrap transition-colors cursor-pointer ${
                   isProjectLiked
-                    ? 'bg-[#f5efe6] text-[#a9895b] cursor-default'
-                    : 'bg-[#f4f4f4] text-[#222222] cursor-pointer'
+                    ? 'bg-[#f5efe6] text-[#a9895b] hover:bg-[#ede3d3]'
+                    : 'bg-[#f4f4f4] text-[#222222] hover:bg-[#eaeaea]'
                 }`}
               >
                 {toPersianDigits(likeCount)} {isProjectLiked ? 'لایک شده' : 'لایک کردن'}
@@ -2378,18 +2375,18 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                         aria-label="افزودن به سبد خرید"
                         className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
                           isRowOutOfStock
-                            ? 'bg-[#fee8ea] text-[#ef4444]'
+                            ? 'bg-[#f42f3c] hover:bg-[#de2330] text-white shadow-xs'
                             : isGoldenAdded
                               ? 'bg-[#b08754] text-white shadow-xs'
                               : 'bg-[#f2f2f2] text-[#222222] hover:bg-[#2b2b2b] hover:text-white'
                         }`}
                       >
                         {isRowOutOfStock ? (
-                          <OutOfStockBagIcon className="w-5 h-5" />
+                          <NotificationBing size="20" color="#ffffff" variant="Linear" />
                         ) : isGoldenAdded ? (
                           <PlusCircleIcon className="w-5 h-5" />
                         ) : (
-                          <ShoppingBasketIcon className="w-5 h-5" />
+                          <Bag size="20" color="currentColor" variant="Linear" />
                         )}
                       </button>
                     </div>
@@ -2581,18 +2578,18 @@ export const ProjectContentSection: React.FC<ProjectContentSectionProps> = ({
                           aria-label="افزودن به سبد خرید"
                           className={`w-[42px] h-[42px] rounded-[10px] flex items-center justify-center transition-all cursor-pointer ${
                             isRowOutOfStock
-                              ? 'bg-[#fee8ea] text-[#ef4444]'
+                              ? 'bg-[#f42f3c] hover:bg-[#de2330] text-white shadow-xs'
                               : isGoldenAdded
                                 ? 'bg-[#b08754] text-white shadow-xs'
                                 : 'bg-[#f2f2f2] text-[#222222] hover:bg-[#2b2b2b] hover:text-white'
                           }`}
                         >
                           {isRowOutOfStock ? (
-                            <OutOfStockBagIcon className="w-5 h-5" />
+                            <NotificationBing size="20" color="#ffffff" variant="Linear" />
                           ) : isGoldenAdded ? (
                             <PlusCircleIcon className="w-5 h-5" />
                           ) : (
-                            <ShoppingBasketIcon className="w-5 h-5" />
+                            <Bag size="20" color="currentColor" variant="Linear" />
                           )}
                         </button>
                       </div>

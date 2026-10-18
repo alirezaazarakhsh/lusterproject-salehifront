@@ -11,9 +11,17 @@ import {
   Sparkles,
   Star,
   Plus,
+  CheckCircle2,
+  ZoomIn,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  SkipBack,
+  SkipForward,
 } from 'lucide-react';
 import { SectionHeading } from '../components/Ornaments';
-import { AppToast } from '../components/InteractiveModals';
+import { AppToast, NotifyAvailabilityModal } from '../components/InteractiveModals';
 import {
   ChandelierProduct,
   GENERATED_IMAGES,
@@ -55,6 +63,7 @@ import {
   TruckFast,
   Bag,
   BagCross,
+  NotificationBing,
 } from 'iconsax-react';
 
 /**
@@ -1836,7 +1845,200 @@ interface ProductContentSectionProps {
   ) => void;
   onOpenLogin?: () => void;
   isLoggedIn?: boolean;
+  userPhone?: string;
 }
+
+interface FilterScrollContainerProps {
+  id: string;
+  className?: string;
+  innerRef?: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+}
+
+/**
+ * کانتینر اسکرول فوق‌العاده ظریف ۳.۵ پیکسلی با نمایش دائمی اسکرول‌بار در گوشی (موبایل) و دسکتاپ
+ * دقیقاً مطابق طراحی فیگما
+ */
+const FilterScrollContainer: React.FC<FilterScrollContainerProps> = ({
+  id,
+  className = '',
+  innerRef,
+  children,
+}) => {
+  const localRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = innerRef || localRef;
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const [thumbTop, setThumbTop] = useState(0);
+  const [thumbHeight, setThumbHeight] = useState(44);
+  const [isScrollable, setIsScrollable] = useState(true);
+  const isDraggingRef = useRef(false);
+  const startDragYRef = useRef(0);
+  const startScrollTopRef = useRef(0);
+
+  const updateScrollbar = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    if (scrollHeight <= clientHeight + 2) {
+      setIsScrollable(false);
+      return;
+    }
+    setIsScrollable(true);
+    const minHeight = 32;
+    const calculatedHeight = Math.max(
+      minHeight,
+      (clientHeight / scrollHeight) * clientHeight
+    );
+    const maxTop = clientHeight - calculatedHeight;
+    const scrollableRange = scrollHeight - clientHeight;
+    const scrollRatio = scrollableRange > 0 ? scrollTop / scrollableRange : 0;
+    const calculatedTop = scrollRatio * maxTop;
+
+    setThumbHeight(calculatedHeight);
+    setThumbTop(calculatedTop);
+  }, [containerRef]);
+
+  useEffect(() => {
+    updateScrollbar();
+    const el = containerRef.current;
+    if (!el) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollbar();
+    });
+    resizeObserver.observe(el);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [updateScrollbar, containerRef, children]);
+
+  const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = containerRef.current;
+    const track = trackRef.current;
+    if (!el || !track) return;
+    const rect = track.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    const ratio = Math.max(
+      0,
+      Math.min(1, (clickY - thumbHeight / 2) / (rect.height - thumbHeight))
+    );
+    const targetScroll = ratio * (el.scrollHeight - el.clientHeight);
+    el.scrollTo({ top: targetScroll, behavior: 'smooth' });
+  };
+
+  const handleThumbMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingRef.current = true;
+    startDragYRef.current = e.clientY;
+    startScrollTopRef.current = containerRef.current
+      ? containerRef.current.scrollTop
+      : 0;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      if (!isDraggingRef.current || !containerRef.current) return;
+      const deltaY = moveEvent.clientY - startDragYRef.current;
+      const el = containerRef.current;
+      const trackHeight = el.clientHeight;
+      const scrollableRange = el.scrollHeight - el.clientHeight;
+      const maxTop = trackHeight - thumbHeight;
+      if (maxTop <= 0) return;
+      const scrollDelta = (deltaY / maxTop) * scrollableRange;
+      el.scrollTop = startScrollTopRef.current + scrollDelta;
+    };
+
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleThumbTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.touches.length === 0) return;
+    isDraggingRef.current = true;
+    startDragYRef.current = e.touches[0].clientY;
+    startScrollTopRef.current = containerRef.current
+      ? containerRef.current.scrollTop
+      : 0;
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      if (
+        !isDraggingRef.current ||
+        !containerRef.current ||
+        moveEvent.touches.length === 0
+      )
+        return;
+      const deltaY = moveEvent.touches[0].clientY - startDragYRef.current;
+      const el = containerRef.current;
+      const trackHeight = el.clientHeight;
+      const scrollableRange = el.scrollHeight - el.clientHeight;
+      const maxTop = trackHeight - thumbHeight;
+      if (maxTop <= 0) return;
+      const scrollDelta = (deltaY / maxTop) * scrollableRange;
+      el.scrollTop = startScrollTopRef.current + scrollDelta;
+    };
+
+    const onTouchEnd = () => {
+      isDraggingRef.current = false;
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
+  };
+
+  return (
+    <div className="relative pl-3.5 pr-0.5">
+      <div
+        id={id}
+        ref={containerRef}
+        onScroll={updateScrollbar}
+        onWheel={(e) => {
+          e.stopPropagation();
+          if (containerRef.current) {
+            containerRef.current.scrollTop += e.deltaY;
+          }
+        }}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        className={`h-[180px] max-h-[180px] overflow-y-scroll overflow-x-hidden space-y-2.5 pl-1.5 filter-scroll-list touch-pan-y ${className}`}
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
+        {children}
+      </div>
+
+      {/* اسکرول‌بار ظریف ۳.۵ پیکسلی با نمایش دائمی در موبایل و دسکتاپ دقیقاً مطابق فیگما */}
+      {isScrollable && (
+        <div
+          ref={trackRef}
+          onClick={handleTrackClick}
+          className="absolute left-0 top-0 bottom-0 w-[3.5px] bg-[#f2f2f2] rounded-full cursor-pointer z-10 select-none"
+          title="پیمایش لیست"
+        >
+          <div
+            onMouseDown={handleThumbMouseDown}
+            onTouchStart={handleThumbTouchStart}
+            className="absolute left-0 w-[3.5px] bg-[#cdcdcd] hover:bg-[#b59766] active:bg-[#b59766] rounded-full cursor-grab active:cursor-grabbing transition-colors duration-150"
+            style={{
+              height: `${thumbHeight}px`,
+              top: `${thumbTop}px`,
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
 /**
  * صفحه دایرکتوری محصولات و دسته‌بندی‌ها (/product و /product/categories/:slug)
@@ -1851,6 +2053,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   onShowToast,
   onOpenLogin,
   isLoggedIn = false,
+  userPhone = '۰۹۱۲۳۴۵۶۷۸۹',
 }) => {
   const [activeCategory, setActiveCategory] = useState<ProductCategoryTabItem>(
     () => resolveProductCategoryBySlug(getProductCategorySlugFromLocation())
@@ -1858,6 +2061,17 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [active3DCards, setActive3DCards] = useState<Record<string, boolean>>({});
   const [cardFinishes, setCardFinishes] = useState<Record<string, FinishType>>({});
+
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState<boolean>(false);
+  const [notifyProduct, setNotifyProduct] = useState<ChandelierProduct | null>(null);
+  const [pendingNotifyAfterLogin, setPendingNotifyAfterLogin] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isLoggedIn && pendingNotifyAfterLogin) {
+      setPendingNotifyAfterLogin(false);
+      setIsNotifyModalOpen(true);
+    }
+  }, [isLoggedIn, pendingNotifyAfterLogin]);
 
   const toggleCard3D = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1949,6 +2163,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   };
 
   const [activeSlideIdx, setActiveSlideIdx] = useState<number>(0);
+  const [isProductLightboxOpen, setIsProductLightboxOpen] = useState<boolean>(false);
+  const [productLightboxIdx, setProductLightboxIdx] = useState<number>(0);
   const [selectedFinish, setSelectedFinish] = useState<FinishType>('original');
   const [qty, setQty] = useState<number>(1);
 
@@ -2055,11 +2271,44 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const [activeCommentPage, setActiveCommentPage] = useState<number>(0);
   const [commentSlideDir, setCommentSlideDir] = useState<'next' | 'prev'>('next');
   const [isAddCommentModalOpen, setIsAddCommentModalOpen] = useState<boolean>(false);
+  const [isFeaturesModalOpen, setIsFeaturesModalOpen] = useState<boolean>(false);
   const [newCommentName, setNewCommentName] = useState<string>('');
   const [newCommentText, setNewCommentText] = useState<string>('');
   const [newCommentRating, setNewCommentRating] = useState<number>(5);
   const [commentToast, setCommentToast] = useState<string | null>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
+  const ratingCardRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [ratingCardHeight, setRatingCardHeight] = useState<number | undefined>(undefined);
+  const [currentScrollOffset, setCurrentScrollOffset] = useState<number>(0);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (ratingCardRef.current && window.innerWidth >= 1024) {
+        setRatingCardHeight(ratingCardRef.current.offsetHeight);
+      } else {
+        setRatingCardHeight(undefined);
+      }
+    };
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  useEffect(() => {
+    const updateOffset = () => {
+      if (cardRefs.current[activeCommentPage]) {
+        setCurrentScrollOffset(cardRefs.current[activeCommentPage]?.offsetTop || 0);
+      }
+    };
+    // اجرای به‌روزرسانی آفست با تاخیر فریم برای دقت در رندر کامل
+    const rafId = requestAnimationFrame(updateOffset);
+    window.addEventListener('resize', updateOffset);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', updateOffset);
+    };
+  }, [activeCommentPage]);
 
   const [commentItems, setCommentItems] = useState([
     {
@@ -2130,7 +2379,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     },
   ]);
 
-  const totalCommentPages = Math.max(1, commentItems.length - 1);
+  const totalCommentPages = Math.max(1, commentItems.length - 2);
 
   const handlePrevCommentPage = () => {
     if (activeCommentPage > 0) {
@@ -2140,7 +2389,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   };
 
   const handleNextCommentPage = () => {
-    const totalPages = Math.max(1, commentItems.length - 1);
+    const totalPages = Math.max(1, commentItems.length - 2);
     if (activeCommentPage < totalPages - 1) {
       setCommentSlideDir('next');
       setActiveCommentPage((prev) => prev + 1);
@@ -3023,92 +3272,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                 موردی یافت نشد!
               </p>
             ) : (
-              <div className="relative pl-1">
-                <div
-                  id="filter-model-scroll-list"
-                  onWheel={(e) => {
-                    e.stopPropagation();
-                    e.currentTarget.scrollTop += e.deltaY;
-                  }}
-                  className="h-[180px] max-h-[180px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
-                >
-                  {filteredModelOptions.map((opt) => {
-                    const isChecked = selectedFilters.includes(opt.id);
-                    return (
-                      <label
-                        key={opt.id}
-                        onClick={() => toggleFilterOption(opt.id)}
-                        className="flex items-center justify-start gap-2.5 cursor-pointer group/opt select-none py-0.5"
-                      >
-                        <span
-                          className={`w-[16px] h-[16px] rounded-[4px] flex items-center justify-center transition-colors shrink-0 ${
-                            isChecked
-                              ? 'bg-[#b89768] text-white'
-                              : 'bg-[#ededed] group-hover/opt:bg-[#e0e0e0]'
-                          }`}
-                        >
-                          {isChecked && (
-                            <svg
-                              viewBox="0 0 12 12"
-                              fill="none"
-                              className="w-2.5 h-2.5"
-                            >
-                              <path
-                                d="M2.3 6.2L4.8 8.6L9.7 3.5"
-                                stroke="currentColor"
-                                strokeWidth="1.9"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          )}
-                        </span>
-                        <span
-                          className={`text-[12.5px] transition-colors ${
-                            isChecked
-                              ? 'font-bold text-[#1e1e1e]'
-                              : 'font-medium text-[#333333] group-hover/opt:text-[#111111]'
-                          }`}
-                        >
-                          {opt.label}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* بخش ۲: جنس محصول */}
-      <div className="py-1">
-        <button
-          type="button"
-          onClick={() => toggleFilterAccordion('material')}
-          className="w-full py-3.5 flex items-center justify-between gap-2 text-right text-[#1e1e1e] hover:text-[#b59766] transition-colors cursor-pointer"
-        >
-          <span className="text-[13.5px] font-bold">جنس محصول</span>
-          {openFilterGroups.material ? (
-            <ChevronDown className="w-4 h-4 text-[#444444] stroke-[1.9] shrink-0" />
-          ) : (
-            <ChevronUp className="w-4 h-4 text-[#444444] stroke-[1.9] shrink-0" />
-          )}
-        </button>
-
-        {openFilterGroups.material && (
-          <div className="pb-3.5 pt-0.5">
-            <div className="relative pl-1">
-              <div
-                id="filter-material-scroll-list"
-                onWheel={(e) => {
-                  e.stopPropagation();
-                  e.currentTarget.scrollTop += e.deltaY;
-                }}
-                className="h-[180px] max-h-[180px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
+              <FilterScrollContainer
+                id="filter-model-scroll-list"
+                innerRef={modelListRef}
               >
-                {materialOptionsList.map((opt) => {
+                {filteredModelOptions.map((opt) => {
                   const isChecked = selectedFilters.includes(opt.id);
                   return (
                     <label
@@ -3151,8 +3319,74 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                     </label>
                   );
                 })}
-              </div>
-            </div>
+              </FilterScrollContainer>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* بخش ۲: جنس محصول */}
+      <div className="py-1">
+        <button
+          type="button"
+          onClick={() => toggleFilterAccordion('material')}
+          className="w-full py-3.5 flex items-center justify-between gap-2 text-right text-[#1e1e1e] hover:text-[#b59766] transition-colors cursor-pointer"
+        >
+          <span className="text-[13.5px] font-bold">جنس محصول</span>
+          {openFilterGroups.material ? (
+            <ChevronDown className="w-4 h-4 text-[#444444] stroke-[1.9] shrink-0" />
+          ) : (
+            <ChevronUp className="w-4 h-4 text-[#444444] stroke-[1.9] shrink-0" />
+          )}
+        </button>
+
+        {openFilterGroups.material && (
+          <div className="pb-3.5 pt-0.5">
+            <FilterScrollContainer id="filter-material-scroll-list">
+              {materialOptionsList.map((opt) => {
+                const isChecked = selectedFilters.includes(opt.id);
+                return (
+                  <label
+                    key={opt.id}
+                    onClick={() => toggleFilterOption(opt.id)}
+                    className="flex items-center justify-start gap-2.5 cursor-pointer group/opt select-none py-0.5"
+                  >
+                    <span
+                      className={`w-[16px] h-[16px] rounded-[4px] flex items-center justify-center transition-colors shrink-0 ${
+                        isChecked
+                          ? 'bg-[#b89768] text-white'
+                          : 'bg-[#ededed] group-hover/opt:bg-[#e0e0e0]'
+                      }`}
+                    >
+                      {isChecked && (
+                        <svg
+                          viewBox="0 0 12 12"
+                          fill="none"
+                          className="w-2.5 h-2.5"
+                        >
+                          <path
+                            d="M2.3 6.2L4.8 8.6L9.7 3.5"
+                            stroke="currentColor"
+                            strokeWidth="1.9"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </span>
+                    <span
+                      className={`text-[12.5px] transition-colors ${
+                        isChecked
+                          ? 'font-bold text-[#1e1e1e]'
+                          : 'font-medium text-[#333333] group-hover/opt:text-[#111111]'
+                      }`}
+                    >
+                      {opt.label}
+                    </span>
+                  </label>
+                );
+              })}
+            </FilterScrollContainer>
           </div>
         )}
       </div>
@@ -3202,61 +3436,54 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                 موردی یافت نشد!
               </p>
             ) : (
-              <div className="relative pl-1">
-                <div
-                  id="filter-color-scroll-list"
-                  ref={colorListRef}
-                  onWheel={(e) => {
-                    e.stopPropagation();
-                    e.currentTarget.scrollTop += e.deltaY;
-                  }}
-                  className="h-[180px] max-h-[180px] overflow-y-auto space-y-2.5 pr-0.5 pl-2 filter-scroll-list"
-                >
-                  {filteredColorOptions.map((opt) => {
-                    const isChecked = selectedFilters.includes(opt.id);
-                    return (
-                      <label
-                        key={opt.id}
-                        onClick={() => toggleFilterOption(opt.id)}
-                        className="flex items-center justify-start gap-2.5 cursor-pointer group/opt select-none py-0.5"
+              <FilterScrollContainer
+                id="filter-color-scroll-list"
+                innerRef={colorListRef}
+              >
+                {filteredColorOptions.map((opt) => {
+                  const isChecked = selectedFilters.includes(opt.id);
+                  return (
+                    <label
+                      key={opt.id}
+                      onClick={() => toggleFilterOption(opt.id)}
+                      className="flex items-center justify-start gap-2.5 cursor-pointer group/opt select-none py-0.5"
+                    >
+                      <span
+                        className={`w-[16px] h-[16px] rounded-[4px] flex items-center justify-center transition-colors shrink-0 ${
+                          isChecked
+                            ? 'bg-[#b89768] text-white'
+                            : 'bg-[#ededed] group-hover/opt:bg-[#e0e0e0]'
+                        }`}
                       >
-                        <span
-                          className={`w-[16px] h-[16px] rounded-[4px] flex items-center justify-center transition-colors shrink-0 ${
-                            isChecked
-                              ? 'bg-[#b89768] text-white'
-                              : 'bg-[#ededed] group-hover/opt:bg-[#e0e0e0]'
-                          }`}
-                        >
-                          {isChecked && (
-                            <svg
-                              viewBox="0 0 12 12"
-                              fill="none"
-                              className="w-2.5 h-2.5"
-                            >
-                              <path
-                                d="M2.3 6.2L4.8 8.6L9.7 3.5"
-                                stroke="currentColor"
-                                strokeWidth="1.9"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          )}
-                        </span>
-                        <span
-                          className={`text-[12.5px] transition-colors ${
-                            isChecked
-                              ? 'font-bold text-[#1e1e1e]'
-                              : 'font-medium text-[#333333] group-hover/opt:text-[#111111]'
-                          }`}
-                        >
-                          {opt.label}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+                        {isChecked && (
+                          <svg
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            className="w-2.5 h-2.5"
+                          >
+                            <path
+                              d="M2.3 6.2L4.8 8.6L9.7 3.5"
+                              stroke="currentColor"
+                              strokeWidth="1.9"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </span>
+                      <span
+                        className={`text-[12.5px] transition-colors ${
+                          isChecked
+                            ? 'font-bold text-[#1e1e1e]'
+                            : 'font-medium text-[#333333] group-hover/opt:text-[#111111]'
+                        }`}
+                      >
+                        {opt.label}
+                      </span>
+                    </label>
+                  );
+                })}
+              </FilterScrollContainer>
             )}
           </div>
         )}
@@ -3532,52 +3759,18 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   const renderFilterCardContent = () => (
     <div className="bg-white rounded-[18px] border border-[#ebebeb] p-5 shadow-[0_4px_24px_rgba(0,0,0,0.03)]">
       <style>{`
-        #filter-model-scroll-list,
-        #filter-material-scroll-list,
-        #filter-color-scroll-list,
         .filter-scroll-list {
           height: 180px !important;
           max-height: 180px !important;
+          overflow-y: scroll !important;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
         }
-        #filter-model-scroll-list::-webkit-scrollbar,
-        #filter-material-scroll-list::-webkit-scrollbar,
-        #filter-color-scroll-list::-webkit-scrollbar,
         .filter-scroll-list::-webkit-scrollbar {
-          width: 4px !important;
-          height: 4px !important;
-          display: block !important;
-        }
-        #filter-model-scroll-list::-webkit-scrollbar-button,
-        #filter-material-scroll-list::-webkit-scrollbar-button,
-        #filter-color-scroll-list::-webkit-scrollbar-button,
-        .filter-scroll-list::-webkit-scrollbar-button {
           display: none !important;
           width: 0 !important;
           height: 0 !important;
-        }
-        #filter-model-scroll-list::-webkit-scrollbar-thumb,
-        #filter-material-scroll-list::-webkit-scrollbar-thumb,
-        #filter-color-scroll-list::-webkit-scrollbar-thumb,
-        .filter-scroll-list::-webkit-scrollbar-thumb {
-          background: #cdcdcd !important;
-          border-radius: 9999px !important;
-        }
-        #filter-model-scroll-list::-webkit-scrollbar-thumb:hover,
-        #filter-material-scroll-list::-webkit-scrollbar-thumb:hover,
-        #filter-color-scroll-list::-webkit-scrollbar-thumb:hover,
-        .filter-scroll-list::-webkit-scrollbar-thumb:hover {
-          background: #b59766 !important;
-        }
-        #filter-model-scroll-list::-webkit-scrollbar-track,
-        #filter-model-scroll-list::-webkit-scrollbar-track-piece,
-        #filter-material-scroll-list::-webkit-scrollbar-track,
-        #filter-material-scroll-list::-webkit-scrollbar-track-piece,
-        #filter-color-scroll-list::-webkit-scrollbar-track,
-        #filter-color-scroll-list::-webkit-scrollbar-track-piece,
-        .filter-scroll-list::-webkit-scrollbar-track,
-        .filter-scroll-list::-webkit-scrollbar-track-piece {
-          background: #f3f3f3 !important;
-          border-radius: 9999px !important;
         }
       `}</style>
       <div className="flex items-center justify-between gap-2 pb-4 border-b border-[#efefef]">
@@ -3633,6 +3826,39 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       dir="rtl"
       className="lg:hidden fixed inset-0 z-[100] bg-white flex flex-col justify-between overflow-hidden select-none"
     >
+      <style>{`
+        .mobile-filter-modal-scroll,
+        div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) {
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+        .mobile-filter-modal-scroll::-webkit-scrollbar,
+        div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2)::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+
+        .filter-scroll-list,
+        #filter-model-scroll-list,
+        #filter-material-scroll-list,
+        #filter-color-scroll-list {
+          height: 180px !important;
+          max-height: 180px !important;
+          overflow-y: scroll !important;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+        .filter-scroll-list::-webkit-scrollbar,
+        #filter-model-scroll-list::-webkit-scrollbar,
+        #filter-material-scroll-list::-webkit-scrollbar,
+        #filter-color-scroll-list::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+      `}</style>
       {/* نوار بالای صفحه فیلتر موبایل: عنوان «فیلتر مرتب سازی» در راست و دکمه ضربدر بستن در چپ */}
       <div className="px-5 py-4 border-b border-[#efefef] flex items-center justify-between shrink-0 bg-white">
         <h2 className="text-[15px] font-extrabold text-[#1e1e1e]">
@@ -3650,12 +3876,12 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       </div>
 
       {/* بخش میانی اسکرول‌شونده شامل تمامی آکاردئون‌های فیلتر */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-1">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-1 mobile-filter-modal-scroll">
         {renderFilterSectionsList()}
       </div>
 
       {/* نوار ثابت پایین صفحه فیلتر موبایل: دکمه قرمز «حذف فیلتر» در راست و دکمه تیره در چپ */}
-      <div className="px-5 py-3.5 border-t border-[#efefef] bg-white flex items-center justify-between gap-4 shrink-0">
+      <div className="px-5 py-4 bg-white flex items-center justify-between gap-4 shrink-0">
         <button
           type="button"
           onClick={handleClearFilters}
@@ -3787,12 +4013,16 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       }
     };
 
-    const galleryImages = [
-      product.image,
-      GENERATED_IMAGES.projectRoyalRestaurant,
-      GENERATED_IMAGES.projectLobbyHotel,
-      GENERATED_IMAGES.projectMosqueDome,
-      GENERATED_IMAGES.projectFereshteh,
+    const galleryPhotos = [
+      { type: 'image' as const, url: GENERATED_IMAGES.projectRoyalRestaurant },
+      { type: 'video' as const, url: 'https://assets.mixkit.co/videos/preview/mixkit-golden-chandelier-hanging-from-the-ceiling-41645-large.mp4', poster: GENERATED_IMAGES.projectLobbyHotel },
+      { type: 'image' as const, url: GENERATED_IMAGES.projectMosqueDome },
+      { type: 'image' as const, url: GENERATED_IMAGES.projectFereshteh },
+    ];
+
+    const slideItems = [
+      { type: '3d' as const, url: product.image },
+      ...galleryPhotos,
     ];
 
     const CustomVerifyIcon = () => (
@@ -3811,6 +4041,29 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
       <Ruler size="28" color="#b59766" variant="Linear" className="shrink-0" />
     );
 
+    const CustomPlayDuotoneIcon: React.FC<{ className?: string }> = ({
+      className = 'w-8 h-8 sm:w-9 sm:h-9',
+    }) => (
+      <svg
+        viewBox="0 0 36 36"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+      >
+        {/* بخش اصلی سفید در بالا-چپ مثلث پخش */}
+        <path
+          d="M9.5 11.2C9.5 7.7 13.3 5.5 16.3 7.3L26.6 13.3C27.5 13.8 28.1 14.6 28.4 15.5L10.2 26.1C9.7 25.3 9.5 24.3 9.5 23.2V11.2Z"
+          fill="#ffffff"
+        />
+        {/* نوار سایه خاکستری در لبه پایین-راست با فاصله مورب دقیقاً مطابق play.png */}
+        <path
+          d="M12.1 27.9L28.8 18.1C28.7 19.4 28.0 20.6 26.6 21.4L16.3 27.4C14.8 28.3 13.2 28.4 12.1 27.9Z"
+          fill="#ffffff"
+          fillOpacity="0.48"
+        />
+      </svg>
+    );
+
     // سایر محصولات به عنوان محصولات مشابه (تعداد افزایش یافته جهت فعال‌سازی کاروسل و تست دکمه‌ها)
     const baseSimilar = products.filter((p) => p.id !== product.id);
     const fallbackList = SALEHI_COLLECTION_PRODUCTS.filter((p) => p.id !== product.id);
@@ -3820,6 +4073,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     ];
     // تعداد ۱۲ محصول برای کاروسل با قابلیت جابجایی و تست روان
     const similarProducts = combinedSimilar.length > 4 ? combinedSimilar.slice(0, 12) : combinedSimilar;
+    const isOutOfStock = Boolean(product.outOfStock || (typeof window !== 'undefined' && window.innerWidth < 640 && product.mobileOutOfStock));
 
     return (
       <div className="w-full min-h-screen bg-[#fcfbf9] text-[#222222] font-medium py-6 sm:py-10 pb-20 px-4 sm:px-8 lg:px-14 xl:px-20" dir="rtl">
@@ -3828,7 +4082,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
           {/* ۱. ستون گالری عکس (سمت چپ) - ۵ ستون */}
           <div className="lg:col-span-5 space-y-4 w-full" dir="rtl">
-            <div className="relative w-full h-[320px] sm:h-[400px] md:h-[440px] rounded-2xl bg-[#f9f9f9] border border-[#ebdcb9]/40 overflow-hidden shadow-xs flex items-center justify-center group">
+            <div className="relative w-full h-[320px] sm:h-[400px] md:h-[440px] rounded-2xl bg-[#f9f9f9] border border-[#E4E5E7] overflow-hidden shadow-xs flex items-center justify-center group">
               {activeSlideIdx === 0 ? (
                 <div className="w-full h-full relative">
                   <Chandelier3DViewer
@@ -3845,22 +4099,107 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   </span>
                 </div>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <OptimizedImage
-                    src={galleryImages[activeSlideIdx]}
-                    alt={`${product.name} نمای ${activeSlideIdx}`}
-                    loading="eager"
-                    options={{ width: 900, quality: 85 }}
-                    containerClassName="w-full h-full"
-                    className="w-full h-full object-cover object-center"
-                  />
+                <div
+                  onClick={() => {
+                    if (slideItems[activeSlideIdx].type === 'image') {
+                      setProductLightboxIdx(activeSlideIdx - 1);
+                      setIsProductLightboxOpen(true);
+                    }
+                  }}
+                  className="w-full h-full flex items-center justify-center cursor-pointer relative"
+                >
+                  {slideItems[activeSlideIdx].type === 'video' ? (
+                    <div className="w-full h-full relative flex items-center justify-center bg-black">
+                      <video
+                        src={slideItems[activeSlideIdx].url}
+                        poster={slideItems[activeSlideIdx].poster}
+                        playsInline
+                        className="w-full h-full object-cover object-center"
+                      />
+                      {/* دکمه دایره‌ای شیشه‌ای وسط صفحه با آیکون دقیق پلی پروژه */}
+                      <button
+                        type="button"
+                        onClick={() => {}}
+                        aria-label="پخش ویدیو"
+                        className="absolute z-20 w-[78px] h-[78px] sm:w-[88px] sm:h-[88px] rounded-full bg-white/25 hover:bg-white/35 backdrop-blur-md border-[1.5px] border-white/85 flex items-center justify-center transition-all duration-300 hover:scale-105 cursor-pointer"
+                      >
+                        <CustomPlayDuotoneIcon className="w-8 h-8 sm:w-9 sm:h-9 translate-x-0.5" />
+                      </button>
+
+                      {/* نوار کنترل پایین ویدیو (چپ به راست دقیقاً مطابق پروژه) */}
+                      <div
+                        dir="ltr"
+                        className="absolute bottom-9 sm:bottom-11 inset-x-5 sm:inset-x-7 z-20 flex items-center gap-3.5 sm:gap-4 text-white"
+                      >
+                        <div className="flex items-center gap-3 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setActiveSlideIdx((prev) => (prev <= 0 ? slideItems.length - 1 : prev - 1))}
+                            className="hover:opacity-80 cursor-pointer"
+                            aria-label="قبلی"
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <rect x="4" y="5" width="2.4" height="14" rx="1" />
+                              <path d="M18.5 5.8C19.3 5.3 20.2 5.9 20.2 6.8V17.2C20.2 18.1 19.3 18.7 18.5 18.2L9.8 13C9.1 12.5 9.1 11.5 9.8 11L18.5 5.8Z" />
+                            </svg>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {}}
+                            className="hover:opacity-80 cursor-pointer"
+                            aria-label="پخش یا توقف"
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <rect x="6" y="5" width="4" height="14" rx="1" />
+                              <rect x="14" y="5" width="4" height="14" rx="1" />
+                            </svg>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setActiveSlideIdx((prev) => (prev >= slideItems.length - 1 ? 0 : prev + 1))}
+                            className="hover:opacity-80 cursor-pointer"
+                            aria-label="بعدی"
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <rect x="17.6" y="5" width="2.4" height="14" rx="1" />
+                              <path d="M5.5 5.8C4.7 5.3 3.8 5.9 3.8 6.8V17.2C3.8 18.1 4.7 18.7 5.5 18.2L14.2 13C14.9 12.5 14.9 11.5 14.2 11L5.5 5.8Z" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        <div className="flex-1 h-[4.5px] rounded-full bg-white/40 overflow-hidden cursor-pointer">
+                          <div className="h-full bg-white rounded-full transition-all duration-200 w-1/3" />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {}}
+                          className="hover:opacity-80 cursor-pointer shrink-0"
+                          aria-label="صدا"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <OptimizedImage
+                      src={slideItems[activeSlideIdx].url}
+                      alt={`${product.name} نمای گالری ${activeSlideIdx}`}
+                      loading="eager"
+                      options={{ width: 900, quality: 85 }}
+                      containerClassName="w-full h-full"
+                      className="w-full h-full object-cover object-center"
+                    />
+                  )}
                 </div>
               )}
 
               {/* دکمه‌های ناوبری چپ و راست روی تصویر شاخص دقیقاً مطابق طرح */}
               <button
                 type="button"
-                onClick={() => setActiveSlideIdx((prev) => (prev <= 0 ? galleryImages.length - 1 : prev - 1))}
+                onClick={() => setActiveSlideIdx((prev) => (prev <= 0 ? slideItems.length - 1 : prev - 1))}
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-white/70 hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white transition-all flex items-center justify-center shadow-xs cursor-pointer z-20"
                 aria-label="عکس قبلی"
               >
@@ -3868,23 +4207,31 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setActiveSlideIdx((prev) => (prev >= galleryImages.length - 1 ? 0 : prev + 1))}
+                onClick={() => setActiveSlideIdx((prev) => (prev >= slideItems.length - 1 ? 0 : prev + 1))}
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-white/70 hover:bg-[#2b2b2b] text-[#2b2b2b] hover:text-white transition-all flex items-center justify-center shadow-xs cursor-pointer z-20"
                 aria-label="عکس بعدی"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
-            </div>
 
-            {/* بندانگشتی‌های ۵گانه ثابت گالری مطابق طرح: تصاویر کامل و استروک #D9D9D9 */}
+              </div>
+
+            {/* بندانگشتی‌های ۵گانه ثابت گالری با 3D در اولی */}
             <div className="grid grid-cols-5 gap-2.5 sm:gap-3">
-              {galleryImages.map((thumbSrc, index) => {
+              {slideItems.map((item, index) => {
                 const isSelected = activeSlideIdx === index;
+                const thumbSrc = item.type === '3d' ? product.image : (item.type === 'video' ? (item.poster || item.url) : item.url);
                 return (
                   <button
                     key={`detail-thumb-${index}`}
                     type="button"
-                    onClick={() => setActiveSlideIdx(index)}
+                    onClick={() => {
+                      setActiveSlideIdx(index);
+                      if (index > 0 && item.type === 'image') {
+                        setProductLightboxIdx(index - 1);
+                        setIsProductLightboxOpen(true);
+                      }
+                    }}
                     className={`relative rounded-[11px] sm:rounded-[12px] h-[58px] sm:h-[72px] md:h-[82px] bg-white border-2 transition-all cursor-pointer flex items-center justify-center p-0 overflow-hidden ${
                       isSelected
                         ? 'border-[#b59766] ring-2 ring-[#b59766]/30 shadow-xs'
@@ -3904,6 +4251,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                         3D
                       </span>
                     )}
+                    {item.type === 'video' && (
+                      <span className="absolute inset-0 bg-black/35 flex items-center justify-center z-10">
+                        <Play className="w-5 h-5 text-white fill-white" />
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -3921,9 +4273,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               <p className="text-xs sm:text-[13px] leading-7 text-[#777777] text-justify mt-4">
                 <span className="text-xs font-bold text-[#b58c56] inline-flex items-center gap-1.5 ml-2.5 select-none">
                   <span>مناسب کلاسیک پذیرایی</span>
-                  <span className="text-[#ebdcb9]">|</span>
+                  <span className="text-[#E4E5E7]">|</span>
                   <span>کلاسیک خواب</span>
-                  <span className="text-[#ebdcb9] font-normal mr-0.5">-</span>
+                  <span className="text-[#E4E5E7] font-normal mr-0.5">-</span>
                 </span>
                 نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود، یکپارچگی محصولات روشنایی پروژه حفظ میشود.
               </p>
@@ -3933,11 +4285,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 pt-1.5 items-stretch">
 
               {/* ب. کارت مشخصات اصلی لوستر (ستون راست) - ۵ ستون با فواصل یکنواخت و فراخ */}
-              <div className="md:col-span-5 bg-white rounded-xl border border-[#ebdcb9]/40 p-6 sm:p-7 shadow-2xs text-right flex flex-col justify-between h-full min-h-[340px] space-y-5 sm:space-y-6">
+              <div className="md:col-span-5 bg-white rounded-xl border border-[#E4E5E7] p-6 sm:p-7 shadow-2xs text-right flex flex-col justify-between h-full min-h-[340px] space-y-5 sm:space-y-6">
                 
                 {/* مدل */}
                 <div className="flex items-center gap-4 py-1">
-                  <div className="w-12 h-12 rounded-xl bg-[#f6f3ee] flex items-center justify-center shrink-0 border border-[#ebdcb9]/20 shadow-3xs">
+                  <div className="w-12 h-12 rounded-xl bg-[#f6f3ee] flex items-center justify-center shrink-0 border border-[#E4E5E7] shadow-3xs">
                     <CustomVerifyIcon />
                   </div>
                   <div className="flex flex-col justify-center space-y-1 min-w-0">
@@ -3950,7 +4302,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
                 {/* کد محصول */}
                 <div className="flex items-center gap-4 py-1">
-                  <div className="w-12 h-12 rounded-xl bg-[#f6f3ee] flex items-center justify-center shrink-0 border border-[#ebdcb9]/20 shadow-3xs">
+                  <div className="w-12 h-12 rounded-xl bg-[#f6f3ee] flex items-center justify-center shrink-0 border border-[#E4E5E7] shadow-3xs">
                     <CustomHashtagUpIcon />
                   </div>
                   <div className="flex flex-col justify-center space-y-1 min-w-0">
@@ -3963,7 +4315,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
                 {/* جنس بدنه */}
                 <div className="flex items-center gap-4 py-1">
-                  <div className="w-12 h-12 rounded-xl bg-[#f6f3ee] flex items-center justify-center shrink-0 border border-[#ebdcb9]/20 shadow-3xs">
+                  <div className="w-12 h-12 rounded-xl bg-[#f6f3ee] flex items-center justify-center shrink-0 border border-[#E4E5E7] shadow-3xs">
                     <CustomLayerIcon />
                   </div>
                   <div className="flex flex-col justify-center space-y-1 min-w-0">
@@ -3976,7 +4328,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
                 {/* ابعاد */}
                 <div className="flex items-center gap-4 py-1">
-                  <div className="w-12 h-12 rounded-xl bg-[#f6f3ee] flex items-center justify-center shrink-0 border border-[#ebdcb9]/20 shadow-3xs">
+                  <div className="w-12 h-12 rounded-xl bg-[#f6f3ee] flex items-center justify-center shrink-0 border border-[#E4E5E7] shadow-3xs">
                     <CustomRulerIcon />
                   </div>
                   <div className="flex flex-col justify-center space-y-1 min-w-0">
@@ -3990,11 +4342,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               </div>
               
               {/* الف. ستون خرید شامل دو کارت مجزای بالا و پایین عطف به تصویر فیگما */}
-              <div className="md:col-span-7 flex flex-col gap-4 text-right h-full justify-between">
+              <div className="md:col-span-7 flex flex-col gap-3 text-right justify-start">
                 
                 {/* کارت اول: ثبت تعداد محصول */}
-                <div className="bg-white rounded-xl border border-[#ebdcb9]/40 p-4.5 flex items-center justify-between shadow-2xs">
-                  <div className="flex flex-col gap-1">
+                <div className="bg-white rounded-xl border border-[#E4E5E7] px-5 py-3.5 flex items-center justify-between shadow-2xs">
+                  <div className="flex flex-col justify-center gap-1">
                     <span className="block text-sm font-semibold text-[#1a1a1a]">تعداد محصول :</span>
                     <span className="block text-xs text-[#777777] font-medium">
                       * حداکثر ۱۲ عدد و حداقل ۱ عدد میباشد
@@ -4002,63 +4354,73 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   </div>
                   
                   {/* کنترلر تعداد با دکمه‌های آیکون‌ساکس مجزا و وسط مشکی */}
-                  <div className="flex items-center gap-3 bg-[#f6f3ee] px-3.5 py-1.5 rounded-xl select-none border border-[#ebdcb9]/15">
+                  <div className="flex items-center gap-3 bg-[#f6f3ee] px-3.5 py-1.5 rounded-xl select-none border border-[#E4E5E7]">
                     <button
                       type="button"
                       onClick={() => setQty((q) => Math.min(12, q + 1))}
-                      disabled={qty >= 12}
+                      disabled={isOutOfStock || qty >= 12}
                       aria-label="افزایش تعداد"
                       className={`transition-colors focus:outline-none flex items-center justify-center p-0.5 ${
-                        qty >= 12
+                        isOutOfStock || qty >= 12
                           ? 'opacity-30 cursor-not-allowed text-[#999]'
                           : 'text-[#1a1a1a] hover:text-[#b59766] cursor-pointer'
                       }`}
                     >
-                      <AddSquare size="26" color={qty >= 12 ? '#999999' : '#1a1a1a'} variant="Linear" className="shrink-0" />
+                      <AddSquare size="26" color={isOutOfStock || qty >= 12 ? '#999999' : '#1a1a1a'} variant="Linear" className="shrink-0" />
                     </button>
-                    <div className="w-9 h-9 rounded-lg bg-[#2b2b2b] text-white flex items-center justify-center font-bold text-sm tabular-nums shadow-xs select-none">
-                      {toPersianDigits(qty)}
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm tabular-nums shadow-xs select-none ${
+                      isOutOfStock ? 'bg-[#c5c5c5] text-[#666666]' : 'bg-[#2b2b2b] text-white'
+                    }`}>
+                      {toPersianDigits(isOutOfStock ? 0 : qty)}
                     </div>
                     <button
                       type="button"
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
-                      disabled={qty <= 1}
+                      disabled={isOutOfStock || qty <= 1}
                       aria-label="کاهش تعداد"
                       className={`transition-colors focus:outline-none flex items-center justify-center p-0.5 ${
-                        qty <= 1
+                        isOutOfStock || qty <= 1
                           ? 'opacity-30 cursor-not-allowed text-[#999]'
                           : 'text-[#1a1a1a] hover:text-[#b59766] cursor-pointer'
                       }`}
                     >
-                      <MinusSquare size="26" color={qty <= 1 ? '#999999' : '#1a1a1a'} variant="Linear" className="shrink-0" />
+                      <MinusSquare size="26" color={isOutOfStock || qty <= 1 ? '#999999' : '#1a1a1a'} variant="Linear" className="shrink-0" />
                     </button>
                   </div>
                 </div>
 
                 {/* کارت دوم: رنگ، قیمت و افزودن به سبد خرید */}
-                <div className="bg-white rounded-xl border border-[#ebdcb9]/40 p-4.5 flex flex-col justify-between shadow-2xs space-y-5 flex-1">
+                <div className="bg-white rounded-xl border border-[#E4E5E7] px-4.5 py-4 flex flex-col shadow-2xs space-y-3">
                   
                   {/* ردیف رنگ‌ها و ۳ دکمه نمادین فیگما با آیکون‌های رسمی Iconsax */}
                   <div className="flex items-center justify-between gap-4">
-                    <div className="flex flex-col items-start gap-2.5">
+                    <div className="flex flex-col items-start gap-2 pt-2">
                       <span className="block text-sm font-semibold text-[#1a1a1a]">رنگ :</span>
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         {(Object.keys(FINISH_PRESETS) as FinishType[]).slice(0, 5).map((fKey) => {
                           const cfg = FINISH_PRESETS[fKey];
                           const isActive = selectedFinish === fKey;
                           return (
-                            <button
-                              key={fKey}
-                              type="button"
-                              onClick={() => setSelectedFinish(fKey)}
-                              title={cfg.label}
-                              className={`w-6.5 h-6.5 rounded-full border transition-all ${
-                                isActive
-                                  ? 'ring-2 ring-[#b59766] scale-115 border-white shadow-2xs'
-                                  : 'border-black/15 hover:scale-105'
-                              }`}
-                              style={{ background: cfg.swatch }}
-                            />
+                            <div key={fKey} className="relative group/swatch">
+                              {/* تولتیپ مشکی با رادیوس کمتر و فاصله مناسب از کادر */}
+                              <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 opacity-0 group-hover/swatch:opacity-100 pointer-events-none transition-all duration-200 z-30 flex flex-col items-center">
+                                <div className="bg-[#323232] text-white text-[11.5px] font-bold px-3.5 py-2 rounded-[7px] shadow-md whitespace-nowrap leading-none flex items-center justify-center">
+                                  {cfg.label}
+                                </div>
+                                <div className="w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-[#323232] -mt-[0.5px]" />
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setSelectedFinish(fKey)}
+                                style={{ background: cfg.swatch }}
+                                className={`w-6.5 h-6.5 rounded-full border transition-all cursor-pointer ${
+                                  isActive
+                                    ? 'ring-2 ring-[#b59766] scale-115 border-white shadow-2xs'
+                                    : 'border-black/15 hover:scale-105'
+                                }`}
+                              />
+                            </div>
                           );
                         })}
                       </div>
@@ -4067,21 +4429,22 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        title="جستجو"
+                        onClick={() => {
+                          setProductLightboxIdx(0);
+                          setIsProductLightboxOpen(true);
+                        }}
                         className="group w-12 h-12 rounded-[14px] bg-[#f6f6f6] hover:bg-[#71747d] text-[#1a1a1a] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-2xs"
                       >
                         <SearchNormal size="22" color="currentColor" variant="Linear" className="transition-colors" />
                       </button>
                       <button
                         type="button"
-                        title="نشان کردن"
                         className="group w-12 h-12 rounded-[14px] bg-[#f6f6f6] hover:bg-[#b58c5e] text-[#1a1a1a] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-2xs"
                       >
                         <Archive size="22" color="currentColor" variant="Linear" className="transition-colors" />
                       </button>
                       <button
                         type="button"
-                        title="اشتراک‌گذاری"
                         className="group w-12 h-12 rounded-[14px] bg-[#f6f6f6] hover:bg-[#b58c5e] text-[#1a1a1a] hover:text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-2xs"
                       >
                         <Share size="22" color="currentColor" variant="Linear" className="transition-colors" />
@@ -4090,10 +4453,10 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   </div>
 
                   {/* خط جداکننده افقی توسی کم‌رنگ و تمیز */}
-                  <div className="h-px bg-[#eaeaea] w-full" />
+                  <div className="h-px bg-[#eaeaea] w-full my-3" />
 
-                  {/* ردیف قیمت در سمت راست و دکمه سبد خرید در سمت چپ - با جابجایی جزئی به سمت بالا */}
-                  <div className="flex items-center justify-between gap-3 -mt-1.5 sm:-mt-2">
+                  {/* ردیف قیمت در سمت راست و دکمه سبد خرید در سمت چپ */}
+                  <div className="flex items-center justify-between gap-3">
                     {/* قیمت در سمت راست */}
                     <div className="text-right flex flex-col justify-center leading-tight">
                       <span className="block text-sm font-semibold text-[#1a1a1a]">قیمت :</span>
@@ -4102,15 +4465,46 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                       </span>
                     </div>
 
-                    {/* دکمه سبد خرید در سمت چپ (آیکون در سمت راست، نوشته در سمت چپ) */}
-                    <button
-                      type="button"
-                      onClick={handleAdd}
-                      className="h-12.5 px-5.5 rounded-xl bg-[#2b2b2b] hover:bg-black text-white text-[14px] font-bold flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer shrink-0"
-                    >
-                      <BagTick size="22" color="#ffffff" variant="Linear" className="shrink-0" />
-                      <span>افزودن به سبد خرید</span>
-                    </button>
+                    {/* دکمه سبد خرید در سمت چپ / دکمه قرمز «موجود شد خبرم کنید» با آیکون NotificationBing در سمت چپ */}
+                    {isOutOfStock ? (
+                      <button
+                        type="button"
+                        dir="rtl"
+                        onClick={() => {
+                          setNotifyProduct(product);
+                          if (!isLoggedIn) {
+                            setPendingNotifyAfterLogin(true);
+                            if (onShowToast) {
+                              onShowToast(
+                                'cart-auth-required',
+                                'مورد ضروری',
+                                'برای اطلاع رسانی کالا ابتدا وارد حساب کاربری خود شوید.',
+                                () => {
+                                  if (onOpenLogin) onOpenLogin();
+                                }
+                              );
+                            } else if (onOpenLogin) {
+                              onOpenLogin();
+                            }
+                            return;
+                          }
+                          setIsNotifyModalOpen(true);
+                        }}
+                        className="h-12.5 px-6 rounded-[16px] bg-[#f42f3c] hover:bg-[#de2330] text-white text-[14.5px] font-bold flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 active:scale-98"
+                      >
+                        <NotificationBing size="22" color="#ffffff" variant="Linear" className="shrink-0" />
+                        <span>موجود شد خبرم کنید</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleAdd}
+                        className="h-12.5 px-5.5 rounded-xl bg-[#2b2b2b] hover:bg-black text-white text-[14px] font-bold flex items-center justify-center gap-2.5 shadow-sm transition-all cursor-pointer shrink-0"
+                      >
+                        <BagTick size="22" color="#ffffff" variant="Linear" className="shrink-0" />
+                        <span>افزودن به سبد خرید</span>
+                      </button>
+                    )}
                   </div>
 
                 </div>
@@ -4123,78 +4517,92 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
         </div>
 
-        {/* بخش دوم: توضیحات تکمیلی و مشخصات فنی (پایین عکس) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
+        {/* بخش دوم: توضیحات تکمیلی و مشخصات فنی (پایین عکس) - کاملاً مطابق طراحی فیگما */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch mb-12">
           
           {/* جدول مشخصات فنی (ستون راست) - ۴ ستون */}
-          <div className="lg:col-span-4 flex flex-col justify-between h-full space-y-4">
-            <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs text-right">
-              <div className="divide-y divide-[#d0d0d0] text-xs sm:text-[13px]">
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#555555]">قطر لوستر :</span>
-                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۳۵×۳۵*۳۰ سانتی‌متر</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">ارتفاع :</span>
-                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۳۰ سانتی‌متر</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">وزن :</span>
-                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۲۸۰۰ گرم</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">تعداد سرپیچ لامپ LED :</span>
-                  <span className="font-extrabold text-[#1a1a1a] tabular-nums">۶ عدد</span>
-                </div>
-                <div className="flex justify-between py-3">
-                  <span className="font-bold text-[#777777]">منبع برق :</span>
-                  <span className="font-extrabold text-[#1a1a1a]">برق شهری</span>
-                </div>
+          <div className="lg:col-span-4 flex flex-col h-full">
+            <div className="bg-white rounded-[22px] border border-[#E4E5E7] p-5 sm:p-6 shadow-2xs text-right flex flex-col justify-between h-full">
+              {/* لیست ۱۵ ویژگی و مشخصات فنی لوستر - اسکرول بسیار نازک دقیقاً مطابق فیگما */}
+              <div className="product-specs-scroll-list flex-1 overflow-y-auto max-h-[295px] min-h-[280px] divide-y divide-[#E4E5E7] text-xs sm:text-[13px] pl-4 pr-1">
+                {[
+                  { label: 'قطر لوستر :', value: '۳۵×۳۵×۳۰ سانتی‌متر' },
+                  { label: 'ارتفاع :', value: '۳۰ سانتی‌متر' },
+                  { label: 'وزن :', value: '۲۸۰۰ گرم' },
+                  { label: 'تعداد سرپیچ لامپ LED :', value: '۶ عدد' },
+                  { label: 'منبع برق :', value: 'برق شهری' },
+                  { label: 'جنس بدنه و اسکلت :', value: 'برنج اصل درجه یک' },
+                  { label: 'نوع و کیفیت کریستال :', value: 'کریستال اصل اتریشی تراش‌خورده' },
+                  { label: 'پوشش و آبکاری بدنه :', value: 'آبکاری فورتیک با لاک کوره مقاوم' },
+                  { label: 'نوع سرپیچ لامپ :', value: 'سرامیکی نسوز استاندارد' },
+                  { label: 'ضمانت و خدمات پس از فروش :', value: 'ضمانت مادام‌العمر ثبات رنگ' },
+                  { label: 'قابلیت نصب روی انواع سقف :', value: 'کناف، گچ، بتن و یونولیت' },
+                  { label: 'نوع لامپ‌های سازگار :', value: 'LED و SMD کم‌مصرف شمعی' },
+                  { label: 'مقاومت در برابر شرایط محیطی :', value: 'مقاوم در برابر رطوبت و شرجی' },
+                  { label: 'استاندارد بسته‌بندی :', value: '۵ لایه صادراتی فوم‌دار ضربه‌گیر' },
+                  { label: 'اصالت و برند محصول :', value: 'دارای شناسنامه اصالت اکبر صالحی' },
+                ].map((spec, sIdx) => (
+                  <div key={sIdx} className="flex justify-between items-center py-3.5">
+                    <span className="font-bold text-[#555555] shrink-0">{spec.label}</span>
+                    <span className="font-extrabold text-[#1a1a1a] tabular-nums text-left">{spec.value}</span>
+                  </div>
+                ))}
               </div>
-            </div>
 
-            {/* دکمه عریض برنزی ویژگی‌ها */}
-            <button
-              type="button"
-              className="w-full py-3 bg-[#c8a97e] hover:bg-[#b59766] text-white text-xs sm:text-[13px] font-black rounded-xl text-center shadow-xs transition-colors cursor-pointer"
-            >
-              ۱۵ ویژگی محصول
-            </button>
+              {/* نمایش ۱۵ ویژگی محصول روی دکمه برنزی دقیقاً مطابق فیگما */}
+              <button
+                type="button"
+                className="w-full mt-3.5 py-3.5 bg-[#b58c5e] text-white text-xs sm:text-[13px] font-black rounded-xl text-center shadow-xs select-none cursor-default transition-colors flex items-center justify-center gap-2"
+              >
+                <span>۱۵ ویژگی محصول</span>
+              </button>
+            </div>
           </div>
 
           {/* توضیحات تکمیلی و بازه زمانی تحویل (ستون چپ) - ۸ ستون */}
-          <div className="lg:col-span-8 space-y-5">
-            <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs text-right">
-              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] mb-4">
+          <div className="lg:col-span-8 flex flex-col justify-between space-y-4">
+            <div className="bg-white rounded-[22px] border border-[#E4E5E7] p-6 shadow-2xs text-right flex-1 flex flex-col justify-between">
+              <h3 className="text-sm sm:text-[15px] font-extrabold text-[#1a1a1a] mb-3.5 shrink-0">
                 توضیحات تکمیلی
               </h3>
               <p
                 id="product-description-scroll"
-                className="filter-scroll-list text-xs sm:text-[13px] leading-7 text-[#777777] text-justify max-h-[120px] overflow-y-auto pl-3.5"
+                className="text-xs sm:text-[13px] leading-7 text-[#777777] text-justify flex-1 overflow-y-auto space-y-3"
               >
-                نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود، یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود، یکپارچگی محصولات روشنایی پروژه حفظ میشود معمولا برای فضا های نشیمن لوسترهای گرد و بالای میز های پذیرایی دیزاین کشیده و لاینر آن استفاده میشود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود، یکپارچگی محصولات روشنایی پروژه حفظ میشود.
+                <span className="block">
+                  نشیمن لوسترهای گرد و بالای میزهای پذیرایی دیزاین کشیده و لاینر استفاده می‌شود، البته که بمانند این پروژه اگر تمام محصولات از یک خانواده انتخاب شود، یکپارچگی محصولات روشنایی پروژه حفظ می‌شود. معمولاً برای فضاهای نشیمن لوسترهای گرد و بالای میزهای پذیرایی دیزاین کشیده و لاینر آن استفاده می‌شود تا هماهنگی بصری و توزیع یکنواخت نور در سرتاسر محیط سالن پذیرایی حفظ گردد.
+                </span>
+                <span className="block">
+                  در ساخت بدنه و اسکلت این اثر لوکس از شمش برنج اصل با عیار استاندارد و آلیاژ تقویت‌شده استفاده شده است. پوشش آبکاری از نوع فورتیک با لاک کوره حرارتی بالا است که درخشندگی ماندگار، مقاومت کامل در برابر اکسیداسیون، رطوبت و هوای شرجی را به همراه ضمانت کتبی مادام‌العمر ثبات رنگ برای شما به ارمغان می‌آورد.
+                </span>
+                <span className="block">
+                  کریستال‌های منشوری تراش‌خورده با کیفیت ممتاز بازتاب نوری چندوجهی و پرتلألو ایجاد می‌کنند. سرپیچ‌های سرامیکی نسوز استاندارد E14 با قابلیت تحمل حرارت بالا، امکان استفاده از انواع لامپ‌های کم‌مصرف LED اشکی و شمعی را فراهم می‌سازند. ارتفاع لوستر به کمک زنجیرهای مستحکم تعبیه‌شده متناسب با سقف‌های کناف، بتنی، گچی و یونولیت به آسانی قابل تنظیم و رگلاژ است.
+                </span>
+                <span className="block">
+                  کلیه محصولات گالری لوستر اکبر صالحی دارای شناسنامه اصالت، ۱۰ سال خدمات پس از فروش و تامین قطعات یدکی بوده و در بسته‌بندی پنج‌لایه صادراتی ضد ضربه به تمام نقاط کشور ارسال می‌گردد.
+                </span>
               </p>
             </div>
 
             {/* بازه زمانی تحویل با کامیون طلایی */}
-            <div className="bg-white rounded-[16px] border border-[#ebdcb9]/40 p-4 shadow-2xs flex items-center justify-between text-right gap-4 mt-[2px]">
+            <div className="bg-white rounded-[16px] border border-[#E4E5E7] p-4 shadow-2xs flex items-center justify-between text-right gap-4">
               <div className="flex items-center gap-3">
                 {/* آیکون کامیون باربری طلایی */}
-                <div className="w-12 h-12 rounded-[12px] bg-[#fbf8f2] flex items-center justify-center shrink-0 border border-[#ebdcb9]/30">
+                <div className="w-12 h-12 rounded-[12px] bg-[#fbf8f2] flex items-center justify-center shrink-0 border border-[#E4E5E7]">
                   <TruckFast size="24" color="#b58c56" />
                 </div>
                 <div>
                   <span className="block text-xs font-bold text-[#1a1a1a]">بازه زمانی تحویل :</span>
-                  <div className="mt-2">
+                  <div className="mt-1">
                     <span className="text-[11px] font-bold text-[#555]">تاریخ حدودی تحویل مرسوله (۲ مهر ۱۴۰۴ - ۷ مهر ۱۴۰۴)</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 bg-[#fcf9f2] border border-[#ebdcb9]/60 px-3.5 py-2 rounded-xl">
+              <div className="flex items-center gap-2 bg-[#fcf9f2] border border-[#E4E5E7] px-3.5 py-2 rounded-xl">
                 <span className="text-xs font-bold text-[#555]">ساعت حدودی :</span>
-                <span className="text-xs font-extrabold text-[#222] bg-white border border-[#ebdcb9]/60 px-2.5 py-0.5 rounded-md tabular-nums">۱۲ : ۵۵</span>
+                <span className="text-xs font-extrabold text-[#222] bg-white border border-[#E4E5E7] px-2.5 py-0.5 rounded-md tabular-nums">۱۲ : ۵۵</span>
                 <span className="text-xs font-bold text-[#888]">الی</span>
-                <span className="text-xs font-extrabold text-[#222] bg-white border border-[#ebdcb9]/60 px-2.5 py-0.5 rounded-md tabular-nums">۱۴ : ۴۵</span>
+                <span className="text-xs font-extrabold text-[#222] bg-white border border-[#E4E5E7] px-2.5 py-0.5 rounded-md tabular-nums">۱۴ : ۴۵</span>
               </div>
             </div>
           </div>
@@ -4202,7 +4610,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
         </div>
 
         {/* بخش سوم: نظرات کاربران درباره این محصول */}
-        <div className="border-t border-[#ebdcb9]/30 pt-8 mt-10 text-right">
+        <div className="border-t border-[#E4E5E7] pt-8 mt-10 text-right">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 mt-4">
             <div className="flex flex-col gap-1">
               <h3 className="text-lg sm:text-xl font-black text-[#1a1a1a]">
@@ -4293,11 +4701,11 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start lg:items-stretch">
             
             {/* کارت میانگین امتیازات (سمت راست) - ۴ ستون */}
-            <div className="lg:col-span-4">
-              <div className="bg-white rounded-[22px] border border-[#ebdcb9]/40 p-6 shadow-2xs space-y-5">
+            <div className="lg:col-span-4 flex flex-col">
+              <div ref={ratingCardRef} className="bg-white rounded-[22px] border border-[#E4E5E7] p-6 shadow-2xs space-y-5">
                 {/* هدر امتیاز */}
                 <div className="flex items-center justify-between border-b-0 pb-2">
                   <div className="flex items-center gap-2">
@@ -4335,36 +4743,35 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               </div>
             </div>
 
-            {/* لیست کامنت‌ها (سمت چپ) - ۸ ستون - کارت اول کامل و کارت دوم از پایین برش می‌خورد تا حالت پیوستگی به صفحه بعد ایجاد شود */}
+            {/* لیست کامنت‌ها (سمت چپ) - ۸ ستون - حرکت کاملاً نرم و شناور هنگام تعویض صفحه */}
             <div
               ref={commentsContainerRef}
               id="comments-cards-scroll-container"
-              className="lg:col-span-8 overflow-hidden"
+              className="lg:col-span-8 overflow-hidden min-h-0 h-full relative"
+              style={ratingCardHeight ? { height: `${ratingCardHeight}px`, maxHeight: `${ratingCardHeight}px` } : undefined}
             >
               <div
                 key={`comment-page-${activeCommentPage}`}
                 className={`space-y-4 ${
                   commentSlideDir === 'next'
-                    ? 'animate-comment-slide-next'
-                    : 'animate-comment-slide-prev'
+                    ? 'animate-comment-glide-next'
+                    : 'animate-comment-glide-prev'
                 }`}
               >
                 {commentItems
-                  .slice(activeCommentPage, activeCommentPage + 2)
+                  .slice(activeCommentPage, activeCommentPage + 3)
                   .map((comment, localIdx) => {
                     const globalIdx = activeCommentPage + localIdx;
+                    const isCutCard = localIdx === 2;
                     return (
                       <div
                         key={comment.id}
                         id={`comment-card-${globalIdx}`}
-                        className={`bg-white rounded-[22px] border border-[#ebdcb9]/40 hover:border-[#b58c5e]/50 p-5 sm:p-6 shadow-2xs space-y-3.5 transition-all duration-300 ${
-                          localIdx === 1
-                            ? 'max-h-[110px] sm:max-h-[110px] h-[110px] overflow-hidden border-b-0 rounded-b-none relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-9 after:bg-gradient-to-t after:from-white after:via-white/70 after:to-transparent after:pointer-events-none'
-                            : ''
+                        className={`bg-white border border-[#E4E5E7] hover:border-[#b58c5e]/50 p-5 sm:p-6 shadow-2xs space-y-3.5 transition-all duration-300 ${
+                          isCutCard
+                            ? 'rounded-t-[22px] rounded-b-none border-b-0 h-[88px] max-h-[88px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-11 after:bg-gradient-to-t after:from-white after:via-white/80 after:to-transparent after:pointer-events-none'
+                            : 'rounded-[22px]'
                         }`}
-                        style={{
-                          animationDelay: `${localIdx * 70}ms`,
-                        }}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -4379,7 +4786,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                                     target.src = comment.avatarSvg;
                                   }
                                 }}
-                                className="w-full h-full rounded-full object-cover border border-[#ebdcb9]/80"
+                                className="w-full h-full rounded-full object-cover border border-[#E4E5E7]"
                               />
                               <span
                                 className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#39b533] border-2 border-white flex items-center justify-center shadow-xs"
@@ -4424,7 +4831,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
 
         {/* بخش چهارم: محصولات مشابه */}
-        <div className="border-t border-[#ebdcb9]/30 pt-8 mt-14 text-right">
+        <div className="border-t border-[#E4E5E7] pt-8 mt-14 text-right">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg sm:text-xl font-black text-[#1a1a1a]">
               محصولات مشابه
@@ -4543,7 +4950,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                       )}
 
                       {/* دکمه تغییر بین عکس و مدل سه‌بعدی */}
-                      {!isOutOfStock && (
                         <button
                           type="button"
                           onClick={(e) => toggleCard3D(simProd.id, e)}
@@ -4561,10 +4967,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                           <Box className="w-3 h-3" />
                           <span>{isCard3D ? 'نمای 3D فعال' : '3D خودکار'}</span>
                         </button>
-                      )}
 
                       {/* نوار انتخاب رنگ‌های واقعی آبکاری لوستر روی کارت */}
-                      {!isOutOfStock && (
                         <div
                           onClick={(e) => e.stopPropagation()}
                           className={`absolute bottom-2.5 inset-x-2.5 z-20 flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-xs border border-[#e8e4dc] shadow-2xs transition-opacity ${
@@ -4621,7 +5025,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                             )}
                           </div>
                         </div>
-                      )}
                     </div>
 
                     {/* عنوان، زیرعنوان و قیمت محصول */}
@@ -4692,9 +5095,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
                             <button
                               type="button"
-                              onClick={() => handleAddClick(simProd)}
+                              onClick={() => triggerTemporaryTooltip(simProd.id)}
                               aria-label="محصول در انبار وجود ندارد"
-                              className="w-12 h-12 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
+                              className="w-12 h-12 rounded-[14px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
                             >
                               <BagCross size="24" color="#ea1d2c" variant="Linear" />
                             </button>
@@ -4757,8 +5160,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
         {/* مودال افزودن نظر جدید */}
         {isAddCommentModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div className="bg-white rounded-[24px] max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-[#ebdcb9]/60 relative text-right space-y-5 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between border-b border-[#ebdcb9]/30 pb-4">
+            <div className="bg-white rounded-[24px] max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-[#E4E5E7] relative text-right space-y-5 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between border-b border-[#E4E5E7] pb-4">
                 <h4 className="text-base sm:text-lg font-black text-[#1a1a1a]">
                   افزودن نظر جدید
                 </h4>
@@ -4847,10 +5250,315 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           </div>
         )}
 
+        {/* مودال ۱۵ ویژگی انحصاری ساختاری و استانداردها */}
+        {isFeaturesModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+            onClick={() => setIsFeaturesModalOpen(false)}
+            dir="rtl"
+          >
+            <div
+              className="w-full max-w-2xl bg-[#fcfbf9] rounded-3xl border border-[#e5dec9] shadow-2xl p-6 md:p-8 max-h-[85vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#ebdcb9]">
+                <h3 className="text-base sm:text-lg font-black text-[#1a1a1a]">
+                  ۱۵ ویژگی انحصاری ساختاری و استانداردهای محصول
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsFeaturesModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-[#f4f3ef] hover:bg-[#2b2b2b] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  'ضمانت کتبی مادام‌العمر ثبات رنگ و آبکاری بدنه',
+                  'استفاده از برنج خالص درجه یک و آلیاژ استاندارد',
+                  'کریستال‌های ۱۰۰٪ اصل اتریشی و چک با بازتاب نور منشوری',
+                  'سرپیچ‌های سرامیکی نسوز استاندارد با قابلیت تحمل حرارت بالا',
+                  'مجهز به سیستم نصب آسان در انواع سقف‌های کاذب و یونولیت',
+                  'دارای تاییدیه استاندارد ملی و گواهینامه کیفیت اروپا CE',
+                  'بسته‌بندی تخصصی ضد ضربه با پوشش وکیوم فشرده جهت ارسال امن',
+                  'پشتیبانی ۲۴ ساعته و مشاوره رایگان دکوراسیون داخلی',
+                  'امکان سفارشی‌سازی ابعاد، تعداد شاخه‌ها و رنگ آبکاری',
+                  'مقاومت کامل در برابر رطوبت و شرایط آب و هوایی شرجی',
+                  'سیم‌کشی داخلی تمام مس استاندارد با پوشش عایق نسوز',
+                  'طراحی انحصاری توسط استودیو معماری صالحی',
+                  'ارسال به سراسر کشور با بیمه کامل باربری',
+                  'امکان تست نور و هماهنگی با لوسترهای دیواری و آباژور ست',
+                  'تامین کلیه قطعات یدکی کریستالی و اتصالات به مدت ۱۰ سال',
+                ].map((feat, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-3.5 rounded-2xl bg-white border border-[#f0eee8] shadow-2xs"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-[#b59766] shrink-0 mt-0.5" />
+                    <span className="text-xs sm:text-sm font-bold text-[#333] leading-relaxed text-right">
+                      {feat}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* پیام تأیید ثبت نظر */}
         {commentToast && (
           <div className="fixed bottom-6 right-6 z-50 bg-[#1a1a1a] text-white px-5 py-3 rounded-xl shadow-xl text-xs sm:text-sm font-bold animate-in fade-in slide-in-from-bottom-4 duration-300">
             {commentToast}
+          </div>
+        )}
+
+        {/* مودال اطلاع‌رسانی موجودی کالا */}
+        <NotifyAvailabilityModal
+          isOpen={isNotifyModalOpen}
+          onClose={() => setIsNotifyModalOpen(false)}
+          product={notifyProduct}
+          userPhone={userPhone}
+          onSubmitSuccess={() => {
+            if (onShowToast) {
+              onShowToast(
+                'success',
+                'با موفقیت ثبت شد',
+                'محصول به محض موجود شدن، به شما خبر میدهیم.'
+              );
+            }
+          }}
+        />
+
+        {/* لایت‌باکس عکس‌های گالری محصول */}
+        {isProductLightboxOpen && (
+          <div
+            onClick={() => {
+              setIsProductLightboxOpen(false);
+              if (onShowToast) {
+                onShowToast('success', 'زوم غیرفعال شد', 'از حالت زوم خارج شدید.');
+              }
+            }}
+            className="fixed inset-0 z-[80] bg-black md:bg-black/65 md:backdrop-blur-[2px] flex items-center justify-center p-0 md:p-6"
+            dir="rtl"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setIsProductLightboxOpen(false);
+                if (onShowToast) {
+                  onShowToast('success', 'زوم غیرفعال شد', 'از حالت زوم خارج شدید.');
+                }
+              }}
+              className="fixed top-6 left-5 md:top-5 md:left-7 z-[90] h-[38px] md:h-[40px] px-4 md:px-5 rounded-[10px] bg-[#1e1e1e] hover:bg-black text-white text-[12px] md:text-[12.5px] font-bold flex items-center justify-center shadow-lg transition-colors cursor-pointer"
+            >
+              بستن صفحه
+            </button>
+
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full md:w-auto flex items-center justify-center md:gap-6 lg:gap-9"
+            >
+              {galleryPhotos.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductLightboxIdx((prev) => (prev + 1) % galleryPhotos.length);
+                  }}
+                  aria-label="اسلاید بعدی"
+                  className="hidden md:flex w-[42px] h-[42px] rounded-[10px] bg-white/60 hover:bg-white text-[#222222] hover:text-[#111111] items-center justify-center shadow-md transition-all duration-200 shrink-0 cursor-pointer z-30"
+                >
+                  <ChevronRight className="w-5 h-5 stroke-[2.1]" />
+                </button>
+              )}
+
+              <div className="relative w-full md:w-[76vw] lg:w-[860px] xl:w-[950px] max-w-[960px] aspect-[4/3.5] md:aspect-auto md:h-[510px] lg:h-[565px] md:rounded-[22px] overflow-hidden bg-[#141414] shadow-2xl flex items-center justify-center select-none">
+                {galleryPhotos.map((item, slideIdx) => {
+                  const isCurrent = productLightboxIdx === slideIdx;
+                  if (item.type === 'video') {
+                    return (
+                      <div
+                        key={`prod-lb-slide-${slideIdx}`}
+                        className={`absolute inset-0 w-full h-full flex items-center justify-center transition-all duration-700 ${
+                          isCurrent
+                            ? 'opacity-100 z-[2]'
+                            : 'opacity-0 z-[1] pointer-events-none'
+                        }`}
+                      >
+                        <video
+                          src={item.url}
+                          poster={item.poster}
+                          playsInline
+                          className="w-full h-full object-cover object-center"
+                        />
+                        {/* Center play button overlay matching Project view */}
+                        {isCurrent && (
+                          <button
+                            type="button"
+                            onClick={() => {}}
+                            aria-label="پخش ویدیو"
+                            className="absolute z-20 w-[78px] h-[78px] sm:w-[88px] sm:h-[88px] rounded-full bg-white/25 hover:bg-white/35 backdrop-blur-md border-[1.5px] border-white/85 flex items-center justify-center transition-all duration-300 hover:scale-105 cursor-pointer"
+                          >
+                            <CustomPlayDuotoneIcon className="w-8 h-8 sm:w-9 sm:h-9 translate-x-0.5" />
+                          </button>
+                        )}
+                        {/* Bottom control bar and pagination dots matching project view */}
+                        {isCurrent && (
+                          <>
+                            <div
+                              dir="ltr"
+                              className="absolute bottom-9 sm:bottom-11 inset-x-5 sm:inset-x-7 z-25 flex items-center gap-3.5 sm:gap-4 text-white"
+                            >
+                              <div className="flex items-center gap-3 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProductLightboxIdx((prev) => (prev <= 0 ? galleryPhotos.length - 1 : prev - 1));
+                                  }}
+                                  className="hover:opacity-80 cursor-pointer"
+                                  aria-label="قبلی"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                    <rect x="4" y="5" width="2.4" height="14" rx="1" />
+                                    <path d="M18.5 5.8C19.3 5.3 20.2 5.9 20.2 6.8V17.2C20.2 18.1 19.3 18.7 18.5 18.2L9.8 13C9.1 12.5 9.1 11.5 9.8 11L18.5 5.8Z" />
+                                  </svg>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {}}
+                                  className="hover:opacity-80 cursor-pointer"
+                                  aria-label="پخش یا توقف"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                    <rect x="6" y="5" width="4" height="14" rx="1" />
+                                    <rect x="14" y="5" width="4" height="14" rx="1" />
+                                  </svg>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProductLightboxIdx((prev) => (prev >= galleryPhotos.length - 1 ? 0 : prev + 1));
+                                  }}
+                                  className="hover:opacity-80 cursor-pointer"
+                                  aria-label="بعدی"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                    <rect x="17.6" y="5" width="2.4" height="14" rx="1" />
+                                    <path d="M5.5 5.8C4.7 5.3 3.8 5.9 3.8 6.8V17.2C3.8 18.1 4.7 18.7 5.5 18.2L14.2 13C14.9 12.5 14.9 11.5 14.2 11L5.5 5.8Z" />
+                                  </svg>
+                                </button>
+                              </div>
+
+                              <div className="flex-1 h-[4.5px] rounded-full bg-white/40 overflow-hidden cursor-pointer">
+                                <div className="h-full bg-white rounded-full transition-all duration-200 w-1/3" />
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {}}
+                                className="hover:opacity-80 cursor-pointer shrink-0"
+                                aria-label="صدا"
+                              >
+                                <Volume2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="absolute bottom-3.5 inset-x-0 z-20 flex items-center justify-center gap-2">
+                              {galleryPhotos.map((_, dIdx) => (
+                                <button
+                                  key={`dot-${dIdx}`}
+                                  type="button"
+                                  onClick={() => setProductLightboxIdx(dIdx)}
+                                  aria-label={`اسلاید ${dIdx + 1}`}
+                                  className={`rounded-full transition-all duration-300 cursor-pointer ${
+                                    productLightboxIdx === dIdx
+                                      ? 'w-3 h-3 bg-white shadow-xs'
+                                      : 'w-2 h-2 bg-white/65 hover:bg-white'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div
+                        key={`prod-lb-slide-${slideIdx}`}
+                        className={`absolute inset-0 w-full h-full overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                          isCurrent
+                            ? 'opacity-100 z-[2]'
+                            : 'opacity-0 z-[1] pointer-events-none'
+                        }`}
+                        onMouseMove={(e) => {
+                          if (isCurrent) {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = ((e.clientX - rect.left) / rect.width) * 100;
+                            const y = ((e.clientY - rect.top) / rect.height) * 100;
+                            e.currentTarget.style.setProperty('--x', `${x}%`);
+                            e.currentTarget.style.setProperty('--y', `${y}%`);
+                          }
+                        }}
+                        style={{
+                          backgroundImage: `url(${item.url})`,
+                          backgroundPosition: 'var(--x, 50%) var(--y, 50%)',
+                          backgroundSize: '200%',
+                        }}
+                      >
+                        <img
+                          src={item.url}
+                          alt={`${product.name} گالری ${slideIdx + 1}`}
+                          referrerPolicy="no-referrer"
+                          className={`w-full h-full object-cover object-center transition-opacity duration-300 ${
+                            isCurrent ? 'opacity-100' : 'opacity-0'
+                          } hover:opacity-0`}
+                        />
+                      </div>
+                    );
+                  }
+                })}
+
+                {galleryPhotos.length > 1 && (
+                  <div className="absolute bottom-3.5 inset-x-0 z-20 flex items-center justify-center gap-2">
+                    {galleryPhotos.map((_, dotIdx) => {
+                      const isActiveDot = productLightboxIdx === dotIdx;
+                      const dist = Math.abs(dotIdx - productLightboxIdx);
+                      return (
+                        <button
+                          key={`prod-lb-dot-${dotIdx}`}
+                          type="button"
+                          onClick={() => setProductLightboxIdx(dotIdx)}
+                          aria-label={`اسلاید ${dotIdx + 1}`}
+                          className={`rounded-full transition-all duration-300 cursor-pointer ${
+                            isActiveDot
+                              ? 'w-3 h-3 bg-white shadow-xs'
+                              : dist === 1
+                                ? 'w-2 h-2 bg-white/85'
+                                : 'w-1.5 h-1.5 bg-white/65'
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {galleryPhotos.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductLightboxIdx((prev) => (prev - 1 + galleryPhotos.length) % galleryPhotos.length);
+                  }}
+                  aria-label="اسلاید قبلی"
+                  className="hidden md:flex w-[42px] h-[42px] rounded-[10px] bg-white/60 hover:bg-white text-[#222222] hover:text-[#111111] items-center justify-center shadow-md transition-all duration-200 shrink-0 cursor-pointer z-30"
+                >
+                  <ChevronLeft className="w-5 h-5 stroke-[2.1]" />
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -5015,7 +5723,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                         onMouseLeave={() => {
                           clearTemporaryTooltip(product.id);
                         }}
-                        className="bg-white rounded-[16px] border border-[#ebebeb] p-3 flex items-stretch justify-between gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.025)]"
+                        className="rounded-[16px] border border-[#ebebeb] p-3 flex items-stretch justify-between gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.025)]"
                       >
                         {/* سمت راست کارت موبایل: باکس مربع تصویر با پس‌زمینه خاکستری روشن و نشان Snapp! Pay */}
                         <div
@@ -5107,9 +5815,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                                         handleAddClick(product, true)
                                       }
                                       aria-label="محصول در انبار وجود ندارد"
-                                      className="w-[36px] h-[36px] xs:w-[38px] xs:h-[38px] rounded-[9px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                                      className="w-[36px] h-[36px] xs:w-[38px] xs:h-[38px] rounded-[10px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
                                     >
-                                      <OutOfStockBagIcon className="w-[18px] h-[18px]" />
+                                      <BagCross size="20" color="#ea1d2c" variant="Linear" />
                                     </button>
                                   </>
                                 ) : (
@@ -5153,7 +5861,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                                           }`}
                                         />
                                       ) : (
-                                        <ShoppingBasketIcon className="w-[18px] h-[18px]" />
+                                        <Bag size="20" color="currentColor" variant="Linear" />
                                       )}
                                     </button>
                                   </>
@@ -5192,8 +5900,8 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           {renderFilterCardContent()}
         </aside>
 
-        {/* شبکه ۳ ستونه کارت‌های محصولات یا حالت «موردی یافت نشد!» در سمت چپ سایدبار */}
-        <div className="flex-1 w-full min-w-0">
+        {/* شبکه ۳ ستونه کارت‌های محصولات یا حالت «موردی یافت نشد!» در سمت چپ سایدبار (بدون لایه بک‌گراند زیرین) */}
+        <div className="flex-1 w-full min-w-0 bg-transparent p-0">
           {isCategoryEmpty || desktopProducts.length === 0 ? (
             <div className="min-h-[430px] flex items-center justify-center">
               {renderEmptyCategoryState()}
@@ -5229,7 +5937,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                   onMouseLeave={() => {
                     clearTemporaryTooltip(product.id);
                   }}
-                  className="group bg-white rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
+                  className="group rounded-[16px] border border-[#e5e5e5] p-3.5 sm:p-4 pb-5 hover:shadow-[0_14px_38px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>
                     <div
@@ -5273,7 +5981,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                         </div>
                       )}
 
-                      {!isOutOfStock && (
                         <button
                           type="button"
                           onClick={(e) => toggleCard3D(product.id, e)}
@@ -5291,9 +5998,7 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                           <Box className="w-3 h-3" />
                           <span>{isCard3D ? 'نمای 3D فعال' : '3D خودکار'}</span>
                         </button>
-                      )}
 
-                      {!isOutOfStock && (
                         <div
                           onClick={(e) => e.stopPropagation()}
                           className={`absolute bottom-2.5 inset-x-2.5 z-20 flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-white/95 backdrop-blur-xs border border-[#e8e4dc] shadow-2xs transition-opacity ${
@@ -5350,7 +6055,6 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                             )}
                           </div>
                         </div>
-                      )}
                     </div>
 
                     <div className="mt-4 px-1.5 text-right">
@@ -5427,9 +6131,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
                             <button
                               type="button"
-                              onClick={() => handleAddClick(product)}
+                              onClick={() => triggerTemporaryTooltip(product.id)}
                               aria-label="محصول در انبار وجود ندارد"
-                              className="w-12 h-12 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
+                              className="w-12 h-12 rounded-[14px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
                             >
                               <BagCross size="24" color="#ea1d2c" variant="Linear" />
                             </button>

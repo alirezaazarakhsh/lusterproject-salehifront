@@ -176,6 +176,7 @@ export const HomePage: React.FC = () => {
     const syncRoute = (e?: Event) => {
       const customRoute = (e as CustomEvent<AppRoute>)?.detail;
       const nextRoute = customRoute ?? getCurrentRoute();
+      setAppToasts([]);
       setCurrentRoute((prev) => {
         if (prev !== nextRoute) {
           triggerPagePreloader(800);
@@ -282,6 +283,12 @@ export const HomePage: React.FC = () => {
       navigateToRoute('server-error');
     };
 
+    const handleShowToast = (e: Event) => {
+      const { type, title, message } = (e as CustomEvent).detail;
+      addAppToast(type, title, message);
+    };
+
+    window.addEventListener('show-app-toast', handleShowToast);
     window.addEventListener('offline', handleServerDown);
     window.addEventListener('app-server-error', handleServerDown);
     window.addEventListener('app-catalog-updated', fetchLiveCatalogFromDb);
@@ -293,6 +300,7 @@ export const HomePage: React.FC = () => {
       window.removeEventListener('popstate', syncRoute);
       window.removeEventListener('hashchange', syncRoute);
       window.removeEventListener('app-route-change', syncRoute);
+      window.removeEventListener('show-app-toast', handleShowToast);
       window.removeEventListener('offline', handleServerDown);
       window.removeEventListener('app-server-error', handleServerDown);
       window.removeEventListener('app-catalog-updated', fetchLiveCatalogFromDb);
@@ -869,6 +877,7 @@ export const HomePage: React.FC = () => {
     useState<boolean>(false);
   const [appToasts, setAppToasts] = useState<AppToast[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userPhone, setUserPhone] = useState<string>('۰۹۱۲۳۴۵۶۷۸۹');
   const [userDisplayName, setUserDisplayName] =
     useState<string>('مشتری عزیز!');
   const [forceOpenProfileMenu, setForceOpenProfileMenu] =
@@ -1129,9 +1138,10 @@ export const HomePage: React.FC = () => {
           onShowToast={addAppToast}
           onOpenLogin={() => setIsLoginModalOpen(true)}
           isLoggedIn={isLoggedIn}
+          userPhone={userPhone}
         />
       ) : (
-        <div className="space-y-12 sm:space-y-16 md:space-y-20 py-6">
+        <div className="space-y-0 pt-0 pb-4">
           {/* ۲. نوار استوری‌های دایره‌ای */}
           <StoriesSection
             stories={storiesList}
@@ -1142,59 +1152,61 @@ export const HomePage: React.FC = () => {
           {/* ۳. بنر اصلی (Hero) با قابلیت نمای سه‌بعدی */}
           <HeroSection heroSettings={heroSliderSettings} />
 
-          {/* ۴. دسته بندی محصولات */}
-          <CategorySection
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-            categories={categoriesList}
-            products={productsList}
-          />
+          <div className="space-y-7 sm:space-y-10 md:space-y-12 pt-4">
+            {/* ۴. دسته بندی محصولات */}
+            <CategorySection
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+              categories={categoriesList}
+              products={productsList}
+            />
 
-          {/* ۵. درباره خدمات لوستر + قاب قوسی سه‌بعدی */}
-          <AboutServicesSection
-            featuredProduct={productsList[3] || productsList[0]}
-            onOpenProductModal={(prod) => handleOpenProductModal(prod)}
-            mainSettings={mainSettings}
-          />
+            {/* ۵. درباره خدمات لوستر + قاب قوسی سه‌بعدی */}
+            <AboutServicesSection
+              featuredProduct={productsList[3] || productsList[0]}
+              onOpenProductModal={(prod) => handleOpenProductModal(prod)}
+              mainSettings={mainSettings}
+            />
 
-          {/* ۶. محصولات کلکسیون صالحی (با قابلیت سه‌بعدی خودکار و تغییر رنگ روی هر محصول) */}
-          <ProductsCarouselSection
-            sectionId="collection-salehi"
-            title="محصولات کلکسیون صالحی"
-            mobileTitle="کلکسیون صالحی"
-            products={productsList}
-            variant="salehi-collection"
-            cartProductIds={cartProductIds}
-            cartQuantities={cartQuantities}
-            onOpenProductModal={handleOpenProductModal}
-            onAddToCart={(prod) => handleAddToCart(prod, 1)}
-          />
+            {/* ۶. محصولات کلکسیون صالحی (با قابلیت سه‌بعدی خودکار و تغییر رنگ روی هر محصول) */}
+            <ProductsCarouselSection
+              sectionId="collection-salehi"
+              title="محصولات کلکسیون صالحی"
+              mobileTitle="کلکسیون صالحی"
+              products={productsList}
+              variant="salehi-collection"
+              cartProductIds={cartProductIds}
+              cartQuantities={cartQuantities}
+              onOpenProductModal={handleOpenProductModal}
+              onAddToCart={(prod) => handleAddToCart(prod, 1)}
+            />
 
-          {/* ۷. پروژه های اجرایی */}
-          <ProjectsSection
-            projects={projectsList}
-            products={productsList}
-            onOpenProductModal={(prod) => handleOpenProductModal(prod)}
-          />
+            {/* ۷. پروژه های اجرایی */}
+            <ProjectsSection
+              projects={projectsList}
+              products={productsList}
+              onOpenProductModal={(prod) => handleOpenProductModal(prod)}
+            />
 
-          {/* ۸. محصولات کلکسیون پرفروش ترین ها */}
-          <ProductsCarouselSection
-            sectionId="best-sellers"
-            title="محصولات کلکسیون پرفروش ترین ها"
-            mobileTitle="پرفروش‌ترین‌ها"
-            products={productsList}
-            variant="best-sellers"
-            cartProductIds={cartProductIds}
-            cartQuantities={cartQuantities}
-            onOpenProductModal={handleOpenProductModal}
-            onAddToCart={(prod) => handleAddToCart(prod, 1)}
-          />
+            {/* ۸. محصولات کلکسیون پرفروش ترین ها */}
+            <ProductsCarouselSection
+              sectionId="best-sellers"
+              title="محصولات کلکسیون پرفروش ترین ها"
+              mobileTitle="پرفروش‌ترین‌ها"
+              products={productsList}
+              variant="best-sellers"
+              cartProductIds={cartProductIds}
+              cartQuantities={cartQuantities}
+              onOpenProductModal={handleOpenProductModal}
+              onAddToCart={(prod) => handleAddToCart(prod, 1)}
+            />
 
-          {/* ۹. مجله های لوستر */}
-          <MagazineSection
-            articles={articlesList}
-            onSelectArticle={(article) => setActiveArticleModal(article)}
-          />
+            {/* ۹. مجله های لوستر */}
+            <MagazineSection
+              articles={articlesList}
+              onSelectArticle={(article) => setActiveArticleModal(article)}
+            />
+          </div>
         </div>
       )}
 
@@ -1260,8 +1272,9 @@ export const HomePage: React.FC = () => {
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
-        onLoginSuccess={() => {
+        onLoginSuccess={(phone) => {
           setIsLoggedIn(true);
+          if (phone) setUserPhone(phone);
           setForceOpenProfileMenu(true);
         }}
       />

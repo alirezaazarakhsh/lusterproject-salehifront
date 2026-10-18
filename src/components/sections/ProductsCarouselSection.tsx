@@ -5,7 +5,7 @@ import {
   Box,
   RotateCcw,
 } from 'lucide-react';
-import { Bag, BagCross } from 'iconsax-react';
+import { Bag, BagCross, NotificationBing } from 'iconsax-react';
 import { SectionHeading } from '../Ornaments';
 import {
   ChandelierProduct,
@@ -447,9 +447,9 @@ export const ProductsCarouselSection: React.FC<ProductsCarouselSectionProps> = (
 
                         <button
                           type="button"
-                          onClick={() => handleAddClick(product)}
+                          onClick={() => triggerTemporaryTooltip(product.id)}
                           aria-label="محصول در انبار وجود ندارد"
-                          className="w-12 h-12 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
+                          className="w-12 h-12 rounded-[14px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
                         >
                           <BagCross size="24" color="#ea1d2c" variant="Linear" />
                         </button>

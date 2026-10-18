@@ -32,7 +32,7 @@ export const ProductVisualGallery: React.FC<ProductVisualGalleryProps> = ({
   galleryImages,
 }) => {
   return (
-    <div className="lg:col-span-6 flex flex-col order-2 lg:order-2 space-y-4">
+    <div className="flex flex-col space-y-4">
       {/* باکس نمایش اصلی (عکس یا استودیو ۳بعدی) */}
       <div className="relative w-full h-[360px] sm:h-[440px] lg:h-[490px] rounded-[32px] bg-white border border-[#e8ded0] overflow-hidden flex items-center justify-center shadow-xs group">
         {viewMode === '3d' ? (

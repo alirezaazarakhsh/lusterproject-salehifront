@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, RotateCcw } from 'lucide-react';
-import { Bag, BagCross } from 'iconsax-react';
+import { Bag, BagCross, NotificationBing } from 'iconsax-react';
 import {
   ChandelierProduct,
   CARD_PLATING_FINISHES,
@@ -239,7 +239,7 @@ export const ProductRelatedCarousel: React.FC<ProductRelatedCarouselProps> = ({
                         type="button"
                         disabled
                         aria-label="محصول در انبار وجود ندارد"
-                        className="w-12 h-12 rounded-[12px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
+                        className="w-12 h-12 rounded-[14px] bg-[#fde8ea] text-[#ea1d2c] flex items-center justify-center transition-colors cursor-not-allowed shrink-0"
                       >
                         <BagCross size="24" color="#ea1d2c" variant="Linear" />
                       </button>

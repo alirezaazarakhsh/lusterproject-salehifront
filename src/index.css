@@ -631,17 +631,20 @@ html, body {
   height: 0 !important;
 }
 
-/* استایل اسکرول‌بار ظریف ۴ پیکسل لیست فیلترهای محصولات */
+/* استایل اسکرول‌بار ظریف ۳.۵ پیکسل لیست فیلترهای محصولات دقیقاً مطابق فیگما */
 .filter-scroll-list {
   -webkit-overflow-scrolling: touch;
   height: 180px;
   max-height: 180px;
+  overflow-y: scroll !important;
 }
 
 .filter-scroll-list::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-  display: block;
+  width: 3.5px !important;
+  height: 3.5px !important;
+  display: block !important;
+  visibility: visible !important;
+  -webkit-appearance: none !important;
 }
 
 .filter-scroll-list::-webkit-scrollbar-button {
@@ -651,41 +654,19 @@ html, body {
 }
 
 .filter-scroll-list::-webkit-scrollbar-thumb {
-  background: rgb(205, 205, 205);
-  border-radius: 9999px;
+  background: #cdcdcd !important;
+  border-radius: 9999px !important;
+  display: block !important;
+  visibility: visible !important;
 }
 
 .filter-scroll-list::-webkit-scrollbar-thumb:hover {
-  background: #b59766;
+  background: #b59766 !important;
 }
 
 .filter-scroll-list::-webkit-scrollbar-track,
 .filter-scroll-list::-webkit-scrollbar-track-piece {
-  background: rgb(243, 243, 243);
-  border-radius: 9999px;
-}
-
-@media (width >= 1024px) {
-  .filter-scroll-list::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-    display: block;
-  }
-
-  .filter-scroll-list::-webkit-scrollbar-thumb {
-    background: rgb(205, 205, 205);
-    border-radius: 9999px;
-  }
-
-  .filter-scroll-list::-webkit-scrollbar-thumb:hover {
-    background: #b59766;
-  }
-
-  .filter-scroll-list::-webkit-scrollbar-track,
-  .filter-scroll-list::-webkit-scrollbar-track-piece {
-    background: rgb(243, 243, 243);
-    border-radius: 9999px;
-  }
+  background: transparent !important;
 }
 
 html.dark .filter-scroll-list {
@@ -708,30 +689,52 @@ html.dark .filter-scroll-list {
   }
 }
 
-/* اسکرول‌بار سایت با رنگ و استایل قبلی */
+/* اسکرول‌بار سایت با رنگ و استایل قبلی در دسکتاپ */
 @media (min-width: 1024px) {
-  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar {
+  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list):not(.product-specs-scroll-list):not(#product-description-scroll)::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-track {
+  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list):not(.product-specs-scroll-list):not(#product-description-scroll)::-webkit-scrollbar-track {
     background: #f6f5f0;
   }
-  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-thumb {
+  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list):not(.product-specs-scroll-list):not(#product-description-scroll)::-webkit-scrollbar-thumb {
     background: #d1c7b7;
     border-radius: 4px;
   }
-  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-thumb:hover {
+  :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list):not(.product-specs-scroll-list):not(#product-description-scroll)::-webkit-scrollbar-thumb:hover {
     background: #b89768;
   }
-  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-track {
+  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list):not(.product-specs-scroll-list):not(#product-description-scroll)::-webkit-scrollbar-track {
     background: #1e1e1e;
   }
-  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-thumb {
+  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list):not(.product-specs-scroll-list):not(#product-description-scroll)::-webkit-scrollbar-thumb {
     background: #444;
   }
-  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list)::-webkit-scrollbar-thumb:hover {
+  html.dark :not(.filter-scroll-list):not(#filter-model-scroll-list):not(#filter-material-scroll-list):not(#filter-color-scroll-list):not(.product-specs-scroll-list):not(#product-description-scroll)::-webkit-scrollbar-thumb:hover {
     background: #666;
+  }
+}
+
+/* عدم نمایش اسکرول‌بار خود سایت در گوشی/موبایل طبق درخواست کاربر */
+@media (max-width: 1023px) {
+  html,
+  body,
+  #root,
+  #top,
+  main {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  #root::-webkit-scrollbar,
+  #top::-webkit-scrollbar,
+  main::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 }
 
@@ -839,55 +842,112 @@ div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-
   border-top: 1px solid #e8ded0 !important;
 }
 
-/* Focus Mode: Inner elements spacing from line */
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) {
-  margin-top: 12px !important;
-}
-
+/* Focus Mode: شروع و تراز کاملاً یکسان دو دیو از بالا */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1),
 div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) {
-  margin-top: 12px !important;
+  margin-top: 0px !important;
 }
 
-/* Focus Mode: اسکرول‌بار دقیقاً مشابه فیلترهای محصولات و تصویر ارسالی */
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1),
+/* Focus Mode: دیو مشخصات با ارتفاع بیشتر برای نزدیک شدن به دکمه */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1),
+.product-specs-scroll-list {
+  flex: 1 1 auto !important;
+  max-height: 295px !important;
+  min-height: 280px !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > button:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) button {
+  margin-top: 14px !important;
+}
+
+/* Focus Mode: حذف رنگ پس‌زمینه در حالت هاور سطرهای مشخصات */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:hover {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Focus Mode: تنظیمات اسکرول‌بار بسیار نازک ۳.۵ پیکسلی دقیقاً مطابق طراحی فیگما */
+.product-specs-scroll-list,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p#product-description-scroll:nth-of-type(1),
 #product-description-scroll {
-  max-height: 120px !important;
-  overflow-y: auto !important;
-  padding-left: 14px !important;
-  line-height: 2.2 !important;
+  -webkit-overflow-scrolling: touch;
 }
 
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar,
+.product-specs-scroll-list::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p#product-description-scroll:nth-of-type(1)::-webkit-scrollbar,
 #product-description-scroll::-webkit-scrollbar {
-  width: 4px !important;
-  height: 4px !important;
+  width: 3.5px !important;
+  height: 3.5px !important;
   display: block !important;
 }
 
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-button,
+.product-specs-scroll-list::-webkit-scrollbar-button,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar-button,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p#product-description-scroll:nth-of-type(1)::-webkit-scrollbar-button,
 #product-description-scroll::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
 
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-track,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-track-piece,
+.product-specs-scroll-list::-webkit-scrollbar-track,
+.product-specs-scroll-list::-webkit-scrollbar-track-piece,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar-track,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar-track-piece,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p#product-description-scroll:nth-of-type(1)::-webkit-scrollbar-track,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p#product-description-scroll:nth-of-type(1)::-webkit-scrollbar-track-piece,
 #product-description-scroll::-webkit-scrollbar-track,
 #product-description-scroll::-webkit-scrollbar-track-piece {
-  background: #f3f3f3 !important;
+  background: #f2f2f2 !important;
   border-radius: 9999px !important;
 }
 
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-thumb,
+.product-specs-scroll-list::-webkit-scrollbar-thumb,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar-thumb,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p#product-description-scroll:nth-of-type(1)::-webkit-scrollbar-thumb,
 #product-description-scroll::-webkit-scrollbar-thumb {
-  background: #cdcdcd !important;
+  background: #c8c8c8 !important;
   border-radius: 9999px !important;
 }
 
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
+.product-specs-scroll-list::-webkit-scrollbar-thumb:hover,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p#product-description-scroll:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
 #product-description-scroll::-webkit-scrollbar-thumb:hover {
   background: #b59766 !important;
+}
+
+html.dark .product-specs-scroll-list::-webkit-scrollbar-track,
+html.dark div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar-track,
+html.dark #product-description-scroll::-webkit-scrollbar-track {
+  background: #222222 !important;
+}
+
+html.dark .product-specs-scroll-list::-webkit-scrollbar-thumb,
+html.dark div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar-thumb,
+html.dark #product-description-scroll::-webkit-scrollbar-thumb {
+  background: #555555 !important;
+}
+
+html.dark .product-specs-scroll-list::-webkit-scrollbar-thumb:hover,
+html.dark div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
+html.dark #product-description-scroll::-webkit-scrollbar-thumb:hover {
+  background: #b59766 !important;
+}
+
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > p:nth-of-type(1),
+#product-description-scroll {
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 200px !important;
+  max-height: 250px !important;
+  overflow-y: auto !important;
+  padding-left: 18px !important;
+  line-height: 2.2 !important;
 }
 
 /* Focus Mode: Divider line between selector 1 and 2 */
@@ -965,73 +1025,60 @@ div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-
 }
 
 /* Focus Mode: Filter scrollbar design */
+/* Focus Mode: Filter scrollbar design - نسخه فوق‌العاده ظریف ۳.۵ پیکسلی مشابه ۳ دیو دسکتاپ */
+#filter-model-scroll-list,
+#filter-material-scroll-list,
+#filter-color-scroll-list,
+.filter-scroll-list,
+.mobile-filter-modal-scroll,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1) {
+  -webkit-overflow-scrolling: touch;
+}
+
 #filter-model-scroll-list,
 #filter-material-scroll-list,
 #filter-color-scroll-list,
 .filter-scroll-list,
 div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1),
 div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1),
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1) {
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1) {
   height: 180px !important;
   max-height: 180px !important;
-  overflow-y: auto !important;
+  overflow-y: scroll !important;
+}
+
+#filter-model-scroll-list,
+#filter-material-scroll-list,
+#filter-color-scroll-list,
+.filter-scroll-list {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 #filter-model-scroll-list::-webkit-scrollbar,
 #filter-material-scroll-list::-webkit-scrollbar,
 #filter-color-scroll-list::-webkit-scrollbar,
 .filter-scroll-list::-webkit-scrollbar,
+.mobile-filter-modal-scroll::-webkit-scrollbar,
 div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar,
 div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar {
-  width: 4px !important;
-  height: 4px !important;
-  display: block !important;
-}
-
-#filter-model-scroll-list::-webkit-scrollbar-button,
-#filter-material-scroll-list::-webkit-scrollbar-button,
-#filter-color-scroll-list::-webkit-scrollbar-button,
-.filter-scroll-list::-webkit-scrollbar-button {
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2)::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
-}
-
-#filter-model-scroll-list::-webkit-scrollbar-track,
-#filter-model-scroll-list::-webkit-scrollbar-track-piece,
-#filter-material-scroll-list::-webkit-scrollbar-track,
-#filter-material-scroll-list::-webkit-scrollbar-track-piece,
-#filter-color-scroll-list::-webkit-scrollbar-track,
-#filter-color-scroll-list::-webkit-scrollbar-track-piece,
-.filter-scroll-list::-webkit-scrollbar-track,
-.filter-scroll-list::-webkit-scrollbar-track-piece,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar-track,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar-track,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar-track {
-  background: #f3f3f3 !important;
-  border-radius: 9999px !important;
-}
-
-#filter-model-scroll-list::-webkit-scrollbar-thumb,
-#filter-material-scroll-list::-webkit-scrollbar-thumb,
-#filter-color-scroll-list::-webkit-scrollbar-thumb,
-.filter-scroll-list::-webkit-scrollbar-thumb,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb {
-  background: #cdcdcd !important;
-  border-radius: 9999px !important;
-}
-
-#filter-model-scroll-list::-webkit-scrollbar-thumb:hover,
-#filter-material-scroll-list::-webkit-scrollbar-thumb:hover,
-#filter-color-scroll-list::-webkit-scrollbar-thumb:hover,
-.filter-scroll-list::-webkit-scrollbar-thumb:hover,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-model-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div#filter-material-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb:hover,
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(4) > aside:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div#filter-color-scroll-list:nth-of-type(1)::-webkit-scrollbar-thumb:hover {
-  background: #b59766 !important;
 }
 
 /* انیمیشن نرم و روان ورق خوردن صفحات نظرات */
@@ -1109,33 +1156,96 @@ div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-
   transform: translateY(-1px) !important;
 }
 
-/* کانتینر نظرات مطابق طرح فیگما */
+/* کانتینر نظرات و هماهنگی دقیق ارتفاع با کارت امتیازات (دیو سوم) */
+@media (min-width: 1024px) {
+  div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) {
+    align-items: stretch !important;
+  }
+
+  div#comments-cards-scroll-container,
+  div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) {
+    overflow: hidden !important;
+    height: 100% !important;
+    max-height: 100% !important;
+  }
+}
+
 div#comments-cards-scroll-container {
   overflow: hidden !important;
 }
 
-/* کارت دوم نظرات: بریده شدن در انتهای بخش مطابق تصویر فیگما برای القای رفتن به صفحه بعد */
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) > div:nth-of-type(1) > div#comment-card-1:nth-of-type(2),
+/* کارت‌های اول و دوم نظرات: نمایش با کیفیت بالا و استایل کامل */
+div#comments-cards-scroll-container div[id^="comment-card-"]:nth-of-type(1),
 div#comments-cards-scroll-container div[id^="comment-card-"]:nth-of-type(2) {
-  height: 110px !important;
-  max-height: 110px !important;
+  height: auto !important;
+  max-height: none !important;
+  border: 1px solid #E4E5E7 !important;
+  border-radius: 22px !important;
+}
+
+/* کارت سوم نظرات: برش‌خورده در انتها با ارتفاع دقیق ۸۸ پیکسل، بدون بوردر پایین و گرادینت محوشونده */
+div#comments-cards-scroll-container div[id^="comment-card-"]:nth-of-type(3),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) > div:nth-of-type(1) > div[id^="comment-card-"]:nth-of-type(3) {
+  height: 88px !important;
+  max-height: 88px !important;
   overflow: hidden !important;
+  border: 1px solid #E4E5E7 !important;
   border-bottom: 0 !important;
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
+  border-top-left-radius: 22px !important;
+  border-top-right-radius: 22px !important;
   position: relative !important;
 }
 
-div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) > div:nth-of-type(1) > div#comment-card-1:nth-of-type(2)::after,
-div#comments-cards-scroll-container div[id^="comment-card-"]:nth-of-type(2)::after {
+div#comments-cards-scroll-container div[id^="comment-card-"]:nth-of-type(3)::after,
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div#comments-cards-scroll-container:nth-of-type(2) > div:nth-of-type(1) > div[id^="comment-card-"]:nth-of-type(3)::after {
   content: "" !important;
   position: absolute !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  height: 38px !important;
-  background: linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%) !important;
+  height: 44px !important;
+  background: linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.8) 50%, transparent 100%) !important;
   pointer-events: none !important;
+}
+
+@keyframes commentGlideNext {
+  0% {
+    opacity: 0.15;
+    transform: translate3d(0, 24px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes commentGlidePrev {
+  0% {
+    opacity: 0.15;
+    transform: translate3d(0, -24px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-comment-glide-next {
+  animation: commentGlideNext 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.animate-comment-glide-prev {
+  animation: commentGlidePrev 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+/* دکمه‌های ناوبری نظرات - حرکت نرم و انتقال آرام */
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > button:nth-of-type(1),
+div#root:nth-of-type(1) > div#top:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > button {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* استروک D9D9D9 و پر شدن کامل تصاویر بندانگشتی گالری محصول با بوردر رادیوس ملایم‌تر */
