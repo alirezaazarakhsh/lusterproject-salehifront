@@ -367,7 +367,13 @@ async function startServer() {
   
   // Explicitly serve public assets in both dev and prod for robustness
   app.use(express.static(path.join(process.cwd(), 'public')));
-  app.use(express.static(path.join(process.cwd(), 'dist')));
+  app.use(express.static(path.join(process.cwd(), 'dist'), {
+    setHeaders: (res, path) => {
+      if (path.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      }
+    }
+  }));
   app.use('/assets', express.static(path.join(process.cwd(), 'public/assets')));
   app.use('/assets', express.static(path.join(process.cwd(), 'dist/assets')));
   app.use('/assets', express.static(path.join(process.cwd(), 'src/assets')));
