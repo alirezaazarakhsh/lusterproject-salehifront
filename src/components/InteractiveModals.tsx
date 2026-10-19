@@ -1,4 +1,4 @@
-import { TruckFast, NotificationBing, CloseCircle, MessageText1, DeviceMessage, TickSquare } from 'iconsax-react';
+import { TruckFast, NotificationBing, Notification, CloseCircle, MessageText1, DeviceMessage, TickSquare, Verify } from 'iconsax-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { navigateToRoute } from '../utils/navigation';
 import {
@@ -75,10 +75,12 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
   const [selectedBranches, setSelectedBranches] = useState<string>('۱۲ شاخه');
   const [qty, setQty] = useState<number>(1);
   const [addedToast, setAddedToast] = useState<boolean>(false);
+  const [notified, setNotified] = useState<boolean>(false);
 
   useEffect(() => {
     setSelectedFinish(initialFinish);
     setActiveSlideIdx(0);
+    setNotified(false);
   }, [product, initialFinish]);
 
   if (!product) return null;
@@ -452,13 +454,19 @@ export const ProductStudioModal: React.FC<ProductStudioModalProps> = ({
                       type="button"
                       dir="rtl"
                       onClick={() => {
+                        setNotified(!notified);
                         setAddedToast(true);
                         setTimeout(() => setAddedToast(false), 2200);
                       }}
-                      className="w-full h-11.5 rounded-xl bg-[#f42f3c] hover:bg-[#de2330] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98"
+                      className={notified ? 'w-full h-11.5 rounded-xl bg-[#fff5f5] border border-[#ff1f3d] text-[#ff1f3d] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98' : 'w-full h-11.5 rounded-xl bg-[#262626] hover:bg-[#b59766] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98'}
                     >
-                      <NotificationBing size="20" color="#ffffff" variant="Linear" className="shrink-0" />
-                      <span>موجود شد خبرم کنید</span>
+                      <div className="relative">
+                        <Notification size="20" color={notified ? "#ff1f3d" : "#ffffff"} variant="Linear" className="shrink-0" />
+                        {notified && <div className="absolute inset-0 flex items-center justify-center"><div className="w-full h-[1.5px] bg-[#ff1f3d] rotate-45" /></div>}
+                      </div>
+                      <span>
+                        {notified ? 'لغو اطلاع‌رسانی، منصرف شدم' : 'از موجود شدن کالا مطلعم کنید'}
+                      </span>
                     </button>
                   ) : (
                     <button
@@ -3513,6 +3521,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (persianDigit && index < 3) {
       focusOtpBox(index + 1);
     }
+
+    const updatedDigits = [...nextDigits];
+    const fullCode = updatedDigits.map(d => toEnglishDigits(d)).join('');
+    if (fullCode.length === 4) {
+      window.setTimeout(() => {
+        if (!isLoading && !toasts.some((t) => t.type === 'success')) {
+          setIsLoading(true);
+          window.setTimeout(() => {
+            setIsLoading(false);
+            setOtpWrongError(false);
+            setOtpIncompleteError(false);
+            pushToast(
+              'success',
+              'ورود موفقیت آمیز',
+              'مشتری گرامی به پنل خود خوش آمدید!'
+            );
+            loginSuccessTimeoutRef.current = window.setTimeout(() => {
+              completeLoginAfterToast(formattedDisplayPhone);
+            }, 4200);
+          }, 650);
+        }
+      }, 150);
+    }
   };
 
   const handleOtpKeyDown = (
@@ -3594,19 +3625,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setIsLoading(true);
 
     window.setTimeout(() => {
-      // با هر کد ۴ رقمی که کاربر وارد کند، ابتدا نوتیفیکیشن ورود نمایش داده شده، خط پیشرفت کامل پر می‌شود، بسته می‌شود و سپس وارد حساب کاربری می‌شود
       setIsLoading(false);
       setOtpWrongError(false);
       setOtpIncompleteError(false);
-      pushToast(
-        'success',
-        'ورود موفقیت آمیز',
-        'مشتری گرامی به پنل خود خوش آمدید!'
-      );
-      loginSuccessTimeoutRef.current = window.setTimeout(() => {
-        completeLoginAfterToast(formattedDisplayPhone);
-      }, 4200);
-    }, 650);
+      onClose();
+      window.setTimeout(() => {
+        onLoginSuccess?.(formattedDisplayPhone);
+      }, 350);
+    }, 280);
   };
 
   const hasAnyOtpDigit = otpDigits.some((d) => d !== '');
@@ -3619,7 +3645,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const renderToastIcon = (type: AuthToastItem['type']) => {
     switch (type) {
       case 'success':
-        return <ShieldTickIcon className="w-5 h-5" />;
+        return <Verify size="22" color="#17b26a" variant="Linear" />;
       case 'otp-resent':
         return <ShieldSecurityIcon className="w-5 h-5" />;
       case 'error-octagon':
@@ -4182,7 +4208,9 @@ export interface AppToast {
     | 'zoom-out'
     | 'project-like-success'
     | 'project-dislike'
-    | 'product-add-error';
+    | 'product-add-error'
+    | 'notify-cancel-success'
+    | 'notify-cancel-error';
   title: string;
   message: string;
   onComplete?: () => void;
@@ -4296,11 +4324,13 @@ const SingleToast: React.FC<{
     toast.type === 'contact-success' ||
     toast.type === 'catalog-download-success' ||
     toast.type === 'project-like-success' ||
-    toast.type === 'zoom-in';
+    toast.type === 'zoom-in' ||
+    toast.type === 'notify-cancel-success';
 
   const isRed =
     toast.type === 'contact-empty-error' ||
-    toast.type === 'zoom-out';
+    toast.type === 'zoom-out' ||
+    toast.type === 'notify-cancel-error';
 
   React.useEffect(() => {
     // پر شدن خط پیشرفت در ۳۶۰۰ میلی‌ثانیه به پایان می‌رسد و سپس اسلاید خروج آغاز می‌شود
@@ -4408,16 +4438,45 @@ const SingleToast: React.FC<{
       );
     }
 
+    if (toast.type === 'notify-cancel-success' || toast.type === 'notify-cancel-error') {
+      const isErr = toast.type === 'notify-cancel-error';
+      return (
+        <Notification
+          size="22"
+          color={isErr ? '#f42f3c' : '#22c55e'}
+          variant="Linear"
+          className="shrink-0"
+        />
+      );
+    }
+
     if (
       toast.type === 'cart-delete-success' ||
       toast.type === 'contact-success' ||
       toast.type === 'success'
     ) {
-      /* آیکون تیک یا آیکون موفقیت */
+      /* در صورت ثبت اطلاع‌رسانی، آیکون زنگوله سبز نمایش داده شود */
+      if (
+        toast.title?.includes('اطلاع') ||
+        toast.message?.includes('محصول به محض موجود شدن')
+      ) {
+        return (
+          <Notification
+            size="22"
+            color="#22c55e"
+            variant="Linear"
+            className="shrink-0"
+          />
+        );
+      }
+
+      /* آیکون وریفای تو خالی تایید / موفقیت از iconsax-react */
       return (
-        <ZoomIn
-          strokeWidth={1.8}
-          className="w-[24px] h-[24px] lg:w-[22px] lg:h-[22px]"
+        <Verify
+          size="22"
+          color="#22c55e"
+          variant="Linear"
+          className="shrink-0"
         />
       );
     }
@@ -4886,108 +4945,113 @@ export const NotifyAvailabilityModal: React.FC<NotifyAvailabilityModalProps> = (
 
   const handleSubmit = () => {
     onClose();
-    onSubmitSuccess();
+    // Delay to allow modal to close before showing toast
+    setTimeout(() => {
+      onSubmitSuccess();
+    }, 100);
   };
 
   return (
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
       dir="rtl"
     >
-      <div className="relative w-full max-w-[440px] bg-white rounded-[24px] p-6 sm:p-7 shadow-2xl border border-[#ece6da] animate-fadeIn">
-        {/* دکمه بستن */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="بستن"
-          className="absolute top-5 left-5 w-8 h-8 flex items-center justify-center transition-colors cursor-pointer"
-        >
-          <X size="28" color="#1a1a1a" />
-        </button>
-
-        {/* عنوان و زیرعنوان */}
-        <div className="text-right mt-1 mb-6">
-          <h2 className="text-lg sm:text-xl font-black text-[#1a1a1a]">
-            اطلاع رسانی محصول
-          </h2>
-          <p className="text-xs text-[#666666] font-medium mt-2 leading-relaxed px-1">
-            یکی از روش های زیر انتخاب کنید تا به محض موجود شدن کالا مورد نظر شما خبر دهیم.
-          </p>
+      <div className="relative w-full max-w-[440px] my-auto bg-white rounded-[10px] shadow-2xl border border-[#e0e0e0] overflow-hidden animate-fadeIn">
+        {/* هدر سفید با عنوان و دکمه بستن */}
+        <div className="bg-white p-4 sm:p-5 pb-3.5 border-b border-[#f0f0f0] flex items-start justify-between relative -mt-1">
+          <div className="text-right pl-6">
+            <h3 className="text-base sm:text-lg font-black text-[#1a1a1a]">
+              اطلاع رسانی محصول
+            </h3>
+            <p className="text-xs text-[#666666] font-medium mt-1 leading-relaxed">
+              یکی از روش های زیر انتخاب کنید تا به محض موجود شدن کالا مورد نظر شما خبر دهیم.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="بستن"
+            className="w-8 h-8 flex items-center justify-center shrink-0 transition-colors cursor-pointer hover:bg-gray-100 rounded-md"
+          >
+            <X size="22" color="#1a1a1a" />
+          </button>
         </div>
 
-        {/* گزینه‌های انتخاب روش اطلاع‌رسانی */}
-        <div className="space-y-3.5 mb-6">
-          {/* گزینه ۱: ارسال پیامک به شماره کاربر */}
-          <div
-            onClick={() => toggleMethod('sms')}
-            className={`flex items-center justify-between p-3.5 sm:p-4 rounded-[16px] border transition-all cursor-pointer select-none ${
-              selectedMethods.includes('sms')
-                ? 'border-[#1a1a1a]'
-                : 'border-[#e4e4e4] hover:border-[#ccc]'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl border border-[#e2e2e2] flex items-center justify-center text-[#444] shrink-0">
-                <MessageText1 size="20" color="#1a1a1a" variant="Linear" />
-              </div>
-              <span className="text-xs sm:text-[13px] font-bold text-[#1a1a1a]">
-                ارسال پیامک به ({userPhone})
-              </span>
-            </div>
-
+        {/* بخش گزینه‌ها با بک‌گراند طوسی بسیار روشن #fafafa */}
+        <div className="p-5 sm:p-6 bg-[#fafafa]">
+          <div className="space-y-3 mb-6">
+            {/* گزینه ۱: ارسال پیامک به شماره کاربر */}
             <div
-              className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-colors shrink-0 border ${
+              onClick={() => toggleMethod('sms')}
+              className={`flex items-center justify-between p-3.5 sm:p-4 rounded-[10px] bg-white border transition-all cursor-pointer select-none shadow-xs ${
                 selectedMethods.includes('sms')
-                  ? 'bg-[#22a45a] border-[#22a45a]'
-                  : 'border-[#e4e4e4] bg-white'
+                  ? 'border-[#1a1a1a]'
+                  : 'border-[#d8d8d8] hover:border-[#bbb]'
               }`}
             >
-              {selectedMethods.includes('sms') && (
-                <TickSquare size="24" color="white" variant="Bold" />
-              )}
-            </div>
-          </div>
-
-          {/* گزینه ۲: سیستم پیام شخصی (اعلان‌ها) */}
-          <div
-            onClick={() => toggleMethod('notification')}
-            className={`flex items-center justify-between p-3.5 sm:p-4 rounded-[16px] border transition-all cursor-pointer select-none ${
-              selectedMethods.includes('notification')
-                ? 'border-[#e4e4e4]'
-                : 'border-[#e4e4e4] hover:border-[#ccc]'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl border border-[#e2e2e2] flex items-center justify-center text-[#444] shrink-0">
-                <DeviceMessage size="20" color="#1a1a1a" variant="Linear" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-md border border-[#e2e2e2] bg-[#f9f9f9] flex items-center justify-center text-[#444] shrink-0">
+                  <MessageText1 size="20" color="#1a1a1a" variant="Linear" />
+                </div>
+                <span className="text-xs sm:text-[13px] font-bold text-[#1a1a1a]">
+                  ارسال پیامک به ({userPhone})
+                </span>
               </div>
-              <span className="text-xs sm:text-[13px] font-bold text-[#1a1a1a]">
-                سیستم پیام شخصی (اعلان ها)
-              </span>
+
+              <div
+                className={`w-9 h-9 rounded-[6px] flex items-center justify-center transition-colors shrink-0 border ${
+                  selectedMethods.includes('sms')
+                    ? 'bg-[#22a45a] border-[#22a45a]'
+                    : 'border-[#cccccc] bg-white'
+                }`}
+              >
+                {selectedMethods.includes('sms') && (
+                  <TickSquare size="22" color="white" variant="Bold" />
+                )}
+              </div>
             </div>
 
+            {/* گزینه ۲: سیستم پیام شخصی (اعلان‌ها) */}
             <div
-              className={`w-10 h-10 rounded-[12px] flex items-center justify-center transition-colors shrink-0 border ${
+              onClick={() => toggleMethod('notification')}
+              className={`flex items-center justify-between p-3.5 sm:p-4 rounded-[10px] bg-white border transition-all cursor-pointer select-none shadow-xs ${
                 selectedMethods.includes('notification')
-                  ? 'bg-[#22a45a] border-[#22a45a]'
-                  : 'border-[#e4e4e4] bg-white'
+                  ? 'border-[#1a1a1a]'
+                  : 'border-[#d8d8d8] hover:border-[#bbb]'
               }`}
             >
-              {selectedMethods.includes('notification') && (
-                <TickSquare size="24" color="white" variant="Bold" />
-              )}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-md border border-[#e2e2e2] bg-[#f9f9f9] flex items-center justify-center text-[#444] shrink-0">
+                  <DeviceMessage size="20" color="#1a1a1a" variant="Linear" />
+                </div>
+                <span className="text-xs sm:text-[13px] font-bold text-[#1a1a1a]">
+                  سیستم پیام شخصی (اعلان ها)
+                </span>
+              </div>
+
+              <div
+                className={`w-9 h-9 rounded-[6px] flex items-center justify-center transition-colors shrink-0 border ${
+                  selectedMethods.includes('notification')
+                    ? 'bg-[#22a45a] border-[#22a45a]'
+                    : 'border-[#cccccc] bg-white'
+                }`}
+              >
+                {selectedMethods.includes('notification') && (
+                  <TickSquare size="22" color="white" variant="Bold" />
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* دکمه ثبت اطلاع رسانی */}
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="w-full h-12 rounded-[14px] bg-[#2b2b2b] hover:bg-black text-white text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-98 flex items-center justify-center"
-        >
-          ثبت اطلاع رسانی
-        </button>
+          {/* دکمه ثبت اطلاع رسانی */}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="w-full h-11 rounded-[10px] bg-[#222222] hover:bg-black text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-98 flex items-center justify-center"
+          >
+            ثبت اطلاع رسانی
+          </button>
+        </div>
       </div>
     </div>
   );

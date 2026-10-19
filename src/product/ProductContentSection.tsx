@@ -2064,14 +2064,37 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
   const [isNotifyModalOpen, setIsNotifyModalOpen] = useState<boolean>(false);
   const [notifyProduct, setNotifyProduct] = useState<ChandelierProduct | null>(null);
-  const [pendingNotifyAfterLogin, setPendingNotifyAfterLogin] = useState<boolean>(false);
+  const [isAddCommentModalOpen, setIsAddCommentModalOpen] = useState<boolean>(false);
+  const [pendingActionAfterLogin, setPendingActionAfterLogin] = useState<'notify' | 'comment' | null>(null);
+  const [notifiedProducts, setNotifiedProducts] = useState<Record<string, boolean>>({});
+  const [suggestionScores, setSuggestionScores] = useState<Record<string, number>>({
+    item1: 5.0,
+    item2: 4.7,
+    item3: 1.5,
+    item4: 3.2,
+    item5: 4.7,
+  });
+
+  const toggleProductNotified = (productId: string) => {
+    setNotifiedProducts(prev => ({
+      ...prev,
+      [productId]: !prev[productId]
+    }));
+  };
 
   useEffect(() => {
-    if (isLoggedIn && pendingNotifyAfterLogin) {
-      setPendingNotifyAfterLogin(false);
-      setIsNotifyModalOpen(true);
+    if (isLoggedIn && pendingActionAfterLogin) {
+      const action = pendingActionAfterLogin;
+      setPendingActionAfterLogin(null);
+      if (action === 'comment') {
+        setIsAddCommentModalOpen(true);
+        setIsNotifyModalOpen(false);
+      } else if (action === 'notify') {
+        setIsNotifyModalOpen(true);
+        setIsAddCommentModalOpen(false);
+      }
     }
-  }, [isLoggedIn, pendingNotifyAfterLogin]);
+  }, [isLoggedIn, pendingActionAfterLogin]);
 
   const toggleCard3D = (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -2270,12 +2293,17 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
   // نظرات کاربران درباره محصول با ترتیب جدیدترین در بالا و قدیمی‌ترین در پایین
   const [activeCommentPage, setActiveCommentPage] = useState<number>(0);
   const [commentSlideDir, setCommentSlideDir] = useState<'next' | 'prev'>('next');
-  const [isAddCommentModalOpen, setIsAddCommentModalOpen] = useState<boolean>(false);
+  const [commentModalTab, setCommentModalTab] = useState<'rating' | 'description'>('rating');
+  const [commentRatingStarsOpen, setCommentRatingStarsOpen] = useState<boolean>(true);
+  const [commentRecommendationOpen, setCommentRecommendationOpen] = useState<boolean>(false);
+  const [selectedCommentStar, setSelectedCommentStar] = useState<number>(5);
+  const [selectedRecommendation, setSelectedRecommendation] = useState<string>('yes');
   const [isFeaturesModalOpen, setIsFeaturesModalOpen] = useState<boolean>(false);
   const [newCommentName, setNewCommentName] = useState<string>('');
   const [newCommentText, setNewCommentText] = useState<string>('');
   const [newCommentRating, setNewCommentRating] = useState<number>(5);
   const [commentToast, setCommentToast] = useState<string | null>(null);
+  const [isSubmittingComment, setIsSubmittingComment] = useState<boolean>(false);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
   const ratingCardRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -2411,9 +2439,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
     const newObj = {
       id: `c-new-${Date.now()}`,
       name: newCommentName.trim(),
-      date: 'تاریخ نظر دهی : امروز',
+      date: 'تاریخ نظر دهی : ۲۷ مهرماه ۱۴۰۵',
       time: 'ساعت ' + new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
-      rating: newCommentRating.toLocaleString('fa-IR') + '.0',
+      rating: newCommentRating.toFixed(1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[parseInt(d, 10)]),
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
       avatarSvg: makeAvatarSvg(initials, '#b58c5e', '#8c673d'),
       content: newCommentText.trim(),
@@ -4471,9 +4499,34 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                         type="button"
                         dir="rtl"
                         onClick={() => {
-                          setNotifyProduct(product);
-                          if (!isLoggedIn) {
-                            setPendingNotifyAfterLogin(true);
+                          if (isLoggedIn) {
+                            if (notifiedProducts[product.id]) {
+                              // لغو اطلاع‌رسانی: نمایش توست فیگما و پس از اتمام/پر شدن، تغییر حالت دکمه به موجود شد خبرم کنید
+                              if (onShowToast) {
+                                onShowToast(
+                                  'notify-cancel-success',
+                                  'با موفقیت لغو شد',
+                                  'لغو اطلاع رسانی کالا با موفقیت ثبت شد.',
+                                  () => {
+                                    toggleProductNotified(product.id);
+                                  }
+                                );
+                              } else {
+                                toggleProductNotified(product.id);
+                              }
+                            } else {
+                              // هر بار که کاربر روی موجود شد خبرم کن کلیک می‌کند، پاپ‌آپ اطلاع‌رسانی باز شود
+                              setNotifyProduct(product);
+                              setIsNotifyModalOpen(true);
+                            }
+                          } else {
+                            setNotifyProduct(product);
+                            setPendingActionAfterLogin('notify');
+                            (window as any).__pendingModalAfterLogin = () => {
+                              (window as any).__clearAppToasts?.();
+                              setIsNotifyModalOpen(true);
+                              setIsAddCommentModalOpen(false);
+                            };
                             if (onShowToast) {
                               onShowToast(
                                 'cart-auth-required',
@@ -4486,14 +4539,28 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
                             } else if (onOpenLogin) {
                               onOpenLogin();
                             }
-                            return;
                           }
-                          setIsNotifyModalOpen(true);
                         }}
-                        className="h-12.5 px-6 rounded-[16px] bg-[#f42f3c] hover:bg-[#de2330] text-white text-[14.5px] font-bold flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 active:scale-98"
+                        className={`h-12.5 px-6 rounded-[16px] flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 active:scale-98 text-[14.5px] font-bold ${
+                          notifiedProducts[product.id]
+                            ? 'bg-[#fff5f5] border border-[#ff1f3d] text-[#ff1f3d]'
+                            : 'bg-[#f42f3c] hover:bg-[#de2330] text-white'
+                        }`}
                       >
-                        <NotificationBing size="22" color="#ffffff" variant="Linear" className="shrink-0" />
-                        <span>موجود شد خبرم کنید</span>
+                        <div className="relative flex items-center justify-center shrink-0">
+                          <NotificationBing
+                            size="22"
+                            color={notifiedProducts[product.id] ? '#ff1f3d' : '#ffffff'}
+                            variant="Linear"
+                            className="shrink-0"
+                          />
+                          {notifiedProducts[product.id] && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <span className="w-5.5 h-[1.5px] bg-[#ff1f3d] rotate-45 rounded-full" />
+                            </div>
+                          )}
+                        </div>
+                        <span>{notifiedProducts[product.id] ? 'لغو اطلاع‌رسانی، منصرف شدم' : 'موجود شد خبرم کنید'}</span>
                       </button>
                     ) : (
                       <button
@@ -4692,7 +4759,30 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
               {/* دکمه افزودن نظر با ارتفاع مشخص مطابق تصویر - آیکون مثبت در سمت راست متن */}
               <button
                 type="button"
-                onClick={() => setIsAddCommentModalOpen(true)}
+                onClick={() => {
+                  if (isLoggedIn) {
+                    setIsAddCommentModalOpen(true);
+                  } else {
+                    setPendingActionAfterLogin('comment');
+                    (window as any).__pendingModalAfterLogin = () => {
+                      (window as any).__clearAppToasts?.();
+                      setIsAddCommentModalOpen(true);
+                      setIsNotifyModalOpen(false);
+                    };
+                    if (onShowToast) {
+                      onShowToast(
+                        'cart-auth-required',
+                        'مورد ضروری',
+                        'برای ثبت نظرات کاربران ابتدا وارد حساب کاربری خود شوید.',
+                        () => {
+                          if (onOpenLogin) onOpenLogin();
+                        }
+                      );
+                    } else if (onOpenLogin) {
+                      onOpenLogin();
+                    }
+                  }
+                }}
                 className="h-11 sm:h-12 px-5 sm:px-6 rounded-[14px] border border-[#e2e2e2] bg-white hover:bg-gray-50 text-[#1a1a1a] font-bold text-sm sm:text-[15px] flex items-center gap-2 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0"
               >
                 <Plus className="w-4 h-4 text-[#1a1a1a] stroke-[2.2]" />
@@ -5157,95 +5247,319 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
 
 
 
-        {/* مودال افزودن نظر جدید */}
+        {/* مودال ثبت نظرات کاربران دقیقاً مطابق طرح ۱۰۰٪ فیگما */}
         {isAddCommentModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div className="bg-white rounded-[24px] max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-[#E4E5E7] relative text-right space-y-5 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between border-b border-[#E4E5E7] pb-4">
-                <h4 className="text-base sm:text-lg font-black text-[#1a1a1a]">
-                  افزودن نظر جدید
-                </h4>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+            dir="rtl"
+            onClick={() => setIsAddCommentModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-[10px] max-w-[430px] w-full p-6 sm:p-7 shadow-2xl border border-[#eaeaea] relative text-right flex flex-col max-h-[92vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* هدر: عنوان «ثبت نظرات کاربران» در سمت راست و دکمه بستن در سمت چپ */}
+              <div className="flex items-center justify-between pb-4 -mt-1">
+                <h3 className="text-[17px] sm:text-[18px] font-bold text-[#1a1a1a]">
+                  ثبت نظرات کاربران
+                </h3>
                 <button
                   type="button"
                   onClick={() => setIsAddCommentModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-black transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-[#1a1a1a] transition-colors cursor-pointer"
+                  aria-label="بستن"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5 stroke-[2.2]" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmitNewComment} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#444] mb-1.5">
-                    نام و نام خانوادگی
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newCommentName}
-                    onChange={(e) => setNewCommentName(e.target.value)}
-                    placeholder="مثال: پرهام رحیمی"
-                    className="w-full h-11 px-4 text-xs sm:text-sm rounded-xl border border-gray-200 focus:border-[#b58c5e] focus:outline-hidden transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#444] mb-1.5">
-                    امتیاز شما به محصول
-                  </label>
-                  <div className="flex items-center gap-1.5" dir="ltr">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button
-                        key={`star-rate-${s}`}
-                        type="button"
-                        onClick={() => setNewCommentRating(s)}
-                        className="p-1 cursor-pointer transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className={`w-6 h-6 ${
-                            s <= newCommentRating
-                              ? 'text-[#b58c5e] fill-[#b58c5e]'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                    <span className="text-xs font-bold text-gray-600 mr-2 tabular-nums">
-                      ({newCommentRating} از ۵)
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#444] mb-1.5">
-                    متن نظر شما
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder="تجربه خود را از کیفیت، بسته‌بندی و ارسال محصول بنویسید..."
-                    className="w-full p-4 text-xs sm:text-sm rounded-xl border border-gray-200 focus:border-[#b58c5e] focus:outline-hidden transition-colors resize-none leading-6"
-                  />
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
+              {/* کانتینر اصلی بدنه با پس‌زمینه طوسی بسیار روشن #fafafa پشت ویجت‌ها */}
+              <div className="bg-[#fafafa] -mx-6 sm:-mx-7 p-6 sm:p-7 -mb-6 sm:-mb-7 flex-1 overflow-y-auto space-y-4">
+                {/* تب‌های انتخاب: «امتیازدهی محصول» و «متن توضیحات» */}
+                <div className="bg-[#f0f0f2] p-1.5 rounded-[10px] flex items-center border border-[#e5e5e8]">
                   <button
-                    type="submit"
-                    className="flex-1 h-11 rounded-xl bg-[#b58c5e] hover:bg-[#a0774a] text-white font-bold text-xs sm:text-sm shadow-md transition-colors cursor-pointer"
+                    type="button"
+                    onClick={() => setCommentModalTab('rating')}
+                    className={`flex-1 py-2.5 rounded-[8px] text-xs sm:text-[13.5px] font-bold transition-all cursor-pointer text-center ${
+                      commentModalTab === 'rating'
+                        ? 'bg-[#262626] text-white shadow-xs'
+                        : 'bg-transparent text-[#555555] hover:text-[#1a1a1a]'
+                    }`}
                   >
-                    ثبت و ارسال نظر
+                    امتیازدهی محصول
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsAddCommentModalOpen(false)}
-                    className="px-5 h-11 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                    onClick={() => setCommentModalTab('description')}
+                    className={`flex-1 py-2.5 rounded-[8px] text-xs sm:text-[13.5px] font-bold transition-all cursor-pointer text-center ${
+                      commentModalTab === 'description'
+                        ? 'bg-[#262626] text-white shadow-xs'
+                        : 'bg-transparent text-[#555555] hover:text-[#1a1a1a]'
+                    }`}
                   >
-                    انصراف
+                    متن توضیحات
                   </button>
                 </div>
-              </form>
+
+                {/* بدنه اسکرول‌پذیر متناسب با تب انتخاب شده */}
+                <div className="space-y-3.5 pb-2">
+                  {commentModalTab === 'rating' ? (
+                    <>
+                      {/* آکاردئون ۱: ستاره مورد نظر خود را انتخاب نمایید */}
+                      <div className="rounded-[10px] border border-[#d8d8d8] bg-white overflow-hidden transition-all shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => setCommentRatingStarsOpen(!commentRatingStarsOpen)}
+                          className="w-full px-5 py-3.5 flex items-center justify-between text-right cursor-pointer hover:bg-gray-50/70 transition-colors bg-white"
+                        >
+                          <span className="text-[13.5px] sm:text-[14.5px] font-bold text-[#1a1a1a]">
+                            ستاره مورد نظر خود را انتخاب نمایید
+                          </span>
+                          {commentRatingStarsOpen ? (
+                            <ChevronUp className="w-4 h-4 text-[#666666]" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-[#666666]" />
+                          )}
+                        </button>
+
+                        {commentRatingStarsOpen && (
+                          <div className="px-5 pb-2 pt-1 border-t border-[#f0f0f0] bg-white">
+                            {[
+                              { value: 5, label: 'ستاره ۵ از ۵' },
+                              { value: 4, label: 'ستاره ۴ از ۵' },
+                              { value: 3, label: 'ستاره ۳ از ۵' },
+                              { value: 2, label: 'ستاره ۲ از ۵' },
+                              { value: 1.5, label: 'ستاره ۱.۵ از ۵' },
+                            ].map((item) => {
+                              const isSelected = selectedCommentStar === item.value;
+                              return (
+                                <div
+                                  key={`star-opt-${item.value}`}
+                                  onClick={() => {
+                                    setSelectedCommentStar(item.value);
+                                    setNewCommentRating(Math.round(item.value));
+                                  }}
+                                  className="flex items-center justify-between cursor-pointer py-2.5 border-b border-[#f0f0f0] last:border-b-0 select-none group"
+                                >
+                                  <span
+                                    className={`text-[12.5px] sm:text-[13px] font-bold transition-colors ${
+                                      isSelected ? 'text-[#1a1a1a]' : 'text-[#666666]'
+                                    }`}
+                                  >
+                                    {item.label}
+                                  </span>
+
+                                  <div
+                                    className={`w-5 h-5 rounded-[4px] flex items-center justify-center transition-all shrink-0 ${
+                                      isSelected
+                                        ? 'bg-[#b58c5e] text-white shadow-xs'
+                                        : 'bg-[#eeeeee] group-hover:bg-[#e2e2e2]'
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="3.2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="w-3.5 h-3.5"
+                                      >
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* آکاردئون ۲: پیشنهاد مورد نظر خود را انتخاب نمایید */}
+                      <div className="rounded-[10px] border border-[#d8d8d8] bg-white overflow-hidden transition-all shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => setCommentRecommendationOpen(!commentRecommendationOpen)}
+                          className="w-full px-5 py-3.5 flex items-center justify-between text-right cursor-pointer hover:bg-gray-50/70 transition-colors bg-white"
+                        >
+                          <span className="text-[13.5px] sm:text-[14.5px] font-bold text-[#1a1a1a]">
+                            پیشنهاد مورد نظر خود را انتخاب نمایید
+                          </span>
+                          {commentRecommendationOpen ? (
+                            <ChevronUp className="w-4 h-4 text-[#666666]" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-[#666666]" />
+                          )}
+                        </button>
+
+                        {commentRecommendationOpen && (
+                          <div className="px-5 pb-3 pt-1 border-t border-[#f0f0f0] bg-white space-y-2">
+                            {[
+                              { id: 'item1', title: 'مورد اول' },
+                              { id: 'item2', title: 'مورد دوم' },
+                              { id: 'item3', title: 'مورد سوم' },
+                              { id: 'item4', title: 'مورد چهارم' },
+                              { id: 'item5', title: 'مورد پنجم' },
+                            ].map((item) => {
+                              const currentVal = suggestionScores[item.id] ?? 4.0;
+                              const fillPercent = (currentVal / 5.0) * 100;
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="py-2 space-y-3"
+                                >
+                                  {/* عنوان مورد در سمت راست و عدد امتیاز دستی در سمت چپ */}
+                                  <div className="flex items-center justify-between text-xs sm:text-[13px] font-bold">
+                                    <span className="text-[#1a1a1a]">{item.title}</span>
+                                    <span className="text-[#1a1a1a] tabular-nums font-extrabold text-[13px]">
+                                      {currentVal.toFixed(1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[parseInt(d, 10)])}
+                                    </span>
+                                  </div>
+
+                                  {/* نوار پر کردن دستی چپ به راست و ریزتر */}
+                                  <div dir="ltr" className="relative w-full h-[6px] bg-[#e8e8e8] rounded-full overflow-hidden flex items-center cursor-pointer">
+                                    <div
+                                      className="h-full bg-[#b58c5e] rounded-full transition-all duration-75"
+                                      style={{ width: `${fillPercent}%` }}
+                                    />
+                                    <input
+                                      type="range"
+                                      min="0.5"
+                                      max="5.0"
+                                      step="0.1"
+                                      value={currentVal}
+                                      onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        setSuggestionScores((prev) => ({ ...prev, [item.id]: val }));
+                                      }}
+                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    /* تب متن توضیحات - دقیقاً مطابق تصویر اول فیگما */
+                    <div className="bg-white p-4.5 rounded-[10px] border border-[#e2e2e2] shadow-2xs space-y-3">
+                      <textarea
+                        rows={6}
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        placeholder="متن مورد نظر خود را بنویسید..."
+                        className="w-full text-xs sm:text-[13.5px] font-medium text-[#1a1a1a] placeholder-[#888888] border-0 focus:outline-hidden resize-none leading-relaxed bg-transparent"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* دکمه اصلی پایین: ثبت دیدگاه / مرحله بعدی */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    disabled={isSubmittingComment}
+                    onClick={(e) => {
+                      if (isSubmittingComment) return;
+
+                      // اگر در مرحله اول (امتیازدهی محصول) هستیم، رفتن به مرحله بعدی (متن توضیحات)
+                      if (commentModalTab === 'rating') {
+                        setIsSubmittingComment(true);
+                        setTimeout(() => {
+                          setIsSubmittingComment(false);
+                          setCommentModalTab('description');
+                        }, 450);
+                        return;
+                      }
+
+                      // اگر در مرحله دوم (متن توضیحات) هستیم، بررسی خالی نبودن متن
+                      if (!newCommentText.trim()) {
+                        if (onShowToast) {
+                          onShowToast(
+                            'error',
+                            'خطایی رخ داد!',
+                            'مشتری عزیز فیلد متن توضیحات خالی میباشد.'
+                          );
+                        }
+                        return;
+                      }
+
+                      // ثبت نهایی دیدگاه همراه با لودینگ ۳ نقطه و توست سبز تایید مطابق تصویر سوم
+                      setIsSubmittingComment(true);
+
+                      setTimeout(() => {
+                        setIsSubmittingComment(false);
+                        
+                        let profileName = '';
+                        if (typeof window !== 'undefined') {
+                          const storedName = localStorage.getItem('app_user_display_name');
+                          if (storedName && storedName.trim() && storedName.trim() !== 'مشتری عزیز!') {
+                            profileName = storedName.trim();
+                          } else {
+                            const adminUser = localStorage.getItem('salehi_admin_session_user');
+                            if (adminUser) {
+                              try {
+                                const parsed = JSON.parse(adminUser);
+                                if (parsed?.name) profileName = parsed.name;
+                              } catch {}
+                            }
+                          }
+                        }
+                        const fallbackName = newCommentName.trim() || profileName || 'علیرضا آذرخش';
+                        const fallbackText = newCommentText.trim();
+                        const initials = fallbackName.slice(0, 2);
+                        const formattedRating = selectedCommentStar.toFixed(1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[parseInt(d, 10)]);
+
+                        const newObj = {
+                          id: `c-new-${Date.now()}`,
+                          name: fallbackName,
+                          date: 'تاریخ نظر دهی : ۲۷ مهرماه ۱۴۰۵',
+                          time: 'ساعت ' + new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+                          rating: formattedRating,
+                          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+                          avatarSvg: makeAvatarSvg(initials, '#b58c5e', '#8c673d'),
+                          content: fallbackText,
+                        };
+
+                        setCommentItems((prev) => [newObj, ...prev]);
+                        setNewCommentName('');
+                        setNewCommentText('');
+                        setIsAddCommentModalOpen(false);
+                        setCommentSlideDir('next');
+                        setActiveCommentPage(0);
+                        setCommentModalTab('rating');
+
+                        if (onShowToast) {
+                          onShowToast(
+                            'success',
+                            'دیدگاه با موفقیت ثبت شد',
+                            'پس از بررسی و تایید های دیدگاه نمایش داده میشود.'
+                          );
+                        } else {
+                          setCommentToast('دیدگاه با موفقیت ثبت شد. پس از بررسی و تایید های دیدگاه نمایش داده میشود.');
+                          setTimeout(() => setCommentToast(null), 4000);
+                        }
+                      }, 750);
+                    }}
+                    className="w-full h-11 rounded-[10px] bg-[#262626] hover:bg-black text-white text-[14px] font-bold flex items-center justify-center transition-all cursor-pointer shadow-md active:scale-98 disabled:opacity-90"
+                  >
+                    {isSubmittingComment ? (
+                      /* انیمیشن ۳ نقطه سفید هنگام لودینگ ثبت دیدگاه مطابق تصویر اول */
+                      <div className="flex items-center justify-center gap-1.5" dir="ltr">
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse [animation-delay:150ms]" />
+                        <span className="w-2 h-2 rounded-full bg-white animate-pulse [animation-delay:300ms]" />
+                      </div>
+                    ) : (
+                      <span>{commentModalTab === 'rating' ? 'مرحله بعدی' : 'ثبت دیدگاه'}</span>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -5321,6 +5635,9 @@ export const ProductContentSection: React.FC<ProductContentSectionProps> = ({
           product={notifyProduct}
           userPhone={userPhone}
           onSubmitSuccess={() => {
+            if (notifyProduct) {
+              toggleProductNotified(notifyProduct.id);
+            }
             if (onShowToast) {
               onShowToast(
                 'success',

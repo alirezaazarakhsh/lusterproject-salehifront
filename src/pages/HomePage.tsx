@@ -873,6 +873,30 @@ export const HomePage: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const pendingSuccessToastRef = useRef(false);
+
+  useEffect(() => {
+    (window as any).__clearAppToasts = () => setAppToasts([]);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoginModalOpen && pendingSuccessToastRef.current) {
+      pendingSuccessToastRef.current = false;
+      addAppToast(
+        'success',
+        'ورود موفقیت آمیز',
+        'مشتری گرامی به پنل خود خوش آمدید!',
+        () => {
+          if ((window as any).__pendingModalAfterLogin) {
+            const cb = (window as any).__pendingModalAfterLogin;
+            (window as any).__pendingModalAfterLogin = null;
+            cb();
+          }
+        }
+      );
+    }
+  }, [isLoginModalOpen]);
+
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] =
     useState<boolean>(false);
   const [appToasts, setAppToasts] = useState<AppToast[]>([]);
@@ -905,10 +929,7 @@ export const HomePage: React.FC = () => {
     onComplete?: () => void
   ) => {
     const id = `${Date.now()}-${Math.random()}`;
-    setAppToasts((prev) => [
-      ...prev.slice(-2),
-      { id, type, title, message, onComplete },
-    ]);
+    setAppToasts([{ id, type, title, message, onComplete }]);
   };
 
   const triggerCartAuthRequiredToast = () => {
@@ -1275,7 +1296,8 @@ export const HomePage: React.FC = () => {
         onLoginSuccess={(phone) => {
           setIsLoggedIn(true);
           if (phone) setUserPhone(phone);
-          setForceOpenProfileMenu(true);
+          setForceOpenProfileMenu(false);
+          pendingSuccessToastRef.current = true;
         }}
       />
 
